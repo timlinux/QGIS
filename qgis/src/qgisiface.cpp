@@ -1,23 +1,52 @@
-#include <iostream>
-#include "qgisinterface.h"
+/**
+   @file qgisiface.cpp
+*/
+
+#include "qgisiface.h"
+
 #include "qgisapp.h"
 
-QgisIface::QgisIface(QgisApp *_qgis, const char * name) : qgis(_qgis) {
 
 
-}
-QgisIface::~QgisIface(){
+static const char * const ident_ = "$Id$";
+
+
+
+
+// XXX ummm, why isn't "name" used?
+QgisIface::QgisIface( QgisApp * _qgis, const char * name ) 
+   : qgis(_qgis) 
+{}
+
+
+
+QgisIface::~QgisIface()
+{}
+
+
+void
+QgisIface::zoomFull()
+{
+   qgis->zoomFull();
 }
 
-void QgisIface::zoomFull(){
-	qgis->zoomFull();
+
+void
+QgisIface::zoomPrevious()
+{
+   qgis->zoomPrevious();
 }
-void QgisIface::zoomPrevious(){
-	qgis->zoomPrevious();
+
+
+void
+QgisIface::zoomActiveLayer()
+{
+   qgis->zoomToLayerExtent();
 }
-void QgisIface::zoomActiveLayer(){
-	qgis->zoomToLayerExtent();
-}
-int QgisIface::getInt(){
-	return qgis->getInt();
+
+
+int
+QgisIface::getInt()
+{
+   return qgis->getInt();
 }
