@@ -1,6 +1,0 @@
-To build and install the cvs version:
-./autogen.sh
-./configure --without-spit <other configure options>
-make
-make install
-
