@@ -79,12 +79,15 @@
 #include <qslider.h>
 #include <qlabel.h>
 #include <qdom.h>
+#include <qlistview.h>
 
 #include "qgsrect.h"
 #include "qgisapp.h"
 #include "qgscolortable.h"
 #include "qgsrasterlayerproperties.h"
 #include "qgsproject.h"
+#include "qgsidentifyresults.h"
+#include "qgsattributeaction.h"
 
 #include <gdal_priv.h>
 
@@ -105,14 +108,17 @@
   These are GDAL driver description strings.
   */
 static const char *const mSupportedRasterFormats[] = {
-  "SDTS",
-  "AIG",
   "AAIGrid",
-  "GTiff",
-  "USGSDEM",
-  "HFA",
-  "GRASS",
+  "AIG",
   "DTED",
+  "ECW",
+  "GRASS",
+  "GTiff",
+  "HFA",
+  "JPEG2000",
+  "MrSID",
+  "SDTS",
+  "USGSDEM",
   ""   // used to indicate end of list
 };
 
@@ -268,10 +274,26 @@ void QgsRasterLayer::buildSupportedRasterFileFilter(QString & theFileFiltersStri
         QString glob = "*.dt0";
         theFileFiltersString += myGdalDriverLongName + " (" + glob.lower() + " " + glob.upper() + ");;";
       }
+      else if (myGdalDriverDescription.startsWith("MrSID"))
+      {
+        // MrSID use "*.sid"
+        QString glob = "*.sid";
+        theFileFiltersString += myGdalDriverLongName + " (" + glob.lower() + " " + glob.upper() + ");;";
+      }
       else
       {
         catchallFilter += QString(myGdalDriver->GetDescription()) + " ";
       }
+    }
+    
+    // A number of drivers support JPEG 2000. Add it in for those.
+    if (  myGdalDriverDescription.startsWith("MrSID") 
+          || myGdalDriverDescription.startsWith("ECW")
+          || myGdalDriverDescription.startsWith("JPEG2000")
+          || myGdalDriverDescription.startsWith("JP2KAK") )
+    {
+      QString glob = "*.jp2 *.j2k";
+      theFileFiltersString += "JPEG 2000 (" + glob.lower() + " " + glob.upper() + ");;";
     }
 
     myGdalDriverExtension = myGdalDriverLongName = "";  // reset for next driver
@@ -330,10 +352,8 @@ bool QgsRasterLayer::isValidRasterFileName(QString theFileNameQString)
 
   //open the file using gdal making sure we have handled locale properly
   myDataset = GDALOpen( (const char*)(theFileNameQString.local8Bit()), GA_ReadOnly );
-
   if( myDataset == NULL )
   {
-
     return false;
   }
   else
@@ -386,7 +406,8 @@ QgsRasterLayer::QgsRasterLayer(QString path, QString baseName)
       transparencyLevelInt(255), // 0 is completely transparent
       showDebugOverlayFlag(false),
       mLayerProperties(0x0),
-      mTransparencySlider(0x0)
+      mTransparencySlider(0x0),
+      mIdentifyResults(0)
 {
   // we need to do the tr() stuff outside of the loop becauses tr() is a time
   // consuming operation nd we dont want to do it in the loop!
@@ -395,12 +416,12 @@ QgsRasterLayer::QgsRasterLayer(QString path, QString baseName)
   greenTranslatedQString = tr("Green");
   blueTranslatedQString  = tr("Blue");
 
-
   // set the layer name (uppercase first character)
 
   if ( ! baseName.isEmpty() )   // XXX shouldn't this happen in parent?
   {
       QString layerTitle = baseName;
+      std::cout << "layertitle length" << layerTitle.length() << std::endl; 
       layerTitle = layerTitle.left(1).upper() + layerTitle.mid(1);
       setLayerName(layerTitle);
   }
@@ -593,6 +614,9 @@ void QgsRasterLayer::showLayerProperties()
   if ( ! mLayerProperties )
   {
     mLayerProperties = new QgsRasterLayerProperties(this);
+#ifdef QGISDEBUG
+  std::cout << "Creating new raster properties dialog instance" << std::endl;
+#endif
   }
 
   mLayerProperties->sync();
@@ -1715,8 +1739,10 @@ void QgsRasterLayer::drawMultiBandColor(QPainter * theQPainter, RasterViewPort *
 
       // TODO: check all channels ?
       if ( myRedValueDouble == noDataValueDouble || myRedValueDouble != myRedValueDouble ) {
+#ifdef QGISDEBUG
         std::cout << "myRedValueDouble = " << myRedValueDouble << std::endl;
         std::cout << "noDataValueDouble = " << noDataValueDouble << std::endl;
+#endif
         continue;
       }
 
@@ -1886,6 +1912,7 @@ const bool QgsRasterLayer::hasStats(int theBandNoInt)
   <li>myRasterBandStats.meanDouble
   <li>myRasterBandStats.sumSqrDevDouble
   <li>myRasterBandStats.stdDevDouble
+  <li>myRasterBandStats.histogram
   </ul>
 
   @seealso RasterBandStats
@@ -1929,6 +1956,10 @@ const RasterBandStats QgsRasterLayer::getRasterBandStats(int theBandNoInt)
 
 
   GDALRasterBand *myGdalBand = gdalDataset->GetRasterBand(theBandNoInt);
+
+  //calculate the histogram for this band
+  myGdalBand->GetHistogram( -0.5, 255.5, 256, myRasterBandStats.histogram, FALSE, FALSE, GDALDummyProgress, NULL );
+  
   QString myColorInterpretation = GDALGetColorInterpretationName(myGdalBand->GetColorInterpretation());
 
   //declare a colorTable to hold a palette - will only be used if the layer color interp is palette ???
@@ -2798,10 +2829,11 @@ QString QgsRasterLayer::getMetadata()
   }
   myMetadataQString += "</td></tr>";
 
+  //layer coordinate system
   if (gdalDataset->GetProjectionRef() != NULL)
   {
     myMetadataQString += "<tr><td bgcolor=\"gray\">";
-    myMetadataQString += tr("Projection: ");
+    myMetadataQString += tr("Layer Spatial Reference System: ");
     myMetadataQString += "</td></tr>";
     myMetadataQString += "<tr><td bgcolor=\"white\">";
     //note we inject some white space so the projection wraps better in the <td>
@@ -2810,6 +2842,17 @@ QString QgsRasterLayer::getMetadata()
     myMetadataQString += myProjectionQString ;
     myMetadataQString += "</td></tr>";
   }
+  // output coordinate system
+  QString myDestWKT = QgsProject::instance()->readEntry("SpatialRefSys","/WKT","");
+  myMetadataQString += "<tr><td bgcolor=\"gray\">";
+  myMetadataQString += tr("Project Spatial Reference System: ");
+  myMetadataQString += "</td></tr>";
+  myMetadataQString += "<tr><td bgcolor=\"white\">";
+  //note we inject some white space so the projection wraps better in the <td>
+  myDestWKT = myDestWKT.replace(QRegExp("\"")," \"");
+  myMetadataQString += myDestWKT ;
+  myMetadataQString += "</td></tr>";
+  
   if (gdalDataset->GetGeoTransform(adfGeoTransform) == CE_None)
   {
     myMetadataQString += "<tr><td bgcolor=\"gray\">";
@@ -3492,3 +3535,70 @@ void QgsRasterLayer::inOverview( bool b )
 {
     QgsMapLayer::inOverview( b );
 } // QgsRasterLayer::inOverview( bool )
+
+void QgsRasterLayer::identify(QgsRect * r)
+{
+    if(mIdentifyResults) { delete mIdentifyResults; mIdentifyResults = 0; }
+
+    QgsAttributeAction aa;
+
+    mIdentifyResults = new QgsIdentifyResults(aa);
+    mIdentifyResults->setTitle( name() );
+    mIdentifyResults->setColumnText ( 0, tr("Band") );
+    
+    double x = ( r->xMin() + r->xMax() ) / 2;
+    double y = ( r->yMin() + r->yMax() ) / 2;
+
+#ifdef QGISDEBUG
+    std::cout << "QgsRasterLayer::identify: " << x << ", " << y << std::endl;
+#endif
+
+    if ( x < layerExtent.xMin() || x > layerExtent.xMax() || y < layerExtent.yMin() || y > layerExtent.yMax() ) {
+	// Outside the raster
+        for ( int i = 1; i <= gdalDataset->GetRasterCount(); i++ ) {
+	    mIdentifyResults->addAttribute ( tr("Band") + QString::number(i), tr("out of extent") );
+	}
+    } else {
+	/* Calculate the row / column where the point falls */
+	double xres = (layerExtent.xMax() - layerExtent.xMin()) / rasterXDimInt;
+	double yres = (layerExtent.yMax() - layerExtent.yMin()) / rasterYDimInt;
+
+	// Offset, not the cell index -> flor
+	int col = (int) floor ( (x - layerExtent.xMin()) / xres );
+	int row = (int) floor ( (layerExtent.yMax() - y) / yres );
+
+#ifdef QGISDEBUG
+	std::cout << "row = " << row << " col = " << col << std::endl;
+#endif
+       
+	for ( int i = 1; i <= gdalDataset->GetRasterCount(); i++ ) {
+	    GDALRasterBand *gdalBand = gdalDataset->GetRasterBand(i);
+	    GDALDataType type = gdalBand->GetRasterDataType();
+	    int size = GDALGetDataTypeSize ( type ) / 8;
+	    void *data = CPLMalloc ( size );
+	   
+	    CPLErr err = gdalBand->RasterIO ( GF_Read, col, row, 1, 1, data, 1, 1, type, 0, 0 );
+
+	    double value = readValue ( data, type, 0 );
+#ifdef QGISDEBUG
+	    std::cout << "value = " << value << std::endl;
+#endif
+	    QString v;
+
+	    if ( noDataValueDouble == value || value != value ) {
+		v = tr("null (no data)");
+	    } else {
+		v.setNum ( value );
+	    }
+	    mIdentifyResults->addAttribute ( tr("Band") + QString::number(i), v );
+
+	    free (data);
+	}
+    }
+
+    mIdentifyResults->showAllAttributes();
+    mIdentifyResults->restorePosition();
+
+} // void QgsRasterLayer::identify(QgsRect * r)
+
+

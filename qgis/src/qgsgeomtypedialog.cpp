@@ -20,8 +20,8 @@
 
 QgsGeomTypeDialog::QgsGeomTypeDialog(): QgsGeomTypeDialogBase()
 {
-    QObject::connect((QObject*)mOkButton, SIGNAL(clicked()), this, SLOT(accept()));//why is this cast necessary????
-    QObject::connect((QObject*)mCancelButton, SIGNAL(clicked()), this, SLOT(reject()));//why is this cast necessary????
+    QObject::connect((QObject*)mOkButton, SIGNAL(clicked()), this, SLOT(accept()));
+    QObject::connect((QObject*)mCancelButton, SIGNAL(clicked()), this, SLOT(reject()));
     mPointRadioButton->setChecked(true);
 }
 
