@@ -67,6 +67,9 @@ public:
   //! Display the attribute table
   void table();
 
+  //! Resize and fill the attribute table
+  void fillTable(QgsAttributeTable* t);
+
   //! Set the primary display field to be used in the identify results dialog
   void setDisplayField(QString fldName=0);
 
@@ -90,6 +93,9 @@ const QString displayField() const { return fieldIndex; }
      @todo XXX should this return bool?  Throw exceptions?
   */
   void setDataProvider( QString const & provider );
+  
+  //! Setup the coordinate system tranformation for the layer
+  void setCoordinateSystem();
 
   QgsVectorDataProvider * getDataProvider();
 
@@ -272,15 +278,34 @@ public slots:
      @return true if the position of point has been changed and false else*/
   bool snapPoint(QgsPoint& point, double tolerance);
 
+  /**Commits edited attributes. Depending on the feature id,
+     the changes are written to not commited features or redirected to
+     the data provider*/
+  bool commitAttributeChanges(const std::set<QString>& deleted,
+			      const std::map<QString,QString>& added,
+			      std::map<int,std::map<QString,QString> >& changed);
+
+  /** \brief Draws the layer using coordinate transformation
+   *  \param widthScale line width scale
+   *  \param symbolScale symbol scale
+   */
+  void draw(QPainter * p, QgsRect * viewExtent, QgsMapToPixel * cXf,  QPaintDevice * dst, double widthScale, double symbolScale);
+
+  /** \brief Draws the layer labels using coordinate transformation
+   *  \param scale size scale, applied to all values in pixels
+   */
+  void drawLabels(QPainter * p, QgsRect * viewExtent, QgsMapToPixel * cXf,  QPaintDevice * dst, double scale);
+
 protected:
   /**Pointer to the table display object if there is one, else a pointer to 0*/
   QgsAttributeTableDisplay * tabledisplay;
   /**Vector holding the information which features are activated*/
   std::set<int> mSelected;
   std::set<int> mDeleted;
+  /**Features which are not commited*/
   std::list<QgsFeature*> mAddedFeatures;
-  /**Color to and fill the selected features*/
-  QColor selectionColor;
+  /**Changed attributes which are not commited  */
+  std::map<int,std::map<QString,QString> > mChangedAttributes;
   /**Renderer object which holds the information about how to display the features*/
   QgsRenderer *m_renderer;
   /**Label */
@@ -302,7 +327,7 @@ protected slots:
   void startEditing();
   void stopEditing();
 
-  void drawFeature(QPainter* p, QgsFeature* fet, QgsMapToPixel * cXf, QPicture* marker, double markerScaleFactor);
+  void drawFeature(QPainter* p, QgsFeature* fet, QgsMapToPixel * cXf, QPicture* marker, double markerScaleFactor, double widthScale, bool projectionsEnabledFlag );
 
 private:                       // Private attributes
   /** A simple helper method to find out if on the fly projections are enabled or not */

@@ -22,11 +22,15 @@
 #include <qlabel.h>
 #include <qfont.h>
 #include "qgsattributetable.h"
+#include "qgsfeature.h"
+#include "qgsfield.h"
+#include "qgsvectordataprovider.h"
+#include "qgsvectorlayer.h"
 #include <iostream>
 #include <stdlib.h>
 
 QgsAttributeTable::QgsAttributeTable(QWidget * parent, const char *name):QTable(parent, name), lockKeyPressed(false),
-									 sort_ascending(true), mActionPopup(0)
+									 sort_ascending(true), mActionPopup(0), mEditable(false), mEdited(false)
 {
   QFont f(font());
   f.setFamily("Helvetica");
@@ -35,6 +39,8 @@ QgsAttributeTable::QgsAttributeTable(QWidget * parent, const char *name):QTable(
   setSelectionMode(QTable::MultiRow);
   QObject::connect(this, SIGNAL(selectionChanged()), this, SLOT(handleChangedSelections()));
   connect(this, SIGNAL(contextMenuRequested(int, int, const QPoint&)), this, SLOT(popupMenu(int, int, const QPoint&)));
+  connect(this, SIGNAL(valueChanged(int, int)), this, SLOT(storeChangedValue(int,int)));
+  setReadOnly(true);
   setFocus();
 }
 
@@ -309,4 +315,199 @@ void QgsAttributeTable::popupMenu(int row, int col, const QPoint& pos)
 void QgsAttributeTable::popupItemSelected(int id)
 {
   mActions.doAction(id, mActionValues, mClickedOnValue);
+}
+bool QgsAttributeTable::addAttribute(const QString& name, const QString& type)
+{
+    //first test if an attribute with the same name is already in the table
+    for(int i=0;i<horizontalHeader()->count();++i)
+    {
+	if(horizontalHeader()->label(i)==name)
+	{
+	    //name conflict
+	    return false;
+	}
+    }
+    mAddedAttributes.insert(std::make_pair(name,type));
+#ifdef QGISDEBUG
+    qWarning("inserting attribute "+name+" of type "+type);
+    //add a new column at the end of the table
+    qWarning("numCols: "+QString::number(numCols()));
+#endif
+    insertColumns(numCols());
+    horizontalHeader()->setLabel(numCols()-1,name);
+    mEdited=true;
+    return true;
+}
+
+void QgsAttributeTable::deleteAttribute(const QString& name)
+{
+    //check, if there is already an attribute with this name in mAddedAttributes
+    std::map<QString,QString>::iterator iter=mAddedAttributes.find(name);
+    if(iter!=mAddedAttributes.end())
+    {
+	mAddedAttributes.erase(iter);
+	removeAttrColumn(name);
+    }
+    else
+    {
+#ifdef QGISDEBUG
+	qWarning("QgsAttributeTable: deleteAttribute "+name);
+#endif
+	mDeletedAttributes.insert(name);
+	removeAttrColumn(name);
+    }
+    mEdited=true;
+}
+
+bool QgsAttributeTable::commitChanges(QgsVectorLayer* layer)
+{
+    bool returnvalue=true;
+    if(layer)
+    {
+	if(!layer->commitAttributeChanges(mDeletedAttributes, mAddedAttributes, mChangedValues))
+	{
+	    returnvalue=false;
+	}
+    }
+    else
+    {
+	returnvalue=false;
+    }
+    mEdited=false;
+    clearEditingStructures();
+    return returnvalue;
+}
+
+bool QgsAttributeTable::rollBack(QgsVectorLayer* layer)
+{
+    if(layer)
+    {
+	layer->fillTable(this);
+    }
+    mEdited=false;
+    clearEditingStructures();
+    return true;
+}
+
+//todo: replace some of the lines in QgsVectorLayer::table() with this function
+void QgsAttributeTable::fillTable(QgsVectorLayer* layer)
+{
+    QgsVectorDataProvider* provider=layer->getDataProvider();
+    if(provider)
+    {
+	int row = 0;
+	// set up the column headers
+	QHeader *colHeader = horizontalHeader();
+	colHeader->setLabel(0, "id"); //label for the id-column
+	std::vector < QgsField > fields = provider->fields();
+	int fieldcount=provider->fieldCount();
+	setNumCols(fieldcount+1);
+
+	for (int h = 1; h <= fieldcount; h++)
+	{
+	    colHeader->setLabel(h, fields[h - 1].name());
+#ifdef QGISDEBUG
+	    qWarning("Setting column label "+fields[h - 1].name());
+#endif
+	}
+	QgsFeature *fet;
+	provider->reset();
+	while ((fet = provider->getNextFeature(true)))
+	{
+	    //id-field
+	    setText(row, 0, QString::number(fet->featureId()));
+	    insertFeatureId(fet->featureId(), row);  //insert the id into the search tree of qgsattributetable
+	    std::vector < QgsFeatureAttribute > attr = fet->attributeMap();
+	    for (int i = 0; i < attr.size(); i++)
+	    {
+		// get the field values
+		setText(row, i + 1, attr[i].fieldValue());
+#ifdef QGISDEBUG
+		//qWarning("Setting value for "+QString::number(i+1)+"//"+QString::number(row)+"//"+attr[i].fieldValue());
+#endif
+	    }
+	    row++;
+	    delete fet;
+	}
+    }
+}
+
+void QgsAttributeTable::storeChangedValue(int row, int column)
+{
+    //id column is not editable
+    if(column>0)
+    {
+	//find feature id
+	int id=text(row,0).toInt();
+	QString attribute=horizontalHeader()->label(column);
+#ifdef QGISDEBUG
+	qWarning("feature id: "+QString::number(id));
+	qWarning("attribute: "+attribute);
+#endif
+	std::map<int,std::map<QString,QString> >::iterator iter=mChangedValues.find(id);
+	if(iter==mChangedValues.end())
+	{
+	    std::map<QString,QString> themap;
+	    mChangedValues.insert(std::make_pair(id,themap));
+	    iter=mChangedValues.find(id);
+	}
+	iter->second.erase(attribute);
+	iter->second.insert(std::make_pair(attribute,text(row,column)));
+#ifdef QGISDEBUG
+	qWarning("value: "+text(row,column));
+#endif	
+	mEdited=true;
+    }
+}
+
+void QgsAttributeTable::clearEditingStructures()
+{
+    mDeletedAttributes.clear();
+    mAddedAttributes.clear();
+    for(std::map<int,std::map<QString,QString> >::iterator iter=mChangedValues.begin();iter!=mChangedValues.end();++iter)
+    {
+	iter->second.clear();
+    }
+    mChangedValues.clear();
+}
+
+void QgsAttributeTable::removeAttrColumn(const QString& name)
+{
+    QHeader* header=horizontalHeader();
+    for(int i=0;i<header->count();++i)
+    {
+	if(header->label(i)==name)
+	{
+	    removeColumn(i);
+	    break;
+	}
+    }
+}
+
+void QgsAttributeTable::bringSelectedToTop()
+{
+    blockSignals(true);
+    int swaptorow=0;
+    std::list<QTableSelection> selections;
+    for(int i=0;i<numSelections();++i)
+    {
+	selections.push_back(selection(i));
+    }
+
+    QTableSelection sel;
+
+    for(std::list<QTableSelection>::iterator iter=selections.begin();iter!=selections.end();++iter)
+    {
+	for(int j=iter->topRow();j<=iter->bottomRow();++j)
+	{
+#ifdef QGISDEBUG
+	    qWarning("swapping rows "+QString::number(j)+" and "+QString::number(swaptorow));
+#endif	    
+	    swapRows(j,swaptorow);
+	    selectRow(swaptorow);
+	    ++swaptorow;
+	}
+	removeSelection(*iter);
+    }
+    blockSignals(false);
 }

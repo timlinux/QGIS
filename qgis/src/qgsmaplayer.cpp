@@ -340,7 +340,7 @@ void QgsMapLayer::inOverview( bool b )
     mShowInOverview = b;
 
     if ( updateNecessary ) // update the show in overview popup menu item
-    {
+    {	
         updateOverviewPopupItem();
         updateItemPixmap();
 
@@ -535,4 +535,6 @@ QgsCoordinateTransform * QgsMapLayer::coordinateTransform()
  
 #endif
   
- return mCoordinateTransform;};
+ return mCoordinateTransform;
+};
+

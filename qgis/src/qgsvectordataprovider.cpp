@@ -18,7 +18,7 @@
 #include "qgsfeature.h"
 
 
-QgsVectorDataProvider::QgsVectorDataProvider()
+QgsVectorDataProvider::QgsVectorDataProvider(): mEncoding(QgsVectorDataProvider::Utf8)
 {
 
 }
@@ -34,26 +34,22 @@ bool QgsVectorDataProvider::deleteFeatures(std::list<int> const & id)
     return false;
 }
 
+bool QgsVectorDataProvider::addAttributes(std::map<QString,QString> const & name)
+{
+    return false;
+}
+
+bool QgsVectorDataProvider::deleteAttributes(std::set<QString> const & name)
+{
+    return false;
+}
+
+bool QgsVectorDataProvider::changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map)
+{
+    return false;
+}
 
 QString QgsVectorDataProvider::getDefaultValue(const QString& attr, 
 					       QgsFeature* f) {
   return "";
-}
-
-bool QgsVectorDataProvider::supportsFeatureAddition() const
-{
-    //needs to be overwritten by providers if they provide feature editing
-    return false;
-}
-
-bool QgsVectorDataProvider::supportsFeatureDeletion() const
-{
-    //needs to be overwritten by providers which support this
-    return false;
-}
-
-bool QgsVectorDataProvider::supportsSaveAsShapefile() const
-{
-  // default implementation is no support 
-  return false; 
 }

@@ -31,7 +31,6 @@
 #include <qcursor.h>
 #include <qdir.h>
 #include <qerrormessage.h>
-#include <qfiledialog.h>
 #include <qfile.h>
 #include <qfileinfo.h>
 #include <qinputdialog.h>
@@ -75,7 +74,7 @@
 
 #include <cmath>
 
-
+#include "qgsencodingfiledialog.h"
 #include "qgsrect.h"
 #include "qgsmapcanvas.h"
 #include "qgsacetaterectangle.h"
@@ -114,6 +113,7 @@
 #include "qgsoptions.h"
 #include "qgsprojectproperties.h"
 #include "qgsvectorfilewriter.h"
+#include "qgscomposer.h"
 
 
 #include "xpm/qgis.xpm"
@@ -585,6 +585,8 @@ QgisApp::QgisApp(QWidget * parent, const char *name, WFlags fl)
     // set the focus to the map canvase
     mMapCanvas->setFocus();
 
+    // Map composer
+    mComposer = new QgsComposer(this);
 
 } // QgisApp ctor
 
@@ -943,7 +945,7 @@ static void buildSupportedVectorFileFilter_(QString & fileFilters)
    with the current filter name.
 
 */
-static void openFilesRememberingFilter_(QString const &filterName, QString const &filters, QStringList & selectedFiles)
+static void openFilesRememberingFilter_(QString const &filterName, QString const &filters, QStringList & selectedFiles, QgsVectorDataProvider::Encoding& enc)
 {
 
     bool haveLastUsedFilter = false;  // by default, there is no last
@@ -963,7 +965,7 @@ static void openFilesRememberingFilter_(QString const &filterName, QString const
     std::cerr << "Opening vector file dialog with filters: " << filters << std::endl;
 #endif
 
-    QFileDialog * openFileDialog = new QFileDialog(lastUsedDir, filters, 0, QFileDialog::tr("open files dialog"));
+    QgsEncodingFileDialog* openFileDialog = new QgsEncodingFileDialog(lastUsedDir, filters, 0, QFileDialog::tr("open files dialog"));
 
     // allow for selection of more than one file
     openFileDialog->setMode(QFileDialog::ExistingFiles);
@@ -977,6 +979,7 @@ static void openFilesRememberingFilter_(QString const &filterName, QString const
     if (openFileDialog->exec() == QDialog::Accepted)
     {
         selectedFiles = openFileDialog->selectedFiles();
+	enc = openFileDialog->encoding();
     }
 
     settings.writeEntry("/qgis/UI/" + filterName, openFileDialog->selectedFilter());
@@ -1025,7 +1028,8 @@ void QgisApp::addLayer()
         std::cerr << "Vector file filters: " << fileFilters << std::endl;
 #endif
 
-        openFilesRememberingFilter_("lastVectorFileFilter", fileFilters, selectedFiles);
+	QgsVectorDataProvider::Encoding enc=QgsVectorDataProvider::Utf8;
+        openFilesRememberingFilter_("lastVectorFileFilter", fileFilters, selectedFiles, enc);
         if (selectedFiles.isEmpty())
         {
             // no files were selected, so just bail
@@ -1034,7 +1038,7 @@ void QgisApp::addLayer()
             return;
         }
 
-        addLayer(selectedFiles);
+        addLayer(selectedFiles, enc);
     }
 }                               // QgisApp::addLayer()
 
@@ -1170,7 +1174,7 @@ bool QgisApp::addLayer(QFileInfo const & vectorFile)
   XXX yah know, this could be changed to just iteratively call the above
 
  */
-bool QgisApp::addLayer(QStringList const &theLayerQStringList)
+bool QgisApp::addLayer(QStringList const &theLayerQStringList, const QgsVectorDataProvider::Encoding enc)
 {
     // check to see if we have an ogr provider available
     QString pOgr = mProviderRegistry->library("ogr");
@@ -1217,6 +1221,7 @@ bool QgisApp::addLayer(QStringList const &theLayerQStringList)
 
             if (layer->isValid())
             {
+		layer->getDataProvider()->setEncoding(enc);
                 //Register the layer with the layer registry
                 QgsMapLayerRegistry::instance()->addMapLayer(layer);
                 // init the context menu so it can connect to slots
@@ -1906,7 +1911,7 @@ void QgisApp::openProject(int pathIndex)
     }
 } // QgisApp::openProject
 
-
+/*
 void QgisApp::filePrint()
 {
     //
@@ -1941,6 +1946,13 @@ void QgisApp::filePrint()
         myQPainter.drawPixmap(0,0, myQPixmap);
         myQPainter.end();
     }
+}
+*/
+
+void QgisApp::filePrint()
+{
+    mComposer->open();
+    mComposer->zoomFull();
 }
 
 void QgisApp::saveMapAsImage()
@@ -2564,12 +2576,14 @@ void QgisApp::inOverview( bool in_overview )
 void QgisApp::removeLayer()
 {
 #ifdef QGISDEBUG
-    std::cout << "QGisApp Removing layer" << std::endl;
+  std::cout << "QGisApp Removing layer" << std::endl;
 #endif
-    //make sure canvase is not rendering first by faking an escape keypress
-    emit keyPressEvent(new QKeyEvent(QEvent::KeyPress ,Qt::Key_Escape,Qt::Key_Escape,0 ));
-    mMapCanvas->freeze();
-    QListViewItem *lvi = mMapLegend->currentItem();
+  //make sure canvase is not rendering first by faking an escape keypress
+  emit keyPressEvent(new QKeyEvent(QEvent::KeyPress ,Qt::Key_Escape,Qt::Key_Escape,0 ));
+  mMapCanvas->freeze();
+  QListViewItem *lvi = mMapLegend->currentItem();
+  if(lvi)
+  {
     QgsMapLayer *layer = ((QgsLegendItem *) lvi)->layer();
     //call the registry to unregister the layer. It will in turn
     //fire a qt signal to notify any objects using that layer that they should
@@ -2588,6 +2602,7 @@ void QgisApp::removeLayer()
     // draw the map
     mMapCanvas->clear();
     mMapCanvas->render();
+  }
 }
 
 
@@ -2607,7 +2622,11 @@ void QgisApp::zoomToLayerExtent()
     // get the selected item
     QListViewItem *li = mMapLegend->currentItem();
     QgsMapLayer *layer = ((QgsLegendItem *) li)->layer();
-    mMapCanvas->setExtent(layer->extent());
+    // the layer extent has to be transformed to the map canvas
+    // coordinate system 
+    QgsCoordinateTransform *ct = layer->coordinateTransform();
+    QgsRect transformedExtent = ct->transform(layer->extent());
+    mMapCanvas->setExtent(transformedExtent);
     mMapCanvas->clear();
     mMapCanvas->render();
 
@@ -2636,13 +2655,15 @@ void QgisApp::currentLayerChanged(QListViewItem * lvi)
     {
         // disable/enable toolbar buttons as appropriate based on selected
         // layer type
+
+	toolPopupCapture->setItemEnabled(0,FALSE);
+	toolPopupCapture->setItemEnabled(1,FALSE);
+	toolPopupCapture->setItemEnabled(2,FALSE);
+	toolPopupCapture->setItemEnabled(3,FALSE);
+
         QgsMapLayer *layer = ((QgsLegendItem *) lvi)->layer();
         if (layer->type() == QgsMapLayer::RASTER)
         {
-            toolPopupCapture->setItemEnabled(0,FALSE);
-            toolPopupCapture->setItemEnabled(1,FALSE);
-            toolPopupCapture->setItemEnabled(2,FALSE);
-            toolPopupCapture->setItemEnabled(3,FALSE);
             actionIdentify->setEnabled(FALSE);
             actionSelect->setEnabled(FALSE);
             actionOpenTable->setEnabled(FALSE);
@@ -2660,57 +2681,31 @@ void QgisApp::currentLayerChanged(QListViewItem * lvi)
             QgsVectorLayer* vlayer=dynamic_cast<QgsVectorLayer*>(((QgsLegendItem *) lvi)->layer());
             if(vlayer)
             {
-                if(vlayer->vectorType()==QGis::Point)
-                {
-                    toolPopupCapture->setItemEnabled(0,TRUE);
-                    toolPopupCapture->setItemEnabled(1,FALSE);
-                    toolPopupCapture->setItemEnabled(2,FALSE);
-		    if(mMapCanvas->mapTool() == QGis::CaptureLine || mMapCanvas->mapTool() == QGis::CapturePolygon)
+		QgsVectorDataProvider* provider=vlayer->getDataProvider();
+		if(provider)
+		{
+		    int cap=vlayer->getDataProvider()->capabilities();
+		    if(cap&QgsVectorDataProvider::DeleteFeatures)
 		    {
-			mMapCanvas->setMapTool(QGis::CapturePoint);
+			toolPopupCapture->setItemEnabled(3,TRUE);
 		    }
-                }
-                else if(vlayer->vectorType()==QGis::Line)
-                {
-#ifdef QGISDEBUG
-		    qWarning("QgisApp::currentLayerChanged: Line type recognized");
-		    qWarning("current map tool is: "+QString::number(mMapCanvas->mapTool()));
-#endif
-                    toolPopupCapture->setItemEnabled(0,FALSE);
-                    toolPopupCapture->setItemEnabled(1,TRUE);
-                    toolPopupCapture->setItemEnabled(2,FALSE);
-		    if(mMapCanvas->mapTool() == QGis::CapturePoint || mMapCanvas->mapTool() == QGis::CapturePolygon)
+		    if(cap&QgsVectorDataProvider::AddFeatures)
 		    {
-#ifdef QGISDEBUG
-			qWarning("Changing map tool");
-#endif
-			mMapCanvas->setMapTool(QGis::CaptureLine);
+			if(vlayer->vectorType()==QGis::Point)
+			{
+			    toolPopupCapture->setItemEnabled(0,TRUE);
+			}
+			else if(vlayer->vectorType()==QGis::Line)
+			{
+			    toolPopupCapture->setItemEnabled(1,TRUE);
+			}
+			else if(vlayer->vectorType()==QGis::Polygon)
+			{
+			    toolPopupCapture->setItemEnabled(2,TRUE);
+			}
 		    }
-                }
-                else if(vlayer->vectorType()==QGis::Polygon)
-                {
-                    toolPopupCapture->setItemEnabled(0,FALSE);
-                    toolPopupCapture->setItemEnabled(1,FALSE);
-                    toolPopupCapture->setItemEnabled(2,TRUE);
-		    if(mMapCanvas->mapTool() == QGis::CapturePoint || mMapCanvas->mapTool() == QGis::CaptureLine)
-		    {
-			mMapCanvas->setMapTool(QGis::CapturePolygon);
-		    }
-                }
-
-                QgsVectorDataProvider* dprov=vlayer->getDataProvider();
-                if(dprov)
-                {
-                    if(dprov->supportsFeatureDeletion())
-                    {
-                        toolPopupCapture->setItemEnabled(3,TRUE);
-                    }
-                    else
-                    {
-                        toolPopupCapture->setItemEnabled(3,FALSE);
-                    }
-                }
-            }
+		}
+	    }
 
             actionIdentify->setEnabled(TRUE);
             actionSelect->setEnabled(TRUE);
@@ -3723,23 +3718,39 @@ void QgisApp::showStatusMessage(QString theMessage)
 
 void QgisApp::projectProperties()
 {
+  /* Display the property sheet for the Project */
+  // set wait cursor since construction of the project properties
+  // dialog results in the construction of the spatial reference
+  // system QMap
+  QApplication::setOverrideCursor(Qt::WaitCursor);
   QgsProjectProperties *pp = new QgsProjectProperties(this);
-
+  qApp->processEvents();
   // Be told if the mouse display precision may have changed by the user
   // changing things in the project properties dialog box
-  connect(pp, SIGNAL(displayPrecisionChanged()), this, SLOT(updateMouseCoordinatePrecision()));
-
+  connect(pp, SIGNAL(displayPrecisionChanged()), this, 
+      SLOT(updateMouseCoordinatePrecision()));
+  QApplication::restoreOverrideCursor();
   // Display the modal dialog box.
   pp->exec();
 
   // set the map units for the project if they have changed
   if (mMapCanvas->mapUnits() != pp->mapUnits())
+  {
     mMapCanvas->setMapUnits(pp->mapUnits());
+  }
 
+  // If the canvas is projected, we need to recalculate the extents in the
+  // new coordinate system
+  if(pp->isProjected())
+  {
+    mMapCanvas->recalculateExtents();
+  }
   // Set the window title. No way to do a comparison like for the map
   // units above, so redo it everytime.
   setTitleBarText_( *this );
 
+  // delete the property sheet object
+  delete pp;
 } // QgisApp::projectProperties
 
 
@@ -4031,8 +4042,9 @@ void QgisApp::addRasterLayer()
     QgsRasterLayer::buildSupportedRasterFileFilter(fileFilters);
 
     QStringList selectedFiles;
+    QgsVectorDataProvider::Encoding e;//only for parameter correctness
 
-    openFilesRememberingFilter_("lastRasterFileFilter", fileFilters, selectedFiles);
+    openFilesRememberingFilter_("lastRasterFileFilter", fileFilters, selectedFiles,e);
 
     if (selectedFiles.isEmpty())
     {
@@ -4279,4 +4291,11 @@ void QgisApp::keyPressEvent ( QKeyEvent * e )
 {
     std::cout << e->ascii() << " (keypress recevied)" << std::endl;
     emit keyPressed (e);
+}
+// Debug hook - used to output diagnostic messages when evoked (usually from the menu)
+void QgisApp::debugHook()
+{
+  std::cout << "Hello from debug hook" << std::endl; 
+  // show the map canvas extent
+  std::cout << mMapCanvas->extent() << std::endl; 
 }

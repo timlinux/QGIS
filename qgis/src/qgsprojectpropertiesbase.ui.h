@@ -6,15 +6,9 @@
 ** init() function in place of a constructor, and a destroy() function in
 ** place of a destructor.
 *****************************************************************************/
+#include "../widgets/projectionselector/qgsprojectionselector.h"
 #include <qcolordialog.h>
 void QgsProjectPropertiesBase::mapUnitChange( int )
-{
-
-}
-
-
-
-void QgsProjectPropertiesBase::projectionChanged( const QString & )
 {
 
 }
@@ -29,19 +23,15 @@ void QgsProjectPropertiesBase::apply()
 void QgsProjectPropertiesBase::pbnSelectionColour_clicked()
 {
    pbnSelectionColour->setPaletteBackgroundColor(
-	    QColorDialog::getColor(pbnSelectionColour->paletteBackgroundColor(),this));
+     QColorDialog::getColor(pbnSelectionColour->paletteBackgroundColor(),this));
 }
 
 
 void QgsProjectPropertiesBase::pbnDigitisedLineColour_clicked()
 {
    pbnDigitisedLineColour->setPaletteBackgroundColor(
-	    QColorDialog::getColor(pbnDigitisedLineColour->paletteBackgroundColor(),this));
+     QColorDialog::getColor(pbnDigitisedLineColour->paletteBackgroundColor(),this));
 }
 
 
-void QgsProjectPropertiesBase::coordinateSystemSelected( QListViewItem * )
-{
-
-}
 

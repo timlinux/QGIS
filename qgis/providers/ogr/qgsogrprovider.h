@@ -141,17 +141,21 @@ class QgsOgrProvider:public QgsVectorDataProvider
     bool isValid();
 
     /**Writes a list of features to the file*/
-    bool addFeatures(std::list<QgsFeature*> flist);
+    bool addFeatures(std::list<QgsFeature*> const flist);
 
-    bool supportsFeatureAddition() const 
-    { 
-        return true;
-    }
+    /**Adds new attributess. Unfortunately not supported for layers with features in it*/
+    bool addAttributes(std::map<QString,QString> const & name);
+
+    /**Changes attribute values of existing features */
+    bool changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map);
 
     QgsDataSourceURI * getURI()
     { 
         return 0;
     }
+
+    /**Returns a bitmask containing the supported capabilities*/
+    int capabilities() const;
 
   private:
     unsigned char *getGeometryPointer(OGRFeature * fet);

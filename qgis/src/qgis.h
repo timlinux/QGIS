@@ -54,7 +54,8 @@ namespace QGis
     Select,
     CapturePoint,
     CaptureLine,
-    CapturePolygon
+    CapturePolygon,
+    EmitPoint
   };
 //! Used for symbology operations
   // Featuure types
@@ -92,4 +93,12 @@ namespace QGis
     "WKBMultiPolygon" 
   };
 }
+  //! Structure for storing a spatial_ref_sys item
+  typedef struct{
+    QString srid; // spatial reference id (ala PostGIS)
+    QString auth_name; // name of the author for this SRS
+    QString auth_srid; // srid used by the author
+    QString srtext; // WKT of the coordinate system
+    QString proj4text; // Proj4 parameter string 
+  } SPATIAL_REF_SYS; 
 #endif

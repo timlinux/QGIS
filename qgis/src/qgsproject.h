@@ -227,6 +227,19 @@ public:
     bool removeEntry ( QString const & scope, const QString & key );
     //@}
 
+
+    /** return keys with values -- do not return keys that contain other keys
+
+      @note equivalent to QSettings entryList()
+    */
+    QStringList entryList ( QString const & scope, QString const & key ) const;
+
+    /** return keys which contain other keys
+
+      @note equivalent to QSettings subkeyList
+    */
+    QStringList subkeyList ( QString const & scope, QString const & key ) const;
+
 private:
 
     QgsProject(); // private 'cause it's a singleton

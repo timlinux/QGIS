@@ -23,7 +23,7 @@
 
 using namespace std;
 
-#include "qgisapp.h"
+// #include "qgisapp.h"
 #include "qgsrect.h"
 #include "qgsvectorlayer.h"
 #include "qgsrasterlayer.h"
@@ -91,13 +91,48 @@ public:
     */
     virtual void dump( ) const = 0;
 
+    /** returns true if is a PropertyKey */
+    virtual bool isKey() const = 0;
+
+    /** returns true if is a PropertyValue */
+    virtual bool isValue() const = 0;
+
+    /** returns true if a leaf node 
+
+      A leaf node is a key node that has either no value or a single value.  A
+      non-leaf node would be a key node with key sub-nodes.
+    */
+    virtual bool isLeaf() const = 0;
+
+    /**
+       returns list of keys that do not contain other keys a given key
+
+       @param keyName will be a QStringList that's been tokened by the caller
+                      from '/' delimiters
+
+       @param entries will be list of key entries built so far from recursive calls
+     */
+    virtual void entryList( QStringList & keyName, 
+                            QStringList & entries ) const = 0;
+
+    /**
+       returns list of keys that contain other keys a given key
+
+       @param keyName will be a QStringList that's been tokened by the caller
+                      from '/' delimiters
+
+       @param entries will be list of key entries built so far from recursive calls
+     */
+    virtual void subkeyList( QStringList & keyName, 
+                            QStringList & entries ) const = 0;
+
+
     /**
        deletes the given key
 
        @param keyname key list tokenized by '/' by caller
     */
-    virtual bool remove
-        ( QStringList & keyname ) = 0;
+    virtual bool remove( QStringList & keyname ) = 0;
 
     /**
        restores property hierarchy to given DOM node
@@ -126,8 +161,7 @@ public:
     /// Does this property not have any subkeys or values?
     virtual bool isEmpty() const = 0;
 
-}
-; // class Property
+}; // class Property
 
 
 
@@ -151,6 +185,31 @@ public:
 
     virtual ~PropertyValue()
     {}
+
+
+    /** returns true if is a PropertyKey */
+    virtual bool isKey() const
+    {
+        return false;
+    }
+
+    /** returns true if is a PropertyValue */
+    virtual bool isValue() const
+    {
+        return true;
+    }
+
+    /** returns true if is a leaf node 
+
+        I suppose, in a way, value nodes can also be qualified as leaf nodes
+        even though we're only counting key nodes.
+
+        XXX Maybe this shouldn't be the case?
+    */
+    virtual bool isLeaf() const
+    {
+        return true;
+    }
 
     /// just returns the value
     virtual QVariant value( QStringList & keyName ) const
@@ -226,8 +285,7 @@ public:
 
        @param keyname key list tokenized by '/' by caller
     */
-    /* virtual */ bool remove
-        ( QStringList & keyname )
+    /* virtual */ bool remove( QStringList & keyname )
     {
         // NOP; parent PropertyKey will delete this PropertyValue in its remove()
 
@@ -579,6 +637,27 @@ public:
         return 0;
     }
 
+
+    /** return keys that do not contain other keys
+
+        Since PropertyValue isn't a key, don't do anything.
+
+     */
+    void entryList( QStringList & keyName, QStringList & entries ) const
+    {
+        // NOP
+    }
+
+    /** return keys that contain other keys
+
+        Since PropertyValue isn't a key, don't do anything.
+
+     */
+    void subkeyList( QStringList & keyName, QStringList & entries ) const
+    {
+        // NOP
+    }
+
 private:
 
     /** We use QVariant as it's very handy to keep multiple types and provides
@@ -671,8 +750,11 @@ public:
         }
         else
         {
+#ifdef QGISDEBUGDETAIL
             qDebug( "%s:%d PropertyKey has null child", __FILE__, __LINE__ );
 
+            qDebug("key is: "+currentKey);
+#endif 
             return QVariant();  // just return an QVariant::Invalid
         }
     }
@@ -834,6 +916,115 @@ public:
         return properties_.isEmpty();
     }
 
+    /** returns true if is a PropertyKey */
+    virtual bool isKey() const
+    {
+        return true;
+    }
+
+    /** returns true if is a PropertyValue */
+    virtual bool isValue() const
+    {
+        return false;
+    }
+
+
+    /** return keys that do not contain other keys
+
+        Since PropertyValue isn't a key, return keys without modification.
+
+     */
+    void entryList( QStringList & keyName, QStringList & entries ) const
+    {
+        // save the current key, which should be the front of the key list
+        QString const currentKey = keyName.front();
+
+        // now pop it off
+        keyName.pop_front();
+
+        // XXX actually we need to recurse until we pop off the last key node
+
+        for ( QDictIterator<Property> i(properties_); i.current(); ++i )
+        {
+            // add any of the nodes that have just a single value
+            if ( i.current()->isLeaf() )
+            {
+                entries.append( i.currentKey() );
+            }
+        }
+    }
+
+    PropertyKey *findkey ( QStringList & keyName ) const
+    {
+  if ( keyName.size() == 0 ) {
+      // Should return this
+      return 0;
+  }
+        // save the current key, which should be the front of the key list
+        QString currentKey = keyName.front();
+
+        // now pop it off
+        keyName.pop_front();
+
+        if ( properties_.find( currentKey ) )
+        {   
+      // recurse down to next key
+      if ( keyName.size() == 0 ) {
+                return ( dynamic_cast<PropertyKey*>(properties_[currentKey] ) ) ;
+      } else {
+    PropertyKey *pk = dynamic_cast<PropertyKey*>(properties_[currentKey]);
+                return pk->findkey( keyName );
+      }
+        }
+        else
+        {
+            qDebug( "%s:%d PropertyKey has null child", __FILE__, __LINE__ );
+      qDebug("key is: "+currentKey);
+            return (PropertyKey*)0; 
+        }
+    }
+
+    /* return keys that contain other keys  */
+    void subkeyList( QStringList & keyName, QStringList & entries ) const
+    {
+  QDict<Property> prop;
+  PropertyKey *key;
+  if ( keyName.size() == 0 ) {
+      prop = properties_;
+  } else {
+      key = findkey ( keyName );
+      if (!key) return;
+      prop = (*key).properties_;
+        }
+
+        for ( QDictIterator<Property> i(prop); i.current(); ++i )
+        {
+            // add any of the nodes that have just a single value
+            if ( !(i.current()->isLeaf()) )
+            {
+                entries.append( i.currentKey() );
+            }
+        }
+    }
+
+    /** returns true if a leaf node 
+
+      A leaf node is a key node that has either no value or a single value.  A
+      non-leaf node would be a key node with key sub-nodes.
+    */
+    bool isLeaf() const
+    {
+        if ( 0 == count() )
+        {
+            return true;
+        }
+        else if ( 1 == count() && properties_[0]->isValue() )
+        {
+            return true;
+        }
+
+        return false;
+    }
 
 
 private:
@@ -1436,52 +1627,52 @@ _getTitle( QDomDocument const & doc, QString & title )
 /**
    locate the qgis app object
 */
-static
-QgisApp *
-_findQgisApp()
-{
-    QgisApp * qgisApp;
+// static
+// QgisApp *
+// _findQgisApp()
+// {
+//     QgisApp * qgisApp;
 
-    QWidgetList  * list = QApplication::allWidgets();
-    QWidgetListIt it( *list );  // iterate over the widgets
-    QWidget * w;
+//     QWidgetList  * list = QApplication::allWidgets();
+//     QWidgetListIt it( *list );  // iterate over the widgets
+//     QWidget * w;
 
-    while ( (w=it.current()) != 0 )
-    {   // for each top level widget...
+//     while ( (w=it.current()) != 0 )
+//     {   // for each top level widget...
 
-        if ( "QgisApp" == w->name() )
-        {
-            qgisApp = dynamic_cast<QgisApp*>(w);
-            break;
-        }
-        // "QgisApp" canonical name assigned in main.cpp
-        qgisApp = dynamic_cast<QgisApp*>(w->child( "QgisApp", 0, true ));
+//         if ( "QgisApp" == w->name() )
+//         {
+//             qgisApp = dynamic_cast<QgisApp*>(w);
+//             break;
+//         }
+//         // "QgisApp" canonical name assigned in main.cpp
+//         qgisApp = dynamic_cast<QgisApp*>(w->child( "QgisApp", 0, true ));
 
-        if ( qgisApp )
-        {
-            break;
-        }
+//         if ( qgisApp )
+//         {
+//             break;
+//         }
 
-        ++it;
-    }
-    delete list;                // delete the list, not the widgets
+//         ++it;
+//     }
+//     delete list;                // delete the list, not the widgets
 
 
-    //     if ( ! qgisApp )            // another tactic for finding qgisapp
-    //     {
-    //         if ( "QgisApp" == QApplication::mainWidget().name() )
-    //         { qgisApp = QApplication::mainWidget(); }
-    //     }
+//     //     if ( ! qgisApp )            // another tactic for finding qgisapp
+//     //     {
+//     //         if ( "QgisApp" == QApplication::mainWidget().name() )
+//     //         { qgisApp = QApplication::mainWidget(); }
+//     //     }
 
-    if( ! qgisApp )
-    {
-        qDebug( "Unable to find QgisApp" );
+//     if( ! qgisApp )
+//     {
+//         qDebug( "Unable to find QgisApp" );
 
-        return 0x0;             // XXX some sort of error value?  Exception?
-    }
+//         return 0x0;             // XXX some sort of error value?  Exception?
+//     }
 
-    return qgisApp;
-} // _findQgisApp
+//     return qgisApp;
+// } // _findQgisApp
 
 
 
@@ -2036,6 +2227,7 @@ QgsProject::clearProperties()
 #endif
     imp_->clear();
 
+    dirty( true );
 } // QgsProject::clearProperties()
 
 
@@ -2046,6 +2238,8 @@ QgsProject::writeEntry ( QString const & scope, const QString & key, bool value 
 {
     QStringList keyTokens = QStringList::split( '/', key );
 
+    dirty( true );
+
     return imp_->properties_[scope].setValue( keyTokens , value );
 } // QgsProject::writeEntry ( ..., bool value )
 
@@ -2054,6 +2248,8 @@ bool
 QgsProject::writeEntry ( QString const & scope, const QString & key, double value )
 {
     QStringList keyTokens = QStringList::split( '/', key );
+
+    dirty( true );
 
     return imp_->properties_[scope].setValue( keyTokens, value );
 } // QgsProject::writeEntry ( ..., double value )
@@ -2064,6 +2260,8 @@ QgsProject::writeEntry ( QString const & scope, const QString & key, int value )
 {
     QStringList keyTokens = QStringList::split( '/', key );
 
+    dirty( true );
+
     return imp_->properties_[scope].setValue( keyTokens , value );
 } // QgsProject::writeEntry ( ..., int value )
 
@@ -2073,6 +2271,8 @@ QgsProject::writeEntry ( QString const & scope, const QString & key, const QStri
 {
     QStringList keyTokens = QStringList::split( '/', key );
 
+    dirty( true );
+
     return imp_->properties_[scope].setValue( keyTokens , value );
 } // QgsProject::writeEntry ( ..., const QString & value )
 
@@ -2081,6 +2281,8 @@ bool
 QgsProject::writeEntry ( QString const & scope, const QString & key, const QStringList & value )
 {
     QStringList keyTokens = QStringList::split( '/', key );
+
+    dirty( true );
 
     return imp_->properties_[scope].setValue( keyTokens , value );
 } // QgsProject::writeEntry ( ..., const QStringList & value )
@@ -2220,5 +2422,32 @@ QgsProject::removeEntry ( QString const & scope, const QString & key )
 {
     QStringList keyTokens = QStringList::split( '/', key );
 
+    dirty( true );
+
     return imp_->properties_[scope].remove( keyTokens );
 } // QgsProject::removeEntry
+
+QStringList
+QgsProject::entryList( QString const & scope, QString const & key ) const
+{
+    QStringList keyTokens = QStringList::split( '/', key );
+
+    QStringList entries;
+    
+    imp_->properties_[scope].entryList( keyTokens, entries );
+
+    return entries;
+} // QgsProject::entryList
+
+QStringList
+QgsProject::subkeyList( QString const & scope, QString const & key ) const
+{
+    QStringList keyTokens = QStringList::split( '/', key );
+
+    QStringList entries;
+    
+    imp_->properties_[scope].subkeyList( keyTokens, entries );
+
+    return entries;
+} // QgsProject::subkeyList
+
