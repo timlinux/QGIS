@@ -8,12 +8,15 @@
         <rect>
             <x>0</x>
             <y>0</y>
-            <width>689</width>
-            <height>482</height>
+            <width>711</width>
+            <height>524</height>
         </rect>
     </property>
     <property name="caption">
         <string>Project Properties</string>
+    </property>
+    <property name="icon">
+        <pixmap>image0</pixmap>
     </property>
     <property name="sizeGripEnabled">
         <bool>true</bool>
@@ -111,22 +114,22 @@
                 </widget>
             </hbox>
         </widget>
-        <widget class="QSplitter" row="0" column="0">
+        <widget class="QTabWidget" row="0" column="0">
             <property name="name">
-                <cstring>splitter1</cstring>
+                <cstring>tabWidget2</cstring>
             </property>
-            <property name="orientation">
-                <enum>Horizontal</enum>
-            </property>
-            <widget class="QLayoutWidget">
+            <widget class="QWidget">
                 <property name="name">
-                    <cstring>layout8</cstring>
+                    <cstring>tab</cstring>
                 </property>
-                <vbox>
+                <attribute name="title">
+                    <string>General</string>
+                </attribute>
+                <grid>
                     <property name="name">
                         <cstring>unnamed</cstring>
                     </property>
-                    <widget class="QGroupBox">
+                    <widget class="QGroupBox" row="0" column="0">
                         <property name="name">
                             <cstring>titleBox</cstring>
                         </property>
@@ -147,7 +150,7 @@
                             </widget>
                         </grid>
                     </widget>
-                    <widget class="QButtonGroup">
+                    <widget class="QButtonGroup" row="1" column="0">
                         <property name="name">
                             <cstring>btnGrpMapUnits</cstring>
                         </property>
@@ -193,36 +196,137 @@
                             </widget>
                         </grid>
                     </widget>
-                    <widget class="QGroupBox">
+                    <widget class="QGroupBox" row="3" column="0">
                         <property name="name">
-                            <cstring>groupBox2</cstring>
+                            <cstring>groupBox2_2</cstring>
+                        </property>
+                        <property name="sizePolicy">
+                            <sizepolicy>
+                                <hsizetype>5</hsizetype>
+                                <vsizetype>0</vsizetype>
+                                <horstretch>0</horstretch>
+                                <verstretch>0</verstretch>
+                            </sizepolicy>
                         </property>
                         <property name="title">
-                            <string>Map Appearance</string>
+                            <string>Digitising Settings</string>
                         </property>
                         <grid>
                             <property name="name">
                                 <cstring>unnamed</cstring>
                             </property>
-                            <widget class="QLabel" row="0" column="0">
+                            <widget class="QLabel" row="1" column="0">
                                 <property name="name">
-                                    <cstring>textLabel1</cstring>
+                                    <cstring>textLabel1_2_2</cstring>
                                 </property>
                                 <property name="text">
-                                    <string>Selection Color:</string>
+                                    <string>Line Width:</string>
                                 </property>
                             </widget>
-                            <widget class="QPushButton" row="0" column="1">
+                            <widget class="QLineEdit" row="0" column="2">
                                 <property name="name">
-                                    <cstring>pbnSelectionColour</cstring>
+                                    <cstring>leSnappingTolerance</cstring>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>120</width>
+                                        <height>32767</height>
+                                    </size>
+                                </property>
+                            </widget>
+                            <widget class="QLabel" row="0" column="0">
+                                <property name="name">
+                                    <cstring>textLabel1_2_2_2</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Snapping Tolerance:</string>
+                                </property>
+                            </widget>
+                            <widget class="QSpinBox" row="1" column="2">
+                                <property name="name">
+                                    <cstring>spinDigitisedLineWidth</cstring>
+                                </property>
+                                <property name="minValue">
+                                    <number>1</number>
+                                </property>
+                            </widget>
+                            <widget class="QPushButton" row="2" column="2">
+                                <property name="name">
+                                    <cstring>pbnDigitisedLineColour</cstring>
+                                </property>
+                                <property name="paletteBackgroundColor">
+                                    <color>
+                                        <red>111</red>
+                                        <green>244</green>
+                                        <blue>200</blue>
+                                    </color>
                                 </property>
                                 <property name="text">
                                     <string></string>
                                 </property>
                             </widget>
+                            <spacer row="0" column="1">
+                                <property name="name">
+                                    <cstring>spacer3</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>21</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                            <spacer row="1" column="1">
+                                <property name="name">
+                                    <cstring>spacer4</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>31</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                            <spacer row="2" column="1">
+                                <property name="name">
+                                    <cstring>spacer5</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>150</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                            <widget class="QLabel" row="2" column="0">
+                                <property name="name">
+                                    <cstring>textLabel1_2</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Line Colour:</string>
+                                </property>
+                            </widget>
                         </grid>
                     </widget>
-                    <widget class="QButtonGroup">
+                    <widget class="QButtonGroup" row="2" column="0">
                         <property name="name">
                             <cstring>btnGrpPrecision</cstring>
                         </property>
@@ -301,192 +405,188 @@
                             </widget>
                         </hbox>
                     </widget>
-                    <widget class="QGroupBox">
+                    <widget class="QGroupBox" row="4" column="0">
                         <property name="name">
-                            <cstring>groupBox2_2</cstring>
-                        </property>
-                        <property name="sizePolicy">
-                            <sizepolicy>
-                                <hsizetype>5</hsizetype>
-                                <vsizetype>0</vsizetype>
-                                <horstretch>0</horstretch>
-                                <verstretch>0</verstretch>
-                            </sizepolicy>
+                            <cstring>groupBox2</cstring>
                         </property>
                         <property name="title">
-                            <string>Digitising Settings</string>
+                            <string>Map Appearance</string>
                         </property>
-                        <widget class="QPushButton">
+                        <grid>
                             <property name="name">
-                                <cstring>pbnDigitisedLineColour</cstring>
+                                <cstring>unnamed</cstring>
                             </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>157</x>
-                                    <y>82</y>
-                                    <width>177</width>
-                                    <height>30</height>
-                                </rect>
-                            </property>
-                            <property name="paletteBackgroundColor">
-                                <color>
-                                    <red>111</red>
-                                    <green>244</green>
-                                    <blue>200</blue>
-                                </color>
-                            </property>
-                            <property name="text">
-                                <string></string>
-                            </property>
-                        </widget>
-                        <widget class="QLabel">
-                            <property name="name">
-                                <cstring>textLabel1_2</cstring>
-                            </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>11</x>
-                                    <y>82</y>
-                                    <width>140</width>
-                                    <height>30</height>
-                                </rect>
-                            </property>
-                            <property name="text">
-                                <string>Line Colour:</string>
-                            </property>
-                        </widget>
-                        <widget class="QSpinBox">
-                            <property name="name">
-                                <cstring>spinDigitisedLineWidth</cstring>
-                            </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>157</x>
-                                    <y>53</y>
-                                    <width>177</width>
-                                    <height>23</height>
-                                </rect>
-                            </property>
-                            <property name="minValue">
-                                <number>1</number>
-                            </property>
-                        </widget>
-                        <widget class="QLineEdit">
-                            <property name="name">
-                                <cstring>leSnappingTolerance</cstring>
-                            </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>157</x>
-                                    <y>23</y>
-                                    <width>177</width>
-                                    <height>24</height>
-                                </rect>
-                            </property>
-                        </widget>
-                        <widget class="QLabel">
-                            <property name="name">
-                                <cstring>textLabel1_2_2</cstring>
-                            </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>11</x>
-                                    <y>53</y>
-                                    <width>140</width>
-                                    <height>23</height>
-                                </rect>
-                            </property>
-                            <property name="text">
-                                <string>Line Width:</string>
-                            </property>
-                        </widget>
-                        <widget class="QLabel">
-                            <property name="name">
-                                <cstring>textLabel1_2_2_2</cstring>
-                            </property>
-                            <property name="geometry">
-                                <rect>
-                                    <x>11</x>
-                                    <y>23</y>
-                                    <width>140</width>
-                                    <height>24</height>
-                                </rect>
-                            </property>
-                            <property name="text">
-                                <string>Snapping Tolerance:</string>
-                            </property>
-                        </widget>
+                            <widget class="QLabel" row="0" column="0">
+                                <property name="name">
+                                    <cstring>textLabel1</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Selection Color:</string>
+                                </property>
+                            </widget>
+                            <widget class="QPushButton" row="0" column="2">
+                                <property name="name">
+                                    <cstring>pbnSelectionColour</cstring>
+                                </property>
+                                <property name="sizePolicy">
+                                    <sizepolicy>
+                                        <hsizetype>5</hsizetype>
+                                        <vsizetype>0</vsizetype>
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>120</width>
+                                        <height>0</height>
+                                    </size>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>120</width>
+                                        <height>32767</height>
+                                    </size>
+                                </property>
+                                <property name="text">
+                                    <string></string>
+                                </property>
+                            </widget>
+                            <spacer row="0" column="1">
+                                <property name="name">
+                                    <cstring>spacer6</cstring>
+                                </property>
+                                <property name="orientation">
+                                    <enum>Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>Expanding</enum>
+                                </property>
+                                <property name="sizeHint">
+                                    <size>
+                                        <width>21</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </grid>
                     </widget>
-                </vbox>
+                    <spacer row="5" column="0">
+                        <property name="name">
+                            <cstring>spacer2</cstring>
+                        </property>
+                        <property name="orientation">
+                            <enum>Vertical</enum>
+                        </property>
+                        <property name="sizeType">
+                            <enum>Expanding</enum>
+                        </property>
+                        <property name="sizeHint">
+                            <size>
+                                <width>20</width>
+                                <height>20</height>
+                            </size>
+                        </property>
+                    </spacer>
+                </grid>
             </widget>
-            <widget class="QButtonGroup">
+            <widget class="QWidget">
                 <property name="name">
-                    <cstring>buttonGroup2</cstring>
+                    <cstring>tab</cstring>
                 </property>
-                <property name="title">
+                <attribute name="title">
                     <string>Projection</string>
-                </property>
+                </attribute>
                 <grid>
                     <property name="name">
                         <cstring>unnamed</cstring>
                     </property>
-                    <widget class="QCheckBox" row="0" column="0">
+                    <widget class="QButtonGroup" row="0" column="0">
                         <property name="name">
-                            <cstring>cbxProjectionEnabled</cstring>
+                            <cstring>buttonGroup2</cstring>
                         </property>
-                        <property name="text">
-                            <string>Enable on the fly projection</string>
+                        <property name="title">
+                            <string>Projection</string>
                         </property>
-                    </widget>
-                    <widget class="QListView" row="1" column="0">
-                        <column>
-                            <property name="text">
-                                <string>Coordinate Systems</string>
+                        <grid>
+                            <property name="name">
+                                <cstring>unnamed</cstring>
                             </property>
-                            <property name="clickable">
-                                <bool>true</bool>
-                            </property>
-                            <property name="resizable">
-                                <bool>true</bool>
-                            </property>
-                        </column>
-                        <property name="name">
-                            <cstring>lstCoordinateSystems</cstring>
-                        </property>
-                        <property name="showSortIndicator">
-                            <bool>true</bool>
-                        </property>
-                        <property name="rootIsDecorated">
-                            <bool>true</bool>
-                        </property>
-                    </widget>
-                    <widget class="QTextEdit" row="2" column="0">
-                        <property name="name">
-                            <cstring>teProjection</cstring>
-                        </property>
-                        <property name="sizePolicy">
-                            <sizepolicy>
-                                <hsizetype>7</hsizetype>
-                                <vsizetype>0</vsizetype>
-                                <horstretch>0</horstretch>
-                                <verstretch>0</verstretch>
-                            </sizepolicy>
-                        </property>
-                        <property name="maximumSize">
-                            <size>
-                                <width>32767</width>
-                                <height>76</height>
-                            </size>
-                        </property>
-                        <property name="readOnly">
-                            <bool>true</bool>
-                        </property>
+                            <widget class="QCheckBox" row="0" column="0">
+                                <property name="name">
+                                    <cstring>cbxProjectionEnabled</cstring>
+                                </property>
+                                <property name="text">
+                                    <string>Enable on the fly projection</string>
+                                </property>
+                            </widget>
+                            <widget class="QListView" row="1" column="0">
+                                <column>
+                                    <property name="text">
+                                        <string>Coordinate Systems</string>
+                                    </property>
+                                    <property name="clickable">
+                                        <bool>true</bool>
+                                    </property>
+                                    <property name="resizable">
+                                        <bool>true</bool>
+                                    </property>
+                                </column>
+                                <column>
+                                    <property name="text">
+                                        <string>Spatial Reference Id</string>
+                                    </property>
+                                    <property name="clickable">
+                                        <bool>true</bool>
+                                    </property>
+                                    <property name="resizable">
+                                        <bool>true</bool>
+                                    </property>
+                                </column>
+                                <property name="name">
+                                    <cstring>lstCoordinateSystems</cstring>
+                                </property>
+                                <property name="showSortIndicator">
+                                    <bool>true</bool>
+                                </property>
+                                <property name="rootIsDecorated">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                            <widget class="QTextEdit" row="2" column="0">
+                                <property name="name">
+                                    <cstring>teProjection</cstring>
+                                </property>
+                                <property name="sizePolicy">
+                                    <sizepolicy>
+                                        <hsizetype>7</hsizetype>
+                                        <vsizetype>0</vsizetype>
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>32767</width>
+                                        <height>76</height>
+                                    </size>
+                                </property>
+                                <property name="readOnly">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </grid>
                     </widget>
                 </grid>
             </widget>
         </widget>
     </grid>
 </widget>
+<images>
+    <image name="image0">
+        <data format="XPM.GZ" length="2782">789c6d55d94e2349107ce72b2cf20dad62dc779756fb00e6061b9bd330da87eac3d8806db0cde5d1fefb76576631d33563907028b3b22223328b6f5bad61bfdbdafab6b15ce9d5246fe563bd686d15afd3e9e7f77ffff9b1b1e9c5adfa37885afee65f1b9b83552b6ff5e6b3b206e85780dae653639a39b8c3d8178c13277e5ae3344b55a46bacf3661cfb06a77e28f9b7cef92ec7a348f09b733e72f09e83af6b9c15994e0283d74e7d55e3d00b43df605d36e3ba60eca5923f75ce170e2ee5be98fbc5b8c665596a1d9af89dc3efd9c1461faf9d7852cf77e2b1a917977e6cead3618d032fa8181a6cfaf5d2ea87f349ea2939cff7a7b1c5f74efded1a8fe251ac728333f157fcc1319faff4e0fb3e9dfe638eb7ad9f09df1f158277858fc53b8cab764d3dbcd8fb592fbcd638d271e42be34726fde5d2df4ace87c20735f66bbe8cdf6bacc34a7ecfe49bf9f2959f8b5e29f30dacbf4333af41ea85ecdfc4f0a93ec267c0f9899dc707f12396f9baaa7112242a30f7d1dac6c5afc0cc47989552ff89f96531633ab2fd4bbd33e3af0aadbf275f7ef3fd37c2cfce578ff5b0fe92c77c43ebef638d8bb2b0fb60f81751e10b2ef87c6acf4f44ff82fbd1107d22e9af2dfb69fd67bffc48f13e5126fb5f88fe9afd4bc57f9c5a7d15eb6be623f663c57e43e62bb0f317d658854aea91cc772a7e68533fd68927fcee79bfe342f89c331fe505a63e5d18fdf3cc17fde7ac4fa9797fe945fa173ef4d43c8f23f15bf4c1f46bde8d5f9a84af12be039ebf2812ffccbeab5c5b3e978e3f079c9f4a3dccc55ffb3e9cc93e4bfff870e28b1ae7515e2d90c17bdc8ff2448fc8ee87c43f58ffc413fd174d7f48cbfcdbfa57a29f9ddf0367be9782a53e3c9ee7c4f6bf2dfd47321f2367bf9676be93ccc4dbcdf9c48ee59772dceec388f3e9b8c9874267bf4aa967dfa3bee867f534ff6ff2a228459f11bfe7231d733f3379cf6cfeb9c3ef50e6dd13ffde9bf34f63de17ad45ef0bd63f95f78e9e79df9492f9d8173ee2277cd95f99570c050b5fa82fcc719eafa8f405f764deedffabb439ff0804cb795ac97b66eb752c163dba8c473e637a14bd628927a2bfe6f770b0fad30f081a59fdedcf39c851a0c408f7bfe7608c091ef088274c31c31ccf6e0e5eb0c0122bbce20deff8c027d6cd1c6c63071dec620ffb38c0218e708c1327e7145df470863e0638c7052e7185feaf39b8c64d5565885bdca10d0f3e0284881a393112a4500422d29455353b9453f16b0e9534aaea28baa7314de8811e11d0134d1b39339a5775527aa6175ad09256e8d12bbd3539d37bc538a50ffaa4b5b9699b7638f255a743bbb447fb74408774842e1dd309223afd99435dead119f56940e7744197b4a22bbaa61b1a36eadcd21db5c9c39a7c0a2a3629851451ec7a4109a5e6afd2d0a4b5ce74fe5bce4c17fc4de734d525ab5ce5fcf7f7c6fff72c63ed</data>
+    </image>
+</images>
 <connections>
     <connection>
         <sender>buttonOk</sender>

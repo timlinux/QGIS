@@ -535,4 +535,6 @@ QgsCoordinateTransform * QgsMapLayer::coordinateTransform()
  
 #endif
   
- return mCoordinateTransform;};
+ return mCoordinateTransform;
+};
+

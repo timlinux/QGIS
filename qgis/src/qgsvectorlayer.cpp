@@ -27,6 +27,7 @@
 #include <cstring>
 #include <sstream>
 #include <memory>
+#include <cassert>
 
 // for htonl
 #ifdef WIN32
@@ -75,6 +76,7 @@
 #include "qgslabelattributes.h"
 #include "qgslabel.h"
 #include "qgscoordinatetransform.h"
+#include "qgsspatialreferences.h"
 //#include "wkbheader.h"
 
 #ifdef TESTPROVIDERLIB
@@ -108,7 +110,7 @@ QgsVectorLayer::QgsVectorLayer(QString vectorLayerPath,
   {
     setDataProvider( providerKey );
   }
-  // XXXX Is it just me or is selection colour not actually used anywhere? TS
+  // XXX Is it just me or is selection colour not actually used anywhere? TS
   //there is the mSelectionColor that is widely used by renderers
   //draw the selected features the colour set in project file
   //(defaults to yellow)
@@ -1685,16 +1687,68 @@ QgsVectorLayer:: setDataProvider( QString const & provider )
           mLabelOn = false;
 
           //
-          // Get the layers project info and set up the QgsCoordinateTransform for this layer
+          // Get the layers project info and set up the QgsCoordinateTransform 
+          // for this layer
           //
           QString mySourceWKT = getProjectionWKT();
-          //get the project projection, defaulting to this layer's projection
+          //get the project projections WKT, defaulting to this layer's projection
           //if none exists....
-          QString myDestWKT = QgsProject::instance()->readEntry("SpatialRefSys","/WKT",mySourceWKT);
-          //set up the coordinat transform - in the case of raster this is mainly used to convert
-          //the inverese projection of the map extents of the canvas when zzooming in etc. so
-          //that they match the coordinate system of this layer
-          mCoordinateTransform = new QgsCoordinateTransform(mySourceWKT,myDestWKT);
+          //First get the SRS for the default projection WGS 84
+ //         QString defaultWkt = QgsSpatialReferences::instance()->getSrsBySrid("4326")->srText();
+          QString myDestWKT = QgsProject::instance()->readEntry("SpatialRefSys","/WKT","");
+
+            // try again with a morph from esri
+            // set up the spatial ref
+            OGRSpatialReference myInputSpatialRefSys;
+            char *pWkt = (char*)mySourceWKT.ascii();
+            myInputSpatialRefSys.importFromWkt(&pWkt);
+            myInputSpatialRefSys.morphFromESRI();
+
+            // set up the destination cs
+            OGRSpatialReference myOutputSpatialRefSys;
+            pWkt = (char *) myDestWKT.ascii();
+            myOutputSpatialRefSys.importFromWkt(&pWkt);
+
+          //
+          // Sort out what to do with this layer's coordinate system (CS). We have
+          // four possible scenarios:
+          // 1. Layer has no projection info and canvas is projected
+          //      = set layer to canvas CS XXX does the user need a warning here?
+          // 2. Layer has no projection info and canvas is unprojected
+          //      = leave both layer and canvas unprojected XXX is this appropriate?
+          // 3. Layer has projection info and canvas is unprojected
+          //      = set canvas to layer's CS
+          // 4. Layer has projection info and canvas is projected
+          //      = setup transform for layer to canvas CS
+           if(mySourceWKT.length() == 0)
+           {
+             // layer has no CS
+             if(myDestWKT.length() > 0)
+             {
+               // set layer CS to project CS
+               mySourceWKT = myDestWKT;
+             }
+             else
+             {
+               // leave layer with no CS
+             }
+           }
+           else
+           {
+             // layer has a CS
+             if(myDestWKT.length() == 0)
+             {
+               // set project CS to layer CS
+               myDestWKT = mySourceWKT;
+               QgsProject::instance()->writeEntry("SpatialRefSys","/WKT", myDestWKT);
+             }
+           }
+
+          //set up the coordinate transform - in the case of raster this is 
+          //mainly used to convert the inverese projection of the map extents 
+          //of the canvas when zzooming in etc. so that they match the coordinate 
+          //system of this layer
+          mCoordinateTransform = new QgsCoordinateTransform(mySourceWKT, myDestWKT);
         }
       }
       else
@@ -2181,13 +2235,13 @@ void QgsVectorLayer::drawFeature(QPainter* p, QgsFeature* fet, QgsMapToPixel * t
           if (projectionsEnabledFlag)
           {
             //reproject the point to the map coordinate system
-                      try {
-          myProjectedPoint=mCoordinateTransform->transform(pt);
-                }
-      catch (QgsCsException &e)
-      {
-        qDebug( "Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
-      }
+            try {
+              myProjectedPoint=mCoordinateTransform->transform(pt);
+            }
+            catch (QgsCsException &e)
+            {
+              qDebug( "Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
+            }
             //transform from projected coordinate system to pixel position on map canvas
             theMapToPixelTransform->transform(&myProjectedPoint);
           }
@@ -2199,8 +2253,8 @@ void QgsVectorLayer::drawFeature(QPainter* p, QgsFeature* fet, QgsMapToPixel * t
         }
         if ( idx == 0 )
         { // remember last outer ring point
-	    x0 = static_cast<int>(myProjectedPoint.x());
-	    y0 = static_cast<int>(myProjectedPoint.y());
+          x0 = static_cast<int>(myProjectedPoint.x());
+          y0 = static_cast<int>(myProjectedPoint.y());
         }
         else
         { // return to x0,y0 (inner rings - islands)

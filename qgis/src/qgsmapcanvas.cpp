@@ -494,14 +494,34 @@ void QgsMapCanvas::addLayer(QgsMapLayer * lyr)
   // update extent if warranted
   if (mCanvasProperties->layers.size() == 1)
   {
-    mCanvasProperties->fullExtent = lyr->extent();
-    mCanvasProperties->fullExtent.scale(1.1);
+    // if only 1 layer, set the full extent to its extent
+    
+    // the layer extent must be projected to the same coordinate
+    // system as the map canvas prior to updating the canvas extents
+    if(projectionsEnabled())
+    {
+      QgsRect tRect = lyr->coordinateTransform()->transform(lyr->extent());
+      mCanvasProperties->fullExtent = tRect;
+    }
+    else
+    {
+      mCanvasProperties->fullExtent = lyr->extent();
+      mCanvasProperties->fullExtent.scale(1.1);
+    }
     // XXX why magic number of 1.1? - TO GET SOME WHITESPACE AT THE EDGES OF THE MAP
     mCanvasProperties->currentExtent = mCanvasProperties->fullExtent;
   }
   else
   {
-    updateFullExtent(lyr->extent());
+    if(projectionsEnabled())
+    {
+      // project the layer extent and pass it off to update the full extent
+      updateFullExtent(lyr->coordinateTransform()->transform(lyr->extent()));
+    }
+    else
+    {
+      updateFullExtent(lyr->extent());
+    }
   }
 
   mCanvasProperties->zOrder.push_back(lyr->getLayerID());
@@ -752,7 +772,7 @@ void QgsMapCanvas::render(QPaintDevice * theQPaintDevice)
             std::cout << "Input extent: " << ml->extent().stringRep() << std::endl;
             try
             {
-              std::cout << "Transformed extent" << ml->coordinateTransform()->transform(ml->extent()).stringRep() << std::endl;
+              std::cout << "Transformed extent in layer's CS" << ml->coordinateTransform()->transform(ml->extent()).stringRep() << std::endl;
             }
             catch (QgsCsException &e)
             {
@@ -768,17 +788,20 @@ void QgsMapCanvas::render(QPaintDevice * theQPaintDevice)
                 //we need to find out the extent of the canvas in the layer's
                 //native coordinate system :. inverseProjection of the extent
                 //must be done....
+                // XXX this works as long as the canvas extents are in the canvas 
+                // XXX coordinate system -- which is not working at present
+                //
                 QgsRect myProjectedRect;
                 try
                 {
                   myProjectedRect =
-                    ml->coordinateTransform()->inverseTransform(
-                      mCanvasProperties->currentExtent);
+                    ml->coordinateTransform()->transform(
+                      mCanvasProperties->currentExtent,  QgsCoordinateTransform::INVERSE);
 
                 }
                 catch (QgsCsException &e)
                 {
-                  qDebug( "Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
+                  qDebug( "!!!!!Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
                 }
                 ml->draw(paint,
                          &myProjectedRect,
@@ -2025,7 +2048,7 @@ void QgsMapCanvas::recalculateExtents()
     std::cout << "Input extent: " << lyr->extent().stringRep() << std::endl;
     try
     {
-      std::cout << "Transformed extent" << lyr->coordinateTransform()->transform(lyr->extent()) << std::endl;
+      std::cout << "Transformed extent" << lyr->coordinateTransform()->transform(lyr->extent(), QgsCoordinateTransform::FORWARD) << std::endl;
     }
     catch (QgsCsException &e)
     {

@@ -2607,7 +2607,11 @@ void QgisApp::zoomToLayerExtent()
     // get the selected item
     QListViewItem *li = mMapLegend->currentItem();
     QgsMapLayer *layer = ((QgsLegendItem *) li)->layer();
-    mMapCanvas->setExtent(layer->extent());
+    // the layer extent has to be transformed to the map canvas
+    // coordinate system 
+    QgsCoordinateTransform *ct = layer->coordinateTransform();
+    QgsRect transformedExtent = ct->transform(layer->extent());
+    mMapCanvas->setExtent(transformedExtent);
     mMapCanvas->clear();
     mMapCanvas->render();
 
@@ -3723,12 +3727,16 @@ void QgisApp::showStatusMessage(QString theMessage)
 
 void QgisApp::projectProperties()
 {
+  // set wait cursor since construction of the project properties
+  // dialog results in the construction of the spatial reference
+  // system QMap
+  QApplication::setOverrideCursor(Qt::WaitCursor);
   QgsProjectProperties *pp = new QgsProjectProperties(this);
-
+  qApp->processEvents();
   // Be told if the mouse display precision may have changed by the user
   // changing things in the project properties dialog box
   connect(pp, SIGNAL(displayPrecisionChanged()), this, SLOT(updateMouseCoordinatePrecision()));
-
+  QApplication::restoreOverrideCursor();
   // Display the modal dialog box.
   pp->exec();
 
