@@ -12,7 +12,7 @@ email                : sherman at mrcc.com
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* qgsprojectio.cpp,v 1.52 2004/08/27 21:23:40 mhugent Exp */
+/* qgsprojectio.cpp,v 1.52.2.1 2004/09/24 22:31:48 mcoletti Exp */
 #include <iostream>
 #include <fstream>
 #include <qfiledialog.h>
@@ -313,7 +313,7 @@ std::list<QString> QgsProjectIo::read(QString path)
         dbl->setVisible(visible == "1");
         if (showInOverview == "1")
         {
-          dbl->toggleShowInOverview();
+          dbl->inOverview(true);
 	}
         myMapLayerRegistry->addMapLayer(dbl);
         myZOrder.push_back(dbl->getLayerID());
@@ -326,7 +326,7 @@ std::list<QString> QgsProjectIo::read(QString path)
         myRasterLayer->setVisible(visible == "1");
         if (showInOverview == "1")
         {
-          myRasterLayer->toggleShowInOverview();
+          myRasterLayer->inOverview(true);
 	}
 
         mnl = node.namedItem("rasterproperties");

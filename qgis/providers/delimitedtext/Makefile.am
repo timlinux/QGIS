@@ -1,5 +1,7 @@
 ## $Id$
 
+INCLUDES = -I../../src
+
 plugindir = ${pkglibdir}
 plugin_LTLIBRARIES = delimitedtextprovider.la 
 

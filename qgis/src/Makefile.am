@@ -45,6 +45,7 @@ headers =		qgis.h					\
 			qgsdataprovider.h			\
 			qgsdatasource.h				\
 			qgsdlgvectorlayerproperties.h		\
+			qgsexception.h				\
 			qgsfeature.h				\
 			qgsfeatureattribute.h			\
 			qgsfield.h				\
@@ -75,6 +76,7 @@ headers =		qgis.h					\
 			qgspoint.h				\
 			qgspolygonsymbol.h			\
 			qgsprojectio.h				\
+			qgsproject.h				\
 			qgsprovidermetadata.h			\
 			qgsproviderregistry.h			\
 			qgsrangerenderitem.h			\
@@ -229,6 +231,7 @@ qgis_SOURCES =  main.cpp			\
 		qgspoint.cpp			\
 		qgspolygonsymbol.cpp		\
 		qgsprojectio.cpp		\
+		qgsproject.cpp		\
 		qgsprovidermetadata.cpp		\
 		qgsproviderregistry.cpp		\
 		qgsrangerenderitem.cpp		\

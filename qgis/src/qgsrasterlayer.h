@@ -177,6 +177,7 @@ The [type] part of the variable should be the type class of the variable written
 // Forward declarations
 //
 class QgsRect;
+class QgsRasterLayerProperties;
 class GDALDataset;
 class GDALRasterBand;
 class QImage;
@@ -344,18 +345,20 @@ public:
      * -
      * */
     QgsRasterLayer(QString path = 0, QString baseName = 0);
+
     /** \brief The destuctor.  */
     ~QgsRasterLayer();
-    /** \brief This method is called when the properties for this layer needs to be modified. 
-     * invokes an instance of the QgsRasterLayerProperties dialog box.*/
-     void showLayerProperties();
+
+
     /** \brief Draws a thumbnail of the rasterlayer into the supplied pixmap pointer */
      void drawThumbnail(QPixmap * theQPixmap);
+
     /** \brief Get an 8x8 pixmap of the colour palette. If the layer has no palette a white pixmap will be returned. */
      QPixmap getPaletteAsPixmap();
      
     /** \brief This is called when the view on the rasterlayer needs to be refreshed (redrawn).  */
     void draw(QPainter * theQPainter, QgsRect * theViewExtent, QgsCoordinateTransform * theQgsCoordinateTransform, QPaintDevice* dst);
+
     /** \brief This is an overloaded version of the above function that is called by both draw above and drawThumbnail */
     void draw (QPainter * theQPainter, RasterViewPort * myRasterViewPort);
     
@@ -364,15 +367,19 @@ public:
     //
     /** \brief Accessor that returns the width of the (unclipped) raster  */
     const int getRasterXDim() {return rasterXDimInt;};
+
     /** \brief Accessor that returns the height of the (unclipped) raster  */
     const int getRasterYDim() {return rasterYDimInt;};
+
     //
     // Accessor and mutator for no data double
     //
     /** \brief  Accessor that returns the NO_DATA entry for this raster. */
-    const double getNoDataValue() {return noDataValueDouble;};
+    const double getNoDataValue() {return noDataValueDouble;}
+
     /** \brief  Mutator that allows the  NO_DATA entry for this raster to be overridden. */
     void setNoDataValue(double theNoDataDouble) { noDataValueDouble=theNoDataDouble; return;};
+
     //
     // Accessor and mutator for invertHistogramFlag
     //
@@ -707,6 +714,10 @@ public:
      * NOTE: May be deprecated in the future! Use alternate implementation above rather.
      * */
     void setDrawingStyle(QString theDrawingStyleQString);
+
+
+
+
     /** \brief This enumerator describes the type of raster layer.  */
     enum RASTER_LAYER_TYPE
     {
@@ -729,8 +740,13 @@ public:
     /** \brief Similar to above but returns a pointer. Implemented for qgsmaplayer interface. 
      * Always overlays legend name!*/
     QPixmap * legendPixmap(); 
-    /** \brief Initialiser for the right click popup menu.  */
-    void initContextMenu(QgisApp *);
+
+    /** tailor the right-click context menu with raster layer only stuff 
+
+      @note called by QgsMapLayer::initContextMenu();
+     */
+    void initContextMenu_(QgisApp *);
+
     /** \brief Accessor for the superclass's popmenu var - implements the pure virtual funtion. */
     QPopupMenu *contextMenu();
     /** \brief Emit a signal asking for a repaint. (inherited from maplayer) */
@@ -748,6 +764,10 @@ public:
     
     
 public slots:    
+
+    /** sets whether this is in overview or not */
+    void inOverview( bool );
+
     /** \brief Slot called when the popup menu transparency slider has been moved.*/
     void popupTransparencySliderMoved(int);
      
@@ -763,6 +783,35 @@ public slots:
                           const char *theMessageCharArray,
                           void *theData);    
 */
+
+    /** \brief This method is called when the properties for this layer needs to be modified. 
+     * invokes an instance of the QgsRasterLayerProperties dialog box.*/
+    /* virtual */ void showLayerProperties();
+
+
+ protected:
+
+    /** reads vector layer specific state from project file DOM node.
+
+        @note
+
+        Called by QgsMapLayer::readXML().
+
+    */
+    /* virtual */ bool readXML_( QDomNode & layer_node );
+
+
+
+  /** write vector layer specific state to project file DOM node.
+
+      @note
+
+      Called by QgsMapLayer::writeXML().
+
+  */
+  /* virtual */ bool writeXML_( QDomNode & layer_node, QDomDocument & doc );
+
+
 private:
 
     //
@@ -820,6 +869,17 @@ private:
     /** \brief Drawing routine for multiband image  */
     void drawMultiBandColor(QPainter * theQPainter, RasterViewPort * theRasterViewPort);
 
+
+    /**
+       Load the given raster file
+
+       @returns true if successfully read file
+
+       @note
+       
+       Called from ctor if a raster image given there
+     */
+    bool readFile( QString const & fileName );
 
     //
     // Private member vars
@@ -885,6 +945,12 @@ private:
     QString redTranslatedQString;
     QString greenTranslatedQString;
     QString blueTranslatedQString;
+
+    /* raster properties dialog 
+
+       @todo XXX should consider generalizing this
+    */
+    QgsRasterLayerProperties * mLayerProperties;
     
 };
 

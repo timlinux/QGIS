@@ -1,3 +1,4 @@
+
 /****************************************************************************
 ** ui.h extension file, included from the uic-generated form implementation.
 **
@@ -6,6 +7,10 @@
 ** a constructor, and a destroy() slot in place of a destructor.
 *****************************************************************************/
 #include <iostream>
+
+void init()
+{
+}
 
 void QgisAppBase::fileExit()
 {
@@ -254,6 +259,33 @@ void QgisAppBase::captureLine()
 
 
 void QgisAppBase::about()
+{
+
+}
+
+
+void QgisAppBase::removeLayer()
+{
+#ifdef QGISDEBUG
+    qDebug("QgisAppBase::removeLayer()");
+#endif
+}
+
+
+void QgisAppBase::inOverview( bool )
+{
+
+}
+
+
+void QgisAppBase::menubar_activated( int )
+{
+
+}
+
+
+
+void QgisAppBase::menubar_highlighted(int)
 {
 
 }

@@ -482,7 +482,7 @@ void QgsLabel::readXML( const QDomNode& node )
 
 }
 
-void QgsLabel::writeXML(std::ofstream& xml)
+void QgsLabel::writeXML(std::ostream& xml)
 {
     
     xml << "\t\t<labelattributes>\n";
