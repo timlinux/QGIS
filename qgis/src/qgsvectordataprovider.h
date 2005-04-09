@@ -17,14 +17,27 @@
 #define QGSVECTORDATAPROVIDER_H
 
 #include <set>
-
+#include <map>
 #include <qgsdataprovider.h>
+#include <qtextcodec.h>
 
 /** Base class for vector data providers
  */
 class QgsVectorDataProvider : public QgsDataProvider
 {
+
  public:
+
+    enum Capability
+  {
+      NoCapabilities = 0,
+      AddFeatures = 1,
+      DeleteFeatures = 1 << 1,
+      ChangeAttributeValues = 1 << 2,
+      AddAttributes = 1 << 3,
+      DeleteAttributes = 1 << 4,
+      SaveAsShapefile = 1 << 5
+  };
 
     QgsVectorDataProvider();
 
@@ -123,6 +136,22 @@ class QgsVectorDataProvider : public QgsDataProvider
        @return true in case of success and false in case of failure*/
     virtual bool deleteFeatures(std::list<int> const & id);
 
+    /**Adds new attributes
+       @param name map with attribute name as key and type as value
+       @return true in case of success and false in case of failure*/
+    virtual bool addAttributes(std::map<QString,QString> const & name);
+
+    /**Deletes existing attributes
+     @param names of the attributes to delete
+     @return true in case of success and false in case of failure*/
+    virtual bool deleteAttributes(std::set<QString> const & name);
+
+    /**Changes attribute values of existing features
+       @param attr_map a map containing the new attributes. The integer is the feature id,
+       the first QString is the attribute name and the second one is the new attribute value
+       @return true in case of success and false in case of failure*/
+    virtual bool changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map);
+
     /**Returns the default value for attribute @c attr for feature @c f. */
     virtual QString getDefaultValue(const QString & attr, QgsFeature* f);
     
@@ -133,22 +162,73 @@ class QgsVectorDataProvider : public QgsDataProvider
      */
     virtual std::vector<QgsFeature>& identify(QgsRect *rect) = 0;
 
-  /**Returns true if a provider supports feature editing*/
-  virtual bool supportsFeatureAddition() const;
-
-  /**Returns true if a provider supports deleting features*/
-  virtual bool supportsFeatureDeletion() const;
-
-  /** Returns true is the provider supports saving to shapefile*/
-   virtual bool supportsSaveAsShapefile() const;
-
   /** saves current data as Shape file, if it can */
   virtual bool saveAsShapefile()
   {
         // NOP by default
   }
 
+  /**Returns a bitmask containing the supported capabilities*/
+  virtual int capabilities() const {return QgsVectorDataProvider::NoCapabilities;}
 
+  const std::list<QString>& nonNumericalTypes(){return mNonNumericalTypes;}
+  const std::list<QString>& numericalTypes(){return mNumericalTypes;}
+
+  void setEncoding(const QString& e);
+  QString encoding() const;
+
+  /*! Indicates if the provider does its own coordinate transforms
+   * @return true if the provider transforms its coordinates, otherwise false
+   */
+  virtual bool supportsNativeTransform(){return false;};
+  /*! Used to determine if the provider supports transformation using the
+   * SRID of the target SRS.
+   * @return true if SRID is used, otherwise false
+   */
+  virtual bool usesSrid(){return false;};
+  /*! Used to determine if the provider supports transformation using the
+   * WKT of the target SRS.
+   * @return true if WKT is used, otherwise false
+   */
+  virtual bool usesWKT(){return false;};
+  /*! Set the SRID of the target SRS.
+   * This is only implemented if the provider supports native
+   * transformation of its coordinates
+   * @param srid Spatial reference id of the target (map canvas)
+   */
+  virtual void setSrid(int srid){};
+  /*! Get the SRID of the target SRS
+   * If the provider isn't capable of reporting the SRID of
+   * the projection, ti will return 0
+   */
+  virtual int getSrid(){return 0;};
+  /*! Set the WKT of the target SRS.
+   * This is only implemented if the provider supports native
+   * transformation of its coordinates
+   *
+   * @param wkt Well known text of the target (map canvas) SRS
+   */
+  virtual void setWKT(QString wkt){};
+
+
+protected:
+    /**Encoding*/
+    QTextCodec* mEncoding;
+    /**List of type names for non-numerical types*/
+    std::list<QString> mNonNumericalTypes;
+    /**List of type names for numerical types*/
+    std::list<QString> mNumericalTypes;
+    /** The spatial reference id of the map canvas. This is the 
+     * SRID the provider should transform its coordinates to if 
+     * supportsNativeTransform is true. Otherwise this member is unused.
+     */
+    int mTargetSrid;
+    /** The WKT of the SRS of the map canvas. This is the 
+     * SRS the provider should transform its coordinates to if 
+     * supportsNativeTransform is true. Otherwise this member is unused.
+     * The provider may choose to support transformation using SRID or WKT.
+     */
+    int mTargetWKT;
 };
 
 #endif

@@ -133,7 +133,13 @@ public:
      @return true in case of success and false in case of failure*/
   bool addFeatures(std::list<QgsFeature*> flist);
   
-  bool deleteFeatures(std::list<int> id);
+  bool deleteFeatures(std::list<int> const & id);
+  
+  bool changeAttributeValues(std::map<int,std::map<QString,QString> > const & 
+			     attr_map);
+  
+  void changeAttributeValues(GPSObject& obj, 
+			     const std::map<QString, QString>& attrs);
   
   /** Adds one feature (used by addFeatures()) */
   bool QgsGPXProvider::addFeature(QgsFeature* f);
@@ -150,11 +156,10 @@ public:
    */
   bool boundsCheck(double x, double y);
 
-  bool supportsFeatureAddition() const 
-  { 
-      return true;
+  int capabilities() const {
+    return AddFeatures | DeleteFeatures | ChangeAttributeValues;
   }
-
+  
   QgsDataSourceURI *getURI()
   {
       return 0;
@@ -184,8 +189,14 @@ public:
   bool mValid;
   int mGeomType;
   long mNumberFeatures;
-  //! Feature id
-  long mFid;
+  
+  //! Current waypoint iterator
+  GPSData::WaypointIterator mWptIter;
+  //! Current route iterator
+  GPSData::RouteIterator mRteIter;
+  //! Current track iterator
+  GPSData::TrackIterator mTrkIter;
+
   /**Flag indicating, if the minmaxcache should be renewed (true) or not (false)*/
   bool mMinMaxCacheDirty;
   /**Matrix storing the minimum and maximum values*/

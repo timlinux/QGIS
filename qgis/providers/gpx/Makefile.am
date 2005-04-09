@@ -1,5 +1,9 @@
 ## $Id$
 
+if HAVE_EXPAT
+
+if HAVE_EXPAT
+
 INCLUDES = -I../../src
 
 plugindir = ${pkglibdir}
@@ -19,3 +23,5 @@ gpxprovider_la_LDFLAGS = -avoid-version -module
 gpxprovider_la_CXXFLAGS = $(EXTRA_CXXFLAGS) $(QT_CXXFLAGS) $(DEBUG_QGIS) $(GEOS_CFLAGS)
 
 EXTRA_DIST = qgsgpxprovider.h gpsdata.h
+
+endif

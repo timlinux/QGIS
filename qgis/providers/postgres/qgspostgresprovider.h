@@ -197,18 +197,28 @@ public:
 
   /**Adds a list of features
        @return true in case of success and false in case of failure*/
-  bool addFeatures(std::list<QgsFeature*> flist);
+  bool addFeatures(std::list<QgsFeature*> const flist);
 
   /**Deletes a list of features
        @param id list of feature ids
        @return true in case of success and false in case of failure*/
-  bool deleteFeatures(std::list<int> id);
+  bool deleteFeatures(std::list<int> const & id);
 
-  bool supportsFeatureAddition() const 
-  { return true; }
+  /**Adds new attributes
+       @param name map with attribute name as key and type as value
+       @return true in case of success and false in case of failure*/
+  bool addAttributes(std::map<QString,QString> const & name);
 
-  bool supportsFeatureDeletion() const 
-  {return true;}
+  /**Deletes existing attributes
+     @param names of the attributes to delete
+     @return true in case of success and false in case of failure*/
+  bool deleteAttributes(std::set<QString> const & name);
+
+  /**Changes attribute values of existing features
+       @param attr_map a map containing the new attributes. The integer is the feature id,
+       the first QString is the attribute name and the second one is the new attribute value
+       @return true in case of success and false in case of failure*/
+  bool changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map);
 
   //! Flag to indicate if the provider can export to shapefile
   bool supportsSaveAsShapefile() const;
@@ -224,6 +234,24 @@ public:
 
   /** mutator for sql where clause used to limit dataset size */
   void setSubsetString(QString theSQL); //{sqlWhereClause = theSQL;};
+  
+  /**Returns a bitmask containing the supported capabilities*/
+  int capabilities() const;
+   /** The Postgres provider does its own transforms so we return
+     * true for the following three functions to indicate that transforms
+     * should not be handled by the QgsCoordinateTransform object. See the
+     * documentation on QgsVectorDataProvider for details on these functions.
+     */
+  // XXX For now we have disabled native transforms in the PG provider since
+  //     it appears there are problems with some of the projection definitions
+    bool supportsNativeTransform(){return false;}
+    bool usesSrid(){return true;}
+    bool usesWKT(){return false;}
+
+    /*! Set the SRID of the target (map canvas) SRS.
+     * @parm srid SRID of the map canvas SRS
+     */
+    void setTargetSrid(int srid);
 
 private:
 
@@ -255,6 +283,10 @@ private:
    * Name of the table with schema included
    */
   QString schemaTableName;
+  /** 
+   * Name of the schema
+   */
+  QString mSchema;
   /**
    * SQL statement used to limit the features retreived
    */
@@ -313,6 +345,9 @@ private:
    XXX that's not reflected in this variable
   */
   bool swapEndian;
+
+  bool deduceEndian();
+  bool getGeometryDetails();
     
   bool ready;
   std::ofstream pLog;
@@ -340,4 +375,5 @@ private:
 
   //! Calculate the extents of the layer
   void calculateExtents();
+
 };

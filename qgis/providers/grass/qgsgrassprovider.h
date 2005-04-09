@@ -86,7 +86,10 @@ struct GMAP
   int     nUsers;        // number layers using this map
   int     update;        // true if the map is opened in update mode -> disabled standard reading
   // through getNextFeature(), featureCount() returns 0
-  QDateTime lastModified; // lastModified time of the vector directory, when the map was opened
+  QDateTime lastModified; // last modified time of the vector directory, when the map was opened
+  QDateTime lastAttributesModified; // last modified time of the vector 'dbln' file, when the map was opened
+                            // or attributes were updated. The 'dbln' file is updated by v.to.db etc.
+                            // when attributes are changed
   int     version;       // version, increased by each closeEdit() and updateMap()
 };
 
@@ -104,10 +107,7 @@ public:
 
   /** Used to ask the layer for its projection as a WKT string. Implements
    * virtual method of same name in QgsDataProvider. */
-  QString getProjectionWKT()  
-  {
-      return QString("Not implemented yet");
-  }
+  QString getProjectionWKT(void);
 
   /* Following functions work only until first edit operation! (category index used) */
 
@@ -420,6 +420,8 @@ public:
   int cidxGetMaxCat ( int idx );
   /** get data source uri (not implemented) */
   QgsDataSourceURI * getURI(){ return 0;};
+  
+
 
 private:
   // Layer type (layerType)
@@ -500,6 +502,17 @@ private:
    */
   static void loadLayerSourcesFromMap ( GLAYER &layer );
 
+  /*! Load attributes from database table.
+   *  Must be set: layer.mapId, layer.map, layer.field
+   *  Updates: layer.fieldInfo, layer.nColumns, layer.nAttributes, layer.attributes, layer.keyColumn
+   *  Unchanged: layer.valid
+   *
+   *  Old sources are released, namely: layer.attributes
+   *
+   *  layer.attributes must be pointer to existing array or 0
+   */
+  static void loadAttributes ( GLAYER &layer );
+
   /*! Close layer. 
    *  @param layerId 
    */
@@ -532,6 +545,12 @@ private:
    */
   static bool mapOutdated( int mapId );
 
+  /*! The attributes are outdated. The table was for example updated by GRASS module outside QGIS.
+   *  This function checks internal timestamp stored in QGIS.
+   *  @param mapId 
+   */
+  static bool attributesOutdated( int mapId );
+
   /*! Allocate sellection array for given map id. The array is large enough for lines or areas
    *  (bigger from num lines and num areas)
    *  Possible old selection array is not released.
@@ -560,7 +579,7 @@ private:
    *  @param feature
    *  @param cat category number
    */
-  static void setFeatureAttributes ( int layerId, int cat, QgsFeature *feature);
+  void setFeatureAttributes ( int layerId, int cat, QgsFeature *feature);
 
   /*! Set feature attributes. 
    *  @param layerId
@@ -568,7 +587,7 @@ private:
    *  @param cat category number
    *  @param attlist a list containing the index number of the fields to set
    */
-  static void setFeatureAttributes ( int layerId, int cat, QgsFeature *feature, std::list<int> const & attlist);
+  void setFeatureAttributes ( int layerId, int cat, QgsFeature *feature, std::list<int> const & attlist);
 
   /* Static arrays of opened layers and vectors */
   static 	std::vector<GLAYER> mLayers; // Map + field/attributes

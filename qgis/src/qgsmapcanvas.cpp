@@ -90,7 +90,7 @@
 #include "qgsproject.h"
 #include "qgsvectorlayer.h"
 #include "qgsmaplayerregistry.h"
-
+#include "qgsmeasure.h"
 
 
 /**
@@ -334,6 +334,8 @@ QgsMapCanvas::QgsMapCanvas(QWidget * parent, const char *name)
   QPaintDeviceMetrics *pdm = new QPaintDeviceMetrics(this);
   mCanvasProperties->initMetrics(pdm);
   delete pdm;
+    
+  mMeasure = 0;
 
 } // QgsMapCanvas ctor
 
@@ -494,14 +496,34 @@ void QgsMapCanvas::addLayer(QgsMapLayer * lyr)
   // update extent if warranted
   if (mCanvasProperties->layers.size() == 1)
   {
-    mCanvasProperties->fullExtent = lyr->extent();
-    mCanvasProperties->fullExtent.scale(1.1);
+    // if only 1 layer, set the full extent to its extent
+    
+    // the layer extent must be projected to the same coordinate
+    // system as the map canvas prior to updating the canvas extents
+    if(projectionsEnabled())
+    {
+      QgsRect tRect = lyr->coordinateTransform()->transform(lyr->extent());
+      mCanvasProperties->fullExtent = tRect;
+    }
+    else
+    {
+      mCanvasProperties->fullExtent = lyr->extent();
+      mCanvasProperties->fullExtent.scale(1.1);
+    }
     // XXX why magic number of 1.1? - TO GET SOME WHITESPACE AT THE EDGES OF THE MAP
     mCanvasProperties->currentExtent = mCanvasProperties->fullExtent;
   }
   else
   {
-    updateFullExtent(lyr->extent());
+    if(projectionsEnabled())
+    {
+      // project the layer extent and pass it off to update the full extent
+      updateFullExtent(lyr->coordinateTransform()->transform(lyr->extent()));
+    }
+    else
+    {
+      updateFullExtent(lyr->extent());
+    }
   }
 
   mCanvasProperties->zOrder.push_back(lyr->getLayerID());
@@ -752,7 +774,7 @@ void QgsMapCanvas::render(QPaintDevice * theQPaintDevice)
             std::cout << "Input extent: " << ml->extent().stringRep() << std::endl;
             try
             {
-              std::cout << "Transformed extent" << ml->coordinateTransform()->transform(ml->extent()).stringRep() << std::endl;
+              std::cout << "Transformed extent in layer's CS" << ml->coordinateTransform()->transform(ml->extent()).stringRep() << std::endl;
             }
             catch (QgsCsException &e)
             {
@@ -768,17 +790,21 @@ void QgsMapCanvas::render(QPaintDevice * theQPaintDevice)
                 //we need to find out the extent of the canvas in the layer's
                 //native coordinate system :. inverseProjection of the extent
                 //must be done....
+                // XXX this works as long as the canvas extents are in the canvas 
+                // XXX coordinate system -- which is not working at present
+                //
                 QgsRect myProjectedRect;
                 try
                 {
+                  std::cout << "Getting extent of canvas in layers CS. Canvas is " << mCanvasProperties->currentExtent.stringRep() << std::endl; 
                   myProjectedRect =
-                    ml->coordinateTransform()->inverseTransform(
-                      mCanvasProperties->currentExtent);
+                    ml->coordinateTransform()->transform(
+                      mCanvasProperties->currentExtent,  QgsCoordinateTransform::INVERSE);
 
                 }
                 catch (QgsCsException &e)
                 {
-                  qDebug( "Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
+                  qDebug( "!!!!!Transform error caught in %s line %d:\n%s", __FILE__, __LINE__, e.what());
                 }
                 ml->draw(paint,
                          &myProjectedRect,
@@ -1263,8 +1289,9 @@ void QgsMapCanvas::mouseReleaseEvent(QMouseEvent * e)
         emit extentsChanged(mCanvasProperties->currentExtent);
       }
       break;
-
+      
     case QGis::Select:
+      {
       // erase the rubber band box
       paint.begin(this);
       paint.setPen(pen);
@@ -1302,6 +1329,8 @@ void QgsMapCanvas::mouseReleaseEvent(QMouseEvent * e)
                              tr("No active layer"),
                              tr("To select features, you must choose an layer active by clicking on its name in the legend"));
       }
+      }
+      break;
     }
   }
   else
@@ -1348,182 +1377,204 @@ void QgsMapCanvas::mouseReleaseEvent(QMouseEvent * e)
         if(vlayer)
         {
 
-	    QgsPoint  idPoint = mCanvasProperties->coordXForm->toMapCoordinates(e->x(), e->y());
-	    emit xyClickCoordinates(idPoint);
-	    
-	    //only do the rest for provider with feature addition support
-	    //note that for the grass provider, this will return false since
-	    //grass provider has its own mechanism of feature addition
-	    if(vlayer->getDataProvider()->supportsFeatureAddition())
-	    {
-		if(!vlayer->isEditable() )
-		{
-		    QMessageBox::information(0,"Layer not editable","Cannot edit the vector layer. Use 'Start editing' in the legend item menu",QMessageBox::Ok);
-		    break;
-		}
+      QgsPoint  idPoint = mCanvasProperties->coordXForm->toMapCoordinates(e->x(), e->y());
+      emit xyClickCoordinates(idPoint);
+      
+      //only do the rest for provider with feature addition support
+      //note that for the grass provider, this will return false since
+      //grass provider has its own mechanism of feature addition
+      if(vlayer->getDataProvider()->capabilities()&QgsVectorDataProvider::AddFeatures)
+      {
+    if(!vlayer->isEditable() )
+    {
+        QMessageBox::information(0,"Layer not editable","Cannot edit the vector layer. Use 'Start editing' in the legend item menu",QMessageBox::Ok);
+        break;
+    }
 
-		//snap point to points within the vector layer snapping tolerance
-		vlayer->snapPoint(idPoint,QgsProject::instance()->readDoubleEntry("Digitizing","/Tolerance",0));
+    //snap point to points within the vector layer snapping tolerance
+    vlayer->snapPoint(idPoint,QgsProject::instance()->readDoubleEntry("Digitizing","/Tolerance",0));
 
-		QgsFeature* f = new QgsFeature(0,"WKBPoint");
-		int size=5+2*sizeof(double);
-		unsigned char *wkb = new unsigned char[size];
-		int wkbtype=QGis::WKBPoint;
-		double x=idPoint.x();
-		double y=idPoint.y();
-		memcpy(&wkb[1],&wkbtype, sizeof(int));
-		memcpy(&wkb[5], &x, sizeof(double));
-		memcpy(&wkb[5]+sizeof(double), &y, sizeof(double));
-		f->setGeometry(&wkb[0],size);
+    QgsFeature* f = new QgsFeature(0,"WKBPoint");
+    int size=5+2*sizeof(double);
+    unsigned char *wkb = new unsigned char[size];
+    int wkbtype=QGis::WKBPoint;
+    double x=idPoint.x();
+    double y=idPoint.y();
+    memcpy(&wkb[1],&wkbtype, sizeof(int));
+    memcpy(&wkb[5], &x, sizeof(double));
+    memcpy(&wkb[5]+sizeof(double), &y, sizeof(double));
+    f->setGeometry(&wkb[0],size);
 
-		//add the fields to the QgsFeature
-		std::vector<QgsField> fields=vlayer->fields();
-		for(std::vector<QgsField>::iterator it=fields.begin();it!=fields.end();++it)
-		{
-		    f->addAttribute((*it).name(), vlayer->getDefaultValue(it->name(),f));
-		}
+    //add the fields to the QgsFeature
+    std::vector<QgsField> fields=vlayer->fields();
+    for(std::vector<QgsField>::iterator it=fields.begin();it!=fields.end();++it)
+    {
+        f->addAttribute((*it).name(), vlayer->getDefaultValue(it->name(),f));
+    }
 
-		//show the dialog to enter attribute values
-		f->attributeDialog();
+    //show the dialog to enter attribute values
+    f->attributeDialog();
 
-		vlayer->addFeature(f);
-		refresh();
-	    }
-	}
-	else
-	{
-	    QMessageBox::information(0,"Not a vector layer","The current layer is not a vector layer",QMessageBox::Ok);
-	}
+    vlayer->addFeature(f);
+    refresh();
+      }
+  }
+  else
+  {
+      QMessageBox::information(0,"Not a vector layer","The current layer is not a vector layer",QMessageBox::Ok);
+  }
 
       break;
       }
 
     case QGis::CaptureLine:
     case QGis::CapturePolygon:
-
-      QgsVectorLayer* vlayer=dynamic_cast<QgsVectorLayer*>(mCanvasProperties->mapLegend->currentLayer());
-
-      if(vlayer)
       {
-        if(!vlayer->isEditable())// && (vlayer->providerType().lower() != "grass"))
+  QgsVectorLayer* vlayer=dynamic_cast<QgsVectorLayer*>(mCanvasProperties->mapLegend->currentLayer());
+  
+  if(vlayer)
+    {
+      if(!vlayer->isEditable())// && (vlayer->providerType().lower() != "grass"))
         {
-          QMessageBox::information(0,"Layer not editable","Cannot edit the vector layer. Use 'Start editing' in the legend item menu",QMessageBox::Ok);
-          break;
+    QMessageBox::information(0,"Layer not editable","Cannot edit the vector layer. Use 'Start editing' in the legend item menu",QMessageBox::Ok);
+    break;
         }
-      }
-      else
-      {
-        QMessageBox::information(0,"Not a vector layer","The current layer is not a vector layer",QMessageBox::Ok);
-	return;
-      }
-
-      QgsPoint digitisedpoint=mCanvasProperties->coordXForm->toMapCoordinates(e->x(), e->y());
-      vlayer->snapPoint(digitisedpoint,QgsProject::instance()->readDoubleEntry("Digitizing","/Tolerance",0));
-      mCaptureList.push_back(digitisedpoint);
-      if(mCaptureList.size()>1)
-      {
-        QPainter paint(this);
-        QColor digitcolor(QgsProject::instance()->readNumEntry("Digitizing","/LineColorRedPart",255),
-                          QgsProject::instance()->readNumEntry("Digitizing","/LineColorGreenPart",0),
-                          QgsProject::instance()->readNumEntry("Digitizing","/LineColorBluePart",0));
-        paint.setPen(QPen(digitcolor,QgsProject::instance()->readNumEntry("Digitizing","/LineWidth",1),Qt::SolidLine));
-        std::list<QgsPoint>::iterator it=mCaptureList.end();
-        --it;
-        --it;
-
-        QgsPoint lastpoint = mCanvasProperties->coordXForm->transform(it->x(),it->y());
-        QgsPoint endpoint = mCanvasProperties->coordXForm->transform(digitisedpoint.x(),digitisedpoint.y());
-        paint.drawLine(static_cast<int>(lastpoint.x()),static_cast<int>(lastpoint.y()),
-                       endpoint.x(),endpoint.y());
-        //draw it to an acetate layer
-        QgsLine digitline(*it,digitisedpoint);
-        QgsAcetateLines* acetate=new QgsAcetateLines();
-        acetate->add(digitline);
-        addAcetateObject(vlayer->name()+"_##digit##ac"+QString::number(mCaptureList.size()),acetate);
+    }
+  else
+    {
+      QMessageBox::information(0,"Not a vector layer","The current layer is not a vector layer",QMessageBox::Ok);
+      return;
+    }
+  
+  QgsPoint digitisedpoint=mCanvasProperties->coordXForm->toMapCoordinates(e->x(), e->y());
+  vlayer->snapPoint(digitisedpoint,QgsProject::instance()->readDoubleEntry("Digitizing","/Tolerance",0));
+  mCaptureList.push_back(digitisedpoint);
+  if(mCaptureList.size()>1)
+    {
+      QPainter paint(this);
+      QColor digitcolor(QgsProject::instance()->readNumEntry("Digitizing","/LineColorRedPart",255),
+            QgsProject::instance()->readNumEntry("Digitizing","/LineColorGreenPart",0),
+            QgsProject::instance()->readNumEntry("Digitizing","/LineColorBluePart",0));
+      paint.setPen(QPen(digitcolor,QgsProject::instance()->readNumEntry("Digitizing","/LineWidth",1),Qt::SolidLine));
+      std::list<QgsPoint>::iterator it=mCaptureList.end();
+      --it;
+      --it;
+      
+      QgsPoint lastpoint = mCanvasProperties->coordXForm->transform(it->x(),it->y());
+      QgsPoint endpoint = mCanvasProperties->coordXForm->transform(digitisedpoint.x(),digitisedpoint.y());
+      paint.drawLine(static_cast<int>(lastpoint.x()),static_cast<int>(lastpoint.y()),
+         static_cast<int>(endpoint.x()),static_cast<int>(endpoint.y()));
+      //draw it to an acetate layer
+      QgsLine digitline(*it,digitisedpoint);
+      QgsAcetateLines* acetate=new QgsAcetateLines();
+      acetate->add(digitline);
+      addAcetateObject(vlayer->name()+"_##digit##ac"+QString::number(mCaptureList.size()),acetate);
 #ifdef QGISDEBUG
-        qWarning("adding "+vlayer->name()+"_##digit##ac"+QString::number(mCaptureList.size()));
+      qWarning("adding "+vlayer->name()+"_##digit##ac"+QString::number(mCaptureList.size()));
 #endif
-
-      }
-      if(e->button()==Qt::RightButton)
+      
+    }
+  if(e->button()==Qt::RightButton)
+    {
+      //create QgsFeature with wkb representation
+      QgsFeature* f=new QgsFeature(0,"WKBLineString");
+      unsigned char* wkb;
+      int size;
+      if(mCanvasProperties->mapTool==QGis::CaptureLine)
+        {
+    size=1+2*sizeof(int)+2*mCaptureList.size()*sizeof(double);
+    wkb= new unsigned char[size];
+    int wkbtype=QGis::WKBLineString;
+    int length=mCaptureList.size();
+    memcpy(&wkb[1],&wkbtype, sizeof(int));
+    memcpy(&wkb[5],&length, sizeof(int));
+    int position=1+2*sizeof(int);
+    double x,y;
+    for(std::list<QgsPoint>::iterator it=mCaptureList.begin();it!=mCaptureList.end();++it)
       {
-        //create QgsFeature with wkb representation
-        QgsFeature* f=new QgsFeature(0,"WKBLineString");
-        unsigned char* wkb;
-        int size;
-        if(mCanvasProperties->mapTool==QGis::CaptureLine)
-        {
-          size=1+2*sizeof(int)+2*mCaptureList.size()*sizeof(double);
-          wkb= new unsigned char[size];
-          int wkbtype=QGis::WKBLineString;
-          int length=mCaptureList.size();
-          memcpy(&wkb[1],&wkbtype, sizeof(int));
-          memcpy(&wkb[5],&length, sizeof(int));
-          int position=1+2*sizeof(int);
-          double x,y;
-          for(std::list<QgsPoint>::iterator it=mCaptureList.begin();it!=mCaptureList.end();++it)
-          {
-            x=it->x();
-            memcpy(&wkb[position],&x,sizeof(double));
-            position+=sizeof(double);
-            y=it->y();
-            memcpy(&wkb[position],&y,sizeof(double));
-            position+=sizeof(double);
-          }
-        }
-        else//polygon
-        {
-          size=1+3*sizeof(int)+2*(mCaptureList.size()+1)*sizeof(double);
-          wkb= new unsigned char[size];
-          int wkbtype=QGis::WKBPolygon;
-          int length=mCaptureList.size()+1;//+1 because the first point is needed twice
-          int numrings=1;
-          memcpy(&wkb[1],&wkbtype, sizeof(int));
-          memcpy(&wkb[5],&numrings,sizeof(int));
-          memcpy(&wkb[9],&length, sizeof(int));
-          int position=1+3*sizeof(int);
-          double x,y;
-          std::list<QgsPoint>::iterator it;
-          for(it=mCaptureList.begin();it!=mCaptureList.end();++it)
-          {
-            x=it->x();
-            memcpy(&wkb[position],&x,sizeof(double));
-            position+=sizeof(double);
-            y=it->y();
-            memcpy(&wkb[position],&y,sizeof(double));
-            position+=sizeof(double);
-          }
-          //close the polygon
-          it=mCaptureList.begin();
-          x=it->x();
-          memcpy(&wkb[position],&x,sizeof(double));
-          position+=sizeof(double);
-          y=it->y();
-          memcpy(&wkb[position],&y,sizeof(double));
-        }
-        f->setGeometry(&wkb[0],size);
-
-        //add the fields to the QgsFeature
-        std::vector<QgsField> fields=vlayer->fields();
-        for(std::vector<QgsField>::iterator it=fields.begin();it!=fields.end();++it)
-        {
-          f->addAttribute((*it).name(),vlayer->getDefaultValue(it->name(), f));
-        }
-
-        //show the dialog to enter attribute values
-        //if(vlayer->providerType().lower() != "grass")
-        {
-          f->attributeDialog();
-        }
-
-        vlayer->addFeature(f);
-
-        //delete the acetate objects and the elements of mCaptureList
-        removeEditingAcetates();
-        refresh();
-
+        x=it->x();
+        memcpy(&wkb[position],&x,sizeof(double));
+        position+=sizeof(double);
+        y=it->y();
+        memcpy(&wkb[position],&y,sizeof(double));
+        position+=sizeof(double);
       }
-      break;
+        }
+      else//polygon
+        {
+    size=1+3*sizeof(int)+2*(mCaptureList.size()+1)*sizeof(double);
+    wkb= new unsigned char[size];
+    int wkbtype=QGis::WKBPolygon;
+    int length=mCaptureList.size()+1;//+1 because the first point is needed twice
+    int numrings=1;
+    memcpy(&wkb[1],&wkbtype, sizeof(int));
+    memcpy(&wkb[5],&numrings,sizeof(int));
+    memcpy(&wkb[9],&length, sizeof(int));
+    int position=1+3*sizeof(int);
+    double x,y;
+    std::list<QgsPoint>::iterator it;
+    for(it=mCaptureList.begin();it!=mCaptureList.end();++it)
+      {
+        x=it->x();
+        memcpy(&wkb[position],&x,sizeof(double));
+        position+=sizeof(double);
+        y=it->y();
+        memcpy(&wkb[position],&y,sizeof(double));
+        position+=sizeof(double);
+      }
+    //close the polygon
+    it=mCaptureList.begin();
+    x=it->x();
+    memcpy(&wkb[position],&x,sizeof(double));
+    position+=sizeof(double);
+    y=it->y();
+    memcpy(&wkb[position],&y,sizeof(double));
+        }
+      f->setGeometry(&wkb[0],size);
+      
+      //add the fields to the QgsFeature
+      std::vector<QgsField> fields=vlayer->fields();
+      for(std::vector<QgsField>::iterator it=fields.begin();it!=fields.end();++it)
+        {
+    f->addAttribute((*it).name(),vlayer->getDefaultValue(it->name(), f));
+        }
+      
+      //show the dialog to enter attribute values
+      //if(vlayer->providerType().lower() != "grass")
+      {
+        f->attributeDialog();
+      }
+      
+      vlayer->addFeature(f);
+      
+      //delete the acetate objects and the elements of mCaptureList
+      removeEditingAcetates();
+      refresh();
+      
+    }
+  break;
+      }
+      
+    case QGis::EmitPoint: 
+      {
+  QgsPoint  idPoint = mCanvasProperties->coordXForm->
+    toMapCoordinates(e->x(), e->y());
+  emit xyClickCoordinates(idPoint);
+  emit xyClickCoordinates(idPoint,e->button());
+  break;
+      }
+
+    case QGis::Measure:
+      {
+        QgsPoint point = mCanvasProperties->coordXForm->toMapCoordinates(e->x(), e->y());
+
+  if ( !mMeasure ) {
+    mMeasure = new QgsMeasure(this, topLevelWidget() );
+  }
+  mMeasure->addPoint(point);
+  mMeasure->show();
+        break;
+      }
     }
   }
 } // mouseReleaseEvent
@@ -1628,8 +1679,15 @@ void QgsMapCanvas::mouseMoveEvent(QMouseEvent * e)
 
       bitBlt(this, dx, dy, mCanvasProperties->pmCanvas);
       break;
-    }
 
+    }
+  } 
+  else if ( mCanvasProperties->mapTool == QGis::Measure ) 
+  {
+      if ( mMeasure ) {
+        QgsPoint point = mCanvasProperties->coordXForm->toMapCoordinates(e->pos().x(), e->pos().y());
+  mMeasure->mouseMove(point);
+      }
   }
 
   // show x y on status bar
@@ -2025,7 +2083,7 @@ void QgsMapCanvas::recalculateExtents()
     std::cout << "Input extent: " << lyr->extent().stringRep() << std::endl;
     try
     {
-      std::cout << "Transformed extent" << lyr->coordinateTransform()->transform(lyr->extent()) << std::endl;
+      std::cout << "Transformed extent" << lyr->coordinateTransform()->transform(lyr->extent(), QgsCoordinateTransform::FORWARD) << std::endl;
     }
     catch (QgsCsException &e)
     {

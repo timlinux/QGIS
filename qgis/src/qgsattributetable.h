@@ -21,8 +21,11 @@
 
 #include <qtable.h>
 #include <qmap.h>
+#include <set>
 
 class QPopupMenu;
+class QgsVectorLayer;
+
 #include "qgsattributeaction.h"
 
 #include <vector>
@@ -49,6 +52,28 @@ class QgsAttributeTable:public QTable
 	 which are used when the user requests a popup menu */
       void setAttributeActions(const QgsAttributeAction& actions)
 	{ mActions = actions; }
+      /**Returns if the table contains uncommited changes*/
+      bool edited() const {return mEdited;}
+      /**Switches editing mode on and off*/
+      void setEditable(bool enabled){mEditable=enabled;}
+      /**Adds an attribute to the table (but does not commit it yet)
+       @param name attribute name
+       @param type attribute type
+       @return false in case of a name conflict, true in case of success*/
+      bool addAttribute(const QString& name, const QString& type);
+      /**Deletes an attribute (but does not commit it)
+       @param name attribute name*/
+      void deleteAttribute(const QString& name);
+      /**Delegates to QgsVectorLayer to decide, which changes
+       belong to not commited features or to commited ones*/
+      bool commitChanges(QgsVectorLayer* layer);
+      /**Discard all changes and restore
+       the state before editing was started*/
+      bool rollBack(QgsVectorLayer* layer);
+      /**Fills the contents of a provider into this table*/
+      void fillTable(QgsVectorLayer* layer);
+      /**Swaps the selected rows such that the selected ones are on the top of the table*/
+      void bringSelectedToTop();
       
       public slots:
       void columnClicked(int col);
@@ -58,6 +83,9 @@ class QgsAttributeTable:public QTable
       void popupItemSelected(int id);
       protected slots:
 	  void handleChangedSelections();
+      /**Writes changed values to 'mChangedValues'*/
+      void storeChangedValue(int row, int column);
+
       protected:
       /**Flag telling if the ctrl-button or the shift-button is pressed*/
       bool lockKeyPressed;
@@ -65,6 +93,17 @@ class QgsAttributeTable:public QTable
       QMap<int,int> rowIdMap;
       /**Flag indicating, which sorting order should be used*/
       bool sort_ascending;
+      bool mEditable;
+      /**True if table has been edited and contains uncommited changes*/
+      bool mEdited;
+      /**Map containing the added attributes. The key is the attribute name
+       and the value the attribute type*/
+      std::map<QString,QString> mAddedAttributes;
+      /**Set containing the attribute names of deleted attributes*/
+      std::set<QString> mDeletedAttributes;
+      /**Nested map containing the changed attribute values. The int is the feature id, 
+	 the first QString the attribute name and the second QString the new value*/
+      std::map<int,std::map<QString,QString> > mChangedValues;
       /**Compares the content of two cells either alphanumeric or numeric. If 'ascending' is true, -1 means s1 is less, 0 equal, 1 greater. If 'ascending' is false, -1 means s1 is more, 0 equal, 1 greater. This method is used mainly to sort a column*/
       int compareItems(QString s1, QString s2, bool ascending, bool alphanumeric);
       void keyPressEvent(QKeyEvent* ev);
@@ -72,6 +111,11 @@ class QgsAttributeTable:public QTable
       /**Method used by sortColumn (implementation of a quicksort)*/
       void qsort(int lower, int upper, int col, bool ascending, bool alphanumeric);
       void contentsMouseReleaseEvent(QMouseEvent* e);
+      /**Clears mAddedAttributes, mDeletedAttributes and mChangedValues*/
+      void clearEditingStructures();
+      /**Removes the column belonging to an attribute from the table
+       @name attribut name*/
+      void removeAttrColumn(const QString& name);
 
         signals:
 

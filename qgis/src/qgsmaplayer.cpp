@@ -188,6 +188,7 @@ bool QgsMapLayer::readXML( QDomNode & layer_node )
     }
     setMinScale(element.attribute("minScale").toFloat());
     setMaxScale(element.attribute("maxScale").toFloat());
+
     // set data source
     QDomNode mnl = layer_node.namedItem("datasource");
     QDomElement mne = mnl.toElement();
@@ -198,6 +199,15 @@ bool QgsMapLayer::readXML( QDomNode & layer_node )
     // the internal name is just the data source basename
     QFileInfo dataSourceFileInfo( dataSource );
     internalName = dataSourceFileInfo.baseName();
+
+    // set ID
+    mnl = layer_node.namedItem("id");
+    if ( ! mnl.isNull() ) {
+        mne = mnl.toElement();
+        if ( ! mne.isNull() && mne.text().length() > 10 ) { // should be at least 17 (yyyyMMddhhmmsszzz)
+	    ID = mne.text();
+	}
+    }
 
     // set name
     mnl = layer_node.namedItem("layername");
@@ -263,6 +273,13 @@ bool QgsMapLayer::writeXML( QDomNode & layer_node, QDomDocument & document )
     }
     maplayer.setAttribute( "minScale", minScale() );
     maplayer.setAttribute( "maxScale", maxScale() );
+
+    // ID 
+    QDomElement id = document.createElement( "id" );
+    QDomText idText = document.createTextNode( getLayerID() );
+    id.appendChild( idText );
+
+    maplayer.appendChild( id );
 
     // data source
     QDomElement dataSource = document.createElement( "datasource" );
@@ -340,7 +357,7 @@ void QgsMapLayer::inOverview( bool b )
     mShowInOverview = b;
 
     if ( updateNecessary ) // update the show in overview popup menu item
-    {
+    {	
         updateOverviewPopupItem();
         updateItemPixmap();
 
@@ -535,4 +552,6 @@ QgsCoordinateTransform * QgsMapLayer::coordinateTransform()
  
 #endif
   
- return mCoordinateTransform;};
+ return mCoordinateTransform;
+};
+
