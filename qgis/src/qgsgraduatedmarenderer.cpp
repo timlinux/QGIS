@@ -82,7 +82,8 @@ void QgsGraduatedMaRenderer::initializeSymbology(QgsVectorLayer* layer, QgsDlgVe
     }
 }
     
-void QgsGraduatedMaRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected)
+void QgsGraduatedMaRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, 
+	     double* scalefactor, bool selected, int oversampling, double widthScale)
 {
     p->setPen(Qt::NoPen);
     p->setBrush(Qt::NoBrush);
@@ -298,4 +299,14 @@ bool QgsGraduatedMaRenderer::writeXML( QDomNode & layer_node, QDomDocument & doc
 	}
     }
     return returnvalue;
+}
+
+const std::list<QgsRenderItem*> QgsGraduatedMaRenderer::items() const
+{
+    std::list<QgsRenderItem*> list;
+    for(std::list<QgsRangeRenderItem*>::const_iterator iter=mItems.begin();iter!=mItems.end();++iter)
+    {
+	list.push_back(*iter);
+    }
+    return list;
 }

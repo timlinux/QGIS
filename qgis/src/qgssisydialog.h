@@ -18,12 +18,19 @@
 
 #ifndef QGSSISYDIALOG_H
 #define QGSSISYDIALOG_H
+
+#include <iostream>
+#include <vector>
+
 #ifdef WIN32
 #include "qgssisydialogbase.h"
 #else
 #include "qgssisydialogbase.uic.h"
 #endif
 
+class QString;
+
+class QgsSymbol;
 class QgsVectorLayer;
 
 /**QgsSiSyDialog is a dialog to set symbology for the legend type 'single symbol'*/
@@ -50,8 +57,12 @@ public:
 protected:
     QgsVectorLayer* mVectorLayer;
 public slots:
+    /* set from QgsSymbol */
+    void set(QgsSymbol *sy);
     /**applies the changes to the vector layer*/
     void apply();
+    /**applies the changes to the QgsSymbol */
+    void apply( QgsSymbol *sy);
     /**emits the signal settingsChanged()*/
     void resendSettingsChanged();
 
@@ -61,6 +72,9 @@ protected slots:
 private:
     /**Default constructor is privat to not use is*/
     QgsSiSyDialog();
+
+    /** vector of marker names for combo items */
+    std::vector<QString> mMarkers;
 
 signals:
     void settingsChanged();

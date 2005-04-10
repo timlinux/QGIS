@@ -58,6 +58,7 @@ QgsMapLayer::QgsMapLayer(int type,
     // Generate the unique ID of this layer
     QDateTime dt = QDateTime::currentDateTime();
     ID = lyrname + dt.toString("yyyyMMddhhmmsszzz");
+    ID.replace(" ", "_");
 
 #if defined(WIN32) || defined(Q_OS_MACX)
 
@@ -188,6 +189,7 @@ bool QgsMapLayer::readXML( QDomNode & layer_node )
     }
     setMinScale(element.attribute("minScale").toFloat());
     setMaxScale(element.attribute("maxScale").toFloat());
+
     // set data source
     QDomNode mnl = layer_node.namedItem("datasource");
     QDomElement mne = mnl.toElement();
@@ -199,17 +201,21 @@ bool QgsMapLayer::readXML( QDomNode & layer_node )
     QFileInfo dataSourceFileInfo( dataSource );
     internalName = dataSourceFileInfo.baseName();
 
+    // set ID
+    mnl = layer_node.namedItem("id");
+    if ( ! mnl.isNull() ) {
+        mne = mnl.toElement();
+        if ( ! mne.isNull() && mne.text().length() > 10 ) { // should be at least 17 (yyyyMMddhhmmsszzz)
+	    ID = mne.text();
+	}
+    }
+
     // set name
     mnl = layer_node.namedItem("layername");
     mne = mnl.toElement();
     setLayerName( mne.text() );
 
     const char * layerNameStr = mne.text(); // debugger probe
-
-    // process zorder
-    mnl = layer_node.namedItem("zorder");
-    mne = mnl.toElement();
-    // XXX and do what with it?
 
     // now let the children grab what they need from the DOM node.
     return readXML_( layer_node );
@@ -263,6 +269,13 @@ bool QgsMapLayer::writeXML( QDomNode & layer_node, QDomDocument & document )
     }
     maplayer.setAttribute( "minScale", minScale() );
     maplayer.setAttribute( "maxScale", maxScale() );
+
+    // ID 
+    QDomElement id = document.createElement( "id" );
+    QDomText idText = document.createTextNode( getLayerID() );
+    id.appendChild( idText );
+
+    maplayer.appendChild( id );
 
     // data source
     QDomElement dataSource = document.createElement( "datasource" );
@@ -340,7 +353,7 @@ void QgsMapLayer::inOverview( bool b )
     mShowInOverview = b;
 
     if ( updateNecessary ) // update the show in overview popup menu item
-    {
+    {	
         updateOverviewPopupItem();
         updateItemPixmap();
 
@@ -535,4 +548,5 @@ QgsCoordinateTransform * QgsMapLayer::coordinateTransform()
  
 #endif
   
- return mCoordinateTransform;};
+ return mCoordinateTransform;
+}

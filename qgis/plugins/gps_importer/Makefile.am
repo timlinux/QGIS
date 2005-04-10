@@ -10,6 +10,8 @@
 #
 # $Id$
 
+if HAVE_EXPAT
+
 PKGDATAPATH=-DPKGDATAPATH=\"$(pkgdatadir)\"
 
 plugindir = ${pkglibdir}
@@ -31,6 +33,8 @@ gpsimporterplugin_la_SOURCES = \
 	qgsgpsplugin.cpp \
 	qgsbabelformat.h \
 	qgsbabelformat.cpp \
+	qgsgpsdevice.h \
+	qgsgpsdevice.cpp \
 	qgsgpsplugingui.cpp \
 	qgsgpsdevicedialog.cpp \
 	$(plugin_UI)\
@@ -75,3 +79,6 @@ EXTRA_DIST = $(plugin_UIC) icon.xpm \
 	qgsgpsplugingui.h \
 	qgsgpsplugin.h \
 	qgsgpsdevicedialog.h
+
+
+endif

@@ -18,7 +18,7 @@
 #include "qgsfeature.h"
 
 
-QgsVectorDataProvider::QgsVectorDataProvider()
+QgsVectorDataProvider::QgsVectorDataProvider(): mEncoding(QTextCodec::codecForLocale())
 {
 
 }
@@ -26,34 +26,57 @@ QgsVectorDataProvider::QgsVectorDataProvider()
 
 bool QgsVectorDataProvider::addFeatures(std::list<QgsFeature*> flist)
 {
-    return false;
+  return false;
 }
 
 bool QgsVectorDataProvider::deleteFeatures(std::list<int> const & id)
 {
-    return false;
+  return false;
 }
 
+bool QgsVectorDataProvider::addAttributes(std::map<QString,QString> const & name)
+{
+  return false;
+}
+
+bool QgsVectorDataProvider::deleteAttributes(std::set<QString> const & name)
+{
+  return false;
+}
+
+bool QgsVectorDataProvider::changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map)
+{
+  return false;
+}
 
 QString QgsVectorDataProvider::getDefaultValue(const QString& attr, 
-					       QgsFeature* f) {
+    QgsFeature* f) {
   return "";
 }
 
-bool QgsVectorDataProvider::supportsFeatureAddition() const
+void QgsVectorDataProvider::setEncoding(const QString& e)
 {
-    //needs to be overwritten by providers if they provide feature editing
-    return false;
+  QTextCodec* ncodec=QTextCodec::codecForName(e);
+  if(ncodec)
+  {
+    mEncoding=ncodec;
+  }
+  else
+  {
+#ifdef QGISDEBUG
+    qWarning("error finding QTextCodec in QgsVectorDataProvider::setEncoding");
+#endif
+  }
 }
 
-bool QgsVectorDataProvider::supportsFeatureDeletion() const
+QString QgsVectorDataProvider::encoding() const
 {
-    //needs to be overwritten by providers which support this
-    return false;
-}
-
-bool QgsVectorDataProvider::supportsSaveAsShapefile() const
-{
-  // default implementation is no support 
-  return false; 
+  if(mEncoding)
+  {
+    return mEncoding->name();
+  }
+  else
+  {
+    return "";
+  }
 }

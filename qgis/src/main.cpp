@@ -80,7 +80,7 @@ bool bundleclicked(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-
+  
   /////////////////////////////////////////////////////////////////
   // Command line options 'behaviour' flag setup
   ////////////////////////////////////////////////////////////////
@@ -208,10 +208,45 @@ int main(int argc, char *argv[])
 #endif
   if (!myUseGuiFlag) 
   {
-    std::cerr << "QGIS starting in non-interactive mode because you have no DISPLAY environment variable set." << std::endl;
+    std::cerr << "QGIS starting in non-interactive mode not supported.\n You are seeing this message most likely because you have no DISPLAY environment variable set." << std::endl;
+    exit(1); //exit for now until a version of qgis is capabable of running non interactive
   }
   QApplication a(argc, argv, myUseGuiFlag );
 
+  // Check to see if qgis was started from the source directory. 
+  // This is done by looking for Makefile in the directory where qgis was
+  // started from. If running from the src directory, exit gracefully
+
+  // Get the application path. This method is required to support qt 3.1.2
+  // which does not support the applicationFilePath and applicationDirPath
+  // functions. We assume that OS X and Win32 systems will be using at least
+  // Qt 3.2 and therefore support the required functions.
+#if defined(Q_OS_MACX) || defined(WIN32)
+  QString appPath = qApp->applicationFilePath();
+  QString appDir = qApp->applicationDirPath();
+  QString testFile = "Makefile";
+#else
+  QString appPath = argv[0];
+  QString appDir = appPath.left(appPath.findRev("/"));
+  QString testFile = "lt-qgis";
+#endif
+
+  if(appPath.contains("/src/"))
+  {
+    // check to see if configure is present in the directory
+    
+    QFileInfo fi(appDir + "/" + testFile);
+    if(fi.exists())
+    {
+      QMessageBox::critical(0,"QGIS Not Installed",
+          "You appear to be running QGIS from the source directory.\n"
+          "You must install QGIS using make install and run it from the "
+          "installed directory.");
+      exit(1);
+    }
+  }
+
+  
   // a.setFont(QFont("helvetica", 11));
 
 #if defined(Q_OS_MACX) || defined(WIN32)
@@ -245,6 +280,25 @@ int main(int argc, char *argv[])
 
   a.setMainWidget(qgis);
 
+  /////////////////////////////////////////////////////////////////////
+  // If no --project was specified, parse the args to look for a     //
+  // .qgs file and set myProjectFileName to it. This allows loading  //
+  // of a project file by clicking on it in various desktop managers //
+  // where an appropriate mime-type has been set up.                 //
+  /////////////////////////////////////////////////////////////////////
+  if(myProjectFileName.isEmpty())
+  {
+    // check for a .qgs
+    for(int i = 0; i < argc; i++)
+    {
+      QString arg = argv[i];
+      if(arg.contains(".qgs"))
+      {
+        myProjectFileName = argv[i];
+        break;
+      }
+    }
+  }
 
   /////////////////////////////////////////////////////////////////////
   // Load a project file if one was specified
@@ -284,22 +338,27 @@ int main(int argc, char *argv[])
   for ( QStringList::Iterator myIterator = myFileList->begin(); myIterator != myFileList->end(); ++myIterator ) 
   {
 
+
 #ifdef QGISDEBUG
     std::cout << "Trying to load file : " << *myIterator << std::endl;
 #endif
     QString myLayerName = *myIterator;
-    // try to add all these layers - any unsupported file types will
-    // be rejected automatically
-    // The funky bool ok is so this can be debugged a bit easier...
+    // don't load anything with a .qgs extension - these are project files
+    if(!myLayerName.contains(".qgs"))
+    {
+      // try to add all these layers - any unsupported file types will
+      // be rejected automatically
+      // The funky bool ok is so this can be debugged a bit easier...
 
-    //nope - try and load it as raster
-    bool ok = qgis->addRasterLayer(QFileInfo(myLayerName), false);
-    if(!ok){
-      //nope - try and load it as a shape/ogr
-      ok = qgis->addLayer(QFileInfo(myLayerName));
-      //we have no idea what this layer is...
+      //nope - try and load it as raster
+      bool ok = qgis->addRasterLayer(QFileInfo(myLayerName), false);
       if(!ok){
-        std::cout << "Unable to load " << myLayerName << std::endl;
+        //nope - try and load it as a shape/ogr
+        ok = qgis->addLayer(QFileInfo(myLayerName));
+        //we have no idea what this layer is...
+        if(!ok){
+          std::cout << "Unable to load " << myLayerName << std::endl;
+        }
       }
     }
   }

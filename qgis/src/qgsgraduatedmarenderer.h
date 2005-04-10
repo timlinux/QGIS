@@ -36,7 +36,7 @@ class QgsGraduatedMaRenderer: public QgsRenderer
     /**Removes all items*/
     void removeItems();
     virtual void initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorLayerProperties* pr=0);
-    virtual void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected);
+    virtual void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected, int oversampling = 1, double widthScale = 1.);
     /**Sets the number of the classicifation field
     \param field the number of the field to classify*/
     void setClassificationField(int field);
@@ -56,6 +56,8 @@ class QgsGraduatedMaRenderer: public QgsRenderer
     virtual std::list<int> classificationAttributes();
     /**Returns the renderers name*/
     QString name();
+    /**Return symbology items*/
+    const std::list<QgsRenderItem*> items() const;
  protected:
     /**Name of the classification field (it must be a numerical field)*/
     int mClassificationField;

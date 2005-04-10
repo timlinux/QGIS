@@ -24,21 +24,34 @@
 #else
 #include "qgsattributetablebase.uic.h"
 #endif
+
 class QgsAttributeTable;
+class QgsVectorLayer;
+class QPopupMenu;
+
 /**
   *@author Gary E.Sherman
   */
 
 class QgsAttributeTableDisplay:public QgsAttributeTableBase
 {
+  Q_OBJECT
   public:
-	QgsAttributeTableDisplay();
-	~QgsAttributeTableDisplay();
-	QgsAttributeTable *table();
-	void setTitle(QString title);
- signals:
-	/**Is emitted before the widget deletes itself*/
-	void deleted();
+    QgsAttributeTableDisplay(QgsVectorLayer* layer);
+    ~QgsAttributeTableDisplay();
+    QgsAttributeTable *table();
+    void setTitle(QString title);
+  protected:
+    QgsVectorLayer* mLayer;
+    QPopupMenu* edit;
+
+    protected slots:
+      void deleteAttributes();
+    void addAttribute();
+    void startEditing();
+    void stopEditing();
+    void selectedToTop();
+    void invertSelection();
 };
 
 #endif

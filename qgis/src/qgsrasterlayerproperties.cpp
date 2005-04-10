@@ -38,6 +38,8 @@ email                : tim@linfiniti.com
 #include <qlistbox.h>
 #include <qtextbrowser.h>
 #include <qspinbox.h>
+#include <qpointarray.h>
+#include <qrect.h>
 
 const char * const ident = 
 "$Id";
@@ -49,8 +51,8 @@ const char * const ident =
 
   // set up the scale based layer visibility stuff....
   chkUseScaleDependentRendering->setChecked(lyr->scaleBasedVisibility());
-  spinMinimumScale->setValue(lyr->minScale());
-  spinMaximumScale->setValue(lyr->maxScale());
+  spinMinimumScale->setValue((int)lyr->minScale());
+  spinMaximumScale->setValue((int)lyr->maxScale());
 
   // build GUI components
 
@@ -99,6 +101,8 @@ const char * const ident =
     cboGray->insertItem("Green");
     cboGray->insertItem("Blue");
     cboGray->insertItem("Not Set");
+    
+    lstHistogramLabels->insertItem(tr("Palette"));
   }
   else                   // all other layer types use band name entries only
   {
@@ -112,19 +116,62 @@ const char * const ident =
     QStringList myBandNameQStringList;
 
     int myBandCountInt = rasterLayer->getBandCount();
-
+#ifdef QGISDEBIG
+    std::cout << "Looping though " << myBandCountInt << " image layers to get their names " << std::endl;
+#endif
     for (int myIteratorInt = 1;
             myIteratorInt <= myBandCountInt;
             ++myIteratorInt)
     {
       //find out the name of this band
-      QString myRasterBandNameQString = rasterLayer->getRasterBandName(myIteratorInt)
-          ;
+      QString myRasterBandNameQString = rasterLayer->getRasterBandName(myIteratorInt) ;
+
+      //
+      //add the band to the histogram tab
+      //
+      QPixmap myPixmap(10,10);
+          
+      if (myBandCountInt==1) //draw single band images with black
+      {
+      myPixmap.fill( Qt::black );
+      }
+      else if (myIteratorInt==1)
+      {
+      myPixmap.fill( Qt::red );
+      }
+      else if (myIteratorInt==2)
+      {
+      myPixmap.fill( Qt::green );
+      }
+      else if (myIteratorInt==3)
+      {
+      myPixmap.fill( Qt::blue );
+      }
+      else if (myIteratorInt==4)
+      {
+      myPixmap.fill( Qt::magenta );
+      }
+      else if (myIteratorInt==5)
+      {
+      myPixmap.fill( Qt::darkRed );
+      }
+      else if (myIteratorInt==6)
+      {
+      myPixmap.fill( Qt::darkGreen );
+      }
+      else if (myIteratorInt==7)
+      {
+      myPixmap.fill( Qt::darkBlue );
+      }
+      else
+      {
+      myPixmap.fill( Qt::gray );
+      }
+      lstHistogramLabels->insertItem(myPixmap,myRasterBandNameQString);
       //keep a list of band names for later use
       myBandNameQStringList.append(myRasterBandNameQString);
     }
 
-    myBandCountInt = 1;
 
     for (QStringList::Iterator myIterator = myBandNameQStringList.begin(); 
             myIterator != myBandNameQStringList.end(); 
@@ -147,8 +194,6 @@ const char * const ident =
     cboGray->insertItem("Not Set");
   }
 
-  //
-  // Set up the pyramiding tab
   //
 #if defined(WIN32) || defined(Q_OS_MACX)
   QString PKGDATAPATH = qApp->applicationDirPath() + "/share/qgis";
@@ -176,8 +221,12 @@ const char * const ident =
               QString::number((*myRasterPyramidIterator).yDimInt)); 
     }
   }
-
-  sync();                     // update based on lyr's current state
+  
+  //draw the histogram
+  //pbnHistRefresh_clicked();
+  
+ // update based on lyr's current state
+  sync();  
 } // QgsRasterLayerProperties ctor
 
 
@@ -853,3 +902,382 @@ void QgsRasterLayerProperties::sync()
 
 
 } // QgsRasterLayerProperties::sync()
+
+void QgsRasterLayerProperties::pbnHistRefresh_clicked()
+{
+#ifdef QGISDEBUG
+  std::cout << "QgsRasterLayerProperties::pbnHistRefresh_clicked" << std::endl;
+#endif
+  int myBandCountInt = rasterLayer->getBandCount();
+  //
+  // Find out how many bands are selected and short circuit out clearing the image
+  // if needed
+  int mySelectionCount=0;
+  for (int myIteratorInt = 1;
+          myIteratorInt <= myBandCountInt;
+          ++myIteratorInt)
+  {
+    RasterBandStats myRasterBandStats = rasterLayer->getRasterBandStats(myIteratorInt);
+    QListBoxItem *myItem = lstHistogramLabels->item( myIteratorInt-1 );
+    if ( myItem->isSelected() )
+    {
+      mySelectionCount++;
+    }
+  }
+  if (mySelectionCount==0)
+  {
+    int myImageWidth = pixHistogram->width();
+    int myImageHeight =  pixHistogram->height();
+    QPixmap myPixmap(myImageWidth,myImageHeight);
+    myPixmap.fill(Qt::white);
+    pixHistogram->setPixmap(myPixmap);
+  }
+
+  // Explanation:
+  // We use the gdal histogram creation routine is called for each selected  
+  // layer. Currently the hist is hardcoded
+  // to create 256 bins. Each bin stores the total number of cells that 
+  // fit into the range defined by that bin.
+  //
+  // The graph routine below determines the greatest number of pixesl in any given 
+  // bin in all selected layers, and the min. It then draws a scaled line between min 
+  // and max - scaled to image height. 1 line drawn per selected band
+  //
+  const int BINCOUNT = spinHistBinCount->value();
+  enum GRAPH_TYPE { BAR_CHART, LINE_CHART } myGraphType;
+  if (radHistTypeBar->isOn()) myGraphType=BAR_CHART; else myGraphType=LINE_CHART;
+  bool myIgnoreOutOfRangeFlag = chkHistIgnoreOutOfRange->isChecked();
+  bool myThoroughBandScanFlag = chkHistAllowApproximation->isChecked();
+
+  long myCellCount = rasterLayer->getRasterXDim() * rasterLayer->getRasterYDim();
+
+
+#ifdef QGISDEBUG
+  std::cout << "Computing histogram minima and maxima" << std::endl;
+#endif
+  //somtimes there are more bins than needed
+  //we find out the last on that actully has data in it
+  //so we can discard the rest adn the x-axis scales correctly
+  int myLastBinWithData=0;
+  //
+  // First scan through to get max and min cell counts from among selected layers' histograms
+  //
+  double myYAxisMax=0;
+  double myYAxisMin=0;
+  int myXAxisMin=0;
+  int myXAxisMax=0;
+  for (int myIteratorInt = 1;
+          myIteratorInt <= myBandCountInt;
+          ++myIteratorInt)
+  {
+    RasterBandStats myRasterBandStats = rasterLayer->getRasterBandStats(myIteratorInt);
+    //calculate the x axis min max
+    if (myRasterBandStats.minValDouble < myXAxisMin || myIteratorInt==1)
+    {
+      myXAxisMin=static_cast < unsigned int >(myRasterBandStats.minValDouble);
+    }
+    if (myRasterBandStats.maxValDouble < myXAxisMax || myIteratorInt==1)
+    {
+      myXAxisMax=static_cast < unsigned int >(myRasterBandStats.maxValDouble);
+    }
+    QListBoxItem *myItem = lstHistogramLabels->item( myIteratorInt-1 );
+    if ( myItem->isSelected() )
+    {
+#ifdef QGISDEBUG
+      std::cout << "Ensuring hist is populated for this layer" << std::endl;
+#endif
+      rasterLayer->populateHistogram(myIteratorInt,BINCOUNT,myIgnoreOutOfRangeFlag,myThoroughBandScanFlag); 
+
+#ifdef QGISDEBUG
+      std::cout << "...done..." << myRasterBandStats.histogramVector->size() << " bins filled" << std::endl;
+#endif
+      for (int myBin = 0; myBin <BINCOUNT; myBin++)
+      {
+        int myBinValue = myRasterBandStats.histogramVector->at(myBin);
+        if (myBinValue > 0 && myBin > myLastBinWithData)
+        {
+          myLastBinWithData = myBin;
+        }
+#ifdef QGISDEBUG
+        std::cout << "Testing if " << myBinValue << " is less than " << myYAxisMin  << "or greater then " <<myYAxisMax  <<  std::endl;
+#endif
+        if ( myBin==0)
+        {
+          myYAxisMin = myBinValue;
+          myYAxisMax = myBinValue;
+        }
+
+        if (myBinValue  > myYAxisMax)
+        {
+          myYAxisMax = myBinValue;
+        }
+        if ( myBinValue < myYAxisMin)
+        {
+          myYAxisMin = myBinValue;
+        }
+      }
+    }
+  }
+#ifdef QGISDEBUG
+  std::cout << "max " << myYAxisMax << std::endl;
+  std::cout << "min " << myYAxisMin << std::endl;
+#endif
+
+
+  //create the image onto which graph and axes will be drawn
+  int myImageWidth = pixHistogram->width();
+  int myImageHeight =  pixHistogram->height();
+  QPixmap myPixmap(myImageWidth,myImageHeight);
+  myPixmap.fill(Qt::white);
+  QPainter myPainter(&myPixmap, this);
+  //determine labels sizes and draw them
+  QFont myQFont("arial", 8, QFont::Normal);
+  QFontMetrics myFontMetrics( myQFont );
+  myPainter.setFont(myQFont);
+  myPainter.setPen(Qt::black);
+  QString myYMaxLabel= QString::number(static_cast < unsigned int >(myYAxisMax));
+  QString myXMinLabel= QString::number(myXAxisMin);
+  QString myXMaxLabel= QString::number(myXAxisMax);
+  //calculate the gutters
+  int myYGutterWidth=0;
+  if (myFontMetrics.width(myXMinLabel) < myFontMetrics.width(myYMaxLabel))
+  {
+    myYGutterWidth = myFontMetrics.width(myYMaxLabel )+2; //add 2 so we can have 1 pix whitespace either side of label
+  }
+  else
+  {
+    myYGutterWidth = myFontMetrics.width(myXMinLabel )+2; //add 2 so we can have 1 pix whitespace either side of label
+  }
+  int myXGutterHeight = myFontMetrics.height()+2;
+  int myXGutterWidth = myFontMetrics.width(myXMaxLabel)+1;//1 pix whtispace from right edge of image
+
+  //
+  // Now calculate the graph drawable area after the axis labels have been taken
+  // into account
+  //
+  int myGraphImageWidth =myImageWidth-myYGutterWidth; 
+  int myGraphImageHeight = myImageHeight-myXGutterHeight; 
+
+  //find out how wide to draw bars when in bar chart mode
+  int myBarWidth = static_cast<int>((((double)myGraphImageWidth)/((double)BINCOUNT)));
+
+
+  //
+  //now draw actual graphs
+  //
+  if (rasterLayer->getRasterLayerType()
+          == QgsRasterLayer::PALETTE) //paletted layers have hard coded color entries
+  {
+    QPointArray myPointArray(myLastBinWithData);
+    QgsColorTable *myColorTable=rasterLayer->colorTable(1);
+#ifdef QGISDEBUG
+    std::cout << "Making paletted image histogram....computing band stats" << std::endl;
+#endif
+
+    RasterBandStats myRasterBandStats = rasterLayer->getRasterBandStats(1);
+    for (int myBin = 0; myBin < myLastBinWithData; myBin++)
+    {
+      double myBinValue = myRasterBandStats.histogramVector->at(myBin);
+      //NOTE: Int division is 0 if the numerator is smaller than the denominator.
+      //hence the casts
+      int myX = static_cast<int>((((double)myGraphImageWidth)/((double)myLastBinWithData))*myBin);
+      //height varies according to freq. and scaled to greatet value in all layers
+      int myY=0;
+      if (myBinValue==0)
+      {  
+        myY=static_cast<int>(((double)myBinValue/(double)myYAxisMax)*myGraphImageHeight);
+      }
+      //determin which color to draw the bar
+      int c1, c2, c3;
+      bool found = myColorTable->color ( myBinValue, &c1, &c2, &c3 );
+      if ( !found ) continue;
+      //see wehter to draw something each loop or to save up drawing for after iteration
+      if (myGraphType==BAR_CHART)
+      {
+        //draw the bar
+        QBrush myBrush(QColor(c1,c2,c3));
+        myPainter.setPen(QColor(c1,c2,c3));
+#ifdef QGISDEBUG
+        //  std::cout << "myPainter.fillRect(QRect(" << myX << "," << myY << "," << myBarWidth << "," <<myY << ") , myBrush );" << std::endl;
+#endif
+        myPainter.drawRect(myX+myYGutterWidth,myImageHeight-(myY+myXGutterHeight),myBarWidth,myY);
+      }
+      //store this point in our line too
+      myY = myGraphImageHeight - myY;
+      myPointArray.setPoint(myBin, myX+myYGutterWidth, myY-myXGutterHeight);
+    }
+    //draw a line on the graph along the bar peaks; 
+    if (myGraphType==LINE_CHART)
+    {
+      myPainter.setPen( Qt::black );
+      myPainter.drawPolyline(myPointArray);
+    }
+  }
+  else
+  {
+
+    for (int myIteratorInt = 1;
+            myIteratorInt <= myBandCountInt;
+            ++myIteratorInt)
+    {
+      RasterBandStats myRasterBandStats = rasterLayer->getRasterBandStats(myIteratorInt);
+      QListBoxItem *myItem = lstHistogramLabels->item( myIteratorInt-1 );
+      if ( myItem->isSelected() )
+      {
+
+        QPointArray myPointArray(myLastBinWithData);
+        for (int myBin = 0; myBin <myLastBinWithData; myBin++)
+        {
+          double myBinValue = myRasterBandStats.histogramVector->at(myBin);
+          //NOTE: Int division is 0 if the numerator is smaller than the denominator.
+          //hence the casts
+          int myX = static_cast<int>((((double)myGraphImageWidth)/((double)myLastBinWithData))*myBin);
+          //height varies according to freq. and scaled to greatet value in all layers
+          int myY = static_cast<int>(((double)myBinValue/(double)myYAxisMax)*myGraphImageHeight);
+          //adjust for image origin being top left
+#ifdef QGISDEBUG
+          std::cout << "-------------" << std::endl;
+          std::cout << "int myY = (myBinValue/myCellCount)*myGraphImageHeight" << std::endl;
+          std::cout << "int myY = (" << myBinValue << "/" << myCellCount << ")*" << myGraphImageHeight << std::endl;
+          std::cout << "Band " << myIteratorInt << ", bin " << myBin << ", Hist Value : " << myBinValue << ", Scaled Value : " << myY << std::endl;
+          std::cout << "myY = myGraphImageHeight - myY" << std::endl;
+          std::cout << "myY = " << myGraphImageHeight << "-" << myY << std::endl;
+#endif
+          if (myGraphType==BAR_CHART)
+          {
+            //draw the bar
+            if (myBandCountInt==1) //draw single band images with black
+            {
+              myPainter.setPen( Qt::black );
+            }
+            else if (myIteratorInt==1)
+            {
+              myPainter.setPen( Qt::red );
+            }
+            else if (myIteratorInt==2)
+            {
+              myPainter.setPen( Qt::green );
+            }
+            else if (myIteratorInt==3)
+            {
+              myPainter.setPen( Qt::blue );
+            }
+            else if (myIteratorInt==4)
+            {
+              myPainter.setPen( Qt::magenta );
+            }
+            else if (myIteratorInt==5)
+            {
+              myPainter.setPen( Qt::darkRed );
+            }
+            else if (myIteratorInt==6)
+            {
+              myPainter.setPen( Qt::darkGreen );
+            }
+            else if (myIteratorInt==7)
+            {
+              myPainter.setPen( Qt::darkBlue );
+            }
+            else
+            {
+              myPainter.setPen( Qt::gray );
+            }
+#ifdef QGISDEBUG
+            //  std::cout << "myPainter.fillRect(QRect(" << myX << "," << myY << "," << myBarWidth << "," <<myY << ") , myBrush );" << std::endl;
+#endif
+            myPainter.drawRect(myX+myYGutterWidth,myImageHeight-(myY+myXGutterHeight),myBarWidth,myY);
+          }
+          else //line graph
+          {
+            myY = myGraphImageHeight - myY;
+            myPointArray.setPoint(myBin, myX+myYGutterWidth, myY);
+          }
+        }
+        if (myGraphType==LINE_CHART)
+        {
+          if (myBandCountInt==1) //draw single band images with black
+          {
+            myPainter.setPen( Qt::black );
+          }
+          else if (myIteratorInt==1)
+          {
+            myPainter.setPen( Qt::red );
+          }
+          else if (myIteratorInt==2)
+          {
+            myPainter.setPen( Qt::green );
+          }
+          else if (myIteratorInt==3)
+          {
+            myPainter.setPen( Qt::blue );
+          }
+          else if (myIteratorInt==4)
+          {
+            myPainter.setPen( Qt::magenta );
+          }
+          else if (myIteratorInt==5)
+          {
+            myPainter.setPen( Qt::darkRed );
+          }
+          else if (myIteratorInt==6)
+          {
+            myPainter.setPen( Qt::darkGreen );
+          }
+          else if (myIteratorInt==7)
+          {
+            myPainter.setPen( Qt::darkBlue );
+          }
+          else
+          {
+            myPainter.setPen( Qt::gray );
+          }
+          myPainter.drawPolyline(myPointArray);
+        }
+      }
+    }
+  }
+
+  //
+  // Now draw interval markers on the x axis
+  //
+  int myXDivisions = myGraphImageWidth/10;
+  myPainter.setPen( Qt::gray );
+  for (int i=0;i<myXDivisions;++i)
+  {
+    QPointArray myPointArray(4);
+    myPointArray.setPoint(0,(i*myXDivisions)+myYGutterWidth , myImageHeight-myXGutterHeight);
+    myPointArray.setPoint(1,(i*myXDivisions)+myYGutterWidth , myImageHeight-(myXGutterHeight-5));
+    myPointArray.setPoint(2,(i*myXDivisions)+myYGutterWidth , myImageHeight-myXGutterHeight);
+    myPointArray.setPoint(3,((i+1)*myXDivisions)+myYGutterWidth , myImageHeight-myXGutterHeight);
+    myPainter.drawPolyline(myPointArray);
+  }
+  //
+  // Now draw interval markers on the y axis
+  //
+  int myYDivisions = myGraphImageHeight/10;
+  myPainter.setPen( Qt::gray );
+  for (int i=myYDivisions;i>0;--i)
+  {
+
+    QPointArray myPointArray(4);
+    int myYOrigin = myImageHeight-myXGutterHeight;
+    myPointArray.setPoint(0,myYGutterWidth,myYOrigin-(i*myYDivisions ));
+    myPointArray.setPoint(1,myYGutterWidth-5,myYOrigin-(i*myYDivisions ));
+    myPointArray.setPoint(2,myYGutterWidth,myYOrigin-(i*myYDivisions ));
+    myPointArray.setPoint(3,myYGutterWidth,myYOrigin-((i-1)*myYDivisions ));
+    myPainter.drawPolyline(myPointArray);
+  }
+
+  //now draw the axis labels onto the graph
+  myPainter.drawText(1, 12, myYMaxLabel);
+  myPainter.drawText(1, myImageHeight-myXGutterHeight, QString::number(static_cast < unsigned int >(myYAxisMin)));
+  myPainter.drawText(myYGutterWidth,myImageHeight-1 , myXMinLabel);
+  myPainter.drawText( myImageWidth-myXGutterWidth,myImageHeight-1, myXMaxLabel );
+
+  //
+  // Finish up
+  //
+  myPainter.end();
+  pixHistogram->setPixmap(myPixmap);
+}
+

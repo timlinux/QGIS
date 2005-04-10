@@ -33,6 +33,7 @@
 #include "../../src/qgsfeatureattribute.h"
 
 extern "C" {
+#include <gprojects.h>
 #include <gis.h>
 #include <dbmi.h>
 #include <Vect.h>
@@ -275,6 +276,8 @@ QgsFeature *QgsGrassProvider::getFirstFeature(bool fetchAttributes)
 
     if ( isEdited() )
 	return 0;
+    
+    if ( mCidxFieldIndex < 0 ) return 0; // No features, no features in this layer
 
     mNextCidx = 0;
 	
@@ -293,6 +296,8 @@ bool QgsGrassProvider::getNextFeature(QgsFeature &feature, bool fetchAttributes)
 
     if ( isEdited() )
 	return 0;
+    
+    if ( mCidxFieldIndex < 0 ) return 0; // No features, no features in this layer
 
     // TODO once clear how to do that 
     return false;
@@ -313,6 +318,8 @@ QgsFeature *QgsGrassProvider::getNextFeature(bool fetchAttributes)
     if ( isEdited() )
 	return 0;
 
+    if ( mCidxFieldIndex < 0 ) return 0; // No features, no features in this layer
+
     std::list<int> attlist;
 
     if ( fetchAttributes ) {
@@ -331,12 +338,14 @@ QgsFeature* QgsGrassProvider::getNextFeature(std::list<int> const& attlist)
     unsigned char *wkb;
     int wkbsize;
 
-    #ifdef QGISDEBUG
+    #if QGISDEBUG > 3
     std::cout << "QgsGrassProvider::getNextFeature( attlist )" << std::endl;
     #endif
 
     if ( isEdited() )
 	return 0;
+    
+    if ( mCidxFieldIndex < 0 ) return 0; // No features, no features in this layer
     
     // Get next line/area id
     int found = 0;
@@ -473,6 +482,9 @@ void QgsGrassProvider::select(QgsRect *rect, bool useIntersect)
     if ( mMapVersion < mMaps[mapId].version ) {
         update();
     }
+    if ( attributesOutdated(mapId) ) {
+	loadAttributes (mLayers[mLayerId]);
+    }
 
     resetSelection(0);
     
@@ -599,7 +611,22 @@ std::vector<QgsField> const & QgsGrassProvider::fields() const
       return mLayers[mLayerId].fields;
 }
 
-void QgsGrassProvider::reset(){
+void QgsGrassProvider::reset()
+{
+    if ( isEdited() )
+	return;
+
+    int mapId = mLayers[mLayerId].mapId;
+    if ( mapOutdated(mapId) ) {
+        updateMap ( mapId );
+    }
+    if ( mMapVersion < mMaps[mapId].version ) {
+        update();
+    }
+    if ( attributesOutdated(mapId) ) {
+	loadAttributes (mLayers[mLayerId]);
+    }
+    
     resetSelection(1);
     mNextCidx = 0;
 }
@@ -719,7 +746,15 @@ void QgsGrassProvider::loadLayerSourcesFromMap ( GLAYER &layer )
 	}
 	free ( layer.attributes );
     }
+    loadAttributes ( layer );
+}
     
+void QgsGrassProvider::loadAttributes ( GLAYER &layer )
+{
+    #ifdef QGISDEBUG
+    std::cerr << "QgsGrassProvider::loadLayerSourcesFromMap" << std::endl;
+    #endif
+
     // Get field info
     layer.fieldInfo = Vect_get_field( layer.map, layer.field); // should work also with field = 0
 
@@ -727,6 +762,7 @@ void QgsGrassProvider::loadLayerSourcesFromMap ( GLAYER &layer )
     layer.nColumns = 0;
     layer.nAttributes = 0;
     layer.attributes = 0;
+    layer.fields.clear();
     layer.keyColumn = -1;
     if ( layer.fieldInfo == NULL ) {
         #ifdef QGISDEBUG
@@ -903,6 +939,11 @@ void QgsGrassProvider::loadLayerSourcesFromMap ( GLAYER &layer )
 	    }
 	}
     }
+
+    GMAP *map = &(mMaps[layer.mapId]);
+    
+    QFileInfo di ( map->gisdbase + "/" + map->location + "/" + map->mapset + "/vector/" + map->mapName + "/dbln" );
+    map->lastAttributesModified = di.lastModified();
 }
 
 void QgsGrassProvider::closeLayer( int layerId )
@@ -990,6 +1031,9 @@ int QgsGrassProvider::openMap(QString gisdbase, QString location, QString mapset
     // could be owerwritten)
     QFileInfo di ( gisdbase + "/" + location + "/" + mapset + "/vector/" + mapName );
     map.lastModified = di.lastModified();
+    
+    di.setFile ( gisdbase + "/" + location + "/" + mapset + "/vector/" + mapName + "/dbln" );
+    map.lastAttributesModified = di.lastModified();
 
     // Open vector
     QgsGrass::resetError(); // to "catch" error after Vect_open_old()
@@ -1032,6 +1076,9 @@ void QgsGrassProvider::updateMap ( int mapId )
 
     QFileInfo di ( map->gisdbase + "/" + map->location + "/" + map->mapset + "/vector/" + map->mapName );
     map->lastModified = di.lastModified();
+
+    di.setFile ( map->gisdbase + "/" + map->location + "/" + map->mapset + "/vector/" + map->mapName + "/dbln" );
+    map->lastAttributesModified = di.lastModified();
 
     // Reopen vector
     QgsGrass::resetError(); // to "catch" error after Vect_open_old()
@@ -1107,6 +1154,28 @@ bool QgsGrassProvider::mapOutdated( int mapId )
     return false;
 }
 
+bool QgsGrassProvider::attributesOutdated( int mapId )
+{
+    #ifdef QGISDEBUG
+    std::cerr << "QgsGrassProvider::attributesOutdated()" << std::endl;
+    #endif
+
+    GMAP *map = &(mMaps[mapId]);
+    
+    QString dp = map->gisdbase + "/" + map->location + "/" + map->mapset + "/vector/" + map->mapName + "/dbln";
+    QFileInfo di ( dp );
+
+    if ( map->lastAttributesModified < di.lastModified() ) {
+	#ifdef QGISDEBUG
+	std::cerr << "**** The attributes of the map " << mapId << " were modified ****" << std::endl;
+	#endif
+	
+	return true;
+    }
+
+    return false;
+}
+
 /** Set feature attributes */
 void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *feature )
 {
@@ -1117,12 +1186,14 @@ void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *
 	// find cat
 	GATT key;
 	key.cat = cat;
+    
 	GATT *att = (GATT *) bsearch ( &key, mLayers[layerId].attributes, mLayers[layerId].nAttributes,
 		                       sizeof(GATT), cmpAtt);
 
 	for (int i = 0; i < mLayers[layerId].nColumns; i++) {
 	    if ( att != NULL ) {
-		feature->addAttribute ( mLayers[layerId].fields[i].name(), att->values[i]);
+		QCString cstr( att->values[i] );
+		feature->addAttribute ( mLayers[layerId].fields[i].name(), mEncoding->toUnicode(cstr) );
 	    } else { /* it may happen that attributes are missing -> set to empty string */
 		feature->addAttribute ( mLayers[layerId].fields[i].name(), "");
 	    }
@@ -1136,7 +1207,7 @@ void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *
 
 void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *feature, std::list<int> const& attlist)
 {
-#ifdef QGISDEBUG
+    #if QGISDEBUG > 3
     std::cerr << "setFeatureAttributes cat = " << cat << std::endl;
     #endif
     if ( mLayers[layerId].nColumns > 0 ) {
@@ -1148,7 +1219,8 @@ void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *
 
 	for (std::list<int>::const_iterator iter=attlist.begin(); iter!=attlist.end();++iter) {
 	    if ( att != NULL ) {
-		feature->addAttribute ( mLayers[layerId].fields[*iter].name(), att->values[*iter]);	
+		QCString cstr( att->values[*iter] );
+		feature->addAttribute ( mLayers[layerId].fields[*iter].name(), mEncoding->toUnicode(cstr) );
 	    } else { /* it may happen that attributes are missing -> set to empty string */
 		feature->addAttribute ( mLayers[layerId].fields[*iter].name(), "");	
 	    } 
@@ -1164,6 +1236,25 @@ void QgsGrassProvider::setFeatureAttributes ( int layerId, int cat, QgsFeature *
 struct Map_info *QgsGrassProvider::layerMap ( int layerId )
 {
     return ( mMaps[mLayers[layerId].mapId].map );
+}
+
+QString QgsGrassProvider::getProjectionWKT(void)
+{
+    QString WKT;
+
+    struct Cell_head cellhd;
+
+    QgsGrass::setLocation ( mGisdbase, mLocation ); 
+    G_get_default_window(&cellhd);
+    if (cellhd.proj != PROJECTION_XY) {
+        struct Key_Value *projinfo = G_get_projinfo();
+        struct Key_Value *projunits = G_get_projunits();
+	char *wkt = GPJ_grass_to_wkt ( projinfo, projunits,  0, 0 );
+	WKT = QString(wkt);
+	free ( wkt);
+    }
+    
+    return WKT;
 }
 
 //-----------------------------------------  Edit -------------------------------------------------------
@@ -1188,7 +1279,7 @@ bool QgsGrassProvider::isGrassEditable ( void )
 
 bool QgsGrassProvider::isEdited ( void )
 {
-    #ifdef QGISDEBUG
+    #if QGISDEBUG > 3
     std::cerr << "QgsGrassProvider::isEdited" << std::endl;
     #endif
 
@@ -1277,6 +1368,9 @@ bool QgsGrassProvider::closeEdit ( void )
 
     QFileInfo di ( mGisdbase + "/" + mLocation + "/" + mMapset + "/vector/" + mMapName );
     map->lastModified = di.lastModified();
+
+    di.setFile ( mGisdbase + "/" + mLocation + "/" + mMapset + "/vector/" + mMapset + "/dbln" );
+    map->lastAttributesModified = di.lastModified();
 
     // Reopen vector
     QgsGrass::resetError(); // to "catch" error after Vect_open_old()
@@ -1706,9 +1800,10 @@ std::vector<QgsFeatureAttribute> *QgsGrassProvider::attributes ( int field, int 
     for (int i = 0; i < nColumns; i++) {
 	dbColumn *column = db_get_table_column (databaseTable, i);
 	db_convert_column_value_to_string (column, &dbstr);
-	std::cerr << "Value: " << db_get_string(&dbstr) << std::endl;
-        att->push_back ( QgsFeatureAttribute( db_get_column_name(column), 
-		                              db_get_string(&dbstr) ) );
+
+        QString v = mEncoding->toUnicode(db_get_string(&dbstr));
+	std::cerr << "Value: " << v << std::endl;
+        att->push_back ( QgsFeatureAttribute( db_get_column_name(column), v ) );
     }
 
     db_close_cursor (&databaseCursor);
@@ -1755,8 +1850,27 @@ QString *QgsGrassProvider::updateAttributes ( int field, int cat, const QString 
     db_init_string (&dbstr);
     QString query;
     
-    query.sprintf("update %s set %s where %s = %d", fi->table, values.latin1(), fi->key, cat );
-    db_set_string (&dbstr, (char *)query.latin1());
+    query = "update " + QString(fi->table) + " set " + values + " where " + QString(fi->key) 
+	    + " = " + QString::number(cat);
+
+    #ifdef QGISDEBUG
+    std::cerr << "query: " << query << std::endl;
+    #endif
+
+    // For some strange reason, mEncoding->fromUnicode(query) does not work, 
+    // but probably it is not correct, because Qt widgets will use current locales for input
+    //  -> it is possible to edit only in current locales at present
+    // QCString qcs = mEncoding->fromUnicode(query);
+
+    QCString qcs = query.local8Bit();
+    #ifdef QGISDEBUG
+    std::cerr << "qcs: " << qcs << std::endl;
+    #endif
+    
+    char *cs = new char[qcs.length() + 1];
+    strcpy(cs, (const char *)qcs);
+    db_set_string (&dbstr, cs );
+    delete[] cs;
     
     #ifdef QGISDEBUG
     std::cerr << "SQL: " << db_get_string(&dbstr) << std::endl;

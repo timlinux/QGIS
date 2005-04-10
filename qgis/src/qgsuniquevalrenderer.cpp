@@ -24,8 +24,11 @@
 #include "qgsvectorlayer.h"
 #include "qgssymbologyutils.h"
 #include "qgsuvaldialog.h"
+#include "qgssvgcache.h"
 #include <qdom.h>
 #include <qpainter.h>
+#include <qpixmap.h>
+#include <qpicture.h>
 #include <vector>
 
 QgsUniqueValRenderer::QgsUniqueValRenderer(): mClassificationField(0)
@@ -45,6 +48,7 @@ QgsUniqueValRenderer::~QgsUniqueValRenderer()
 
 void QgsUniqueValRenderer::initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorLayerProperties* pr)
 {
+    mVectorType = layer->vectorType();
     QgsUValDialog *dialog = new QgsUValDialog(layer);
 
 	if (pr)
@@ -57,25 +61,44 @@ void QgsUniqueValRenderer::initializeSymbology(QgsVectorLayer* layer, QgsDlgVect
         }
 }
     
-void QgsUniqueValRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected)
+void QgsUniqueValRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, 
+	double* scalefactor, bool selected, int oversampling, double widthScale)
 {
     std::vector < QgsFeatureAttribute > vec = f->attributeMap();
     QString value = vec[0].fieldValue();
     std::map<QString,QgsRenderItem*>::iterator it=mEntries.find(value);
     if(it!=mEntries.end())
     {
-	QgsRenderItem* ritem=it->second;
-	p->setPen(ritem->getSymbol()->pen());
-	p->setBrush(ritem->getSymbol()->brush());
+	QgsRenderItem *item = it->second;
 
-	if(selected)
+	// Point 
+	if ( pic && mVectorType == QGis::Point ) {
+	    *pic = item->getSymbol()->getPointSymbolAsPicture( oversampling, widthScale,
+		                                             selected, mSelectionColor );
+	    
+	    if ( scalefactor ) *scalefactor = 1;
+	} 
+
+        // Line, polygon
+ 	if ( mVectorType != QGis::Point )
 	{
-	    QPen pen=ritem->getSymbol()->pen();
-	    pen.setColor(mSelectionColor);
-	    QBrush brush=ritem->getSymbol()->brush();
-	    brush.setColor(mSelectionColor);
-	    p->setPen(pen);
-	    p->setBrush(brush);
+	    if( !selected ) 
+	    {
+		QPen pen=item->getSymbol()->pen();
+		pen.setWidth ( (int) (widthScale * pen.width()) );
+		p->setPen(item->getSymbol()->pen());
+		p->setBrush(item->getSymbol()->brush());
+	    }
+	    else
+	    {
+		QPen pen=item->getSymbol()->pen();
+		pen.setWidth ( (int) (widthScale * pen.width()) );
+		pen.setColor(mSelectionColor);
+		QBrush brush=item->getSymbol()->brush();
+		brush.setColor(mSelectionColor);
+		p->setPen(pen);
+		p->setBrush(brush);
+	    }
 	}
     }
     else
@@ -89,6 +112,7 @@ void QgsUniqueValRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pi
 
 void QgsUniqueValRenderer::readXML(const QDomNode& rnode, QgsVectorLayer& vl)
 {
+    mVectorType = vl.vectorType();
     QDomNode classnode = rnode.namedItem("classificationfield");
     int classificationfield = classnode.toElement().text().toInt();
     this->setClassificationField(classificationfield);
@@ -104,34 +128,15 @@ void QgsUniqueValRenderer::readXML(const QDomNode& rnode, QgsVectorLayer& vl)
 	QgsSymbol* msy = new QgsSymbol();
 	QPen pen;
 	QBrush brush;
+	
 	QDomNode synode = renderitemnode.namedItem("symbol");
-	QDomElement oulcelement = synode.namedItem("outlinecolor").toElement();
-	int red = oulcelement.attribute("red").toInt();
-	int green = oulcelement.attribute("green").toInt();
-	int blue = oulcelement.attribute("blue").toInt();
-	pen.setColor(QColor(red, green, blue));
 
-	QDomElement oustelement = synode.namedItem("outlinestyle").toElement();
-	pen.setStyle(QgsSymbologyUtils::qString2PenStyle(oustelement.text()));
-
-	QDomElement oulwelement = synode.namedItem("outlinewidth").toElement();
-	pen.setWidth(oulwelement.text().toInt());
-
-	QDomElement fillcelement = synode.namedItem("fillcolor").toElement();
-	red = fillcelement.attribute("red").toInt();
-	green = fillcelement.attribute("green").toInt();
-	blue = fillcelement.attribute("blue").toInt();
-	brush.setColor(QColor(red, green, blue));
-
-	QDomElement fillpelement = synode.namedItem("fillpattern").toElement();
-	brush.setStyle(QgsSymbologyUtils::qString2BrushStyle(fillpelement.text()));
+	msy->readXML ( synode );
 
 	QDomElement labelelement = renderitemnode.namedItem("label").toElement();
 	QString label = labelelement.text();
 
 	//create a renderitem and add it to the renderer
-	msy->setBrush(brush);
-	msy->setPen(pen);
 
 	QgsRenderItem *ri = new QgsRenderItem(msy, value, label);
 	this->insertValue(value,ri);
@@ -148,40 +153,6 @@ void QgsUniqueValRenderer::readXML(const QDomNode& rnode, QgsVectorLayer& vl)
     properties->setLegendType("Unique Value");
 
     uvaldialog->apply();
-}
-
-void QgsUniqueValRenderer::writeXML(std::ostream& xml)
-{
-#ifdef QGISDEBUG
-    qWarning("in QgsUniqueValRenderer::writeXML");
-#endif
-    xml << "\t\t<uniquevalue>\n";
-    xml << "\t\t\t<classificationfield>" << QString::number(this->classificationField()) << "</classificationfield>\n";
-    for(std::map<QString,QgsRenderItem*>::iterator it=mEntries.begin();it!=mEntries.end();++it)
-    {
-	xml << "\t\t\t<renderitem>\n";
-	xml << "\t\t\t\t<value>" << QString(it->first) << "</value>\n";
-	xml << "\t\t\t\t<symbol>\n";
-	QgsSymbol *symbol = (it->second)->getSymbol();
-	xml << "\t\t\t\t\t<outlinecolor red=\"" << QString::number(symbol->pen().color().red()) << "\" green=\"" <<
-	    QString::number(symbol->pen().color().green()) << "\" blue=\"" << QString::number(symbol->pen().color().blue())  << 
-	    "\" />\n";
-	xml << "\t\t\t\t\t<outlinestyle>" << QgsSymbologyUtils::penStyle2QString(symbol->pen().style())  << 
-	    "</outlinestyle>\n";
-	xml << "\t\t\t\t\t<outlinewidth>" << QString::number(symbol->pen().width()) << "</outlinewidth>\n";
-	xml << "\t\t\t\t\t<fillcolor red=\"" << QString::number(symbol->brush().color().red()) << "\" green=\""  << 
-	    QString::number(symbol->brush().color().green()) << "\" blue=\""  << 
-	    QString::number(symbol->brush().color().blue()) << "\" />\n";
-	xml << "\t\t\t\t\t<fillpattern>" << QgsSymbologyUtils::brushStyle2QString(symbol->brush().style())  << 
-	    "</fillpattern>\n";
-	xml << "\t\t\t\t</symbol>\n";
-	xml << "\t\t\t\t<label>" << (it->second)->label() << "</label>\n";
-#ifdef QGISDEBUG
-	qWarning((it->second)->label());
-#endif
-	xml << "\t\t\t</renderitem>\n";
-    }
-    xml << "\t\t</uniquevalue>\n";
 }
 
 void QgsUniqueValRenderer::clearValues()
@@ -227,4 +198,14 @@ bool QgsUniqueValRenderer::writeXML( QDomNode & layer_node, QDomDocument & docum
 	}
     }
     return returnval;
+}
+
+const std::list<QgsRenderItem*> QgsUniqueValRenderer::items() const
+{
+    std::list<QgsRenderItem*> list;
+    for(std::map<QString,QgsRenderItem*>::const_iterator iter=mEntries.begin();iter!=mEntries.end();++iter)
+    {
+	list.push_back(iter->second);
+    }
+    return list;
 }

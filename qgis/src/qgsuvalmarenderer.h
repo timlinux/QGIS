@@ -30,7 +30,7 @@ class QgsUValMaRenderer: public QgsRenderer
     QgsUValMaRenderer();
     virtual ~QgsUValMaRenderer();
     void initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorLayerProperties* pr=0);
-    void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected);
+    void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected, int oversampling = 1, double widthScale = 1.);
     /**Reads the renderer configuration from an XML file
      @param rnode the DOM node to read 
      @param vl the vector layer which will be associated with the renderer*/
@@ -56,6 +56,8 @@ class QgsUValMaRenderer: public QgsRenderer
     int classificationField();
     /**Returns the values*/
     std::map<QString,QgsRenderItem*>& items();
+    /**Return symbology items*/
+    const std::list<QgsRenderItem*> items() const;
  protected:
     /**Field index used for classification*/
     int mClassificationField;

@@ -59,7 +59,8 @@ void QgsUValMaRenderer::initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorL
         }
 }
     
-void QgsUValMaRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected)
+void QgsUValMaRenderer::renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, 
+	double* scalefactor, bool selected, int oversampling, double widthScale)
 {
 #ifdef QGISDEBUG
     qWarning("in QgsUValMaRenderer::renderFeature");
@@ -211,4 +212,14 @@ std::list<int> QgsUValMaRenderer::classificationAttributes()
 std::map<QString,QgsRenderItem*>& QgsUValMaRenderer::items()
 {
     return mEntries;
+}
+
+const std::list<QgsRenderItem*> QgsUValMaRenderer::items() const
+{
+    std::list<QgsRenderItem*> list;
+    for(std::map<QString,QgsRenderItem*>::const_iterator iter=mEntries.begin();iter!=mEntries.end();++iter)
+    {
+	list.push_back(iter->second);
+    }
+    return list;
 }

@@ -168,7 +168,9 @@ The [type] part of the variable should be the type class of the variable written
  
 #include <qvaluevector.h>
 #include <qvaluelist.h> 
+#include <qvaluevector.h> 
 #include <qslider.h>
+#include <qdatetime.h>
 #include "qgspoint.h"
 #include "qgsmaplayer.h"
 #include "qgscolortable.h"
@@ -180,6 +182,7 @@ The [type] part of the variable should be the type class of the variable written
 //
 class QgsRect;
 class QgsRasterLayerProperties;
+class QgsIdentifyResults;
 class GDALDataset;
 class GDALRasterBand;
 class QImage;
@@ -219,8 +222,13 @@ struct RasterBandStats
     /** \brief The number of cells in the band. Equivalent to height x width. 
      * TODO: check if NO_DATA are excluded!*/
     int elementCountInt;    
-    /** \brief A histogram storing the distribution of values within the raster. */
-    int histogram[256];
+    /** \brief Store the histogram for a given layer */
+    typedef QValueVector<int> HistogramVector;
+    HistogramVector * histogramVector;
+    /** \brief whteher histogram values are estimated or completely calculated */
+    bool histogramEstimatedFlag;
+    /** whehter histogram compuation should include out of range values */
+    bool histogramOutOfRangeFlag;
     /** Color table */
     QgsColorTable colorTable;
 };
@@ -352,6 +360,9 @@ public:
 
     /** \brief The destuctor.  */
     ~QgsRasterLayer();
+
+    /** \brief Identify raster value(s) found in center of the search rectangle */
+    void identify(QgsRect *);
 
     /** \brief Query gdal to find out the WKT projection string for this layer. This implements the virtual method of the same name defined in QgsMapLayer*/
     QString getProjectionWKT() { return QString (gdalDataset->GetProjectionRef());};
@@ -748,7 +759,11 @@ public:
     /** \brief Similar to above but returns a pointer. Implemented for qgsmaplayer interface. 
      * Always overlays legend name!*/
     QPixmap * legendPixmap(); 
-
+    
+    /** \brief Use this method when you want an annotated legend suitable for print output etc. 
+     * @param int theLabelCountInt Number of vertical labels to display (defaults to 3)
+     * */
+    QPixmap getDetailedLegendQPixmap(int theLabelCount);
     /** tailor the right-click context menu with raster layer only stuff 
 
       @note called by QgsMapLayer::initContextMenu();
@@ -773,6 +788,8 @@ public:
     /**Currently returns always false*/
     bool isEditable() const;
     
+    /** Return time stamp for given file name */
+    static QDateTime lastModified ( QString name );
     
 public slots:    
 
@@ -799,7 +816,19 @@ public slots:
      * invokes an instance of the QgsRasterLayerProperties dialog box.*/
     /* virtual */ void showLayerProperties();
 
+  /** Populate the histogram vector for a given layer
+  * @param theBandNoInt - which band to compute the histogram for
+  * @param theBinCountInt - how many 'bins' to categorise the data into
+  * @param theIgnoreOutOfRangeFlag - whether to ignore values that are out of range (default=true)
+  * @param theThoroughBandScanFlag - whether to visit each cell when computing the histogram (default=false)
+  */
+  void populateHistogram(int theBandNoInt, int theBinCountInt=256,bool theIgnoreOutOfRangeFlag=true,bool theThoroughBandScanFlag=false);
 
+    /** \brief Color table 
+     *  \param band number
+     *  \return pointer to color table
+     */
+    QgsColorTable *colorTable ( int theBandNoInt );
  protected:
 
     /** reads vector layer specific state from project file DOM node.
@@ -899,11 +928,6 @@ private:
      */
     inline double readValue ( void *data, GDALDataType type, int index );
 
-    /** \brief Color table 
-     *  \param band number
-     *  \return pointer to color table
-     */
-    QgsColorTable *colorTable ( int theBandNoInt );
 
     /**
        Load the given raster file
@@ -915,6 +939,12 @@ private:
        Called from ctor if a raster image given there
      */
     bool readFile( QString const & fileName );
+    
+    /** \brief Close data set and release related data */
+    void closeDataset ();
+
+    /** \brief Update the layer if it is outdated */
+    bool update ();
 
     //
     // Private member vars
@@ -987,6 +1017,11 @@ private:
     */
     QgsRasterLayerProperties * mLayerProperties;
     
+    //! Pointer to the identify results dialog
+    QgsIdentifyResults *mIdentifyResults;
+
+    //! Timestamp, the last modified time of the data source when the layer was created
+    QDateTime mLastModified;
 };
 
 #endif

@@ -22,6 +22,8 @@
 
 #include "../../src/qgisapp.h"
 
+class QgsGrassTools;
+
 /**
 * \class QgsGrassPlugin
 * \brief OpenModeller plugin for QGIS
@@ -77,10 +79,19 @@ public slots:
   void help();
   //! Display current region
   void displayRegion(QPainter *painter);
+  //! Switch region on/off
+  void switchRegion(bool on);
   //! Change region
   void changeRegion(void);
+  //! Post render
+  void postRender(QPainter *);
+  //! Open tools 
+  void openTools(void);
 
 private:
+  //! Check if given directory contains a GRASS installation
+  static bool isValidGrassBaseDir(QString const gisBase);
+  
   //! Name of the plugin
   QString pluginNameQString;
   //! Version
@@ -106,6 +117,8 @@ private:
   QAction *mRegionAction;
   //! Region width
   QPen mRegionPen;
+  //! GRASS tools
+  QgsGrassTools *mTools;
 };
 
 #endif // QGSGRASSPLUGIN_H

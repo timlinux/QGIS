@@ -61,7 +61,8 @@ void QgsSiMaRenderer::initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorLay
     }
 }
 
-void QgsSiMaRenderer::renderFeature(QPainter* p, QgsFeature* f, QPicture* pic, double* scalefactor, bool selected)
+void QgsSiMaRenderer::renderFeature(QPainter* p, QgsFeature* f, QPicture* pic, 
+	    double* scalefactor, bool selected, int oversampling, double widthScale)
 {
     p->setPen(Qt::NoPen);
     p->setBrush(Qt::NoBrush);
@@ -231,4 +232,11 @@ bool QgsSiMaRenderer::writeXML( QDomNode & layer_node, QDomDocument & document )
 	returnvalue=mItem->writeXML(singlemarker,document);
     }
     return returnvalue;
+}
+
+const std::list<QgsRenderItem*> QgsSiMaRenderer::items() const
+{
+    std::list<QgsRenderItem*> list;
+    list.push_back(mItem);
+    return list;
 }

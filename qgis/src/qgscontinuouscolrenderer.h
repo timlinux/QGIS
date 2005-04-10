@@ -39,7 +39,7 @@ class QgsContinuousColRenderer: public QgsRenderer
        @param pr the property dialog. This is only needed if the renderer is created from the property dialog and not yet associated with the vector layer, otherwise 0*/
     void initializeSymbology(QgsVectorLayer* layer, QgsDlgVectorLayerProperties* pr=0);
     /**Renders the feature using the minimum and maximum value of the classification field*/
-    void renderFeature(QPainter* p, QgsFeature* f, QPicture* pic, double* scalefactor, bool selected);
+    void renderFeature(QPainter* p, QgsFeature* f, QPicture* pic, double* scalefactor, bool selected, int oversampling = 1, double widthScale = 1.);
     /**Returns the number of the classification field*/
     int classificationField() const;
     /**Sets the id of the classification field*/
@@ -66,7 +66,9 @@ class QgsContinuousColRenderer: public QgsRenderer
     /**Returns a list with the index of the classification attribute*/
     virtual std::list<int> classificationAttributes();
     /**Returns the renderers name*/
-    QString name(); 
+    QString name();
+    /**Return symbology items*/
+    const std::list<QgsRenderItem*> items() const;
  protected:
     /**Number of the classification field (it must be a numerical field)*/
     int mClassificationField;

@@ -44,6 +44,7 @@ class QgsMapLayerRegistry;
 class QgsRasterLayer;
 class QCheckBox;
 class QEvent;
+class QgsComposer;
 #ifdef WIN32
 #include "qgisappbase.h"
 #else
@@ -52,6 +53,7 @@ class QEvent;
 #include "qgisiface.h"
 #include "splashscreen.h"
 #include "qgsconfig.h"
+#include "qgsvectordataprovider.h"
 
 static SplashScreen * gSplashScreen ;
 
@@ -81,7 +83,7 @@ public:
     void addVectorLayer(QString vectorLayerPath, QString baseName, QString providerKey);
     /** \brief overloaded vesion of the privat addLayer method that takes a list of
     * filenames instead of prompting user with a dialog.
-
+    @param enc encoding type for the layer 
     @returns true if successfully added layer
 
     @note
@@ -91,11 +93,12 @@ public:
     It's much better to try to just open one file at a time.
 
     */
-    bool addLayer(QStringList const & theLayerQStringList);
+    bool addLayer(QStringList const & theLayerQStringList, const QString& enc);
 
     /** open a vector layer for the given file
 
-      @returns false if unable to open a raster layer for rasterFile
+    
+    @returns false if unable to open a raster layer for rasterFile
 
       @note
 
@@ -205,6 +208,8 @@ private:
     void pan();
     //! Identify feature(s) on the currently selected layer
     void identify();
+    //! Measure distance
+    void measure();
     //! show the attribute table for the currently selected layer
     void attributeTable();
     /**Deletes the selected attributes for the currently selected vector layer*/
@@ -230,6 +235,8 @@ private:
     //! check to see if file is dirty and if so, prompt the user th save it
     int saveDirty();
 
+
+    
 private slots:
 
     //! reimplements widget keyPress event so we can check if cancel was pressed
@@ -353,6 +360,8 @@ public slots:
     void setLayerOverviewStatus(QString theLayerId, bool theVisibilityFlag);
     void drawExtentRectangle(QPainter *);
     void updateMouseCoordinatePrecision();
+    void debugHook();
+    void stopZoom();
 
 signals:
     /** emitted when a key is pressed and we want non widget sublasses to be able
@@ -390,7 +399,7 @@ private:
 
     /// QgisApp aren't copyable
     QgisApp & operator=( QgisApp const & );
-
+    
     //! A central registry that keeps track of all loaded layers.
     // prefer QgsMapLayerRegistry::instance() to emphasize Singleton
     ///QgsMapLayerRegistry * mMapLayerRegistry;
@@ -430,6 +439,8 @@ private:
     QRect *mMapWindow;
     //! Current map tool
     int mMapTool;
+    //! The previously selected non zoom map tool.
+    int mPreviousNonZoomMapTool;
     //QCursor *mCursorZoomIn; //doesnt seem to be used anymore (TS)
     QString mStartupPath;
     //! full path name of the current map file (if it has been saved or loaded)
@@ -456,11 +467,15 @@ private:
     //! list of recently opened/saved project files
     QStringList mRecentProjectPaths;
 
+    //! Map composer
+    QgsComposer *mComposer;
+
     //! How to determine the number of decimal places used to
     //! display the mouse position
     bool mMousePrecisionAutomatic;
     //! The number of decimal places to use if not automatic
     unsigned int mMousePrecisionDecimalPlaces;
+    
 };
 
 #endif

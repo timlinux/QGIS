@@ -32,8 +32,11 @@ class QColor;
 #include <qstring.h>
 #include <qdom.h>
 
+#include "qgis.h"
 #include "qgsproject.h"
 #include <qcolor.h>
+
+class QgsRenderItem;
 
 /**Abstract base class for renderers. A renderer holds all the information necessary to draw the contents of a vector layer to a map canvas. The vector layer then passes each feature to paint to the renderer*/
 class QgsRenderer
@@ -50,13 +53,13 @@ class QgsRenderer
      @param f a pointer to the feature to be rendered
      @param pic pointer to a marker from SVG (is only used by marker renderers)
      @param scalefactor pointer to the scale factor for the marker image*/
-    virtual void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected)=0;
+    virtual void renderFeature(QPainter* p, QgsFeature* f,QPicture* pic, double* scalefactor, bool selected, int oversampling = 1, double widthScale = 1.)=0;
     /**Reads the renderer configuration from an XML file
      @param rnode the DOM node to read 
      @param vl the vector layer which will be associated with the renderer*/
     virtual void readXML(const QDomNode& rnode, QgsVectorLayer& vl)=0;
     /**Writes the contents of the renderer to a configuration file*/
-    virtual void writeXML(std::ostream& xml)=0;
+    // virtual void writeXML(std::ostream& xml)=0;
     /**Writes the contents of the renderer to a configuration file
      @ return true in case of success*/
     virtual bool writeXML( QDomNode & layer_node, QDomDocument & document )=0;
@@ -67,12 +70,17 @@ class QgsRenderer
     /**Returns the renderers name*/
     virtual QString name()=0;    
     /** Set up the selection color by reading approriate values from project props */
-    void initialiseSelectionColor();         
+    void initialiseSelectionColor();
+    /**Return symbology items*/
+    virtual const std::list<QgsRenderItem*> items() const=0;
     /**Color to draw selected features - static so we can change it in proj props and automatically 
        all renderers are updated*/
     static QColor mSelectionColor;
+    /**Layer type*/
+    QGis::VectorType mVectorType;
     
 };
+
 inline void QgsRenderer::initialiseSelectionColor()
 {
     int myRedInt = QgsProject::instance()->readNumEntry("Gui","/SelectionColorRedPart",255);

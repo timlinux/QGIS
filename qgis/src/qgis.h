@@ -29,6 +29,8 @@
 */
 #include "qgsconfig.h"
 
+#include <qevent.h>
+
 namespace QGis
 { 
   // Version constants
@@ -54,7 +56,9 @@ namespace QGis
     Select,
     CapturePoint,
     CaptureLine,
-    CapturePolygon
+    CapturePolygon,
+    EmitPoint,
+    Measure
   };
 //! Used for symbology operations
   // Featuure types
@@ -91,5 +95,26 @@ namespace QGis
     "WKBMultiLineString",
     "WKBMultiPolygon" 
   };
+  
+  //! User defined event types
+  enum UserEvent
+  {
+    // These first two are useful for threads to alert their parent data providers
+  
+    //! The extents have been calculated by a provider of a layer
+    ProviderExtentCalcEvent = (QEvent::User + 1),
+    
+    //! The row count has been calculated by a provider of a layer
+    ProviderCountCalcEvent
+  };
+  
 }
+  //! Structure for storing a spatial_ref_sys item
+  typedef struct{
+    QString srid; // spatial reference id (ala PostGIS)
+    QString auth_name; // name of the author for this SRS
+    QString auth_srid; // srid used by the author
+    QString srtext; // WKT of the coordinate system
+    QString proj4text; // Proj4 parameter string 
+  } SPATIAL_REF_SYS; 
 #endif

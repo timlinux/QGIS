@@ -55,7 +55,7 @@ class QgsMapLayerInterface;
 class QgsLegend;
 class QgsLegendView;
 class QgsAcetateObject;
-
+class QgsMeasure;
 
 
 /*! \class QgsMapCanvas
@@ -286,6 +286,7 @@ signals:
     void xyCoordinates(QgsPoint & p);
     /** emits mouse position when the canvas is clicked */
     void xyClickCoordinates(QgsPoint &p);
+    void xyClickCoordinates(QgsPoint &p, Qt::ButtonState button);
 
     //! Emitted when the scale of the map changes
     void scaleChanged(QString);
@@ -316,6 +317,10 @@ signals:
        now empty
      */
     void removedAll();
+
+    /** emitted when right mouse button is pressed with zoom tool
+     *  QgisApp should catch it and reset tool to the last non zoom tool */
+    void stopZoom();
 
 private:
     /** A simple helper method to find out if on the fly projections are enabled or not */
@@ -392,6 +397,8 @@ private:
   */
   void connectNotify( const char * signal );
 
+    //! Measure tool
+    QgsMeasure *mMeasure;
 }; // class QgsMapCanvas
 
 #endif

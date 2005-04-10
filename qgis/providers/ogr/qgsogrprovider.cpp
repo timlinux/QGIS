@@ -32,6 +32,7 @@ email                : sherman at mrcc.com
 #include "ogr_api.h"//only for a test
 
 #include <qmessagebox.h>
+#include <qmap.h>
 
 //TODO Following ifndef can be removed once WIN32 GEOS support
 //    is fixed
@@ -134,6 +135,9 @@ QgsOgrProvider::QgsOgrProvider(QString uri): QgsVectorDataProvider(), dataSource
   //    std::cerr << "Creating the wktReader\n";
   wktReader = new geos::WKTReader(geometryFactory);
 
+  mNumericalTypes.push_back("OFTInteger");
+  mNumericalTypes.push_back("OFTReal");
+  mNonNumericalTypes.push_back("OFTString");
 }
 
 QgsOgrProvider::~QgsOgrProvider()
@@ -156,6 +160,25 @@ QString QgsOgrProvider::getProjectionWKT()
   }
   else
   {
+    // if appropriate, morph the projection from ESRI form
+    QString fileName = ogrDataSource->GetName();
+#ifdef QGISDEBUG 
+    std::cerr << "Data source file name is : " << fileName << std::endl; 
+#endif 
+    if(fileName.contains(".shp"))
+    {
+#ifdef QGISDEBUG 
+      std::cerr << "Morphing " << fileName << " WKT from ESRI" << std::endl; 
+#endif 
+      // morph it
+      mySpatialRefSys->morphFromESRI();
+    }
+    // get the proj4 text
+    char * ppszProj4;
+    mySpatialRefSys->exportToProj4   ( &ppszProj4 );
+    std::cout << "vvvvvvvvvvvvvvvvv PROJ4 TEXT vvvvvvvvvvvvvvv" << std::endl; 
+    std::cout << ppszProj4 << std::endl; 
+    std::cout << "^^^^^^^^^^^^^^^^^ PROJ4 TEXT ^^^^^^^^^^^^^^^" << std::endl; 
     char    *pszWKT = NULL;
     mySpatialRefSys->exportToWkt( &pszWKT );
     QString myWKTString = QString(pszWKT);
@@ -294,6 +317,76 @@ bool QgsOgrProvider::getNextFeature(QgsFeature &f, bool fetchAttributes)
  */
 QgsFeature *QgsOgrProvider::getNextFeature(bool fetchAttributes)
 {
+   if(!valid)
+   {
+       std::cerr << "Read attempt on an invalid shapefile data source\n";
+       return 0;
+   }
+   
+   OGRFeature* fet;
+   OGRGeometry* geom;
+   QgsFeature *f = 0;
+   while((fet = ogrLayer->GetNextFeature()) != NULL)
+   {
+       if (fet->GetGeometryRef())
+       {
+	   geom = fet->GetGeometryRef();
+	   // get the wkb representation
+	   unsigned char *feature = new unsigned char[geom->WkbSize()];
+	   geom->exportToWkb((OGRwkbByteOrder) endian(), feature);
+	   OGRFeatureDefn * featureDefinition = fet->GetDefnRef();
+	   QString featureTypeName =   featureDefinition ? QString(featureDefinition->GetName()) : QString("");
+
+	   f = new QgsFeature(fet->GetFID(), featureTypeName);
+	   f->setGeometry(feature, geom->WkbSize());
+	   if(fetchAttributes)
+	   {
+	       getFeatureAttributes(fet, f);
+	   }
+	   delete fet;
+
+	   if(mUseIntersect)
+	   {
+	       geos::Geometry* geosGeom=f->geosGeometry();
+	       char *sWkt = new char[2 * mSelectionRectangle->WkbSize()];
+	       mSelectionRectangle->exportToWkt(&sWkt);  
+	       geos::Geometry *geosRect = wktReader->read(sWkt);
+	       if(geosGeom->intersects(geosRect))
+	       {
+#ifdef QGISDEBUG
+		   qWarning("intersection found");
+#endif
+		   delete[] sWkt;
+		   delete geosGeom;
+		   break;
+	       }
+	       else
+	       {
+#ifdef QGISDEBUG
+		   qWarning("no intersection found");
+#endif
+		   delete[] sWkt;
+		   delete geosGeom;
+		   delete f;
+		   f=0;
+	       }
+	   }
+	   else
+	   {
+	       break;
+	   }
+       }
+   }
+   return f;
+}
+
+/**
+ * Get the next feature resutling from a select operation
+ * Return 0 if there are no features in the selection set
+ * @return QgsFeature
+ */
+/*QgsFeature *QgsOgrProvider::getNextFeature(bool fetchAttributes)
+{
 
   QgsFeature *f = 0;
   if(valid){
@@ -367,7 +460,8 @@ QgsFeature *QgsOgrProvider::getNextFeature(bool fetchAttributes)
 #endif
   }
   return f;
-}
+}*/
+
 
 QgsFeature *QgsOgrProvider::getNextFeature(std::list<int> const& attlist)
 {
@@ -461,15 +555,16 @@ void QgsOgrProvider::select(QgsRect *rect, bool useIntersect)
     mSelectionRectangle = new OGRPolygon();
     mSelectionRectangle->importFromWkt((char **)&wktText);
   }
+
   // reset the extent for the ogr filter
-  //
-  wktExtent = QString("POLYGON ((%1))").arg(rect->stringRep());
+  wktExtent = QString("POLYGON ((%1))").arg(rect->asPolygon());
   wktText = (const char *)wktExtent;
 
   OGRErr result = ((OGRPolygon *) filter)->importFromWkt((char **)&wktText);
   //TODO - detect an error in setting the filter and figure out what to
   //TODO   about it. If setting the filter fails, all records will be returned
-  if (result == OGRERR_NONE) {
+  if (result == OGRERR_NONE) 
+  {
     std::cerr << "Setting spatial filter using " << wktExtent    << std::endl;
     ogrLayer->SetSpatialFilter(filter);
     std::cerr << "Feature count: " << ogrLayer->GetFeatureCount() << std::endl;
@@ -479,7 +574,10 @@ void QgsOgrProvider::select(QgsRect *rect, bool useIntersect)
     assert(result==OGRERR_NONE);
 #endif
   }
-}
+} // QgsOgrProvider::select
+
+
+
 /**
  * Set the data source specification. This may be a path or database
  * connection string
@@ -570,11 +668,8 @@ void QgsOgrProvider::getFeatureAttribute(OGRFeature * ogrFet, QgsFeature * f, in
   }
 
   QString fld = fldDef->GetNameRef();
-  QString val;
-  //val = ogrFet->GetFieldAsString(attindex);
-  val = QString::fromUtf8(ogrFet->GetFieldAsString(attindex));
-  //val = QString::fromLatin1(ogrFet->GetFieldAsString(attindex));
-  f->addAttribute(fld, val);
+  QCString cstr(ogrFet->GetFieldAsString(attindex));
+  f->addAttribute(fld, mEncoding->toUnicode(cstr));
 }
 
 /**
@@ -844,10 +939,10 @@ bool QgsOgrProvider::addFeature(QgsFeature* f)
   return returnValue;
 }
 
-bool QgsOgrProvider::addFeatures(std::list<QgsFeature*> flist)
+bool QgsOgrProvider::addFeatures(std::list<QgsFeature*> const flist)
 {
   bool returnvalue=true;
-  for(std::list<QgsFeature*>::iterator it=flist.begin();it!=flist.end();++it)
+  for(std::list<QgsFeature*>::const_iterator it=flist.begin();it!=flist.end();++it)
   {
     if(!addFeature(*it))
     {
@@ -857,13 +952,131 @@ bool QgsOgrProvider::addFeatures(std::list<QgsFeature*> flist)
   return returnvalue;
 }
 
+bool QgsOgrProvider::addAttributes(std::map<QString,QString> const & name)
+{
+    bool returnvalue=true;
+
+    for(std::map<QString,QString>::const_iterator iter=name.begin();iter!=name.end();++iter)
+    {
+	if(iter->second=="OFTInteger")
+	{
+	    OGRFieldDefn fielddefn(iter->first,OFTInteger);
+	    if(ogrLayer->CreateField(&fielddefn)!=OGRERR_NONE)
+	    {
+#ifdef QGISDEBUG
+		qWarning("QgsOgrProvider.cpp: writing of the field failed");	
+#endif
+		returnvalue=false;
+	    }
+	}
+	else if(iter->second=="OFTReal")
+	{
+	    OGRFieldDefn fielddefn(iter->first,OFTReal);
+	    if(ogrLayer->CreateField(&fielddefn)!=OGRERR_NONE)
+	    {
+#ifdef QGISDEBUG
+		qWarning("QgsOgrProvider.cpp: writing of the field failed");
+#endif
+		returnvalue=false;
+	    }
+	}
+	else if(iter->second=="OFTString")
+	{
+	    OGRFieldDefn fielddefn(iter->first,OFTString);
+	    if(ogrLayer->CreateField(&fielddefn)!=OGRERR_NONE)
+	    {
+#ifdef QGISDEBUG
+		qWarning("QgsOgrProvider.cpp: writing of the field failed");
+#endif
+		returnvalue=false;
+	    }
+	}
+	else
+	{
+#ifdef QGISDEBUG
+	    qWarning("QgsOgrProvider.cpp: type not found");
+#endif
+	    returnvalue=false;
+	}
+    }
+    return returnvalue;
+}
+
+bool QgsOgrProvider::changeAttributeValues(std::map<int,std::map<QString,QString> > const & attr_map)
+{
+#ifdef QGISDEBUG
+  std::cerr << "QgsOgrProvider::changeAttributeValues()" << std::endl;
+#endif
+    
+  std::map<int,std::map<QString,QString> > am = attr_map; // stupid, but I don't know other way to convince gcc to compile
+  for( std::map<int,std::map<QString,QString> >::iterator it=am.begin();it!=am.end();++it)
+  {
+    long fid = (long) (*it).first;
+
+    OGRFeature *of = ogrLayer->GetFeature ( fid );
+
+    if ( !of ) {
+        QMessageBox::warning (0, "Warning", "Cannot read feature, cannot change attributes" );
+	return false;
+    }
+
+    std::map<QString,QString> attr = (*it).second;
+
+    for( std::map<QString,QString>::iterator it2 = attr.begin(); it2!=attr.end(); ++it2 )
+    {
+	QString name = (*it2).first;
+	QString value = (*it2).second;
+		
+	int fc = of->GetFieldCount();
+	for ( int f = 0; f < fc; f++ ) {
+	    OGRFieldDefn *fd = of->GetFieldDefnRef ( f );
+	    
+	    if ( name.compare( fd->GetNameRef() ) == 0 ) {
+		OGRFieldType type = fd->GetType();
+
+#ifdef QGISDEBUG
+		std::cerr << "set field " << f << " : " << name << " to " << value << std::endl;
+#endif
+		switch ( type ) {
+		    case OFTInteger:
+		        of->SetField ( f, value.toInt() );
+			break;
+		    case OFTReal:
+		        of->SetField ( f, value.toDouble() );
+			break;
+		    case OFTString:
+		        of->SetField ( f, value.ascii() );
+			break;
+		    default:
+                        QMessageBox::warning (0, "Warning", "Unknown field type, cannot change attribute" );
+			break;
+		}
+
+		continue;
+	    }	
+	}
+	ogrLayer->SetFeature ( of );
+    }
+  }
+
+  ogrLayer->SyncToDisk();
+
+  return true;
+}
+
+int QgsOgrProvider::capabilities() const
+{
+    return (QgsVectorDataProvider::AddFeatures
+	    | QgsVectorDataProvider::ChangeAttributeValues);
+}
+
 /**
  * Class factory to return a pointer to a newly created 
  * QgsOgrProvider object
  */
-QGISEXTERN QgsOgrProvider * classFactory(const char *uri)
+QGISEXTERN QgsOgrProvider * classFactory(const QString *uri)
 {
-  return new QgsOgrProvider(QString::fromUtf8(uri));
+  return new QgsOgrProvider(*uri);
 }
 /** Required key function (used to map the plugin to a data store type)
 */
