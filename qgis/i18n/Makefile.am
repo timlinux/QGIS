@@ -12,6 +12,10 @@
 
 i18ndir = ${pkgdatadir}/i18n
 
+# Note: Whenever nodist_i18n_DATA is modified, the array CFBundleLocalizations
+# in the file ../src/mac/Contents/Info.plist.in must also be updated to match.
+# Remember to leave en in the other list even though it's not in this list :)
+
 nodist_i18n_DATA = \
 	qgis_de.qm \
 	qgis_fr.qm \
@@ -20,8 +24,7 @@ nodist_i18n_DATA = \
 	qgis_pl_PL.qm \
 	qgis_pt_BR.qm \
 	qgis_ru.qm \
-	qgis_se.qm \
-	qgis_pl_PL.ts \
+	qgis_sv.qm \
 	qgis_zh_CN.qm
 
 i18n_SOURCES = \
@@ -32,8 +35,7 @@ i18n_SOURCES = \
 	qgis_pl_PL.ts \
 	qgis_pt_BR.ts \
 	qgis_ru.ts \
-	qgis_se.ts \
-	qgis_pl_PL.ts \
+	qgis_sv.ts \
 	qgis_zh_CN.ts
 
 %.qm: %.ts

@@ -1068,6 +1068,12 @@ bool QgsProject::read()
     qDebug("Project title: " + imp_->title);
 #endif
 
+    // now set the map units; note, alters QgsProject::instance().
+    _getMapUnits(*doc);
+
+    // get the map layers
+    pair< bool, list<QDomNode> > getMapLayersResults =  _getMapLayers(*doc);
+
     QgsRect savedExtent;
 
     if (!_getExtents(*doc, savedExtent))
@@ -1091,14 +1097,6 @@ bool QgsProject::read()
     // ensure that overview map canvas is set to *entire* extent
     QgsRect mapCanvasFullExtent = _getFullExtent("theMapCanvas");
     _setCanvasExtent("theOverviewCanvas", mapCanvasFullExtent);
-
-
-    // now set the map units; note, alters QgsProject::instance().
-    _getMapUnits(*doc);
-
-
-    // get the map layers
-    pair< bool, list<QDomNode> > getMapLayersResults =  _getMapLayers(*doc);
 
     if ( ! getMapLayersResults.first )
     {
@@ -1131,8 +1129,7 @@ bool QgsProject::read()
 
 
 
-bool
-QgsProject::read( QDomNode & layerNode )
+bool QgsProject::read( QDomNode & layerNode )
 {
     QString type = layerNode.toElement().attribute("type");
 
@@ -1285,7 +1282,7 @@ bool QgsProject::write()
     // now wrap it up and ship it to the project file
     doc->normalize();             // XXX I'm not entirely sure what this does
 
-    QString xml = doc->toString(4); // write to string with indentation of four characters
+    //QString xml = doc->toString(4); // write to string with indentation of four characters
                                 // (yes, four is arbitrary)
 
     // const char * xmlString = xml; // debugger probe point
@@ -1293,8 +1290,8 @@ bool QgsProject::write()
 
     QTextStream projectFileStream(&imp_->file);
 
-    projectFileStream << xml << endl;
-
+    //projectFileStream << xml << endl;
+    doc->save(projectFileStream, 4);  // save as utf-8
     imp_->file.close();
 
 
