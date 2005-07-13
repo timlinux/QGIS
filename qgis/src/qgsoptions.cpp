@@ -27,6 +27,7 @@
 #include "qgsoptions.h"
 #include "qgisapp.h"
 #include "qgssvgcache.h"
+#include "qgis.h"
 #include "qgslayerprojectionselector.h"
 /**
  * \class QgsOptions - Set user options and preferences
@@ -40,7 +41,9 @@ QgsOptions::QgsOptions(QWidget *parent, const char *name) : QgsOptionsBase(paren
   QString browser = settings.readEntry("/qgis/browser");
   cmbBrowser->setCurrentText(browser);
   // set the show splash option
-  int identifyValue = settings.readNumEntry("/qgis/map/identifyRadius");
+  std::cout << "Standard Identify radius setting: " << QGis::DEFAULT_IDENTIFY_RADIUS << std::endl;
+  int identifyValue = settings.readNumEntry("/qgis/map/identifyRadius",QGis::DEFAULT_IDENTIFY_RADIUS);
+  std::cout << "Standard Identify radius setting read from settings file: " << identifyValue << std::endl;
   spinBoxIdentifyValue->setValue(identifyValue);
   bool hideSplashFlag = false;
   if (settings.readEntry("/qgis/hideSplash")=="true")
@@ -68,9 +71,10 @@ QgsOptions::QgsOptions(QWidget *parent, const char *name) : QgsOptionsBase(paren
   {
     radUseGlobalProjection->setChecked(true);
   }
-  mGlobalSRSID = settings.readNumEntry("/qgis/projections/defaultProjectionSRSID");
+  mGlobalSRSID = settings.readNumEntry("/qgis/projections/defaultProjectionSRSID",GEOSRS_ID);
   //! @todo changes this control name in gui to txtGlobalProjString
-  txtGlobalWKT->setText(QString::number(mGlobalSRSID));
+ QString myProjString = QgsSpatialRefSys::getProj4FromSrsId(mGlobalSRSID);
+  txtGlobalWKT->setText(myProjString);
 }
 //! Destructor
 QgsOptions::~QgsOptions(){}
