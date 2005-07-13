@@ -20,6 +20,7 @@
 #include "qgsprojectproperties.h"
 #include "qgscsexception.h"
 #include "qgsprojectionselector.h"
+#include "qgscontexthelp.h"
 
 //qgis includes
 #include "qgsconfig.h"
@@ -73,12 +74,7 @@
     cbxProjectionEnabled->setChecked(true);
   }
   // set the default wkt to WGS 84
-//  QString defaultWkt = QgsSpatialReferences::instance()->getSrsBySrid(defaultWktKey)->srText();
-  // the /selectedWKT entry stores the wkt entry selected in the list of projections
-  /** Magic number for a geographic coord sys in QGIS srs.db tbl_srs.srs_id */
-  const long GEOSRS_ID = 2585;
   long mySRSID =  QgsProject::instance()->readNumEntry("SpatialRefSys","/ProjectSRSID",GEOSRS_ID);
-
   projectionSelector->setSelectedSRSID(mySRSID);
   
   
@@ -214,10 +210,8 @@ void QgsProjectProperties::apply()
     emit setDestSRSID(mySRSID); 
     // write the projection's _id_ to the project settings rather
     QgsProject::instance()->writeEntry("SpatialRefSys","/ProjectSRSID",(int)mySRSID);
-    // write the currently selected projections _name_ to project settings
-    QgsProject::instance()->writeEntry("SpatialRefSys","/ProjectSRSName",projectionSelector->getSelectedName());
     // write the currently selected projections _proj string_ to project settings
-    std::cout << "SpatialRefSys/ProjectSRSProj4String: " <<  projectionSelector->getCurrentProj4String() << std::endl;
+    std::cout << "SpatialRefSys/ProjectSRSProj4String: " <<  projectionSelector->getCurrentProj4String().local8Bit() << std::endl;
     QgsProject::instance()->writeEntry("SpatialRefSys","/ProjectSRSProj4String",projectionSelector->getCurrentProj4String());
     // Set the map units to the projected coordinates if we are projecting
     if (isProjected())
@@ -261,9 +255,7 @@ void QgsProjectProperties::apply()
   QgsProject::instance()->writeEntry("Gui","/SelectionColorBluePart",myColour.blue()); 
   QgsRenderer::mSelectionColor=myColour;
 
-  std::cerr << __FILE__<<__LINE__<<'\n';
   emit refresh();
-  std::cerr << __FILE__<<__LINE__<<'\n';
 }
 
 //when user clicks ok
@@ -281,4 +273,9 @@ bool QgsProjectProperties::isProjected()
 void QgsProjectProperties::showProjectionsTab()
 {
   tabWidget2->setCurrentPage(1);
+}
+void QgsProjectProperties::pbnHelp_clicked()
+{
+  std::cout << "running help" << std::endl; 
+  QgsContextHelp::run(context_id);
 }

@@ -17,6 +17,8 @@ email                : tim@linfiniti.com
 
 
 #include "qgsrasterlayerproperties.h"
+#include "qgslayerprojectionselector.h"
+#include "qgsproject.h"
 #include <qlabel.h>
 #include <qapplication.h>
 #include <qpixmap.h>
@@ -101,7 +103,7 @@ const char * const ident =
     cboGray->insertItem("Green");
     cboGray->insertItem("Blue");
     cboGray->insertItem("Not Set");
-    
+
     lstHistogramLabels->insertItem(tr("Palette"));
   }
   else                   // all other layer types use band name entries only
@@ -130,42 +132,42 @@ const char * const ident =
       //add the band to the histogram tab
       //
       QPixmap myPixmap(10,10);
-          
+
       if (myBandCountInt==1) //draw single band images with black
       {
-      myPixmap.fill( Qt::black );
+        myPixmap.fill( Qt::black );
       }
       else if (myIteratorInt==1)
       {
-      myPixmap.fill( Qt::red );
+        myPixmap.fill( Qt::red );
       }
       else if (myIteratorInt==2)
       {
-      myPixmap.fill( Qt::green );
+        myPixmap.fill( Qt::green );
       }
       else if (myIteratorInt==3)
       {
-      myPixmap.fill( Qt::blue );
+        myPixmap.fill( Qt::blue );
       }
       else if (myIteratorInt==4)
       {
-      myPixmap.fill( Qt::magenta );
+        myPixmap.fill( Qt::magenta );
       }
       else if (myIteratorInt==5)
       {
-      myPixmap.fill( Qt::darkRed );
+        myPixmap.fill( Qt::darkRed );
       }
       else if (myIteratorInt==6)
       {
-      myPixmap.fill( Qt::darkGreen );
+        myPixmap.fill( Qt::darkGreen );
       }
       else if (myIteratorInt==7)
       {
-      myPixmap.fill( Qt::darkBlue );
+        myPixmap.fill( Qt::darkBlue );
       }
       else
       {
-      myPixmap.fill( Qt::gray );
+        myPixmap.fill( Qt::gray );
       }
       lstHistogramLabels->insertItem(myPixmap,myRasterBandNameQString);
       //keep a list of band names for later use
@@ -180,7 +182,7 @@ const char * const ident =
       QString myQString = *myIterator;
 #ifdef QGISDEBUG
 
-      std::cout << "Inserting : " << myQString << std::endl;
+      std::cout << "Inserting : " << myQString.local8Bit() << std::endl;
 #endif
 
       cboGray->insertItem(myQString);
@@ -221,11 +223,15 @@ const char * const ident =
               QString::number((*myRasterPyramidIterator).yDimInt)); 
     }
   }
-  
+
+  if ( rasterLayer->coordinateTransform() )
+  {
+    leSpatialRefSys->setText(rasterLayer->coordinateTransform()->sourceSRS().proj4String());
+  }
   //draw the histogram
   //pbnHistRefresh_clicked();
-  
- // update based on lyr's current state
+
+  // update based on lyr's current state
   sync();  
 } // QgsRasterLayerProperties ctor
 
@@ -317,8 +323,8 @@ void QgsRasterLayerProperties::apply()
 #endif
 #ifdef QGISDEBUG
 
-        std::cout << "Combo value : " << cboGray->currentText() << " GrayBand Mapping : " << rasterLayer->
-            getGrayBandName() << std::endl;
+        std::cout << "Combo value : " << cboGray->currentText().local8Bit() << " GrayBand Mapping : " << rasterLayer->
+            getGrayBandName().local8Bit() << std::endl;
 #endif
 
         rasterLayer->setDrawingStyle(QgsRasterLayer::PALETTED_SINGLE_BAND_GRAY);
@@ -341,8 +347,8 @@ void QgsRasterLayerProperties::apply()
       {
 #ifdef QGISDEBUG
         std::cout << "Setting Raster Drawing Style to :: MULTI_BAND_SINGLE_BAND_GRAY" << std::endl;
-        std::cout << "Combo value : " << cboGray->currentText() << " GrayBand Mapping : " << rasterLayer->
-            getGrayBandName() << std::endl;
+        std::cout << "Combo value : " << cboGray->currentText().local8Bit() << " GrayBand Mapping : " << rasterLayer->
+            getGrayBandName().local8Bit() << std::endl;
 #endif
 
         rasterLayer->setDrawingStyle(QgsRasterLayer::MULTI_BAND_SINGLE_BAND_GRAY);
@@ -373,15 +379,15 @@ void QgsRasterLayerProperties::apply()
     }
 
   }
-
-
+  
+  rasterLayer->setLayerName(leDisplayName->text());
+  
   //update the legend pixmap
   pixmapLegend->setPixmap(rasterLayer->getLegendQPixmap());
   pixmapLegend->setScaledContents(true);
   pixmapLegend->repaint(false);
   rasterLayer->updateItemPixmap();
-
-  rasterLayer->setLayerName(leDisplayName->text());
+  
   //see if the user would like debug overlays
   if (cboxShowDebugInfo->isChecked()
           == true)
@@ -1306,3 +1312,26 @@ void QgsRasterLayerProperties::pbnHistRefresh_clicked()
   pixHistogram->setPixmap(myPixmap);
 }
 
+void QgsRasterLayerProperties::pbnChangeSpatialRefSys_clicked()
+{
+    
+
+    QgsLayerProjectionSelector * mySelector = new QgsLayerProjectionSelector(this);
+    long myDefaultSRS = rasterLayer->coordinateTransform()->sourceSRS().srsid();
+    if (myDefaultSRS==0)
+    {
+      myDefaultSRS=QgsProject::instance()->readNumEntry("SpatialRefSys","/ProjectSRSID",GEOSRS_ID);
+    }
+    mySelector->setSelectedSRSID(myDefaultSRS);
+    if(mySelector->exec())
+    {
+      rasterLayer->coordinateTransform()->sourceSRS().createFromSrsId(mySelector->getCurrentSRSID());
+      rasterLayer->coordinateTransform()->initialise();
+    }
+    else
+    {
+      QApplication::restoreOverrideCursor();
+    }
+    delete mySelector;
+    leSpatialRefSys->setText(rasterLayer->coordinateTransform()->sourceSRS().proj4String());
+}
