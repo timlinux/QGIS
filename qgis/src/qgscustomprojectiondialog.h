@@ -30,10 +30,10 @@ public:
     //a recursive function to make a directory and its ancestors
     bool makeDir(QDir &theQDir);
 public slots:    
+    void pbnCalculate_clicked();
     void pbnHelp_clicked();
     void pbnClose_clicked();
     void pbnDelete_clicked();
-    void cboProjectionFamily_highlighted( const QString & );
     //
     // Database navigation controles
     //
@@ -48,20 +48,17 @@ public slots:
     //
     // Contol population
     //
+    /* These two methods will be deprecated
     void getProjList();
     void getEllipsoidList();
+    */
     QString getProjectionFamilyName(QString theProjectionFamilyAcronym);
     QString getEllipsoidName(QString theEllipsoidAcronym);
     QString getProjectionFamilyAcronym(QString theProjectionFamilyName);
     QString getEllipsoidAcronym(QString theEllipsoidName);
 private: 
-    /*! This is a helper function to parse the proj parameters string
-     * and make sure that the combos for projection and ellipsoid
-     * match. If they dont, the combos are changed appropriately 
-     */
-    void setCombosUsingParameters();
-    void checkParametersHaveProj();
-    void checkParametersHaveEllipse();
+    QString getProjFromParameters();
+    QString getEllipseFromParameters();
     
         
     QString mCurrentRecordId;
