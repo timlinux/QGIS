@@ -8,7 +8,11 @@
 # WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-SUBDIRS = svg images themes resources
+if HAVE_QTMAC
+MAC = mac
+endif
+
+SUBDIRS = svg images themes resources $(MAC)
 
 if !HAVE_QTMAC
 PREFIX=-DPREFIX=\"$(prefix)\"
@@ -30,7 +34,14 @@ WIDGETPATH=../widgets
 
 
 ## main app
+if HAVE_QTMAC
+# Qt/Mac binary must be in MacOS directory within bundle, not in bin subdirectory
+# (configure ensures that prefix ends in qgis.app/Contents/MacOS)
+macbindir = $(exec_prefix)
+macbin_PROGRAMS = qgis
+else
 bin_PROGRAMS = qgis
+endif
 
 ## ancillary library for plug-ins
 lib_LTLIBRARIES = libqgis.la
@@ -63,6 +74,7 @@ headers =	qgisapp.h					\
 		qgscomposerview.h				\
 		qgscomposition.h				\
 		qgscontcoldialog.h				\
+		qgscontexthelp.h 	\
 		qgscontinuouscolrenderer.h			\
 		qgscoordinatetransform.h			\
 		qgsencodingfiledialog.h				\
@@ -241,6 +253,7 @@ qgis_MOC =	qgisapp.moc.cpp				\
 		qgscomposerview.moc.cpp			\
 		qgscomposition.moc.cpp			\
 		qgscontcoldialog.moc.cpp		\
+		qgscontexthelp.moc.cpp		\
 		qgscoordinatetransform.moc.cpp		\
 		qgsdataprovider.moc.cpp		\
 		qgsdelattrdialog.moc.cpp			\
@@ -310,6 +323,7 @@ qgis_SOURCES =	main.cpp			\
 		qgscomposerview.cpp		\
 		qgscomposition.cpp		\
 		qgscontcoldialog.cpp		\
+		qgscontexthelp.cpp \
 		qgscontinuouscolrenderer.cpp	\
 		qgscoordinatetransform.cpp	\
 		qgscustomsymbol.cpp		\
@@ -406,7 +420,7 @@ postgresUIC     = qgsdbsourceselectbase.ui		\
 		  qgsnewconnectionbase.ui		\
 		  qgspgquerybuilderbase.ui	
 
-postgresUIH     = 
+postgresUIH     = qgspgquerybuilderbase.ui.h
 postgresLIBSOURCES = qgspgutil.cpp
 
 if HAVE_POSTGRESQL
@@ -473,6 +487,8 @@ libqgis_la_SOURCES =						\
 		qgscomposition.moc.cpp				\
 		qgscompositionbase.moc.uic.cpp			\
 		qgscompositionbase.uic.cpp			\
+		qgscontexthelp.cpp \
+		qgscontexthelp.moc.cpp \
 		qgscontinuouscolrenderer.cpp			\
 		qgscoordinatetransform.cpp			\
 		qgscoordinatetransform.moc.cpp			\
