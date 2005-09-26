@@ -1,21 +1,13 @@
-qgis (0.6.99+0.7.0pre2-0.dgis.unstable.1-1) unstable; urgency=low
+qgis (0.7.0-1) unstable; urgency=low
 
-  * New upstream release
+  * New upstream release (Closes: #327592)
+    - Don't segfault when starting without X (Closes: #295872)
+    - GPX plugin uses less RAM (Closes: #284238)
+  * PostgreSQL transition: build-dep on libpq-dev | postgresql-dev
+  * C++ ABI transition. No explicit changes made. (Closes: #327597)
+  * Bump standards version to 3.6.2. No changes made.
 
- -- Steve Halasz <debian@adkgis.org>  Fri, 22 Jul 2005 19:10:15 -0400
-
-qgis (0.6.99+0.7.0pre1-0.dgis.unstable.1-2) unstable; urgency=low
-
-  * Move contents of /usr/share/qgis/grass to qgis-plugin-grass
-  * Correct build-dep on libgrass-dev
-
- -- Steve Halasz <debian@adkgis.org>  Fri, 24 Jun 2005 15:18:11 -0400
-
-qgis (0.6.99+0.7.0pre1-0.dgis.unstable.1-1) unstable; urgency=low
-
-  * New upstream release
-
- -- Steve Halasz <debian@adkgis.org>  Mon, 20 Jun 2005 14:57:43 -0400
+ -- Steve Halasz <debian@adkgis.org>  Fri, 16 Sep 2005 10:43:49 -0400
 
 qgis (0.6.0-2) unstable; urgency=low
 
