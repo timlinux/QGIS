@@ -35,6 +35,7 @@ config.status: configure
                     --with-qtdir=/usr/share/qt3 \
                     --enable-spit \
                     --with-postgresql \
+                    --with-grass=/usr/lib/grass \
                     --disable-debug
 
 build: patch build-stamp

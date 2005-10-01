@@ -32,3 +32,10 @@ Description: QGIS Geographic Information System - development files
  .
  This package contains the headers and libraries
  needed to develop plugins for QGIS.
+
+Package: qgis-plugin-grass
+Architecture: any
+Depends: qgis (= ${Source-Version}), libgdal1-grass (>= 1.2.6-0)
+Description: Plugin for accessing GRASS vectors from QGIS
+ This plugin enables display of GRASS vectors in the QGIS
+ geographic data viewer.
