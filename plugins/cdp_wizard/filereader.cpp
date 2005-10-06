@@ -60,8 +60,8 @@ bool FileReader::openFile(const QString theFileNameQString,const FileTypeEnum th
     // now open the text stream on the filereader
     textStream = new QTextStream(filePointer);
   }
-  currentColLong=1;
-  currentRowLong=1;
+  currentColLong=0;
+  currentRowLong=0;
   currentElementLong=0;
   setFileType(theFileType);
   return true;
