@@ -1,3 +1,9 @@
+qgis (0.7.9devel) unstable; urgency=low
+
+  * Develop snapshot of QGIS cvs head 
+
+ -- Tim Sutton <tim@linfiniti.com>  Thu, 13 Oct 2005 23:07:06 +0100
+
 qgis (0.7.0-1) unstable; urgency=low
 
   * New upstream release (Closes: #327592)
