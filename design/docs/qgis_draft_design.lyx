@@ -7451,7 +7451,8 @@ collapsed true
 
 \begin_inset Graphics
 	filename maplayer.eps
-	width 100col%
+	width 100text%
+	keepAspectRatio
 
 \end_inset 
 
@@ -7482,10 +7483,12 @@ Need to talk about renderers.
 And especially about coordinate transforms.
 \layout Standard
 
-Layers have a unique identification string and a separate string for a base
- name.
+Layers have a string for a display name which is generally shown on the
+ legend.
+ Layers have a unique identification string which is generated from the
+ layer name and the current date and time.
  They also have a source string which can contain a file name or URI.
- The base name is used to identify the layer in the legend.
+ 
 \layout Standard
 
 The 
