@@ -7609,11 +7609,16 @@ New method of loading vectors follows hereafter whereby a data manager Singleton
 
 
 \family typewriter 
-QgisApp::addLayer()invoked
+QgisApp::addLayer()
+\family default 
+invoked
 \layout Enumerate
 
-QgsDataManager::openVector() is invoked and is given the data source name
- and pointer to the canvas.
+
+\family typewriter 
+QgsDataManager::openVector()
+\family default 
+ is invoked and is given the data source name and pointer to the canvas.
 \layout Enumerate
 
 The data manager, in turn, asks the data provider registry to create a data
@@ -7625,25 +7630,46 @@ ogr
 \begin_inset Quotes erd
 \end_inset 
 
-; this should create a QgsOgrProvider instance properly initialized to begin
- reading data from the given data source.
+; this should create a 
+\family typewriter 
+QgsOgrProvider
+\family default 
+ instance properly initialized to begin reading data from the given data
+ source.
 \layout Enumerate
 
-The data manager then asks the data provider to create QgsMapLayer objects
- for as many layers as is found in the given vector data source.
- (Actually QgsVectorLayer objects, but these are referred to via QgsMapLayer
+The data manager then asks the data provider to create 
+\family typewriter 
+QgsMapLayer
+\family default 
+ objects for as many layers as is found in the given vector data source.
+ (Actually 
+\family typewriter 
+QgsVectorLayer
+\family default 
+ objects, but these are referred to via 
+\family typewriter 
+QgsMapLayer
+\family default 
  pointers.
  The data manager data provider mechanism is intended to eventually be general
  enough to accomodate all map layer types.
- This will mean that QgsRasterLayer will have to at some point employ a
- similar provider mechanism.)
+ This will mean that 
+\family typewriter 
+QgsRasterLayer
+\family default 
+ will have to at some point employ a similar provider mechanism.)
 \layout Enumerate
 
 The data manager then adds each layer to the map layer registry Singleton
  object.
- The registry emits a layerWasAdded signal each time it manages a new layer.
+ The registry emits a 
+\family typewriter 
+layerWasAdded
+\family default 
+ signal each time it manages a new layer.
  The main map canvas and the overview canvas listen for this signal.
- Upon receiving this signal, each canvas creates a link to the corresponding
+ Upon receiving this signal each canvas creates a link to the corresponding
  vector layer to properly render it and to learn of any future map layer
  state changes.
  For each such state change, the respective map canvas object will appropriately
@@ -7653,9 +7679,128 @@ The data manager then adds each layer to the map layer registry Singleton
 Raster Layer Loading
 \layout Standard
 
-Also triggered by QgisApp::addLayer() or QgsProject::read() a new 
+Also triggered by 
+\family typewriter 
+QgisApp::addLayer()
+\family default 
+ or 
+\family typewriter 
+QgsProject::read()
+\family default 
+ a new 
 \family typewriter 
 QgsRasterLayer
 \family default 
  is created.
+\layout Subsection
+
+Browse Data
+\layout Standard
+
+This use case scenario involves the user perusing loaded data.
+ Rendering all the loaded layers is the central functionality.
+ The Navigate Data use case scenario is related in that it relies on re-renderin
+g loaded layers as the user wends their way through different aspects of
+ the loaded data.
+\layout Subsubsection
+
+Rendering Vector Data
+\layout Standard
+
+Vector data is generally encapsulated in a 
+\family typewriter 
+QgsVectorLayer
+\family default 
+.
+ A vector layer will draw itself on its corresponding canvas object via
+\family typewriter 
+ QgsVectorLayer::draw().
+\layout Enumerate
+
+A 
+\family typewriter 
+QgsMapCanvas
+\family default 
+ object is notified that it has to refresh or redraw.
+ This might be because the corresponding 
+\family typewriter 
+QgsVectorLayer
+\family default 
+ emitted an 
+\family typewriter 
+editedStopped
+\family default 
+ signal.
+ (Or? Need to enumerate ways that a 
+\family typewriter 
+QgsMapCanvas
+\family default 
+ objects will want to redraw itself.) 
+\family typewriter 
+QgsMapCanvas::render()
+\family default 
+ invoked.
+\begin_deeper 
+\layout Enumerate
+
+The first thing 
+\family typewriter 
+render()
+\family default 
+ does is ensure that the current output coordinate system is the same as
+ ...
+ um? What? Can someone with coordinate transform experience finish this?
+ I don't understand what's going on here.
+ 
+\emph on 
+What
+\emph default 
+ is going on ...
+ and 
+\emph on 
+why?
+\layout Enumerate
+
+Clamp the zoom level to something reasonable.
+ A zoom level that's too small will generate artifacts.
+\layout Enumerate
+
+If the canvas is in a frozen state (i.e., no updates allowed) or isn't dirty
+ (i.e., rendering now won't change anything), then 
+\family typewriter 
+render()
+\family default 
+ is finished.
+\layout Enumerate
+
+Set the canvas drawing state to true.
+ (Why?)
+\layout Enumerate
+
+Fill the canvas with the current background color.
+\layout Enumerate
+
+Set the 
+\family typewriter 
+QPainter
+\family default 
+ object to 
+\family typewriter 
+begin()
+\family default 
+ on the current canvas.
+\end_deeper 
+\layout Enumerate
+
+Place holder for post render()
+\layout Subsubsection
+
+Rendering Raster Data
+\layout Standard
+
+
+\family typewriter 
+QgsRasterLayer
+\family default 
+ objects contain grid geospatial data.
 \the_end
