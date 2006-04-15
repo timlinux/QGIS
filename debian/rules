@@ -32,7 +32,7 @@ config.status: configure
                     --prefix=/usr \
                     --mandir=\$${prefix}/share/man \
                     --infodir=\$${prefix}/share/info \
-                    --with-qtdir=/usr/share/qt3 \
+                    --with-qtdir=/usr \
                     --enable-spit \
                     --with-postgresql \
                     --with-grass=/usr/lib/grass \

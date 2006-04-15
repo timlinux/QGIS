@@ -1,1 +1,1 @@
-shlibs:Depends=libc6 (>= 2.3.4-1), libgcc1 (>= 1:4.0.1), libgdal1c2 (>= 1.2.6), libgeos2c2, libgsl0 (>= 1.4), libpq4, libqt3-mt (>= 3:3.3.4), libsqlite3-0 (>= 3.2.1), libstdc++6 (>= 4.0.1), proj (>= 4.4.1-1)
+shlibs:Depends=libc6 (>= 2.3.4-1), libgcc1 (>= 1:4.0.1), libgdal1c2 (>= 1.2.6), libgeos2c2, libgsl0 (>= 1.4), libpq4, libqt4-gui (>= 4.1.0), libqt4-dev (>= 4.1.0), libqt4-gui (>= 4.1.0), libqt4-core (>= 4.1.0), libqt4-qt3support (>= 4.1.0), qt4-qtconfig (>= 4.1.0), libsqlite3-0 (>= 3.2.1), libstdc++6 (>= 4.0.1), proj (>= 4.4.1-1)

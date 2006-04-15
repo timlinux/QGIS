@@ -3,6 +3,7 @@ QGIS for Debian
  
 Before building a QGIS plugin you'll need to tell it where to Qt:
 
-  export QTDIR=/usr/share/qt3
+  export QTDIR=/usr
  
+ -- Tim Sutton <tim@linfiniti.com>    (updated for qt4) Sat 15 April 2006
  -- Steve Halasz <debian@adkgis.org>  Thu, 14 Apr 2005 11:03:20 -0400
