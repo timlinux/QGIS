@@ -1,3 +1,37 @@
+qgis (0.7.9+svn19042006) unstable; urgency=low
+
+  * Resolve packaging issue where some libs were not included in package 
+
+ -- Tim Sutton <tim@linfiniti.com>  Wed, 19 Apr 2006 01:18:40 +0100
+
+qgis (0.7.9+svn18042006) unstable; urgency=low
+
+  * Resolve packaging issue where some libs were not included in package 
+
+ -- Tim Sutton <tim@linfiniti.com>  Tue, 18 Apr 2006 23:20:56 +0100
+
+qgis (0.7.9+svn17042006) unstable; urgency=low
+
+  * Resolve issue of linkage to libqt3-mt (removed this lib) - this should fix
+    segault on start on dapper with qt3 installed too
+  
+
+ -- Tim Sutton <tim@linfiniti.com>  Mon, 17 Apr 2006 03:03:27 +0100
+
+qgis (0.7.9+svn16282006) unstable; urgency=low
+
+  * Develop snapshot of QGIS svn head
+  * Fixed issue where plugin dirs were not decended into
+
+ -- Tim Sutton <tim@linfiniti.com>  Sun, 16 Apr 2006 22:28:25 +0100
+
+qgis (0.7.9+svn16042006-1) unstable; urgency=low
+
+  * Develop snapshot of QGIS svn head 
+  * Dependency for Qt4 introduced
+
+ -- Tim Sutton <tim@linfiniti.com>  Sun, 16 Apr 2006 02:28:51 +0100
+
 qgis (0.7.9devel) unstable; urgency=low
 
   * Develop snapshot of QGIS svn head 

@@ -1,11 +1,11 @@
 usr/bin/gridmaker
 usr/bin/qgis
-usr/lib/libqgis_composer.so
-usr/lib/libqgis_core.so
-usr/lib/libqgisgrass.so
-usr/lib/libqgis_gui.so
-usr/lib/libqgis_legend.so
-usr/lib/libqgis_raster.so
+usr/lib/libqgis_composer.so.0.0.1
+usr/lib/libqgis_core.so.0.0.1
+usr/lib/libqgisgrass.so.0.0.1
+usr/lib/libqgis_gui.so.0.0.1
+usr/lib/libqgis_legend.so.0.0.1
+usr/lib/libqgis_raster.so.0.0.0
 usr/lib/qgis/copyrightlabelplugin.so
 usr/lib/qgis/delimitedtext*.so
 usr/lib/qgis/georefplugin.so
