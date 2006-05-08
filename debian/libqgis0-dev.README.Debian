@@ -1,0 +1,8 @@
+QGIS for Debian
+---------------
+ 
+Before building a QGIS plugin you'll need to tell it where to look for Qt:
+
+  export QTDIR=/usr/share/qt4
+ 
+ -- Steve Halasz <debian@adkgis.org>  Thu, 27 Apr 2006 10:02:20 -0400

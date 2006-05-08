@@ -3,7 +3,7 @@ Section: science
 Priority: extra
 Maintainer: Steve Halasz <debian@adkgis.org>
 Uploaders: Tim Sutton <tim@linfiniti.com>
-Build-Depends: debhelper (>= 4.0.0), libgdal1-dev (>= 1.2.6-1), libqt4-gui (>= 4.1.0), libqt4-dev (>= 4.1.0), libqt4-gui (>= 4.1.0), libqt4-core (>= 4.1.0), libqt4-qt3support (>= 4.1.0), qt4-qtconfig (>= 4.1.0), libcfitsio-dev (>= 2.460-1), libpq-dev | postgresql-dev, libhdf4g-dev (>= 4.1r4-17), libungif4-dev (>= 4.1.0b1-6), unixodbc-dev (>= 2.2.4-6), libxerces26-dev (>= 2.1.0-5), libjasper-1.701-dev (>= 1.701.0-2), libtiff4-dev (>= 3.6.1-1.1), netcdfg-dev (>= 3.5.0-7.1), libgeos-dev (>= 2.0.1-1), dpatch, libgrass-dev (>= 6.0.0-1), libsqlite3-dev, libgsl0-dev, proj, libexpat1-dev
+Build-Depends: debhelper (>= 4.0.0), libgdal1-1.3.1-dev, libqt4-dev (>= 4.1.0), libpq-dev | postgresql-dev, libgeos-dev (>= 2.0.1-1), dpatch, libgrass-dev (>= 6.0.0-1), libsqlite3-dev, libgsl0-dev, proj, libexpat1-dev, libmysqlclient15-dev | libmysqlclient14-dev
 Standards-Version: 3.6.2
 
 Package: qgis
@@ -22,9 +22,23 @@ Description: Geographic Information System (GIS)
  Elevation Model (DEM) formats including
  GeoTIFF, Arc/Info ASCII Grid, and USGS ASCII DEM.
 
-Package: qgis-dev
+Package: libqgis0
 Architecture: any
-Depends: qgis (= ${Source-Version}), libgdal1-dev (>= 1.2.6-1), libqt4-gui (>= 4.1.0), libqt4-dev (>= 4.1.0), libqt4-gui (>= 4.1.0), libqt4-core (>= 4.1.0), libqt4-qt3support (>= 4.1.0), qt4-qtconfig (>= 4.1.0), libcfitsio-dev (>= 2.460-1), libpq-dev | postgresql-dev, libhdf4g-dev (>= 4.1r4-17), libungif4-dev (>= 4.1.0b1-6), unixodbc-dev (>= 2.2.4-6), libxerces26-dev (>= 2.1.0-5), libjasper-1.701-dev (>= 1.701.0-2), libtiff4-dev (>= 3.6.1-1.1), netcdfg-dev (>= 3.5.0-7.1), libgeos-dev (>= 2.0.1-1), libgrass-dev (>= 6.0.0-1), libsqlite3-dev, libgsl0-dev, proj, libexpat1-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: QGIS Geographic Information System - shared library
+ QGIS is a Geographic Information System (GIS)
+ which manages, analyzes and display databases of
+ geographic information.
+ .
+ This package contains the shared library that
+ provides an interface for plugins.
+
+Package: libqgis0-dev
+Architecture: any
+Depends: qgis (= ${Source-Version}), libgdal1-1.3.1-dev, libqt4-dev (>= 4.1.0), libpq-dev | postgresql-dev, libgeos-dev (>= 2.0.1-1), libgrass-dev (>= 6.0.0-1), libsqlite3-dev, libgsl0-dev, proj, libexpat1-dev
+Provides: libqgis-dev
+Conflicts: libqgis-dev, qgis-dev
+Replaces: qgis-dev
 Suggests: qt4-designer
 Description: QGIS Geographic Information System - development files
  QGIS is a Geographic Information System (GIS)
@@ -36,7 +50,7 @@ Description: QGIS Geographic Information System - development files
 
 Package: qgis-plugin-grass
 Architecture: any
-Depends: qgis (= ${Source-Version}), libgdal1-grass (>= 1.2.6-0)
-Description: Plugin for accessing GRASS vectors from QGIS
- This plugin enables display of GRASS vectors in the QGIS
+Depends: qgis (= ${Source-Version}), libgdal1-1.3.1-grass
+Description: Plugin for accessing GRASS data from QGIS
+ This plugin enables display of GRASS data layers in the QGIS
  geographic data viewer.

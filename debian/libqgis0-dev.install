@@ -1,5 +1,9 @@
-/usr/bin/qgis-config
-/usr/lib/libqgis.*a
+usr/bin/qgis-config
+usr/lib/libqgis_composer.*a
+usr/lib/libqgis_core.*a
+usr/lib/libqgis_gui.*a
+usr/lib/libqgis_legend.*a
+usr/lib/libqgis_raster.*a
 usr/lib/qgis/copyrightlabelplugin.*a
 usr/lib/qgis/delimitedtext*.*a
 usr/lib/qgis/georefplugin.*a
@@ -16,5 +20,5 @@ usr/lib/qgis/pggeoprocessingplugin.*a
 usr/lib/qgis/postgresprovider.*a
 usr/lib/qgis/spitplugin.*a
 usr/lib/qgis/designer/*.*a
-/usr/include/qgis/*
-/usr/share/aclocal/qgis.m4
+usr/include/qgis/*
+usr/share/aclocal/qgis.m4

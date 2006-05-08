@@ -32,7 +32,7 @@ config.status: configure
                     --prefix=/usr \
                     --mandir=\$${prefix}/share/man \
                     --infodir=\$${prefix}/share/info \
-                    --with-qtdir=/usr \
+                    --with-qtdir=/usr/share/qt4 \
                     --enable-spit \
                     --with-postgresql \
                     --with-grass=/usr/lib/grass \
@@ -78,7 +78,7 @@ install: build
 
 	# Add here commands to install the package into debian/tmp.
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
-	
+
 	# Install menu pixmap
 	install -o root -g root -m 644 $(CURDIR)/debian/qgis-icon.xpm $(CURDIR)/debian/qgis/usr/share/pixmaps
 
@@ -96,22 +96,12 @@ binary-arch: build install
 	dh_installexamples
 	dh_install --sourcedir=debian/tmp
 	dh_installmenu
-#	dh_installdebconf	
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_installinit
-#	dh_installcron
-#	dh_installinfo
 	dh_installman -pqgis debian/gridmaker.1
-	dh_installman -pqgis-dev debian/qgis-config.1
+	dh_installman -plibqgis0-dev debian/qgis-config.1
 	dh_link
 	dh_strip
 	dh_compress --exclude=pdf
 	dh_fixperms
-#	dh_perl
-#	dh_python
 	dh_makeshlibs
 	dh_installdeb
 	dh_shlibdeps
