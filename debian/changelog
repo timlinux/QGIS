@@ -1,3 +1,9 @@
+qgis (0.7.9+svn20061207) unstable; urgency=low
+
+  * 
+
+ -- Tim Sutton <tim@linfiniti.com>  Thu,  7 Dec 2006 10:28:53 -0200
+
 qgis (0.7.9+svn19042006) unstable; urgency=low
 
   * Resolve packaging issue where some libs were not included in package 

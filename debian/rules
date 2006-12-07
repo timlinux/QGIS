@@ -96,7 +96,6 @@ binary-arch: build install
 	dh_installexamples
 	dh_install --sourcedir=debian/tmp
 	dh_installmenu
-	dh_installman -pqgis debian/gridmaker.1
 	dh_installman -plibqgis0-dev debian/qgis-config.1
 	dh_link
 	dh_strip
