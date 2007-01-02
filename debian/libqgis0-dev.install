@@ -1,4 +1,5 @@
 usr/bin/qgis-config
+usr/lib/libmsexport.*a
 usr/lib/libqgis_composer.*a
 usr/lib/libqgis_core.*a
 usr/lib/libqgis_gui.*a
@@ -13,12 +14,15 @@ usr/lib/qgis/grassplugin.*a
 usr/lib/qgis/grassprovider.*a
 usr/lib/qgis/gridmakerplugin.*a
 usr/lib/qgis/libqgsprojectionselector.*a
-usr/lib/qgis/libScaleBarplugin.*a
+usr/lib/qgis/libwfsprovider.*a
 usr/lib/qgis/northarrowplugin.*a
 usr/lib/qgis/ogrprovider.*a
 usr/lib/qgis/pggeoprocessingplugin.*a
 usr/lib/qgis/postgresprovider.*a
+usr/lib/qgis/scalebarplugin.*a
 usr/lib/qgis/spitplugin.*a
+usr/lib/qgis/wfsplugin.*a
+usr/lib/qgis/wmsprovider.*a
 usr/lib/qgis/designer/*.*a
 usr/include/qgis/*
 usr/share/aclocal/qgis.m4

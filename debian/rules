@@ -35,6 +35,8 @@ config.status: configure
                     --with-qtdir=/usr/share/qt4 \
                     --enable-spit \
                     --with-postgresql \
+                    --with-wfs \
+                    --with-python \
                     --with-grass=/usr/lib/grass \
                     --disable-debug
 
@@ -96,6 +98,7 @@ binary-arch: build install
 	dh_installexamples
 	dh_install --sourcedir=debian/tmp
 	dh_installmenu
+	dh_installman -pqgis debian/gridmaker.1
 	dh_installman -plibqgis0-dev debian/qgis-config.1
 	dh_link
 	dh_strip
