@@ -1,0 +1,6 @@
+usr/lib/libqgisgrass.a
+usr/lib/libqgisgrass.la
+usr/lib/libqgisgrass.so.*
+usr/lib/qgis/grassplugin.so
+usr/lib/qgis/grassprovider.so
+usr/share/qgis/grass/*
