@@ -90,6 +90,7 @@ SET(QGIS_APP_SRCS
   qgstipfactory.cpp
   qgsuniquevaluedialog.cpp
   qgsvectorlayerproperties.cpp
+  qgswelcomewizard.cpp
   qgsquerybuilder.cpp
   qgshighlight.cpp
   qgshandlebadlayers.cpp
@@ -155,6 +156,7 @@ SET (QGIS_APP_MOC_HDRS
   qgsattributetypedialog.h
   qgsattributetypeloaddialog.h
   qgsbookmarks.h
+  qgschoosetoregisterpage.h
   qgsconfigureshortcutsdialog.h
   qgscontinuouscolordialog.h
   qgscustomprojectiondialog.h
@@ -218,6 +220,7 @@ SET (QGIS_APP_MOC_HDRS
   qgsundowidget.h
   qgsuniquevaluedialog.h
   qgsvectorlayerproperties.h
+  qgswelcomewizard.h
   qgswmssourceselect.h
   qgshandlebadlayers.h
 
@@ -408,6 +411,7 @@ ENDIF (WIN32)
 TARGET_LINK_LIBRARIES(${QGIS_APP_NAME}
   ${QWT_LIBRARY}
   ${QT_QTSQL_LIBRARY}
+  ${QT_QTWEBKIT_LIBRARY}
   ${QT_QTUITOOLS_LIBRARY}
   #should only be needed for win
   ${QT_QTMAIN_LIBRARY} 

@@ -116,6 +116,7 @@
 #include "qgsencodingfiledialog.h"
 #include "qgsexception.h"
 #include "qgsfeature.h"
+#include "qgswelcomewizard.h"
 #include "qgsformannotationitem.h"
 #include "qgsgenericprojectionselector.h"
 #include "qgsgpsinformationwidget.h"
@@ -554,15 +555,19 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, QWidget * parent, 
   mMapCanvas->mapRenderer()->setLabelingEngine( mLBL );
 
   // Show a nice tip of the day
-  if ( settings.value( "/qgis/showTips", 1 ).toBool() )
+  QSettings settings;
+  bool myWelcomeFlag = settings.value( "/qgis/showWelcomeWizard", 1 ).toBool();
+  if ( myWelcomeFlag )
+  {
+    mSplash->hide();
+    QgsWelcomeWizard myWizard;
+    myWizard.exec();
+  }
+  else if ( settings.value( "/qgis/showTips", 1 ).toBool() )
   {
     mSplash->hide();
     QgsTipGui myTip;
     myTip.exec();
-  }
-  else
-  {
-    QgsDebugMsg( "Tips are disabled" );
   }
 
   // supposedly all actions have been added, now register them to the shortcut manager

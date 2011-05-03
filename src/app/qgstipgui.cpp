@@ -1,9 +1,9 @@
 /***************************************************************************
                           qgstipgui.cpp  -  description
                              -------------------
-    begin                : Sat Aug 10 2002
-    copyright            : (C) 2002 by Gary E.Sherman
-    email                : sherman at mrcc.com
+    begin                : Fri 18 Feb 2011
+    copyright            : (C) Tim Sutton - Fri 18 Feb 2011
+    email                : tim@linfiniti.com
  ***************************************************************************/
 
 /***************************************************************************
