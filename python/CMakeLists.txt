@@ -72,6 +72,8 @@ ADD_SIP_PYTHON_MODULE(qgis.gui gui/gui.sip qgis_core qgis_gui)
 INCLUDE_DIRECTORIES(
     ../src/analysis/vector
     ${CMAKE_BINARY_DIR}/src/analysis/vector
+    ../src/analysis/autogcp
+    ${CMAKE_BINARY_DIR}/src/analysis/autogcp
 )
 
 # analysis module

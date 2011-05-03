@@ -35,6 +35,29 @@ SET(QGIS_ANALYSIS_SRCS
   vector/qgsgeometryanalyzer.cpp
   vector/qgszonalstatistics.cpp
   vector/qgsoverlayanalyzer.cpp
+  autogcp/qgsgcp.cpp
+  autogcp/qgsrasterdataset.cpp
+  autogcp/qgsgcpset.cpp
+  autogcp/qgsautogcpmanager.cpp
+  autogcp/qgsdatasource.cpp
+  autogcp/qgsimageanalyzer.cpp
+  autogcp/qgsbilinearsampler.cpp
+  autogcp/qgsimagefilter.cpp
+  autogcp/qgsmatrix.cpp
+  autogcp/qgsorthorectificationfilter.cpp
+  autogcp/qgsgeoreferencer.cpp
+  autogcp/qgsrpcmodel.cpp
+  autogcp/qgswavelettransform.cpp
+  autogcp/qgsimagechip.cpp
+  autogcp/qgsprojectionmanager.cpp
+  autogcp/qgscrosscorrelator.cpp
+  autogcp/qgshasher.cpp
+  autogcp/qgssqldriver.cpp
+  autogcp/qgssqlitedriver.cpp
+  autogcp/qgselevationmodel.cpp
+  autogcp/qgsgcptransform.cpp
+  autogcp/qgstpstransform.cpp
+  autogcp/qgscoordinatesystemtransform.cpp
 )
 
 INCLUDE_DIRECTORIES(BEFORE raster)
@@ -64,9 +87,11 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}/../core/spatialindex
   ${CMAKE_CURRENT_SOURCE_DIR}/../core/raster
   interpolation
+  autogcp
   ${PROJ_INCLUDE_DIR}
   ${GEOS_INCLUDE_DIR}
   ${GDAL_INCLUDE_DIR}
+  ${GSL_INCLUDE_DIR}
 )
 
 IF (WIN32)
@@ -89,6 +114,7 @@ SET_TARGET_PROPERTIES(qgis_analysis PROPERTIES VERSION ${COMPLETE_VERSION} SOVER
 
 TARGET_LINK_LIBRARIES(qgis_analysis
   qgis_core
+  ${GSL_LIBRARIES}
 )
 
 IF (APPLE)
@@ -104,6 +130,32 @@ INSTALL(TARGETS qgis_analysis
 # Added by Tim to install headers
 
 SET(QGIS_ANALYSIS_HDRS vector/qgsgeometryanalyzer.h vector/qgszonalstatistics.h vector/qgsgeometryanalyzer.h interpolation/qgsinterpolator.h interpolation/qgsgridfilewriter.h interpolation/qgsidwinterpolator.h interpolation/qgstininterpolator.h
+autogcp/qgsautogcpmanager.h
+autogcp/qgsdatasource.h
+autogcp/qgselevationmodel.h
+autogcp/qgsgcp.h
+autogcp/qgsgcpset.h
+autogcp/qgsimageanalyzer.h
+autogcp/qgsrasterdataset.h
+autogcp/qgssampler.h
+autogcp/qgsbilinearsampler.h
+autogcp/qgsmatrix.cpp
+autogcp/qgsimagefilter.h
+autogcp/qgsorthorectificationfilter.h
+autogcp/qgsgeoreferencer.h
+autogcp/qgssensormodel.h
+autogcp/qgsrpcmodel.h
+autogcp/qgssalientpoint.h
+autogcp/qgsimagechip.h
+autogcp/qgscrosscorrelator.h
+autogcp/qgsprojectionmanager.h
+autogcp/qgshasher.h
+autogcp/qgssqldriver.h
+autogcp/qgssqlitedriver.h
+autogcp/qgswavelettransform.h
+autogcp/qgsgcptransform.h
+autogcp/qgstpstransform.h
+autogcp/qgscoordinatesystemtransform.h
 )
 
 INSTALL(CODE "MESSAGE(\"Installing ANALYSIS headers...\")")

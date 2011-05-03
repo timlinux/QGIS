@@ -1,0 +1,38 @@
+<h1>Database Dialog</h1>
+The database dialog allows the user to manually load GCPs from the database
+<p>
+<a href="#default">Default loading</a><br/>
+<a href="#hash">Hash loading</a><br/>
+<a href="#location">Location loading</a><br/>
+
+<a name="default">
+<h3>Default loading</h3>
+</a>
+Load a GCP set by using image filtering
+<ol>
+<li>Reference image: Load a GCP set by using only the loaded reference image
+<li>Raw image: Load a GCP set by using only the loaded raw image
+</ol>
+Note that when both options are checked, both images must be presented in the database to load a GCP set
+
+<a name="hash">
+<h4>Hash loading</h4>
+</a>
+Load a GCP set by using an image hash.<br/>
+Note that hashes are not generated using the entire image. Only part of the binary data will be used to generated the hash<br/>
+Hence generating your own hash will not work. Please use the hash provided in the image properties dialog
+
+<a name="location">
+<h3>Location loading</h3>
+</a>
+Load a GCP set by using a locational reference
+<ol>
+<li>Pixel width X: The X width of the pixel
+<li>Pixel width Y: The Y width of the pixel
+<li>Pixel height X: The X height of the pixel
+<li>Pixel height Y: The Y height of the pixel
+<li>Top left X: The X location of the top left corner
+<li>Top left Y: The Y location of the top left corner
+<li>Projection string: The string for the projection used
+</ol>
+

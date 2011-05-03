@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RectificationDialog</class>
+ <widget class="QDialog" name="RectificationDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>656</width>
+    <height>458</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Image Rectification</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/icons/autogcp.png</normaloff>:/icons/autogcp.png</iconset>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="6" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="8" column="0" colspan="3">
+    <widget class="QDialogButtonBox" name="buttonBox_3">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Help|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Input</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Algorithm</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboBox">
+        <property name="toolTip">
+         <string>The algorithm used for the image rectification</string>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>Thin Plate Spline (TPS)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Rational Polynomial Coefficients (RPC)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Georeference Only</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QRadioButton" name="fileRadio">
+        <property name="text">
+         <string>File data</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QWidget" name="fileWidget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="demFile"/>
+         </item>
+         <item>
+          <widget class="QToolButton" name="demButton">
+           <property name="text">
+            <string>...</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QRadioButton" name="onlineRadio">
+        <property name="text">
+         <string>Online data</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Digital Elevation Model</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Output</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Driver</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="driver">
+        <property name="statusTip">
+         <string>The driver used to generate the new image</string>
+        </property>
+        <property name="currentIndex">
+         <number>7</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>ARC Digitilized Raster Graphics (ADRG)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Microsoft Windows Device Independent Bitmap (BMP)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>ESRI Hdr Labelled (EHdr)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>NASA Earth Resource Laboratory Applications Software (ELAS)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>ENVI Hdr Labelled Raster (ENVI)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>ERMapper (ERS)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Golden Software Binary Grid (GSBG)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Geo Tiff (GTiff)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Erdas Imagine (HFA)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Image Display and Analysis (IDA)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Intergraph Raster (INGR)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Daylon Leveller Heightfield (Leveller)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>In Memory Raster (MEM)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Vexcel Multi-File Format (MFF)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>National Imagery Transmission Format (NITF)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PCI Aux Labbeled (PAux)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>PCI Geomatics Database File (PCIDSK)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Netpbm (PNM)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Raster Matrix Format (RMF)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Idrisi Raster (RST)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SAGA GIS Binary Format (SAGA)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>SGI Image Format (SGI)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>GDAL Virtual (VRT)</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Interpolation</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="interpolation">
+        <property name="statusTip">
+         <string>The interpolation in use</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>Bilinear Sampling</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="issueLabel">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Driver Issues</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPlainTextEdit" name="issueText">
+        <property name="statusTip">
+         <string>The issues related to the driver in use</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label">
+        <property name="minimumSize">
+         <size>
+          <width>155</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Output file</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="output">
+           <property name="statusTip">
+            <string>The output file of the image</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="outputButton">
+           <property name="text">
+            <string>...</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>buttonBox_3</tabstop>
+ </tabstops>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

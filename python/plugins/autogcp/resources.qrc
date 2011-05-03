@@ -1,0 +1,44 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/about.png</file>
+        <file>icons/export.png</file>
+        <file>icons/gcp.png</file>
+        <file>icons/import.png</file>
+        <file>icons/ortho.png</file>
+        <file>icons/autogcp.png</file>
+        <file>icons/zoomout.png</file>
+        <file>icons/zoomin.png</file>
+        <file>icons/pan.png</file>
+        <file>icons/settings.png</file>
+        <file>icons/addgcp.png</file>
+        <file>icons/removegcp.png</file>
+        <file>icons/movegcp.png</file>
+        <file>icons/cross.png</file>
+        <file>icons/info.png</file>
+        <file>icons/delete.png</file>
+        <file>icons/deleteall.png</file>
+        <file>icons/unload.png</file>
+        <file>icons/foxhat.png</file>
+        <file>icons/flagblue.png</file>
+        <file>icons/flagyellow.png</file>
+        <file>icons/flagred.png</file>
+        <file>icons/flaggreen.png</file>
+        <file>icons/pinblue.png</file>
+        <file>icons/pingreen.png</file>
+        <file>icons/pinred.png</file>
+        <file>icons/pinyellow.png</file>
+        <file>icons/algorithm.png</file>
+        <file>icons/database.png</file>
+        <file>icons/userinterface.png</file>
+        <file>icons/general.png</file>
+        <file>icons/loaddb.png</file>
+        <file>icons/savedb.png</file>
+        <file>icons/symbology.png</file>
+        <file>icons/projection.png</file>
+        <file>icons/metadata.png</file>
+        <file>icons/zoomimage.png</file>
+        <file>icons/raster.png</file>
+	<file>icons/connect.png</file>
+	<file>icons/disconnect.png</file>
+    </qresource>
+</RCC>

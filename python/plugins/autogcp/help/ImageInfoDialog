@@ -1,0 +1,83 @@
+<h1>Image Information Dialog</h1>
+The image information dialog allows the user to view the meta data retrieved from a specified image
+<p>
+<a href="#meta">Metadata</a><br/>
+<a href="#proj">Projection</a><br/>
+<a href="#symb">Symbology</a><br/>
+<p>
+<a name="meta">
+<h3>Metadata</h3>
+</a>
+The image metadata information
+<p>
+<ul>
+<li>File name: The file name for selected image file</li>
+<li>File path: The full file path for selected image file</li>
+<li>Hash: The image file hash value used for database storage</li>
+<li>Image format: The image file format</li>
+<li>File size: The size of image file</li>
+<li>Created: The date and time of file creation</li>
+<li>Last modified: The date and time the file was last modified</li>
+<li>Last read: The date and time the file was last read</li>
+<li>Origin coordinates: The geographical coordinate origin of the image</li>
+<li>Pixel size: The ize of the image pixels</li>
+<li>Raster bands: The number of raster bands the image is composed of</li>
+<li>Raster width: The width of the image</li>
+<li>Raster height: The height of the image</li>
+</ul>
+
+
+<a name="proj">
+<h3>Projection</h3>
+</a>
+The projection information of the image
+
+<a name="symb">
+<h3>Symbology</h3>
+</a>
+The symbology composition of the image rendering
+
+<h4>Rendering</h4>
+The rendering  of the color selection
+<ul>
+<li>Gray band: The image is rendered using the gray band</li>
+<li>RGB color band: The image is rendered using the RGB bands</li>
+<li>Invert color map: The image is rendered using invert colors</li>
+</ul>
+
+
+
+<h4>RGB band selection</h4>
+The bands used to render the RGB colors of the image
+<ul>
+<li>Red band: The band number used as red band</li>
+<li>Green band: The band number used as green band</li>
+<li>Blue band:The band number used as blue band/li>
+</ul>
+
+
+
+<h4>Gray band selection</h4>
+The bands used to render the gray colors of the image
+<ul>
+<li>Gray band: he band number used as gray band</li>
+<li>Color map</li>
+  <ul>
+  <li>Grayscale: The standard grayscale coloring</li>
+  <li>Pseudocolor: The false color representation of the image</li>
+  <li>Freak out: The vibrant false color representation of the image</li>
+  </ul>
+</ul>
+
+
+
+<h4>Contrast</h4>
+The enhancement that can be done on the image
+<ul>
+<li>No Stretch</li>
+<li>Stretch to MinMax</li>
+<li>Stretch and Clip to MinMax</li>
+<li>Clip to MinMax</li>
+</ul>
+
+

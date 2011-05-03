@@ -1,0 +1,113 @@
+<h1>Settings Dialog</h1>
+The settings dialog allows the user to change the general, algorithm, interface and database settings
+<p>
+
+<a href="#general">General tab</a><br/>
+<a href="#algo">Algorithms tab</a><br/>
+<a href="#ui">Interface tab</a><br/>
+<a href="#db">Database tab</a><br/>
+<p>
+
+
+<a name="general">
+<h3>General Settings</h3>
+</a>
+The general settings
+<h4>Default File Dialog Locations</h4>
+The default locations used by the image file dialogs
+<ul>
+<li>Default: The default system location</li>
+<li>Last Opened: The last directory opened by the user</li>
+<li>Custom: A custom file path</li>
+</ul>
+
+
+<a name="algo">
+<h3>Algorithm Settings</h3>
+</a>
+The settings related to the algorithms used
+<h4>GCP Detection</h4>
+The GCP detection settings
+<ul>
+<li>Amount: The maximum number of GCPs to be detected</li>
+<li>Band: The raster band used during the GCP extraction</li>
+</ul>
+
+<h4>GCP Chip</h4>
+The GCP chip settings
+<ul>
+<li>Feature width: The width in pixels of the GCP chip that will be extracted</li>
+<li>Feature height: The height in pixels of the GCP chip that will be extracted</li>
+</ul>
+
+<h4>RPC Model</h4>
+The RPC model settings
+<ul>
+<li>RMS error threshold: The RMS error threshold used by the RPC model during the orthorectification process</li>
+</ul>
+
+<a name="ui">
+<h3>Interface Settings</h3>
+</a>
+The settings for the user interface
+<h4>Canvas</h4>
+The canvas colors 
+<ul>
+<li>Reference canvas color: The background color for the reference canvas</li>
+<li>Raw canvas color: The background color for the raw canvas</li>
+</ul>
+
+<h4>GCP Marker</h4>
+The icon used to represent a GCP on the canvas
+<ul>
+<li>Marker icon: The icon used to represent a default GCP</li>
+<li>Selected icon: The icon used to represent a GCP that is selected</li>
+</ul>
+
+<h4>Widget Visibility</h4>
+Determines which widgets will be automatically loaded on startup
+<ul>
+<li>GCP table startup: The GCP table will automatically be loaded on startup if checked</li>
+<li>Reference image startup: The reference canvas will automatically be loaded on startup if checked</li>
+<li>Raw image startup: The raw canvas will automatically be loaded on startup if checked</li>
+</ul>
+
+
+<a name="db">
+<h3>Database Settings</h3>
+</a>
+The settings for the databases
+<h4>General</h4>
+General database settings
+<h5>Database usage</h5>
+Sets the type of database used for GCP storage and retrieval
+<ul>
+<li>None: No database will be used</li>
+<li>SQLite: A SQLite database will be used</li>
+<li>Postgres: A PostgreSQL database will be used</li>
+</ul>
+
+<h5>Load GCPs</h5>
+Detemines how GCPs should be loaded from database when available
+<ul>
+<li>Always: GCPs are automatically loaded if detected in the database</li>
+<li>Ask: The user will be prompted if GCPs were detected in the database</li>
+<li>Never: GCPs are never loaded from the database. The user has to manually request them.</li>
+</ul>
+
+<h4>SQLite</h4>
+SQLite specific configurations
+<h5>File path</h5>
+<ul>
+<li>Default: The default system location</li>
+<li>Custom: A custom file path</li>
+</ul>
+
+<h4>Postgres</h4>
+Postgres specific configuration
+<ul>
+<li>Database name: The name of the database</li>
+<li>Username: The username for the database</li>
+<li>Password: The password for the database</li>
+<li>Host: The location of the database</li>
+</ul>

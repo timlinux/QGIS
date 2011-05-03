@@ -1,0 +1,14 @@
+<h1>Rectification dialog</h1>
+The rectification dialog allows the user to create and save orthorectified and geo-transformed images
+
+<h3>Algorithm</h3>
+The algorithm to be used for the rectification
+
+<h3>Output file</h3>
+The location and file name for the output image file
+
+<h3>Driver</h3>
+The driver used to generate the new image
+
+<h3>Interpolation</h3>
+The type of interpolation used for the generation of the image

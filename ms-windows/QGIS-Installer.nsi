@@ -15,9 +15,9 @@
 
 ;Version variables
 
-!define RELEASE_VERSION_NUMBER "1.4.0"
-!define RELEASE_VERSION_NAME "Enceladus"
-!define RELEASE_SVN_REVISION "12636"
+!define RELEASE_VERSION_NUMBER "1.7.0"
+!define RELEASE_VERSION_NAME "Wroclaw"
+!define RELEASE_SVN_REVISION "15643"
 !define RELEASE_BINARY_REVISION "0"
 
 !define DEV_VERSION_NUMBER ""
