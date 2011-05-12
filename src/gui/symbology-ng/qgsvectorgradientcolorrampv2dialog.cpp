@@ -206,16 +206,7 @@ void QgsVectorGradientColorRampV2Dialog::addStop()
   if ( !ok )
     return;
 
-<<<<<<< HEAD
-  // Qt 4.7 Mac Cocoa bug workaround: call QColorDialog::getColor here instead of above
-#ifdef QT_MAC_USE_COCOA
-  QColor color = QColorDialog::getColor( QColor(), this );
-  if ( !color.isValid() )
-    return;
-#endif
 
-=======
->>>>>>> release-1_7_0
   double key = val / 100.0;
   QStringList lst;
   lst << "." << QString::number( val, 'f', 0 );
