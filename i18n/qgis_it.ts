@@ -24546,11 +24546,7 @@ p, li { white-space: pre-wrap; }
         <location filename="../src/ui/qgsoptionsbase.ui" line="1392"/>
         <location filename="../src/ui/qgsoptionsbase.ui" line="1475"/>
         <source>Select...</source>
-<<<<<<< HEAD
-        <translation>Scagli...</translation>
-=======
         <translation>Scegli...</translation>
->>>>>>> release-1_7_0
     </message>
     <message>
         <location filename="../src/ui/qgsoptionsbase.ui" line="1412"/>
@@ -35582,11 +35578,7 @@ URL provata: %1</translation>
     <message>
         <location filename="../src/plugins/roadgraph/shortestpathwidget.cpp" line="78"/>
         <source>Stop</source>
-<<<<<<< HEAD
-        <translation>Interrompi</translation>
-=======
         <translation>Arrivo</translation>
->>>>>>> release-1_7_0
     </message>
     <message>
         <location filename="../src/plugins/roadgraph/shortestpathwidget.cpp" line="91"/>
