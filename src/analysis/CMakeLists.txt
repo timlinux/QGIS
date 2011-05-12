@@ -160,3 +160,4 @@ autogcp/qgscoordinatesystemtransform.h
 
 INSTALL(CODE "MESSAGE(\"Installing ANALYSIS headers...\")")
 INSTALL(FILES ${QGIS_ANALYSIS_HDRS} ${QGIS_ANALYSIS_MOC_HDRS} DESTINATION ${QGIS_INCLUDE_DIR}) 
+

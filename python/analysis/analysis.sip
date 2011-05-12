@@ -32,4 +32,3 @@
 %Include qgsimagefilter.sip
 %Include qgssensormodel.sip
 %Include qgssampler.sip
-
