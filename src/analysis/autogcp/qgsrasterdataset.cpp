@@ -5,7 +5,7 @@ qgsrasterdataset.cpp - General purpose raster dataset and reader that provides
 Date : 07-May-2010
 Copyright : (C) 2010 by FoxHat Solutions
 Email : foxhat.solutions@gmail.com
-/***************************************************************************
+***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *
