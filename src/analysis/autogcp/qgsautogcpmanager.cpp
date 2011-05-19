@@ -12,7 +12,7 @@ Copyright : (C) 2010 by FoxHat Solutions
 Author : Christoph Stallmann
 Contributed : James Meyer, Francois Maass
 Email : foxhat.solutions@gmail.com
-/***************************************************************************
+***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *

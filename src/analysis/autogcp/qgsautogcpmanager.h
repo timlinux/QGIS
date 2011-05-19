@@ -12,7 +12,7 @@ Copyright : (C) 2010 by FoxHat Solutions
 Email : foxhat.solutions@gmail.com
 Modified: Francois Maass
 Modification Date: 24/07/2010
-/***************************************************************************
+***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *
