@@ -74,10 +74,18 @@ INCLUDE_DIRECTORIES(
     ${CMAKE_BINARY_DIR}/src/analysis/vector
     ../src/analysis/autogcp
     ${CMAKE_BINARY_DIR}/src/analysis/autogcp
+    ../src/analysis/sumbandilasat/tools/columncorrector
+    ../src/analysis/sumbandilasat/tools/cloudcoverer
+    ../src/analysis/sumbandilasat/tools/linecorrector
+    ../src/analysis/sumbandilasat/tools/bandaligner
+    ${CMAKE_BINARY_DIR}/src/analysis/sumbandilasat/tools/columncorrector
+    ${CMAKE_BINARY_DIR}/src/analysis/sumbandilasat/tools/cloudcoverer
+    ${CMAKE_BINARY_DIR}/src/analysis/sumbandilasat/tools/linecorrector
+    ${CMAKE_BINARY_DIR}/src/analysis/sumbandilasat/tools/bandaligner
 )
 
 # analysis module
-FILE(GLOB sip_files_analysis analysis/*.sip)
+FILE(GLOB sip_files_analysis analysis/*.sip analysis/sumbandilasat/*.sip)
 set(SIP_EXTRA_FILES_DEPEND ${sip_files_core} ${sip_files_analysis})
 ADD_SIP_PYTHON_MODULE(qgis.analysis analysis/analysis.sip qgis_core qgis_analysis)
 

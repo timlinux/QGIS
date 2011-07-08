@@ -29,6 +29,11 @@
 %Include qgssqldriver.sip
 %Include qgssqlitedriver.sip
 %Include qgswavelettransform.sip
+%Include qgssampler.sip
 %Include qgsimagefilter.sip
 %Include qgssensormodel.sip
-%Include qgssampler.sip
+%Include sumbandilasat/qgsimageprocessor.sip
+%Include sumbandilasat/qgscloudanalyzer.sip
+%Include sumbandilasat/qgscloudmask.sip
+%Include sumbandilasat/qgslinecorrector.sip
+%Include sumbandilasat/qgsbandaligner.sip
