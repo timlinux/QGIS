@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="sumbandilasat/">
+    <file>../../icons/general/start.png</file>
+    <file>../../icons/general/stop.png</file>
+    <file>../../icons/general/next.png</file>
+    <file>../../icons/general/back.png</file>
+    <file>../../icons/toolbar/columncorrector.png</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="elevator/">
+    <file>icons/connection1.png</file>
+    <file>icons/connection2.png</file>
+    <file>icons/connection3.png</file>
+    <file>icons/connection4.png</file>
+    <file>icons/projection.png</file>
+    <file>icons/extent.png</file>
+    <file>icons/start.png</file>
+    <file>icons/stop.png</file>
+    <file>icons/next.png</file>
+    <file>icons/back.png</file>
+    <file>icons/help.png</file>
+    <file>icons/test.png</file>
+    <file>icons/icon.png</file>
+  </qresource>
+</RCC>
