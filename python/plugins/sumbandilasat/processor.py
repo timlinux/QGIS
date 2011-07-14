@@ -421,7 +421,7 @@ class ProcessorDialog(QDialog):
 	  self.ui.imageProgressBar.setValue(100)
 	  self.ui.bandProgressBar.setValue(100)
 	  self.ui.taskProgressBar.setValue(100)
-	  self.updateLog("The image's processing is finished!")
+	  self.updateLog("The image is finished!")
 	  self.timerStarted = False
 	  time = QTime()
 	  time = time.addMSecs(self.timer.elapsed())
@@ -429,7 +429,12 @@ class ProcessorDialog(QDialog):
 	  self.startProcessing()
 	else:
 	  self.ui.totalProgressBar.setValue(100)
-	  self.updateLog("All images' processing is finished!")
+	  self.ui.imageProgressBar.setValue(100)
+	  self.ui.bandProgressBar.setValue(100)
+	  self.ui.taskProgressBar.setValue(100)
+	  self.ui.startButton.show()
+	  self.ui.stopButton.hide()
+	  self.updateLog("All images are finished!")
     #self.currentFile = 0
     
   def bandAlignment(self, inPaths, outPath):
