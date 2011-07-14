@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="sumbandilasat/">
+    <file>../../icons/general/settings.png</file>
+    <file>../../icons/toolbar/cloudcoverer.png</file>
+  </qresource>
+</RCC>
+

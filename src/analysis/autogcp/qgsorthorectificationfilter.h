@@ -14,7 +14,7 @@ Email : jamesmeyerx@gmail.com
 * (at your option) any later version. *
 * *
 ***************************************************************************/
-/* $Id: qgsorthorectificationfilter.h 606 2010-10-29 09:13:39Z jamesm $ */
+/* $Id$ */
 
 #ifndef QGSORTHORECTIFICATIONFILTER_H
 #define QGSORTHORECTIFICATIONFILTER_H

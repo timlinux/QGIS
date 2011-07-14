@@ -58,6 +58,17 @@ SET(QGIS_ANALYSIS_SRCS
   autogcp/qgsgcptransform.cpp
   autogcp/qgstpstransform.cpp
   autogcp/qgscoordinatesystemtransform.cpp
+  sumbandilasat/tools/columncorrector/qgsimageprocessor.cpp
+  sumbandilasat/tools/columncorrector/qgsimageprocessorthread.cpp
+  sumbandilasat/tools/columncorrector/qgsmemoryraster.cpp
+  sumbandilasat/tools/cloudcoverer/qgscloudanalyzer.cpp
+  sumbandilasat/tools/cloudcoverer/qgscloudmask.cpp
+  sumbandilasat/tools/linecorrector/qgslinecorrector.cpp
+  sumbandilasat/tools/linecorrector/qgsmemorylineraster.cpp
+  sumbandilasat/tools/bandaligner/qgscomplex.cpp
+  sumbandilasat/tools/bandaligner/qgsbandaligner.cpp
+  sumbandilasat/tools/bandaligner/qgsimagealigner.cpp
+  sumbandilasat/tools/bandaligner/qgsregioncorrelator.cpp
 )
 
 INCLUDE_DIRECTORIES(BEFORE raster)
@@ -75,6 +86,12 @@ SET_SOURCE_FILES_PROPERTIES(
 ENDIF (MSVC AND PEDANTIC)
 
 SET(QGIS_ANALYSIS_MOC_HDRS
+  sumbandilasat/tools/columncorrector/qgsimageprocessor.h
+  sumbandilasat/tools/columncorrector/qgsimageprocessorthread.h
+  sumbandilasat/tools/linecorrector/qgslinecorrector.h
+  sumbandilasat/tools/bandaligner/qgsbandaligner.h
+  sumbandilasat/tools/bandaligner/qgsimagealigner.h
+  sumbandilasat/tools/linecorrector/qgsmemorylineraster.h
 )
 
 QT4_WRAP_CPP(QGIS_ANALYSIS_MOC_SRCS ${QGIS_ANALYSIS_MOC_HDRS})
@@ -86,12 +103,19 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_SOURCE_DIR}/../core/renderer
   ${CMAKE_CURRENT_SOURCE_DIR}/../core/spatialindex
   ${CMAKE_CURRENT_SOURCE_DIR}/../core/raster
+  ${CMAKE_CURRENT_SOURCE_DIR}/../core/symbology-ng/
   interpolation
   autogcp
+  sumbandilasat/tools/bandaligner/
+  sumbandilasat/tools/linecorrector/
+  sumbandilasat/tools/cloudcoverer/
+  sumbandilasat/tools/columncorrector/
   ${PROJ_INCLUDE_DIR}
   ${GEOS_INCLUDE_DIR}
   ${GDAL_INCLUDE_DIR}
   ${GSL_INCLUDE_DIR}
+  ${GSL_INCLUDE_DIR}
+  ${FFTW_INCLUDE_DIR}
 )
 
 IF (WIN32)
@@ -115,6 +139,7 @@ SET_TARGET_PROPERTIES(qgis_analysis PROPERTIES VERSION ${COMPLETE_VERSION} SOVER
 TARGET_LINK_LIBRARIES(qgis_analysis
   qgis_core
   ${GSL_LIBRARIES}
+  ${FFTW_LIBRARIES}
 )
 
 IF (APPLE)

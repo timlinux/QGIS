@@ -7,7 +7,7 @@ qgsgcp.h - A Ground Control Point (GCP) abstraction contains information about
 Date : 07-May-2010
 Copyright : (C) 2010 by FoxHat Solutions
 Email : foxhat.solutions@gmail.com
-***************************************************************************
+/***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *
@@ -19,6 +19,7 @@ Email : foxhat.solutions@gmail.com
 #ifndef QGSGCP_H
 #define QGSGCP_H
 #include "qgsrasterdataset.h"
+#include "qgscoordinatesystemtransform.h"
 /*! \ingroup analysis
  *
  * A Ground Control Point (GCP) abstraction contains information about
@@ -33,7 +34,7 @@ class ANALYSIS_EXPORT QgsGcp
      *
      * The GCP is initialized with all zero values
      */
-    QgsGcp();
+    QgsGcp(QString rawWkt = "", QString refWkt = "");
     /*! \brief Copy constructor
      *
      * @note The copy constructor does not perform a deep copy by cloning the image chip.
@@ -47,13 +48,13 @@ class ANALYSIS_EXPORT QgsGcp
     ~QgsGcp();
 
     bool operator==( const QgsGcp& other ) const;
-    /*! \brief Assignment Operator
-    *
-    * @note This does not perform a deep copy by cloning the image chip.
-    * It merely sets the new GCP's chip to NULL
-    *
-    * \sa QgsGcp(const QgsGcp&)
-    */
+        /*! \brief Assignment Operator
+     *
+     * @note This does not perform a deep copy by cloning the image chip.
+     * It merely sets the new GCP's chip to NULL
+     *
+     * \sa QgsGcp(const QgsGcp&)
+     */
     const QgsGcp& operator=( const QgsGcp& other );
     /*! \brief Gets an ID associated with this GCP
      * Usually this is for database purposes, but can be used for other forms of unique identification.
@@ -104,13 +105,25 @@ class ANALYSIS_EXPORT QgsGcp
     /*!\brief Sets the GCP chip
      */
     void setGcpChip( QgsRasterDataset* value );
+    
+    void setRefWkt(QString wkt);
+    
+    QString refWkt();
+    
+    void setRawWkt(QString wkt);
+    
+    QString rawWkt();
+    
+    QgsGcp* utmGcp();
   protected:
-
+   
   private:
     double mXRaw, mYRaw, mXRef, mYRef, mZRef;
     int mId;
     double mCorrelationCoefficient;
     QgsRasterDataset* mChip;
+    QString mRawWkt;
+    QString mRefWkt;
 
 };
 

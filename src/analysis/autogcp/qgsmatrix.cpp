@@ -194,6 +194,7 @@ QgsMatrix* QgsMatrix::multiply( QgsMatrix* out, const QgsMatrix* left, const Qgs
     }
   }
   *out = m;
+  if (( *out ) == m );
   return out;
 }
 QgsMatrix* QgsMatrix::add( QgsMatrix* out, const QgsMatrix* left, const QgsMatrix* right )
@@ -296,7 +297,7 @@ QgsMatrix* QgsMatrix::solve( QgsMatrix* X, const QgsMatrix* A, const QgsMatrix* 
   {
     if ( NULL == solveVector( X, A, B, i ) )
     {
-      QgsLogger::debug( "Could not solve vector." );
+      QgsLogger::debug("Could not solve vector.");
       return NULL;
     }
   }
@@ -305,25 +306,25 @@ QgsMatrix* QgsMatrix::solve( QgsMatrix* X, const QgsMatrix* A, const QgsMatrix* 
 
 QgsMatrix* QgsMatrix::solveVector( QgsMatrix* X, const QgsMatrix* A, const QgsMatrix* B, int col )
 {
-
-
+  
+  
   /*
-
+  
   int row,xcol,row_size,col_size;
     float data,sum;
     matrix_t lower,upper,perm,matrix_x,matrix_y,matrix_pb;
-
+    
     row_size=A->rows();
     col_size=A.columns();
-
+    
     matrix_build_LU2(matrix_a,&lower,&upper);
-
+    
     perm=matrix_build_P(matrix_a);
     matrix_x=matrix_build_zero(row_size,1);
     matrix_y=matrix_build_zero(row_size,1);
-
+    
     matrix_pb=matrix_mul(perm,matrix_b);
-
+    
     for(row=0;row<row_size;row++){
         sum=0;
         for(xcol=0;xcol<row;xcol++){
@@ -332,7 +333,7 @@ QgsMatrix* QgsMatrix::solveVector( QgsMatrix* X, const QgsMatrix* A, const QgsMa
         data=(matrix_get_data(matrix_pb,row,0)-sum);
         matrix_set_data(&matrix_y,row,0,data);
     }
-
+    
     for(row=row_size-1;row>=0;row--){
         sum=0;
         for(xcol=row;xcol<row_size;xcol++){
@@ -341,15 +342,15 @@ QgsMatrix* QgsMatrix::solveVector( QgsMatrix* X, const QgsMatrix* A, const QgsMa
         data=(matrix_get_data(matrix_y,row,0)-sum)/matrix_get_data(upper,row,row);
         matrix_set_data(&matrix_x,row,0,data);
     }
-
+    
     return matrix_x;
   */
-
-
-
-
-
-
+  
+  
+  
+  
+  
+  
   //double eps = 1.0e-15;
   //check that B has only one column...
   //if (B->columns() > 1) return NULL;
@@ -444,7 +445,7 @@ QgsMatrix* QgsMatrix::solveVector( QgsMatrix* X, const QgsMatrix* A, const QgsMa
   //STEP 10
   //printf( "8\n" );
   ( *X )( n - 1, col ) = Au( nrow[n-1], n ) / Au( nrow[n-1], n - 1 );
-
+  
   //STEP 11
   //printf( "9\n" );
   for ( int i = n - 2; i >= 0; i-- )
@@ -527,7 +528,7 @@ QgsMatrix* QgsMatrix::solveUpperTriangular( QgsMatrix* X, const QgsMatrix* A, co
       ( *X )( j, i ) = (( *B )( j, i ) - subtract ) / ( *A )( j, j );
     }
   }
-	return X;
+
 }
 
 
@@ -601,7 +602,7 @@ QgsMatrix& QgsMatrix::operator*=( const double & value )
 }
 QgsMatrix& QgsMatrix::operator/=( const double & value )
 {
-  return *QgsMatrix::divide( this, this, value );
+  QgsMatrix::divide( this, this, value );
 }
 
 bool QgsMatrix::operator==( const QgsMatrix& other )const

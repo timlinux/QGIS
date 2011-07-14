@@ -1,0 +1,22 @@
+<RCC>
+  <qresource prefix="sumbandilasat/">
+    <file>../../icons/general/addthumbnail.png</file>
+    <file>../../icons/general/removethumbnail.png</file>
+    <file>../../icons/general/selectpoint.png</file>
+    <file>../../icons/general/acceptpoint.png</file>
+    <file>../../icons/general/next.png</file>
+    <file>../../icons/general/back.png</file>
+    <file>../../icons/general/projection.png</file>
+    <file>../../icons/general/folder.png</file>
+    <file>../../icons/general/settings.png</file>
+    <file>../../icons/general/list.png</file>
+    <file>../../icons/general/zoomin.png</file>
+    <file>../../icons/general/zoomout.png</file>
+    <file>../../icons/general/zoomextent.png</file>
+    <file>../../icons/general/pan.png</file>
+    <file>../../icons/general/google.png</file>
+    <file>../../icons/general/selecttable.png</file>
+    <file>../../icons/toolbar/georeferencer.png</file>
+  </qresource>
+</RCC>
+

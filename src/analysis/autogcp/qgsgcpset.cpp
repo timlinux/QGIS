@@ -32,14 +32,14 @@ QgsGcpSet::~QgsGcpSet()
   }
 }
 
-QgsGcpSet::QgsGcpSet( const QgsGcpSet& set )
+QgsGcpSet::QgsGcpSet(const QgsGcpSet& set)
 {
   mRefId = set.refId();
   mRawId = set.rawId();
   const QList<QgsGcp*>& list = set.constList();
-  for ( int i = 0; i < list.size(); i++ )
+  for(int i = 0; i < list.size(); i++)
   {
-    addGcp( new QgsGcp( *list.at( i ) ) );
+    addGcp(new QgsGcp(*list.at(i)));
   }
 }
 
@@ -94,6 +94,17 @@ int QgsGcpSet::size() const
 const QList<QgsGcp*>& QgsGcpSet::constList() const
 {
   return mList;
+}
+
+QgsGcpSet* QgsGcpSet::utmSet()
+{
+  QgsGcpSet *set = new QgsGcpSet();
+  for(int i = 0; i < mList.size(); i++)
+  {
+    QgsGcp *gcp = mList[i]->utmGcp();
+    set->addGcp(gcp);
+  }
+  return set;
 }
 
 QList<QgsGcp*>& QgsGcpSet::list()

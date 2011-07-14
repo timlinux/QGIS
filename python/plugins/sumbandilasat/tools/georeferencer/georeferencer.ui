@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Georeferencer</class>
+ <widget class="QMainWindow" name="Georeferencer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1141</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Georeferencer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/sumbandilasat/icons/toolbar/georeferencer.png</normaloff>:/sumbandilasat/icons/toolbar/georeferencer.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="0">
+     <widget class="QLabel" name="referenceLabel">
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Reference layer</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>CRS</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="2">
+     <widget class="QWidget" name="crsWidget" native="true">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="crsLabel">
+         <property name="text">
+          <string>WGS 84 (EPSG:4326)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QWidget" name="actionWidgetGoogle" native="true">
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_9">
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <property name="spacing">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="actionWidgetCrs" native="true">
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="thumbnailsLayer">
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Thumbnails</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="4">
+     <widget class="QDockWidget" name="dockWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="floating">
+       <bool>false</bool>
+      </property>
+      <property name="features">
+       <set>QDockWidget::AllDockWidgetFeatures</set>
+      </property>
+      <property name="windowTitle">
+       <string>Current thumbnail</string>
+      </property>
+      <widget class="QWidget" name="dockWidgetContents">
+       <layout class="QGridLayout" name="gridLayout_6">
+        <property name="margin">
+         <number>9</number>
+        </property>
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item row="2" column="0" colspan="5">
+         <widget class="QgsMapCanvas" name="canvas" native="true">
+          <layout class="QGridLayout" name="gridLayout_3"/>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="0">
+         <widget class="QWidget" name="actionWidgetMap" native="true">
+          <layout class="QGridLayout" name="gridLayout_5">
+           <property name="margin">
+            <number>0</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QWidget" name="actionWidgetSelect" native="true">
+          <layout class="QGridLayout" name="gridLayout_7">
+           <property name="margin">
+            <number>0</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QWidget" name="actionWidgetAccept" native="true">
+          <layout class="QGridLayout" name="gridLayout_8">
+           <property name="margin">
+            <number>0</number>
+           </property>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="4" column="2">
+     <widget class="QWidget" name="widget" native="true">
+      <layout class="QGridLayout" name="gridLayout_2">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>1</number>
+       </property>
+       <item row="3" column="2">
+        <widget class="QWidget" name="actionWidget2" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QWidget" name="actionWidget1" native="true">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="margin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="2">
+     <widget class="QTableWidget" name="thumbnailTableWidget">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="textElideMode">
+       <enum>Qt::ElideRight</enum>
+      </property>
+      <attribute name="horizontalHeaderCascadingSectionResizes">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderCascadingSectionResizes">
+       <bool>false</bool>
+      </attribute>
+      <attribute name="horizontalHeaderCascadingSectionResizes">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderCascadingSectionResizes">
+       <bool>false</bool>
+      </attribute>
+      <column>
+       <property name="text">
+        <string>Name</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>DIM/World</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Reference</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Offset</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Rendering</string>
+       </property>
+      </column>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QWidget" name="widget_2" native="true">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_10" rowstretch="0,0">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item row="1" column="0">
+        <widget class="QWidget" name="layerWidget" native="true">
+         <layout class="QGridLayout" name="gridLayout_4">
+          <property name="margin">
+           <number>0</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QWidget" name="widget_3" native="true">
+            <layout class="QGridLayout" name="gridLayout_11">
+             <property name="margin">
+              <number>0</number>
+             </property>
+             <item row="0" column="0">
+              <widget class="QComboBox" name="referenceComboBox"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QWidget" name="messageWidget" native="true">
+               <layout class="QGridLayout" name="gridLayout_13">
+                <property name="margin">
+                 <number>0</number>
+                </property>
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="messageLabel">
+                  <property name="text">
+                   <string>No layers loaded</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <action name="actionZoomIn">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/zoomin.png</normaloff>:/sumbandilasat/icons/general/zoomin.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom in</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom in</string>
+   </property>
+  </action>
+  <action name="actionZoomOut">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/zoomout.png</normaloff>:/sumbandilasat/icons/general/zoomout.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom out</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom out</string>
+   </property>
+  </action>
+  <action name="actionZoomExtent">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/zoomextent.png</normaloff>:/sumbandilasat/icons/general/zoomextent.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom to extent</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom to extent</string>
+   </property>
+  </action>
+  <action name="actionPan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/pan.png</normaloff>:/sumbandilasat/icons/general/pan.png</iconset>
+   </property>
+   <property name="text">
+    <string>Pan image</string>
+   </property>
+   <property name="toolTip">
+    <string>Pan image</string>
+   </property>
+  </action>
+  <action name="actionOpenDir">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/folder.png</normaloff>:/sumbandilasat/icons/general/folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Scan directory</string>
+   </property>
+   <property name="toolTip">
+    <string>Scan directory</string>
+   </property>
+  </action>
+  <action name="actionAddThumbnail">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/addthumbnail.png</normaloff>:/sumbandilasat/icons/general/addthumbnail.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Add thumbnail</string>
+   </property>
+  </action>
+  <action name="actionRemoveThumbnail">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/removethumbnail.png</normaloff>:/sumbandilasat/icons/general/removethumbnail.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove thumbnail</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/settings.png</normaloff>:/sumbandilasat/icons/general/settings.png</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+   <property name="toolTip">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionAlready">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/list.png</normaloff>:/sumbandilasat/icons/general/list.png</iconset>
+   </property>
+   <property name="text">
+    <string>Working list</string>
+   </property>
+   <property name="toolTip">
+    <string>Working list</string>
+   </property>
+  </action>
+  <action name="actionCrs">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/projection.png</normaloff>:/sumbandilasat/icons/general/projection.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select coordinate reference system</string>
+   </property>
+   <property name="toolTip">
+    <string>Select coordinate reference system</string>
+   </property>
+  </action>
+  <action name="actionSelectPoint">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/selectpoint.png</normaloff>:/sumbandilasat/icons/general/selectpoint.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select point</string>
+   </property>
+   <property name="toolTip">
+    <string>Select point</string>
+   </property>
+  </action>
+  <action name="actionAcceptPoint">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/acceptpoint.png</normaloff>:/sumbandilasat/icons/general/acceptpoint.png</iconset>
+   </property>
+   <property name="text">
+    <string>Accept point</string>
+   </property>
+   <property name="toolTip">
+    <string>Accept point</string>
+   </property>
+  </action>
+  <action name="actionAddGoogle">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/google.png</normaloff>:/sumbandilasat/icons/general/google.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add Google satellite layer</string>
+   </property>
+   <property name="toolTip">
+    <string>Add Google satellite layer</string>
+   </property>
+  </action>
+  <action name="actionNextLayer">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/next.png</normaloff>:/sumbandilasat/icons/general/next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Next thumbnail</string>
+   </property>
+  </action>
+  <action name="actionPreviousLayer">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/back.png</normaloff>:/sumbandilasat/icons/general/back.png</iconset>
+   </property>
+   <property name="text">
+    <string>Previous thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Previous thumbnail</string>
+   </property>
+  </action>
+  <action name="actionSelectTable">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/sumbandilasat/icons/general/selecttable.png</normaloff>:/sumbandilasat/icons/general/selecttable.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select specific thumbnail from table</string>
+   </property>
+   <property name="toolTip">
+    <string>Select specific thumbnail from table</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsMapCanvas</class>
+   <extends>QWidget</extends>
+   <header>qgis.gui</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="resources.qrc"/>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

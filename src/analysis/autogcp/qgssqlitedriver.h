@@ -17,14 +17,18 @@ Email : foxhat.solutions@gmail.com
 
 #ifndef QGSSQLITEDRIVER_H
 #define QGSSQLITEDRIVER_H
-
-#include "spatialite/headers/spatialite/sqlite3.h"
+/*
+extern "C"
+{
+#include <sqlite3.h>
+}
+*/
 #include "qgssqldriver.h"
 
 /*! \ingroup analysis*/
 /*! \brief Container for query results
 */
-struct ANALYSIS_EXPORT QUERY_RESULT
+struct QUERY_RESULT
 {
   QList<QString> pHeader;
   QList<QString> pData;
@@ -148,7 +152,7 @@ class ANALYSIS_EXPORT QgsSqliteDriver : public QgsSqlDriver
       */
     QString queryValue( QUERY_RESULT results, QString header );
   private:
-    sqlite3 *mDatabase;
+    //sqlite3 *mDatabase;
     QString mPath;
 };
 
