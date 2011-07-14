@@ -387,11 +387,11 @@ void QgsBandAlignerThread::run()
     p.start("gdal_translate "+gcps+mOutputPath.toAscii().data()+".geoless "+mOutputPath.toAscii().data());
     p.waitForFinished(99999999);
     
-    for(int i = 0; i < mInputPath.size(); i++)
+    /*for(int i = 0; i < mInputPath.size(); i++)
     {
       QFile warped(mInputPath[i]+".warped");
       warped.remove();
-    }
+    }*/
     QFile geo(mOutputPath.toAscii().data()+QString(".geoless"));
     geo.remove();
   }

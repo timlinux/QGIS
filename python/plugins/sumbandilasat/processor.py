@@ -462,7 +462,7 @@ class ProcessorDialog(QDialog):
     if self.settings.value("bandAlignment", "createYMap", 1):
       disparityY = outPath+".disparityY"
     referenceBand = self.settings.value("bandAlignment", "referenceBand", 2)+1
-    self.processor = QgsBandAligner(inPaths, outPath, disparityX, disparityY, chipSize, referenceBand, methode, minGcps, tolerance)
+    self.processor = QgsBandAligner(inPaths, outPath, disparityX, disparityY, chipSize, 1, methode, minGcps, tolerance)
     QObject.connect(self.processor, SIGNAL("progressed(double)"), self.progressTasks)
     QObject.connect(self.processor, SIGNAL("logged(QString)"), self.updateLog)
     self.processor.start()
