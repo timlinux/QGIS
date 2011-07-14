@@ -223,6 +223,9 @@ class ProcessorDialog(QDialog):
     self.startProcessing()
       
   def start(self):
+    if self.outputFolder == "":
+      self.showMessage("Please specify a output folder first.", "error")
+      return
     self.wasStopped = False
     self.ui.stopButton.show()
     self.ui.startButton.hide()
