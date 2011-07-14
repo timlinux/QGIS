@@ -41,7 +41,7 @@ void QgsBandAligner::progressReceived(double progress)
 QgsBandAlignerThread::QgsBandAlignerThread(QStringList input, QString output, QString disparityXPath, QString disparityYPath, int blockSize, int referenceBand, QgsBandAligner::Transformation transformation, int minimumGcps, double refinementTolerance)
   : QThread()
 {
-  mReferenceBand = referenceBand;
+  mReferenceBand = /*referenceBand*/1;
   mInputPath = input;
   mOutputPath = output;
   mDisparityXPath = disparityXPath;
