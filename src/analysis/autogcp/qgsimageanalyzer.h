@@ -157,8 +157,9 @@ class ANALYSIS_EXPORT QgsImageAnalyzer : public QgsAbstractOperation
     GDALDataType mChipType;
     double mSearchFeatureRatio;
     double mProgress;
-};
+    static const double WAVELET_PART = 0.7;
 
-static const double WAVELET_PART = 0.7;
+
+};
 
 #endif // QGSIMAGEANALYZER_H

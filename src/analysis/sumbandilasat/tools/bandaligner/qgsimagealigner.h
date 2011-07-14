@@ -23,7 +23,7 @@ This class captures the complextities of alligning images/bands typical usage wo
   -> (the MeasureDiff method can be used to compare the corrected image to the base image)
 */
 
-class QgsImageAligner
+class ANALYSIS_EXPORT QgsImageAligner
 {
   public:
     
@@ -117,7 +117,7 @@ class QgsImageAligner
     QgsComplex **mReal;
 };
 
-class QgsPointDetectionThread : public QThread
+class ANALYSIS_EXPORT QgsPointDetectionThread : public QThread
 {
   public:
     

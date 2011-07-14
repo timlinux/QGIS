@@ -15,9 +15,9 @@
 
 using namespace std;
 
-class QgsBandAlignerThread;
+class ANALYSIS_EXPORT QgsBandAlignerThread;
 
-class QgsBandAligner : public QObject
+class ANALYSIS_EXPORT QgsBandAligner : public QObject
 {
   
     Q_OBJECT
@@ -54,7 +54,7 @@ class QgsBandAligner : public QObject
     QgsBandAlignerThread *mThread;
 };
   
-class QgsBandAlignerThread : public QThread
+class ANALYSIS_EXPORT QgsBandAlignerThread : public QThread
 {
   
     Q_OBJECT

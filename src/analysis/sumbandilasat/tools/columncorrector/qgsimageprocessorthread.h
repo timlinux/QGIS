@@ -21,7 +21,7 @@ struct BadColumn
   bool fault; //if fault = 0, then the column is over the gain threshold, otherwise it is over the bias threshold
 };
 
-class QgsReadingThread : public QThread
+class ANALYSIS_EXPORT QgsReadingThread : public QThread
 {
   public:
     QgsReadingThread(bool leftRight, int start, int stop, int band, int rows, int columns, QgsMemoryRaster *dataset, QList<BadColumn*> *potentialBadLeft, QList<BadColumn*> *potentialBadRight); //if leftRight = 0, then run from left to right, else run from right to left
@@ -53,7 +53,7 @@ class QgsReadingThread : public QThread
     bool wasStopped;
 };
 
-class QgsCorrectionThread : public QThread
+class ANALYSIS_EXPORT QgsCorrectionThread : public QThread
 {
   public:
     QgsCorrectionThread(int start, int stop, int band, int rows, int columns, QgsMemoryRaster *dataset, QList< QList<BadColumn*> > *finalFaults, QgsMemoryRaster *newRaster);
@@ -80,7 +80,7 @@ class QgsCorrectionThread : public QThread
     bool wasStopped;
 };
 
-class QgsQualityTester
+class ANALYSIS_EXPORT QgsQualityTester
 {
   public:
     static int goodQuality(double m, double c, double thresholdM, double thresholdC); //0 = bad on gain, 1 = bad on bias, 2 = good
@@ -89,7 +89,7 @@ class QgsQualityTester
     static bool highVariance(double base, double threshold, double value);
 };
 
-class QgsImageProcessorThread : public QThread
+class ANALYSIS_EXPORT QgsImageProcessorThread : public QThread
 {
     Q_OBJECT
     
@@ -117,9 +117,6 @@ class QgsImageProcessorThread : public QThread
     
     void handleProgress(double progress, QString action);
     void handleLog(QString message);
-    
-
-   
 
   signals:
     void updated(int progress, QString action, int totalProgress);

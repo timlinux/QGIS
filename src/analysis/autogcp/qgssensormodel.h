@@ -43,7 +43,6 @@ class ANALYSIS_EXPORT QgsSensorModel
      */
     virtual double c( double X, double Y, double Z ) = 0;
 
-    //virtual double calculateNewPosition(double X, double Y, double Z, QgsPoint *newPoint) = 0;
 };
 
 

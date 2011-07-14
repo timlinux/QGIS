@@ -17,7 +17,7 @@ Email : jamesmeyerx@gmail.com
 
 #include <qt4/QtCore/qfile.h>
 
-/* $Id: qgsorthorectificationfilter.cpp 606 2010-10-29 09:13:39Z jamesm $ */
+/* $Id$ */
 
 #include <iostream>
 #include "qgsorthorectificationfilter.h"
@@ -36,7 +36,7 @@ QgsRasterDataset* QgsOrthorectificationFilter::applyFilter()
     int width = mSrc->imageXSize();
     int height = mSrc->imageYSize();
     int bands = mSrc->rasterBands();
-    //GDALDataType type = mSrc->rasterDataType();
+    GDALDataType type = mSrc->rasterDataType();
     QgsLogger::debug( QString().sprintf( "ImageSize: %d, %d - Bands: %d", width, height, bands ) );
     //Create the destination image with the same dimensions and datatype
     QString error;
@@ -73,7 +73,7 @@ QgsRasterDataset* QgsOrthorectificationFilter::applyFilter()
     int counter = 0;
     for ( int k = 1; k <= bands; ++k )
     {
-      GDALRasterBand *band = mSrc->gdalDataset()->GetRasterBand( k );
+      GDALRasterBand *band = mSrc->gdalDataset()->GetRasterBand(k);
       double min = band->GetMinimum();
       double max = band->GetMaximum();
       QgsLogger::debug( QString().sprintf( "Orthorectifying band %d", k ) );
@@ -97,7 +97,7 @@ QgsRasterDataset* QgsOrthorectificationFilter::applyFilter()
               Z = 0.0;
             }
           }
-          Z = 0.0000000001;
+//
           double pixel = mSensorModel->c( X, Y, Z );
           double line = mSensorModel->r( X, Y, Z );
           buffer[j] = mSampler->samplePoint( mSrc, k, pixel, line );
@@ -105,14 +105,14 @@ QgsRasterDataset* QgsOrthorectificationFilter::applyFilter()
         }
 
         GDALRasterBand* gdalBand = gdalDs->GetRasterBand( k );
-        if ( min < 0 || max > 255 )
-        {
-          double *bufferValues = ( double* ) buffer;
-          for ( int j = 0; j < width; ++j )
-          {
-            bufferValues[j] = (( bufferValues[j] - min ) / ( max - min ) ) * 255; //Scale the values to 0 -255
-          }
-        }
+	if(min < 0 || max > 255)
+	{
+	  double *bufferValues = (double*) buffer;
+	  for ( int j = 0; j < width; ++j )
+	  {
+	    bufferValues[j] = ((bufferValues[j] - min) / (max - min)) * 255; //Scale the values to 0 -255
+	  }
+	}
         gdalBand->RasterIO( GF_Write, 0, i, width, 1, buffer, width, 1, GDT_Float64, 0, 0 );
 
       }

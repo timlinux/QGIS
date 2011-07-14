@@ -21,7 +21,7 @@ Email : foxhat.solutions@gmail.com
 * (at your option) any later version. *
 * *
 ***************************************************************************/
-/* $Id: qgsrpcmodel.cpp 623 2011-01-20 13:49:34Z goocreations $ */
+/* $Id$ */
 
 #include "qgsrpcmodel.h"
 #include "qgselevationmodel.h"
@@ -56,9 +56,9 @@ QgsRpcModel::QgsRpcModel( QgsGcpSet* gcpSet, QgsRasterDataset *img, QgsElevation
 
 QgsRpcModel::~QgsRpcModel()
 {
-  while ( !mGcpSet->list().isEmpty() )
+  while(!mGcpSet->list().isEmpty())
   {
-    delete( mGcpSet->list().takeAt( 0 ) );
+    delete (mGcpSet->list().takeAt(0));
   }
   delete mGcpSet;
 }
@@ -122,6 +122,8 @@ double QgsRpcModel::r( double X, double Y, double Z )
   }
   else if ( mInitialized )
   {
+    double oldX = X;
+    double oldY = Y;
     //offset and scale X, Y to range [-1,1]
     X = (( X - mGeoTopLeftX ) / (( mGeoWidth ) / 2.0 ) ) - 1;
     Y = (( Y - mGeoTopLeftY ) / (( mGeoHeight ) / 2.0 ) ) - 1;
@@ -133,6 +135,7 @@ double QgsRpcModel::r( double X, double Y, double Z )
       QgsLogger::debug( "Denom is zero" );
       return ( Y + 1 ) *(( mGeoHeight ) / 2.0 );
     }
+    double frac = num / den;
     return (( num / den ) + 1 )*(( mImageYSize ) / 2.0 );
   }
   else return -1;
@@ -180,6 +183,7 @@ double QgsRpcModel::c( double X, double Y, double Z )
       //QgsLogger::debug( "Coordinates aren't properly normalized" );
       return ( X + 1 ) *(( mGeoWidth ) / 2.0 );
     }
+    double frac = num / den;
     double returnVal = (( num / den ) + 1 ) * (( mImageXSize ) / 2.0 );
     return returnVal;
   }
@@ -196,8 +200,8 @@ bool QgsRpcModel::initialize( )
   QgsMatrix C = QgsMatrix( n, 1 );
   /*QgsMatrix M = QgsMatrix( n, 11);
   QgsMatrix N = QgsMatrix( n, 11);*/
-  QgsMatrix M = QgsMatrix( n, 39 );
-  QgsMatrix N = QgsMatrix( n, 39 );
+  QgsMatrix M = QgsMatrix( n, 39);
+  QgsMatrix N = QgsMatrix( n, 39);
 
   for ( int m = 0; m < n; m++ )
   {
@@ -237,7 +241,7 @@ bool QgsRpcModel::initialize( )
 
     C( i, 0 ) = c;
     R( i, 0 ) = r;
-
+    
     /*M( i, 1 ) = Y;
     M( i, 2 ) = X;
     M( i, 3 ) = Y * X;
@@ -260,12 +264,12 @@ bool QgsRpcModel::initialize( )
     N( i, 9 ) = -c * Y * Y;
     N( i, 10 ) = -c * X * X;*/
 
-    /* for ( int mm = 11; mm < 39; mm++ )
-    {
-     M( i, mm ) = 1;
-     N( i, mm ) = 1;
-    }*/
-
+   /* for ( int mm = 11; mm < 39; mm++ )
+  {
+    M( i, mm ) = 1;
+    N( i, mm ) = 1;
+  }*/
+    
     M( i, 1 ) = Z;
     M( i, 2 ) = Y;
     M( i, 3 ) = X;
@@ -343,7 +347,7 @@ bool QgsRpcModel::initialize( )
     N( i, 36 ) = -c * Z * Z * Z;
     N( i, 37 ) = -c * Y * Y * Y;
     N( i, 38 ) = -c * X * X * X;
-
+    
   }
 
   QgsMatrix* result = NULL;
@@ -360,23 +364,36 @@ bool QgsRpcModel::initialize( )
   QgsMatrix *pN = &N;
   QgsMatrix Nt( 39, n );
   result = QgsMatrix::transpose( &Nt, pN );
-  QgsMatrix A2( 39, 39 );
+  QgsMatrix A2( 39, 39);
   result =  QgsMatrix::multiply( &A2, &Nt, pN );
 
   QgsMatrix* pC = &C;
   QgsMatrix B2( 39, 1 );
   result = QgsMatrix::multiply( &B2, &Nt, pC );
 
-
-
-
+  
+  
+  
   //set polynomial matrices J and K
   QgsMatrix Jm( 39, 1 );
   QgsMatrix Km( 39, 1 );
   QgsMatrix::solve( &Jm, &A1, &B1 );
   QgsMatrix::solve( &Km, &A2, &B2 );
-
-
+ 
+            QgsLogger::debug("*************************************MATRIX");
+      int coun = 0;
+	  for ( int i = 0; i < Jm.rows(); i++ )
+  {
+    QString gg= "";
+    for ( int ii = 0; ii < Jm.columns(); ii++ )
+    {
+            if(Jm(i, ii) == 0.00 || Jm(i, ii) == -0.00) coun++;
+      gg += QString::number(Jm(i, ii), 'f', 2)+" ";
+    }
+    QgsLogger::debug(gg);
+  }
+  QgsLogger::debug("*************************************MATRIX-END ("+QString::number(coun)+")");
+  
   /*QgsMatrix* result = NULL;
   QgsMatrix* pM = &M;
   QgsMatrix Mt( 11, n );
@@ -408,7 +425,7 @@ bool QgsRpcModel::initialize( )
     return false;
   }*/
 
-
+  
   /*QgsMatrix* result = NULL;
   QgsMatrix* pM = &M;
   QgsMatrix Mt( 11, n );
@@ -433,7 +450,7 @@ bool QgsRpcModel::initialize( )
   //set polynomial matrices J and K
   QgsMatrix Jm( 11, 1 );
   QgsMatrix Km( 11, 1 );
-
+  
   QgsMatrix::solve( &Jm, &A1, &B1 );
   QgsMatrix::solve( &Km, &A2, &B2 );*/
   /*if ( NULL == QgsMatrix::solve( &Jm, &A1, &B1 ) ||
@@ -443,7 +460,7 @@ bool QgsRpcModel::initialize( )
     return false;
   }*/
 
-  for ( int i = 0; i < 39; i++ )
+    for ( int i = 0; i < 39; i++ )
   {
     J[i] = Jm( i, 0 );
     K[i] = Km( i, 0 );

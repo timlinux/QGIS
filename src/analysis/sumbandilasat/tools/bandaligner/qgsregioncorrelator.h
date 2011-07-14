@@ -53,7 +53,7 @@ struct QgsRegion
 
 void circshift(double *out, const double *in, int xdim, int ydim, int xshift, int yshift);
 
-class QgsRegionCorrelator
+class ANALYSIS_EXPORT QgsRegionCorrelator
 {
   public:
     

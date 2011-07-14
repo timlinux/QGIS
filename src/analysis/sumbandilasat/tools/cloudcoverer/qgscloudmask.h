@@ -16,7 +16,7 @@
 
 #include <gdal_priv.h>
 
-class QgsCloudMask
+class ANALYSIS_EXPORT QgsCloudMask
 {
 
   public:

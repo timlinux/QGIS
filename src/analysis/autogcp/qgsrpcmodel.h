@@ -15,7 +15,7 @@ Email : foxhat.solutions@gmail.com
 * (at your option) any later version. *
 * *
 ***************************************************************************/
-/* $Id: qgsrpcmodel.h 606 2010-10-29 09:13:39Z jamesm $ */
+/* $Id$ */
 
 #ifndef QGSRPCMODEL_H
 #define QGSRPCMODEL_H
@@ -92,12 +92,12 @@ class ANALYSIS_EXPORT QgsRpcModel : public QgsSensorModel
      * \sa setRmsErrorThreshold()
      */
     double rmsError() const { return mRMSE; }
-
-    void setGcpSet( QgsGcpSet* gcpSet )
+    
+    void setGcpSet(QgsGcpSet* gcpSet)
     {
-      while ( !mGcpSet->list().isEmpty() )
+      while(!mGcpSet->list().isEmpty())
       {
-        delete( mGcpSet->list().takeAt( 0 ) );
+	delete (mGcpSet->list().takeAt(0));
       }
       mGcpSet = gcpSet;
     }

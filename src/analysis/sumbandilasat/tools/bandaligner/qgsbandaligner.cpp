@@ -160,8 +160,8 @@ void QgsBandAlignerThread::run()
     p.waitForFinished(999999);
     p.start("gdalwarp -multi -t_srs EPSG:4326 "+mInputPath[mReferenceBand-1]+".gcps "+mInputPath[mReferenceBand-1]+".warped");
     p.waitForFinished(999999);
-    QFile f(mInputPath[mReferenceBand-1]+".gcps");
-    f.remove();
+    /*QFile f(mInputPath[mReferenceBand-1]+".gcps");
+    f.remove();*/
   }
   
   QList<int> bands;
@@ -352,8 +352,8 @@ void QgsBandAlignerThread::run()
 	p.start("gdalwarp -multi -t_srs EPSG:4326 -order 5 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
 	p.waitForFinished(999999);
       }
-      QFile f(mInputPath[bands[i]-1]+".gcps");
-      f.remove();
+      /*QFile f(mInputPath[bands[i]-1]+".gcps");
+      f.remove();*/
     }
     progress += 29/div;
     emit progressed(progress);
@@ -387,11 +387,11 @@ void QgsBandAlignerThread::run()
     p.start("gdal_translate "+gcps+mOutputPath.toAscii().data()+".geoless "+mOutputPath.toAscii().data());
     p.waitForFinished(99999999);
     
-    for(int i = 0; i < mInputPath.size(); i++)
+    /*for(int i = 0; i < mInputPath.size(); i++)
     {
       QFile warped(mInputPath[i]+".warped");
       warped.remove();
-    }
+    }*/
     QFile geo(mOutputPath.toAscii().data()+QString(".geoless"));
     geo.remove();
   }

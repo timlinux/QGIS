@@ -416,15 +416,17 @@ class ProcessorDialog(QDialog):
 	  self.currentProcess = "columnCorrection"
 	  self.currentFile = 0
 	  self.ui.imageProgressBar.setValue(100)
-	  self.ui.totalProgressBar.setValue(100)
 	  self.ui.bandProgressBar.setValue(100)
 	  self.ui.taskProgressBar.setValue(100)
-	  self.updateLog("All images were processed!")
+	  self.updateLog("The image's processing is finished!")
 	  self.timerStarted = False
 	  time = QTime()
 	  time = time.addMSecs(self.timer.elapsed())
 	  self.updateLog("Time elapsed for image: "+time.toString("hh:mm:ss"))
 	  self.startProcessing()
+	else:
+	  self.ui.totalProgressBar.setValue(100)
+	  self.updateLog("All images' processing is finished!")
     #self.currentFile = 0
     
   def bandAlignment(self, inPaths, outPath):

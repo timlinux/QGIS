@@ -1,7 +1,7 @@
 #ifndef QGSCOMPLEX_H
 #define QGSCOMPLEX_H
 
-class QgsComplex
+class ANALYSIS_EXPORT QgsComplex
 {
   public:
     

@@ -25,10 +25,13 @@ Email : foxhat.solutions@gmail.com
 #include "qgsimageanalyzer.h"
 #include "qgslogger.h"
 #include "qgsrpcmodel.h"
-#include "qgsbilinearsampler.h"s
-#include "qgsrasterlayer.h"
+#include "qgsbilinearsampler.h"
+#include "qgspointsampler.h"
+//#include "qgsrasterlayer.h"
 #include "qgstpstransform.h"
 #include "qgsgeoreferencer.h"
+#include "qgscoordinatereferencesystem.h"
+#include "qgscoordinatetransform.h"
 #include <QMutex>
 #define DEFAULT_DRIVER "GTiff"
 QgsAutoGCPManager::QgsAutoGCPManager():
@@ -48,11 +51,11 @@ QgsAutoGCPManager::QgsAutoGCPManager():
     mTransformFunc( ThinPlateSpline ),
     mExecStatus( StatusDone ),
     mProgressArg( NULL ),
-    mRpcThreshold( 0.85 ),
+    mRpcThreshold( 5000 ),
     mCorrelationThreshold( 0 )
 {
   QgsLogger::debug( "Getting file filter for Raster images" );
-  QgsRasterLayer::buildSupportedRasterFileFilter( mRasterFileFilter );
+  //QgsRasterLayer::buildSupportedRasterFileFilter( mRasterFileFilter );
 }
 QgsAutoGCPManager::QgsAutoGCPManager( const QgsAutoGCPManager& other ):
     mRawImage( NULL ),
@@ -110,7 +113,7 @@ bool QgsAutoGCPManager::openSensedImage()
   }
   mRawImage = new QgsRasterDataset( rawPath, QgsRasterDataset::ReadOnly, false );
   mProgressArg = mRawImage;
-  mRawImage->open( rawPath, QgsRasterDataset::ReadOnly );
+  mRawImage->open( rawPath, QgsRasterDataset::ReadOnly);
   mMutex.lock();
   mProgressArg = NULL;
   mMutex.unlock();
@@ -127,8 +130,8 @@ bool QgsAutoGCPManager::openSensedImage()
   setGeoReferenced( false );
   if ( !QgsProjectionManager::checkProjectionInformation( mRawImage ) )
   {
-	mLastError = ErrorMissingProjection;
     return false;
+    mLastError = ErrorMissingProjection;
   }
   return true;
 }
@@ -148,7 +151,7 @@ bool QgsAutoGCPManager::openReferenceImage()
   }
   mRefImage = new QgsRasterDataset( refPath, QgsRasterDataset::ReadOnly, false );
   mProgressArg = mRefImage;
-  mRefImage->open( refPath, QgsRasterDataset::ReadOnly );
+  mRefImage->open( refPath, QgsRasterDataset::ReadOnly);
   mMutex.lock();
   mProgressArg = NULL;
   mMutex.unlock();
@@ -215,7 +218,7 @@ QgsGcpSet* QgsAutoGCPManager::matchControlPoints()
 
 
 bool QgsAutoGCPManager::createOrthoImage()
-{
+{/*
   if ( isGeoreferenced() && mRawImage && mGcpSet )
   {
     if ( !mRawImage->reopen() )
@@ -223,31 +226,30 @@ bool QgsAutoGCPManager::createOrthoImage()
       QgsLogger::debug( "Failed to reopen dataset" );
       return false;
     }
-    QgsGcpSet *newGcpSet = new QgsGcpSet( *mGcpSet );
-    //QgsElevationModel *e = new QgsElevationModel("/home/cstallmann/Downloads/S33E018.hgt");
-    QgsRpcModel model( new QgsGcpSet( *newGcpSet ), mRawImage/*, e*/ );
-
+    QgsGcpSet *newGcpSet = new QgsGcpSet(*mGcpSet);
+    //QgsElevationModel *e = new QgsElevationModel("/tmp/dem.dem");
+    //QgsRpcModel model( new QgsGcpSet(*newGcpSet), mRawImage, e);
+    QgsRpcModel model( new QgsGcpSet(*newGcpSet), mRawImage);
+    
     model.setRmsErrorThreshold( mRpcThreshold );
-    //model.constructModel();
+    model.constructModel();
     while ( !model.constructModel() && newGcpSet->size() > 0 )
     {
       //If the RPC model cannot be created with the current GCP set, the last GCP is removed and we try again
       QgsLogger::debug( "Failed to construct RPC Model, removing last GCP..." );
       newGcpSet->list().removeLast();
-      model.setGcpSet( new QgsGcpSet( *newGcpSet ) );
-      if ( newGcpSet->size() == 0 )
+      model.setGcpSet( new QgsGcpSet(*newGcpSet));
+      if(newGcpSet->size() == 0)
       {
-        QgsLogger::debug( "Failed to construct RPC Model, no GCPs left" );
-        return false;
+	QgsLogger::debug( "Failed to construct RPC Model, no GCPs left" );
+	return false;
       }
     }
     QgsLogger::debug( "RPC Model RMSE = " + QString::number( model.rmsError() ) );
     QgsLogger::debug( "Suitable GCPs = " + QString::number( mGcpSet->size() ) );
     QgsBilinearSampler sampler;
     QgsOrthorectificationFilter filter( mRawImage, &model, &sampler, NULL );
-    //QgsElevationModel *m = new QgsElevationModel( "/home/cstallmann/Raw_Spot24_UTM34/dem.hgt" );
-    //QgsOrthorectificationFilter filter( mRawImage, &model, &sampler, m );
-
+    
     filter.setDriver( outputDriver() );
     filter.setDestinationFile( destinationPath() );
 
@@ -265,7 +267,63 @@ bool QgsAutoGCPManager::createOrthoImage()
     }
     else
     {
-      QgsLogger::debug( "Orthorectification could not be started" );
+      QgsLogger::debug( "Orthorectification could not be started");
+      return false;
+    }
+  }
+  else
+  {
+    QgsLogger::debug( "The current set of GCPs have not been cross-referenced." );
+
+    return false;
+
+  }*/
+  if ( isGeoreferenced() && mRawImage && mGcpSet )
+  {
+    if ( !mRawImage->reopen() )
+    {
+      QgsLogger::debug( "Failed to reopen dataset" );
+      return false;
+    }
+    QgsGcpSet *newGcpSet = new QgsGcpSet(*mGcpSet);
+    //QgsElevationModel *e = new QgsElevationModel("/home/cstallmann/Downloads/N00E009.hgt");
+    QgsRpcModel model( new QgsGcpSet(*newGcpSet), mRawImage/*, e*/);
+    
+    model.setRmsErrorThreshold( mRpcThreshold );
+    while ( !model.constructModel() && newGcpSet->size() > 0 )
+    {
+      //If the RPC model cannot be created with the current GCP set, the last GCP is removed and we try again
+      QgsLogger::debug( "Failed to construct RPC Model, removing last GCP..." );
+      newGcpSet->list().removeLast();
+      model.setGcpSet( new QgsGcpSet(*newGcpSet));
+      if(newGcpSet->size() == 0)
+      {
+	QgsLogger::debug( "Failed to construct RPC Model, no GCPs left" );
+	return false;
+      }
+    }
+    QgsLogger::debug( "RPC Model RMSE = " + QString::number( model.rmsError() ) );
+    QgsLogger::debug( "Suitable GCPs = " + QString::number( mGcpSet->size() ) );
+    QgsBilinearSampler sampler;
+    QgsOrthorectificationFilter filter( mRawImage, &model, &sampler, NULL );
+    filter.setDriver( outputDriver() );
+    filter.setDestinationFile( destinationPath() );
+
+    mProgressArg = &filter;
+    mOrtho = filter.applyFilter();
+    mMutex.lock();
+    mProgressArg = NULL;
+    mMutex.unlock();
+    mRawImage->close();
+    if ( mOrtho )
+    {
+      delete mOrtho;
+      mOrtho = NULL;
+      return true;
+    }
+    else
+    {
+      QgsLogger::debug( "Orthorectification could not be started");
       return false;
     }
   }
@@ -276,6 +334,7 @@ bool QgsAutoGCPManager::createOrthoImage()
     return false;
 
   }
+
 }
 
 
@@ -300,7 +359,7 @@ void QgsAutoGCPManager::executeOperation( ExecutionFunc operation, QgsRasterData
   }
   mExecThread = new ExecutionThread( operation, this );
   mExecStatus = StatusBusy;
-  if ( pDs != NULL )
+  if(pDs != NULL)
   {
     pDs->close();
   }
@@ -443,7 +502,7 @@ QString QgsAutoGCPManager::getProjectionAuthID( ImageFilter imageDataset )
 
 bool QgsAutoGCPManager::exportGcpSet( QString path )
 {
-  QFile file( path + ".gcp" );
+  QFile file( path +".gcp");
   if ( file.open( QFile::WriteOnly | QFile::Truncate ) )
   {
     QTextStream out( &file );
@@ -453,10 +512,23 @@ bool QgsAutoGCPManager::exportGcpSet( QString path )
     {
       QgsGcp *gcp = gcpList[i];
       QString var1;
-      var1.sprintf( "%.15f", gcp->refX() );
+      
+      QgsCoordinateTransform ct;
+    QgsCoordinateReferenceSystem cs1;
+    QgsCoordinateReferenceSystem cs2;
+    
+    cs1.createFromEpsg(32734);
+     cs2.createFromEpsg(4326);
+    
+    ct.setSourceCrs(cs1);
+    ct.setDestCRS(cs2);
+    
+    QgsPoint point1 = ct.transform(QgsPoint(gcp->refX(), gcp->refY()));
+      
+      var1.sprintf( "%.15f", /*point1.x()*/gcp->refX());
       QString var2;
-      var2.sprintf( "%.15f", gcp->refY() );
-
+      var2.sprintf( "%.15f", /*point1.y()*/gcp->refY());
+      
       int p1;
       int p2;
       double p3 = gcp->rawX();
@@ -466,14 +538,14 @@ bool QgsAutoGCPManager::exportGcpSet( QString path )
       var3.sprintf( "%.15f",  p1 );
       QString var4;
       var4.sprintf( "%.15f", p2 );*/
-
+      
       QString r = "";
-      if ( i < 10 )
+      if (i < 10)
       {
-        r += "0";
+	r += "0";
       }
-      r += QString::number( i );
-      out << " G00" << r << " " << QString::number( p1 ) << " " << QString::number( p2 ) << " " << var1 << " " << var2 << "  0" << "\n";
+      r += QString::number(i);
+      out << " G00" << r << " " << QString::number(p1) << " " << QString::number(p2) << " " << var1 << " " << var2 << "  0" << "\n";
     }
     file.close();
     mRawImage->close();
@@ -492,6 +564,27 @@ bool QgsAutoGCPManager::exportGcpSet( QgsGcpSet *gcpSet, QString path )
     for ( int i = 0; i < gcpList.size(); i++ )
     {
       QgsGcp *gcp = gcpList[i];
+      
+      /*QgsCoordinateTransform ct;
+      QgsCoordinateReferenceSystem() cs1;
+      QgsCoordinateReferenceSystem() cs2;
+      cs1.createFromEpsg(32734);
+      cs2.createFromEpsg(4326);
+      
+      ct.setSourceCrs(cs1);
+      ct.setDestCRS(cs2);
+      
+      QgsPoint point1 = ct.transform(QgsPoint(gcp->refX(),gcp->refY()));
+      
+      QString var1;
+      var1.sprintf( "%.15f", point1.x() );
+      QString var2;
+      var2.sprintf( "%.15f", point1.y() );
+      QString var3;
+      var3.sprintf( "%.15f", gcp->rawX() );
+      QString var4;
+      var4.sprintf( "%.15f", gcp->rawY() );
+      out << var1 << "\t" << var2 << "\t" << var3 << "\t" << var4 << "\n";*/
       QString var1;
       var1.sprintf( "%.15f", gcp->refX() );
       QString var2;
@@ -509,7 +602,7 @@ bool QgsAutoGCPManager::exportGcpSet( QgsGcpSet *gcpSet, QString path )
 }
 
 bool QgsAutoGCPManager::importGcpSet( QString path )
-{
+{QgsLogger::debug("0000001");
   try
   {
     if ( !mRefImage-> isOpen() )
@@ -523,6 +616,7 @@ bool QgsAutoGCPManager::importGcpSet( QString path )
       QTextStream in( &file );
       QString line = in.readLine();
       int count = 0;
+      QgsLogger::debug("1111111");
       while ( !line.isNull() )
       {
         try
@@ -534,16 +628,21 @@ bool QgsAutoGCPManager::importGcpSet( QString path )
             if ( !mGcpSet ) //if set wasn't instantiated before
             {
               mGcpSet = new QgsGcpSet();
-            }
+            }QgsLogger::debug("22222");
             QgsGcp *gcp = new QgsGcp();
             gcp->setRefX( list[0].toDouble() );
             gcp->setRefY( list[1].toDouble() );
-            gcp->setRawX( list[2].toDouble() );
+	    QgsLogger::debug("2.5");
+	    //test height
+	    //gcp->setRefZ( rand() % 1 + 2000);
+            
+	    gcp->setRawX( list[2].toDouble() );
             gcp->setRawY( list[3].toDouble() );
-            if ( gcp->rawX() != 0.0 && gcp->rawY() != 0.0 )
-            {
-              setGeoReferenced( true );
-            }
+	    QgsLogger::debug("333331");
+	    /*if(gcp->rawX() != 0.0 && gcp->rawY() != 0.0)
+	    {
+	      setGeoReferenced(true);
+	    }
             if ( mRefImage != NULL )
             {
               int pixelX;
@@ -557,9 +656,10 @@ bool QgsAutoGCPManager::importGcpSet( QString path )
               }
             }
             if ( !( gcp->refX() == 0 && gcp->refY() == 0 ) ) //ensures that the first line of text is not read
-            {
+            {*/
               mGcpSet->addGcp( gcp );
-            }
+	      QgsLogger::debug("44444");
+            //}
           }
           line = in.readLine();
         }
@@ -586,12 +686,13 @@ void QgsAutoGCPManager::addGcp( QgsGcp *gcp )
   {
     mGcpSet = new QgsGcpSet();
   }
-  QgsGcp *g = new QgsGcp();
+  QgsGcp *g = new QgsGcp(mRawImage->wkt(), mRefImage->wkt());
   g->setRefX( gcp->refX() );
   g->setRefY( gcp->refY() );
   g->setRawX( gcp->rawX() );
   g->setRawY( gcp->rawY() );
   QgsImageAnalyzer analyzer( mRefImage );
+
   if ( mRefImage != NULL )
   {
     if ( !mRefImage-> isOpen() )
@@ -768,7 +869,7 @@ bool QgsAutoGCPManager::connectDatabase( QString name, QString username, QString
 {
   /*mDataSource = new QgsDataSource( QgsDataSource::Postgres, QgsHasher::Md5 );
   return mDataSource->createDatabase( name, username, password, host );*/
-  return false;
+return false;
 }
 
 QgsGcpSet* QgsAutoGCPManager::loadDatabase( ImageFilter filter )
@@ -779,7 +880,7 @@ QgsGcpSet* QgsAutoGCPManager::loadDatabase( ImageFilter filter )
     {
       mRefImage->reopen();
     }
-    QgsGcpSet *set = NULL;
+    QgsGcpSet *set;
     if ( filter == QgsAutoGCPManager::Reference )
     {
       set = mDataSource->selectByImage( mRefImage, NULL );
@@ -798,7 +899,7 @@ QgsGcpSet* QgsAutoGCPManager::loadDatabase( ImageFilter filter )
     else if ( filter == QgsAutoGCPManager::Both )
     {
       set = mDataSource->selectByImage( mRefImage, mRawImage );
-      setGeoReferenced( true );
+      setGeoReferenced(true);
     }
     if ( !mGcpSet ) //if set wasn't instantiated before
     {
@@ -811,16 +912,17 @@ QgsGcpSet* QgsAutoGCPManager::loadDatabase( ImageFilter filter )
       QgsImageAnalyzer analyzer( mRefImage );
       for ( it = list.constBegin(); it != list.constEnd(); ++it )
       {
-        QgsGcp *gcp = new QgsGcp();
+        QgsPoint *point = new QgsPoint(( *it )->refX(), ( *it )->refY() );
+        QgsGcp *gcp = new QgsGcp(mRawImage->wkt(), mRefImage->wkt());
         gcp->setRawX(( *it )->rawX() );
         gcp->setRawY(( *it )->rawY() );
         gcp->setRefZ(( *it )->refZ() );
         gcp->setRefX(( *it )->refX() );
         gcp->setRefY(( *it )->refY() );
-        if ( gcp->rawX() != 0.0 && gcp->rawY() != 0.0 )
-        {
-          setGeoReferenced( true );
-        }
+	if(gcp->rawX() != 0.0 && gcp->rawY() != 0.0)
+	{
+	  setGeoReferenced(true);
+	}
         int pixelX;
         int pixelY;
         double coorX = gcp->refX();
@@ -851,15 +953,16 @@ QgsGcpSet* QgsAutoGCPManager::loadDatabaseByLocation( double pixelWidthX, double
     QgsImageAnalyzer analyzer( mRefImage );
     for ( it = list.constBegin(); it != list.constEnd(); ++it )
     {
-      QgsGcp *gcp = new QgsGcp();
+      QgsPoint *point = new QgsPoint(( *it )->refX(), ( *it )->refY() );
+      QgsGcp *gcp = new QgsGcp(mRawImage->wkt(), mRefImage->wkt());
       gcp->setRawX(( *it )->rawX() );
       gcp->setRawY(( *it )->rawY() );
       gcp->setRefZ(( *it )->refZ() );
       gcp->setRefX(( *it )->refX() );
       gcp->setRefY(( *it )->refY() );
-      if ( gcp->rawX() != 0.0 && gcp->rawY() != 0.0 )
+      if(gcp->rawX() != 0.0 && gcp->rawY() != 0.0)
       {
-        setGeoReferenced( true );
+	setGeoReferenced(true);
       }
       if ( mRefImage != NULL )
       {
@@ -903,16 +1006,17 @@ QgsGcpSet* QgsAutoGCPManager::loadDatabaseByHash( QString hash )
       QgsImageAnalyzer analyzer( mRefImage );
       for ( it = list.constBegin(); it != list.constEnd(); ++it )
       {
-        QgsGcp *gcp = new QgsGcp();
+        QgsPoint *point = new QgsPoint(( *it )->refX(), ( *it )->refY() );
+        QgsGcp *gcp = new QgsGcp(mRawImage->wkt(), mRefImage->wkt());
         gcp->setRawX(( *it )->rawX() );
         gcp->setRawY(( *it )->rawY() );
         gcp->setRefZ(( *it )->refZ() );
         gcp->setRefX(( *it )->refX() );
         gcp->setRefY(( *it )->refY() );
-        if ( gcp->rawX() != 0.0 && gcp->rawY() != 0.0 )
-        {
-          setGeoReferenced( true );
-        }
+	if(gcp->rawX() != 0.0 && gcp->rawY() != 0.0)
+	{
+	  setGeoReferenced(true);
+	}
         int pixelX;
         int pixelY;
         double coorX = gcp->refX();
@@ -1031,9 +1135,9 @@ double QgsAutoGCPManager::progress()
   if ( NULL != mProgressArg )
   {
     result = mProgressArg->progress();
-    if ( result > 0 && result < 1 )
+    if(result > 0 && result < 1)
     {
-      setStatus( StatusBusy );
+      setStatus(StatusBusy);
     }
   }
   else
@@ -1109,7 +1213,7 @@ bool QgsAutoGCPManager::crossReference()
     QgsImageAnalyzer* pIA = new QgsImageAnalyzer( mRawImage );
     mProgressArg = pIA;
     pIA->setTransformBand( mExtractionBand );
-    pIA->setCorrelationThreshold( mCorrelationThreshold );
+    pIA->setCorrelationThreshold(mCorrelationThreshold);
 
 #ifdef BRUTE_FORCE_MATCHING
     QgsGcpSet* pSet = pIA->bruteMatchGcps( mGcpSet );
@@ -1130,7 +1234,6 @@ bool QgsAutoGCPManager::crossReference()
     mRawImage->close();
     return ( pSet != NULL );
   }
-  return false;
 }
 
 
@@ -1153,7 +1256,10 @@ bool QgsAutoGCPManager::georeference()
     mRawImage->close();
     return result;
   }
-  return false;
+  else
+  {
+    return false;
+  }
 }
 
 bool QgsAutoGCPManager::geoTransform()

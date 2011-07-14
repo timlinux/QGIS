@@ -37,11 +37,10 @@ Modification Date: 24/07/2010
 #ifndef DEFAULT_CHIP_SIZE
 #define DEFAULT_CHIP_SIZE 32
 #endif
-
 /*! \ingroup analysis*/
 /*! \brief Container for image information
 */
-struct ANALYSIS_EXPORT IMAGE_INFO
+struct IMAGE_INFO
 {
   QString pFileName;
   QString pFilePath;
@@ -62,7 +61,7 @@ struct ANALYSIS_EXPORT IMAGE_INFO
 /*! \ingroup analysis*/
 /*! \brief Container for the output driver information
 */
-struct ANALYSIS_EXPORT DRIVER_INFO
+struct DRIVER_INFO
 {
   QString pLongName;
   QString pShortName;
@@ -353,7 +352,7 @@ class ANALYSIS_EXPORT QgsAutoGCPManager
     double correlationThreshold()const;
     /*! \brief Sets the correlation threshold*/
     void setCorrelationThreshold( double value );
-
+    
     void setGeoReferenced( bool value );
   protected:
     QgsAutoGCPManager( const QgsAutoGCPManager& other );
@@ -378,7 +377,7 @@ class ANALYSIS_EXPORT QgsAutoGCPManager
     bool geoTransform();
 
     void executeOperation( ExecutionFunc operation, QgsRasterDataset* pDs );
-
+    
   private:
     QString refPath;
     QString rawPath;

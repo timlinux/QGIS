@@ -10,7 +10,7 @@
 using namespace std;
 
 //abstract class
-class QgsRasterLineThread : public QThread
+class ANALYSIS_EXPORT QgsRasterLineThread : public QThread
 {
   public:
     
@@ -21,7 +21,7 @@ class QgsRasterLineThread : public QThread
     virtual int progress() = 0;
 };
 
-class QgsRasterReadLineThread : public QgsRasterLineThread
+class ANALYSIS_EXPORT QgsRasterReadLineThread : public QgsRasterLineThread
 {
       
   public:
@@ -45,7 +45,7 @@ class QgsRasterReadLineThread : public QgsRasterLineThread
     
 };
 
-class QgsRasterWriteLineThread : public QgsRasterLineThread
+class ANALYSIS_EXPORT QgsRasterWriteLineThread : public QgsRasterLineThread
 {
       
   public:
@@ -70,7 +70,7 @@ class QgsRasterWriteLineThread : public QgsRasterLineThread
     
 };
 
-class QgsMemoryLineRaster : public QObject
+class ANALYSIS_EXPORT QgsMemoryLineRaster : public QObject
 {
       Q_OBJECT
   

@@ -22,9 +22,9 @@ struct LineErrors
   QList<bool> down;
 };
 
-class QgsLineCorrectorThread;
+class ANALYSIS_EXPORT QgsLineCorrectorThread;
 
-class QgsLineCorrector : public QObject
+class ANALYSIS_EXPORT QgsLineCorrector : public QObject
 {
     Q_OBJECT
   
@@ -62,7 +62,7 @@ class QgsLineCorrector : public QObject
     void badLinesFound(QList<int> value);
 };
 
-class QgsLineCorrectorThread : public QThread
+class ANALYSIS_EXPORT QgsLineCorrectorThread : public QThread
 {
     Q_OBJECT
   

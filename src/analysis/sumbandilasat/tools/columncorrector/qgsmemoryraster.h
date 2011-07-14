@@ -10,14 +10,14 @@
 using namespace std;
 
 //abstract class
-class QgsRasterThread : public QThread
+class ANALYSIS_EXPORT QgsRasterThread : public QThread
 {
   public:
     virtual void stop() = 0;
     virtual double progress(){return 0;}
 };
 
-class QgsRasterReadThread : public QgsRasterThread
+class ANALYSIS_EXPORT QgsRasterReadThread : public QgsRasterThread
 {
   public:
     QgsRasterReadThread(QString *path, int *columns, int *rows, int *bands, QList<double**> *theData, bool *success);
@@ -36,7 +36,7 @@ class QgsRasterReadThread : public QgsRasterThread
     bool wasStopped;
 };
 
-class QgsRasterWriteThread : public QgsRasterThread
+class ANALYSIS_EXPORT QgsRasterWriteThread : public QgsRasterThread
 {
   public:
     QgsRasterWriteThread(QString *path, QString outputPath, int *columns, int *rows, int *bands, QList<double**> *theData, bool *success);
@@ -56,7 +56,7 @@ class QgsRasterWriteThread : public QgsRasterThread
     bool wasStopped;
 };
 
-class QgsRasterCheckThread : public QgsRasterThread
+class ANALYSIS_EXPORT QgsRasterCheckThread : public QgsRasterThread
 {
   public:
     QgsRasterCheckThread(QString in, QString out, QString outputPath, int *columns, int *rows, int *bands, bool *success);
@@ -76,7 +76,7 @@ class QgsRasterCheckThread : public QgsRasterThread
     bool wasStopped;
 };
 
-class QgsMemoryRaster
+class ANALYSIS_EXPORT QgsMemoryRaster
 {
   public:
     QgsMemoryRaster(QString path);

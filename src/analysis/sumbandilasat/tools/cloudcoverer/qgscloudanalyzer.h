@@ -9,7 +9,7 @@
 
 #include "qgscloudmask.h"
 
-class QgsCloudAnalyzer
+class ANALYSIS_EXPORT QgsCloudAnalyzer
 {
 
   public:

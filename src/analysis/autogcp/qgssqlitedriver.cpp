@@ -91,7 +91,7 @@ bool QgsSqliteDriver::createDatabase()
 {
   try
   {
-    int hashLength = 32;
+    int hashLength;
     if ( hashAlgorithm() == QgsHasher::Md5 || hashAlgorithm() == QgsHasher::Md4 )
     {
       hashLength = 32;

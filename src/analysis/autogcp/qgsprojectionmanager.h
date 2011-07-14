@@ -35,7 +35,7 @@ Author: Francois Maass
  *  Struct serves as a container for all projection related information
  *  needed to set projection definitions.
  */
-struct ANALYSIS_EXPORT PROJ_INFO
+struct PROJ_INFO
 {
 
   QString pGeographicCSName;
