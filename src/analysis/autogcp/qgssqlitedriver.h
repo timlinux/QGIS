@@ -17,12 +17,12 @@ Email : foxhat.solutions@gmail.com
 
 #ifndef QGSSQLITEDRIVER_H
 #define QGSSQLITEDRIVER_H
-
+/*
 extern "C"
 {
 #include <sqlite3.h>
 }
-
+*/
 #include "qgssqldriver.h"
 
 /*! \ingroup analysis*/
@@ -152,7 +152,7 @@ class ANALYSIS_EXPORT QgsSqliteDriver : public QgsSqlDriver
       */
     QString queryValue( QUERY_RESULT results, QString header );
   private:
-    sqlite3 *mDatabase;
+    //sqlite3 *mDatabase;
     QString mPath;
 };
 

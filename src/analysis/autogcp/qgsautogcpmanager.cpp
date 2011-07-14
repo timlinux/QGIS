@@ -1087,7 +1087,7 @@ void QgsAutoGCPManager::setGeoReferenced( bool value )
 QList<DRIVER_INFO> QgsAutoGCPManager::readDriverSource( QString path )
 {
   QList<DRIVER_INFO> list;
-  if ( !path.isNull() )
+  /*if ( !path.isNull() )
   {
     sqlite3 *database;
     int rc = sqlite3_open( path.toAscii().data(), &database );
@@ -1115,7 +1115,7 @@ QList<DRIVER_INFO> QgsAutoGCPManager::readDriverSource( QString path )
       }
       sqlite3_close( database );
     }
-  }
+  }*/
   return list;
 }
 
