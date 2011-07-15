@@ -137,7 +137,6 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
     QgsRegionCorrelator::inverseFourierTransformNew(conj, max);
 
     double *corr = QgsRegionCorrelator::inverseShift(conj, max);
-	delete [] conj;
     QList<QList<double> > interest = QgsRegionCorrelator::getSubset(corr, floor((max-regionRef->width)/2.0), floor((max+regionRef->width)/2.0), floor((max-regionRef->height)/2.0), floor((max+regionRef->height)/2.0), max);
     double theMax = LONG_MIN;
     QList<QList<int> > indexes;
@@ -262,6 +261,7 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
     delete [] dataNew;
     delete [] refD;
     delete [] newD;
+    delete [] conj;
     return QgsRegionCorrelationResult(true, x, y, max, theMax, confidence, snr);
   }
   else
