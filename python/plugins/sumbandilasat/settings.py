@@ -13,6 +13,7 @@ class SettingsDialog(QDialog):
     self.ui = Ui_Settings()
     self.ui.setupUi(self)
     
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.RestoreDefaults), SIGNAL("clicked()"), self.restoreDefaults)
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Apply), SIGNAL("clicked()"), self.saveSettings)
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.close)
     QObject.connect(self.ui.columnBadCheckBox, SIGNAL("clicked()"), self.toggleColumnCheckBox)
@@ -22,11 +23,40 @@ class SettingsDialog(QDialog):
     
     self.settings = QSettings("QuantumGIS", "SumbandilaSat Image Processor")
     #No settings exist
-    if self.settings.value("init").toInt() == 0:
+    if self.settings.value("init").toInt() != 1:
       self.saveSettings(False)
     else:
       self.loadSettings()
-       
+      
+    self.toggleColumnCheckBox()
+    self.chooseMethod()
+    self.toggleLineCheckBox()
+  
+  def restoreDefaults(self):
+    self.ui.general8bitCheckBox.setChecked(True)
+    self.ui.generalJpegCheckBox.setChecked(True)
+    self.ui.columnBadCheckBox.setChecked(False)
+    self.ui.columnMaskCheckBox.setChecked(False)
+    self.ui.columnBadLineEdit.setText("*.badColumns")
+    self.ui.columnMaskLineEdit.setText("*.columnMask")
+    self.ui.columnGain.setValue(0.1)
+    self.ui.columnBias.setValue(8.0)
+    self.ui.lineMaskCheckBox.setChecked(False)
+    self.ui.lineMaskLineEdit.setText("*.lineMask")
+    self.ui.linePhase1ComboBox.setCurrentIndex(1)
+    self.ui.linePhase2ComboBox.setCurrentIndex(2)
+    self.ui.linePhaseCheckBox.setChecked(True)
+    self.ui.alignReferenceBand.setCurrentIndex(0)
+    self.ui.alignMethod.setCurrentIndex(3)
+    self.ui.alignChipSize.setValue(201)
+    self.ui.alignGcps.setValue(2048)
+    self.ui.alignTolerance.setValue(25)
+    self.ui.alignXCheckBox.setChecked(False)
+    self.ui.alignYCheckBox.setChecked(False)
+    self.toggleColumnCheckBox()
+    self.chooseMethod()
+    self.toggleLineCheckBox()
+  
   def showMessage(self, string, type = "info"):
     msgbox = QMessageBox(self)
     msgbox.setText(string)
@@ -165,3 +195,4 @@ class SettingsDialog(QDialog):
       self.ui.columnMaskWidget.show()
     else:
       self.ui.columnMaskWidget.hide()
+      
