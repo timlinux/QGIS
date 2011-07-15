@@ -172,7 +172,7 @@ bool QgsRasterDataset::open( QString path, Access access )
       int nBands = vrtDataset->GetRasterCount();
       GDALDataType eType = vrtDataset->GetRasterBand( 1 )->GetRasterDataType();
       QgsLogger::debug( "Copying Virtual Raster to temporary file..." );
-      mDataset = driver->CreateCopy( tempFileName, vrtDataset, false, NULL, progressFunction, NULL);
+      mDataset = driver->CreateCopy( tempFileName, vrtDataset, false, NULL, reinterpret_cast<GDALProgressFunc>(progressFunction), NULL);
       if ( mDataset )
       {
         GDALClose( vrtDataset );
@@ -540,8 +540,8 @@ bool QgsRasterDataset::transformCoordinate( int& pixelX, int& pixelY, double& ge
     GDALInvGeoTransform( in, coef );
     double resX, resY;
     GDALApplyGeoTransform( coef,  geoX, geoY, &resX, &resY );
-    pixelX = ( int ) round( resX );
-    pixelY = ( int ) round( resY );
+    pixelX = ( int ) /*round*/( resX );
+    pixelY = ( int ) /*round*/( resY );
   }
   return true;
 }
@@ -645,6 +645,7 @@ bool QgsRasterDataset::loadWorldFile( QString filename )
 bool QgsRasterDataset::setProjection( QString projString )
 {
   mDataset->SetProjection( projString.toLatin1().data() );
+  return true;
 }
 QString QgsRasterDataset::projection() const
 {

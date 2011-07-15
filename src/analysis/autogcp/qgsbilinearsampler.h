@@ -31,7 +31,7 @@ class ANALYSIS_EXPORT QgsBilinearSampler : public QgsSampler
      * \param line The y-coordinate in pixels
      * \return The sampled value obtained through the necessary interpolation or 0.0 if the pixel/line coordinate is out of bounds
      */
-    double samplePoint( QgsRasterDataset* image, int band, double pixel, double line )const;
+    double samplePoint( QgsRasterDataset* image, int band, double pixel, double line );
 
 
 };

@@ -28,8 +28,8 @@ Email : jamesmeyerx@gmail.com
 class ANALYSIS_EXPORT QgsSampler
 {
   public:
-    virtual ~QgsSampler() {}
-    virtual double samplePoint( QgsRasterDataset* image, int band, double pixel, double line ) const = 0;
+	virtual ~QgsSampler(){}
+	virtual double samplePoint( QgsRasterDataset* image, int band, double pixel, double line ){return 0.0;}
 };
 
 

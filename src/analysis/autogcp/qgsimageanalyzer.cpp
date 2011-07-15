@@ -39,6 +39,7 @@ QgsImageAnalyzer::QgsImageAnalyzer( QgsRasterDataset* image ):
     mCorrelationThreshold( 0 )
 {
   setChipSize( DEFAULT_CHIP_SIZE, DEFAULT_CHIP_SIZE );
+  WAVELET_PART = 0.7;
 }
 
 
@@ -61,7 +62,7 @@ QgsGcpSet* QgsImageAnalyzer::extractGcps( int amount )
   //extractor.setDistribution(WAV_DISTRIB,WAV_DISTRIB);
   extractor.suggestDistribution( amount );
   extractor.setRasterBand( mBandNumber );
-  QgsProgressFunction pfnProgress = setWaveletProgress;
+  QgsProgressFunction pfnProgress = (QgsProgressFunction) setWaveletProgress;
   extractor.setProgressFunction( pfnProgress );
   extractor.setProgressArgument(( void* ) this );
   extractor.execute();
@@ -154,15 +155,6 @@ QgsGcpSet* QgsImageAnalyzer::matchGcps( QgsGcpSet* gcpSet )
     int counter = 0;
     for ( ; it != refList.end(); )
     {
-#ifdef AUTOGCP_DEBUG
-      counter ++;
-      if ( counter == 8 )
-      {
-        int debughere = 1;
-      }
-      printf( "****************************\n" );
-      printf( "Reference Point: (%f,%f)\n", gcp->refX(), gcp->refY() );
-#endif
       QgsGcp* gcp = ( *it );
       PointsList* listPtr = grid->gridList( gcp );
       if ( listPtr != NULL )
@@ -642,8 +634,8 @@ void QgsImageAnalyzer::QgsGrid::fillGrid( const QgsWaveletTransform::PointsList*
     QgsPoint point = ( *it );
     xPixel = ( int ) point.x();
     yPixel = ( int ) point.y();
-    col = ( int ) floor( xPixel / blockSize );
-    row = ( int ) floor( yPixel / blockSize );
+    col = ( int ) floor( xPixel / (double) blockSize );
+    row = ( int ) floor( yPixel / (double) blockSize );
     cell = row * cols + col;
     //add gcp to cell
     GridBlock& currentBlock = blocks[cell];
@@ -718,7 +710,7 @@ void QgsImageAnalyzer::setProgress( double value )
 void CPL_STDCALL QgsImageAnalyzer::setWaveletProgress( double progress, void* pProgressArg )
 {
   QgsImageAnalyzer* me = static_cast<QgsImageAnalyzer*>( pProgressArg );
-  me->setProgress( progress * WAVELET_PART );
+  me->setProgress( progress * /*WAVELET_PART*/0.7 );
 }
 
 double QgsImageAnalyzer::correlationThreshold()const

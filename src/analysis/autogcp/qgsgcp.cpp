@@ -60,6 +60,7 @@ const QgsGcp& QgsGcp::operator=( const QgsGcp & other )
   mXRef = other.mXRef;
   mYRef = other.mYRef;
   mZRef = other.mZRef;
+  return *this;
 }
 
 bool QgsGcp::operator==( const QgsGcp& other ) const

@@ -11,6 +11,7 @@
 %Include qgsoverlayanalyzer.sip
 %Include qgsautogcpmanager.sip
 %Include qgsbilinearsampler.sip
+%Include qgssampler.sip
 %Include qgscrosscorrelator.sip
 %Include qgsdatasource.sip
 %Include qgsrasterdataset.sip
@@ -29,7 +30,6 @@
 %Include qgssqldriver.sip
 %Include qgssqlitedriver.sip
 %Include qgswavelettransform.sip
-%Include qgssampler.sip
 %Include qgsimagefilter.sip
 %Include qgssensormodel.sip
 %Include sumbandilasat/qgsimageprocessor.sip

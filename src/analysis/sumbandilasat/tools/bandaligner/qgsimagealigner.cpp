@@ -79,15 +79,15 @@ void QgsImageAligner::open()
   mTranslateDataset = (GDALDataset*) GDALOpen(mTranslatePath.toAscii().data(), GA_ReadOnly);
   mWidth = mInputDataset->GetRasterXSize();
   mHeight = mInputDataset->GetRasterYSize();
-  mBits = pow(2, GDALGetDataTypeSize(mInputDataset->GetRasterBand(1)->GetRasterDataType()));
+  mBits = pow(2, (double)GDALGetDataTypeSize(mInputDataset->GetRasterBand(1)->GetRasterDataType()));
 }
 
 void QgsImageAligner::eliminate(double sigmaWeight)
 {
   int xSteps = ceil(mWidth / double(mBlockSize));
   int ySteps = ceil(mHeight / double(mBlockSize));
-  double x[xSteps*ySteps];
-  double y[xSteps*ySteps];
+  double *x = new double[xSteps*ySteps];
+  double *y = new double[xSteps*ySteps];
   
   QgsComplex *newFixed = new QgsComplex[xSteps*ySteps];
   for(int i = 0; i < xSteps*ySteps; i++)
@@ -172,6 +172,8 @@ void QgsImageAligner::eliminate(double sigmaWeight)
       }
     }
   }
+  delete [] x;
+  delete [] y;
 }
 
 bool QgsImageAligner::isBad(double value, double deviation, double mean, double sigmaWeight)
@@ -340,7 +342,7 @@ void QgsImageAligner::estimate(bool deleteOldDisparity)
   int yTo = ySteps+1;
   for(int x = 0; x < xTo; x++)
   {
-    int x1 = floor((x-0.5)*mBlockSize - fabs(x-1)*xDiff);
+    int x1 = floor((x-0.5)*mBlockSize - fabs((double)(x-1))*xDiff);
     int x2 = floor((x+0.5)*mBlockSize - x*xDiff);
     if(!(x1 > 0 && x1 <= mWidth-blockB))
     {
@@ -369,7 +371,7 @@ void QgsImageAligner::estimate(bool deleteOldDisparity)
     }
     for(int y = 0; y < yTo; y++)
     {
-      int y1 = floor((y-0.5)*mBlockSize - fabs(y-1)*yDiff);
+      int y1 = floor((y-0.5)*mBlockSize - fabs((double)(y-1))*yDiff);
       int y2 = floor((y+0.5)*mBlockSize - y*yDiff);
       if(!(y1 > 0 && y1 <= mHeight-blockB))
       {

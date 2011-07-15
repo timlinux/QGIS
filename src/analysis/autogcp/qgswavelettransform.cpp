@@ -53,7 +53,7 @@ QgsWaveletTransform::QgsWaveletTransform( QgsRasterDataset* image ):
 
 {
   mInitialized = initialize();
-  mChipSize = ( int )pow( 2, mLevels );
+  mChipSize = ( int )pow( 2, (double)mLevels );
 }//QgsWaveletTransform::QgsWaveletTransform(QgsRasterDataset* image, unsigned int numPoints)
 
 /*******************************************
@@ -64,7 +64,7 @@ void QgsWaveletTransform::setFeatureSize( int xSize, int ySize )
   int fSize = MAX( xSize , ySize );
   //Calculate the number of decomposition levels based on feature size;
   mLevels = ( int ) ceil( log10(( double ) fSize ) / log10(( double ) 2 ) );
-  mChipSize = ( int )pow( 2, mLevels );
+  mChipSize = ( int )pow( 2, (double) mLevels );
 }
 /*******************************************
  *    initialize
@@ -472,6 +472,6 @@ void QgsWaveletTransform::suggestDistribution( int nNumPoints )
     QgsLogger::debug( "Invalid number of points specified for distribution suggestion" );
     return;
   }
-  int dimension = ( int ) ceil( sqrt( nNumPoints ) );
+  int dimension = ( int ) ceil( sqrt( (double) nNumPoints ) );
   setDistribution( dimension, dimension );
 }
