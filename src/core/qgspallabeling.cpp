@@ -1265,7 +1265,7 @@ void QgsPalLabeling::drawLabelCandidateRect( pal::LabelPosition* lp, QPainter* p
 }
 
 void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, const QFont& f, const QColor& c, const QgsMapToPixel* xform, double bufferSize,
-                                const QColor& bufferColor, bool drawBuffer )
+                                const QColor& bufferColor, bool drawBuffer, double shieldSize, const QColor & shieldColor, bool drawShield )
 {
   QgsPoint outPt = xform->transform( label->getX(), label->getY() );
 
@@ -1311,9 +1311,21 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
     // to workaround a Qt font scaling bug with small font sizes
     painter->scale( 1.0 / lyr.rasterCompressFactor, 1.0 / lyr.rasterCompressFactor );
 
+
+    if ( drawShield )
+    {
+      //drawLabelShield( painter, shieldSize * lyr.vectorScaleFactor * lyr.rasterCompressFactor , shieldColor );
+      Q_UNUSED( shieldSize ); //todo
+      QgsPoint outPt = xform->transform( label->getX(), label->getY() );
+      QgsPoint outPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
+      QRectF rect( 0, 0, outPt2.x() - outPt.x(), outPt2.y() - outPt.y() );
+      painter->setPen( Qt::NoPen );
+      painter->setBrush( shieldColor );
+      painter->drawRoundedRect( rect, 1.0, 1.0 );
+    }
+
     double yMultiLineOffset = ( multiLineList.size() - 1 - i ) * lyr.fontMetrics->height();
     painter->translate( QPointF( 0, - lyr.fontMetrics->descent() - yMultiLineOffset ) );
-
     if ( drawBuffer )
     {
       // we're drawing buffer
@@ -1333,8 +1345,9 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
     if ( label->getNextPart() )
       drawLabel( label->getNextPart(), painter, f, c, xform, bufferSize, bufferColor, drawBuffer );
   }
-}
 
+
+}
 
 void QgsPalLabeling::drawLabelBuffer( QPainter* p, QString text, const QFont& font, double size, QColor color )
 {
@@ -1345,6 +1358,13 @@ void QgsPalLabeling::drawLabelBuffer( QPainter* p, QString text, const QFont& fo
   p->setPen( pen );
   p->setBrush( color );
   p->drawPath( path );
+}
+
+void QgsPalLabeling::drawLabelShield( QPainter* p, double size, QColor color )
+{
+  Q_UNUSED( size ); //todo
+  Q_UNUSED( p ); //todo
+  Q_UNUSED( color); //todo
 }
 
 QgsLabelingEngineInterface* QgsPalLabeling::clone()

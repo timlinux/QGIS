@@ -42,6 +42,7 @@ class QgsLabelingGui : public QDialog, private Ui::QgsLabelingGuiBase
     void changeTextFont();
     void showEngineConfigDialog();
     void changeBufferColor();
+    void changeShieldColor();
 
     void updateUi();
     void updatePreview();

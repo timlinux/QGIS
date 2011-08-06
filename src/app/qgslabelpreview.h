@@ -12,11 +12,15 @@ class QgsLabelPreview : public QLabel
 
     void setBuffer( double size, QColor color );
 
+    void setShield( double size, QColor color );
+
     void paintEvent( QPaintEvent* e );
 
   private:
     int mBufferSize;
     QColor mBufferColor;
+    int mShieldSize;
+    QColor mShieldColor;
     QColor mTextColor;
 };
 
