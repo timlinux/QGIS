@@ -145,6 +145,8 @@ QgsPalLayerSettings::QgsPalLayerSettings()
   scaleMax = 0;
   bufferSize = 1;
   bufferColor = Qt::white;
+  shieldSize = 0;
+  shieldColor = Qt::white;
   formatNumbers = false;
   decimals = 3;
   plusSign = false;
@@ -175,6 +177,8 @@ QgsPalLayerSettings::QgsPalLayerSettings( const QgsPalLayerSettings& s )
   scaleMax = s.scaleMax;
   bufferSize = s.bufferSize;
   bufferColor = s.bufferColor;
+  shieldSize = s.shieldSize;
+  shieldColor = s.shieldColor;
   formatNumbers = s.formatNumbers;
   decimals = s.decimals;
   plusSign = s.plusSign;
@@ -276,6 +280,8 @@ static void _readDataDefinedPropertyMap( QgsVectorLayer* layer, QMap< QgsPalLaye
   _readDataDefinedProperty( layer, QgsPalLayerSettings::Family, propertyMap );
   _readDataDefinedProperty( layer, QgsPalLayerSettings::BufferSize, propertyMap );
   _readDataDefinedProperty( layer, QgsPalLayerSettings::BufferColor, propertyMap );
+  _readDataDefinedProperty( layer, QgsPalLayerSettings::ShieldSize, propertyMap );
+  _readDataDefinedProperty( layer, QgsPalLayerSettings::ShieldColor, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::PositionX, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::PositionY, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::Hali, propertyMap );
@@ -309,6 +315,8 @@ void QgsPalLayerSettings::readFromLayer( QgsVectorLayer* layer )
   scaleMax = layer->customProperty( "labeling/scaleMax" ).toInt();
   bufferSize = layer->customProperty( "labeling/bufferSize" ).toDouble();
   bufferColor = _readColor( layer, "labeling/bufferColor" );
+  shieldSize = layer->customProperty( "labeling/shieldSize" ).toDouble();
+  shieldColor = _readColor( layer, "labeling/shieldColor" );
   formatNumbers = layer->customProperty( "labeling/formatNumbers" ).toBool();
   decimals = layer->customProperty( "labeling/decimals" ).toInt();
   plusSign = layer->customProperty( "labeling/plussign" ).toInt();
@@ -347,6 +355,8 @@ void QgsPalLayerSettings::writeToLayer( QgsVectorLayer* layer )
   layer->setCustomProperty( "labeling/scaleMax", scaleMax );
   layer->setCustomProperty( "labeling/bufferSize", bufferSize );
   _writeColor( layer, "labeling/bufferColor", bufferColor );
+  layer->setCustomProperty( "labeling/shieldSize", shieldSize );
+  _writeColor( layer, "labeling/shieldColor", shieldColor );
   layer->setCustomProperty( "labeling/formatNumbers", formatNumbers );
   layer->setCustomProperty( "labeling/decimals", decimals );
   layer->setCustomProperty( "labeling/plussign", plusSign );
@@ -1096,6 +1106,8 @@ void QgsPalLabeling::drawLabeling( QgsRenderContext& context )
     QColor fontColor = lyr.textColor;
     double bufferSize = lyr.bufferSize;
     QColor bufferColor = lyr.bufferColor;
+    double shieldSize = lyr.shieldSize;
+    QColor shieldColor = lyr.shieldColor;
 
     //apply data defined settings for the label
     //font size
@@ -1161,9 +1173,31 @@ void QgsPalLabeling::drawLabeling( QgsRenderContext& context )
         bufferColor = lyr.bufferColor;
       }
     }
+    //shield size
+    QVariant dataDefinedShieldSize = palGeometry->dataDefinedValues().value( QgsPalLayerSettings::ShieldSize );
+    if ( dataDefinedShieldSize.isValid() )
+    {
+      shieldSize = dataDefinedShieldSize.toDouble();
+    }
 
-    if ( lyr.bufferSize != 0 )
+    //shield color
+    QVariant dataDefinedShieldColor = palGeometry->dataDefinedValues().value( QgsPalLayerSettings::ShieldColor );
+    if ( dataDefinedShieldColor.isValid() )
+    {
+      shieldColor.setNamedColor( dataDefinedShieldColor.toString() );
+      if ( !shieldColor.isValid() )
+      {
+        shieldColor = lyr.shieldColor;
+      }
+    }
+
+
+    if ( lyr.bufferSize != 0 && lyr.shieldSize != 0 )
+      drawLabel( *it, painter, fontForLabel, fontColor, xform, bufferSize, bufferColor, true, shieldSize, shieldColor, true );
+    else if ( lyr.bufferSize != 0 )
       drawLabel( *it, painter, fontForLabel, fontColor, xform, bufferSize, bufferColor, true );
+    else if ( lyr.shieldSize != 0 )
+      drawLabel( *it, painter, fontForLabel, fontColor, xform, 0, QColor(), false, shieldSize, shieldColor, true );
 
     drawLabel( *it, painter, fontForLabel, fontColor, xform );
 
