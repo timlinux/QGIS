@@ -1337,6 +1337,36 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
 
   for ( int i = 0; i < multiLineList.size(); ++i )
   {
+
+
+    if ( drawShield )
+    {
+      painter->save();
+
+
+      painter->translate( QPointF( outPt.x(), outPt.y() ) );
+      painter->rotate( -label->getAlpha() * 180 / M_PI );
+
+      // scale down painter: the font size has been multiplied by raster scale factor
+      // to workaround a Qt font scaling bug with small font sizes
+      painter->scale( 1.0 / lyr.rasterCompressFactor, 1.0 / lyr.rasterCompressFactor );
+      //drawLabelShield( painter, shieldSize * lyr.vectorScaleFactor * lyr.rasterCompressFactor , shieldColor );
+      QgsPoint outPt = xform->transform( label->getX(), label->getY() );
+      QgsPoint outPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
+      //debugging
+      painter->setBrush( Qt::red );
+      painter->drawEllipse( -(shieldSize), -(shieldSize) , 3, 3 );
+      painter->setBrush( Qt::green );
+      painter->drawEllipse( outPt2.x()  - outPt.x() - shieldSize, outPt2.y() - outPt.y() - shieldSize, 3, 3 );
+      // draw the shield
+      QRectF rect( -(shieldSize), -(shieldSize), outPt2.x() - outPt.x() - shieldSize, outPt2.y() - outPt.y() - shieldSize );
+      painter->setPen( Qt::NoPen );
+      painter->setBrush( shieldColor );
+      //painter->drawRoundedRect( rect, 1.0, 1.0 );
+      painter->drawRect( rect );
+    }
+
+    painter->restore();
     painter->save();
     painter->translate( QPointF( outPt.x(), outPt.y() ) );
     painter->rotate( -label->getAlpha() * 180 / M_PI );
@@ -1344,20 +1374,6 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
     // scale down painter: the font size has been multiplied by raster scale factor
     // to workaround a Qt font scaling bug with small font sizes
     painter->scale( 1.0 / lyr.rasterCompressFactor, 1.0 / lyr.rasterCompressFactor );
-
-
-    if ( drawShield )
-    {
-      //drawLabelShield( painter, shieldSize * lyr.vectorScaleFactor * lyr.rasterCompressFactor , shieldColor );
-      Q_UNUSED( shieldSize ); //todo
-      QgsPoint outPt = xform->transform( label->getX(), label->getY() );
-      QgsPoint outPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
-      QRectF rect( 0, 0, outPt2.x() - outPt.x(), outPt2.y() - outPt.y() );
-      painter->setPen( Qt::NoPen );
-      painter->setBrush( shieldColor );
-      painter->drawRoundedRect( rect, 1.0, 1.0 );
-    }
-
     double yMultiLineOffset = ( multiLineList.size() - 1 - i ) * lyr.fontMetrics->height();
     painter->translate( QPointF( 0, - lyr.fontMetrics->descent() - yMultiLineOffset ) );
     if ( drawBuffer )
