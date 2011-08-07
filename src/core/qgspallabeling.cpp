@@ -1345,6 +1345,7 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
 
       painter->translate( QPointF( outPt.x(), outPt.y() ) );
       painter->rotate( -label->getAlpha() * 180 / M_PI );
+	  double scaledSize = lyr.vectorScaleFactor * lyr.rasterCompressFactor * shieldSize;
 
       // scale down painter: the font size has been multiplied by raster scale factor
       // to workaround a Qt font scaling bug with small font sizes
@@ -1352,19 +1353,22 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
       //drawLabelShield( painter, shieldSize * lyr.vectorScaleFactor * lyr.rasterCompressFactor , shieldColor );
       QgsPoint rectPt = xform->transform( label->getX(), label->getY() );
       QgsPoint rectPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
-      QPointF origin( double( - shieldSize ), double( shieldSize ) );
-      QPointF corner( double( rectPt2.x()  - rectPt.x() + shieldSize ), double( rectPt2.y() - rectPt.y() - shieldSize) );
-      //debugging
-      painter->setBrush( Qt::red );
-      painter->drawEllipse( origin, 3, 3 );
-      painter->setBrush( Qt::green );
-      painter->drawEllipse( corner, 3, 3 );
+      QPointF origin( double( - scaledSize ), scaledSize + lyr.fontMetrics->descent() );
+      QPointF corner( double( rectPt2.x()  - rectPt.x() + ( scaledSize * 2 ) ), double( rectPt2.y() - rectPt.y() - scaledSize + lyr.fontMetrics->descent()) );
+      //debugging show origin (red) and end corner (green) dots for shield
+	  if ( mShowingCandidates )
+	  {
+        painter->setBrush( Qt::red );
+        painter->drawEllipse( origin, 3, 3 );
+        painter->setBrush( Qt::green );
+        painter->drawEllipse( corner, 3, 3 );
+	  }
       // draw the shield
       QRectF rect( origin, corner );
       painter->setPen( Qt::NoPen );
       painter->setBrush( shieldColor );
-      //painter->drawRoundedRect( rect, 1.0, 1.0 );
-      painter->drawRect( rect );
+      painter->drawRoundedRect( rect, 1.0, 1.0 );
+      //painter->drawRect( rect );
     }
 
     painter->restore();
