@@ -1343,7 +1343,6 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
     {
       painter->save();
 
-
       painter->translate( QPointF( outPt.x(), outPt.y() ) );
       painter->rotate( -label->getAlpha() * 180 / M_PI );
 
@@ -1351,15 +1350,17 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
       // to workaround a Qt font scaling bug with small font sizes
       painter->scale( 1.0 / lyr.rasterCompressFactor, 1.0 / lyr.rasterCompressFactor );
       //drawLabelShield( painter, shieldSize * lyr.vectorScaleFactor * lyr.rasterCompressFactor , shieldColor );
-      QgsPoint outPt = xform->transform( label->getX(), label->getY() );
-      QgsPoint outPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
+      QgsPoint rectPt = xform->transform( label->getX(), label->getY() );
+      QgsPoint rectPt2 = xform->transform( label->getX() + label->getWidth(), label->getY() + label->getHeight() );
+      QPointF origin( double( - shieldSize ), double( shieldSize ) );
+      QPointF corner( double( rectPt2.x()  - rectPt.x() + shieldSize ), double( rectPt2.y() - rectPt.y() - shieldSize) );
       //debugging
       painter->setBrush( Qt::red );
-      painter->drawEllipse( -(shieldSize), -(shieldSize) , 3, 3 );
+      painter->drawEllipse( origin, 3, 3 );
       painter->setBrush( Qt::green );
-      painter->drawEllipse( outPt2.x()  - outPt.x() - shieldSize, outPt2.y() - outPt.y() - shieldSize, 3, 3 );
+      painter->drawEllipse( corner, 3, 3 );
       // draw the shield
-      QRectF rect( -(shieldSize), -(shieldSize), outPt2.x() - outPt.x() - shieldSize, outPt2.y() - outPt.y() - shieldSize );
+      QRectF rect( origin, corner );
       painter->setPen( Qt::NoPen );
       painter->setBrush( shieldColor );
       //painter->drawRoundedRect( rect, 1.0, 1.0 );
