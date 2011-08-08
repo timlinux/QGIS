@@ -22,10 +22,11 @@ void QgsLabelPreview::setBuffer( double size, QColor color )
   update();
 }
 
-void QgsLabelPreview::setShield( double size, QColor color )
+void QgsLabelPreview::setShield( double size, QColor color, double rounding )
 {
   mShieldSize = size * 88 / 25.4; //assume standard dpi for preview
   mShieldColor = color;
+  mShieldCornerRounding = rounding;
   update();
 }
 
@@ -39,7 +40,7 @@ void QgsLabelPreview::paintEvent( QPaintEvent *e )
   p.translate( 10, 20 ); // uhm...
 
   if ( mShieldSize != 0 )
-    QgsPalLabeling::drawLabelShield( &p, mShieldSize, mShieldColor );
+    QgsPalLabeling::drawLabelShield( &p, mShieldSize, mShieldColor, mShieldCornerRounding );
 
   if ( mBufferSize != 0 )
     QgsPalLabeling::drawLabelBuffer( &p, text(), font(), mBufferSize, mBufferColor );

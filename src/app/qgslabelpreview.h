@@ -12,7 +12,7 @@ class QgsLabelPreview : public QLabel
 
     void setBuffer( double size, QColor color );
 
-    void setShield( double size, QColor color );
+    void setShield( double size, QColor color, double rounding );
 
     void paintEvent( QPaintEvent* e );
 
@@ -21,6 +21,7 @@ class QgsLabelPreview : public QLabel
     QColor mBufferColor;
     int mShieldSize;
     QColor mShieldColor;
+    int mShieldCornerRounding; 
     QColor mTextColor;
 };
 

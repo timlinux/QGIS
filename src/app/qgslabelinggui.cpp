@@ -46,6 +46,7 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
   connect( chkShield, SIGNAL( toggled( bool ) ), this, SLOT( updatePreview() ) );
   connect( btnShieldColor, SIGNAL( clicked() ), this, SLOT( changeShieldColor() ) );
   connect( spinShieldSize, SIGNAL( valueChanged( double ) ), this, SLOT( updatePreview() ) );
+  connect( spinShieldCornerRounding, SIGNAL( valueChanged( double ) ), this, SLOT( updatePreview() ) );
   connect( btnEngineSettings, SIGNAL( clicked() ), this, SLOT( showEngineConfigDialog() ) );
 
   // set placement methods page based on geometry type
@@ -151,7 +152,10 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
   bool shield = ( lyr.shieldSize != 0 );
   chkShield->setChecked( shield );
   if ( shield )
+  {
     spinShieldSize->setValue( lyr.shieldSize );
+  }
+  spinShieldCornerRounding->setValue( lyr.shieldCornerRounding );
   btnShieldColor->setColor( lyr.shieldColor );
 
 
@@ -299,6 +303,7 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
   {
     lyr.shieldSize = spinShieldSize->value();
     lyr.shieldColor = btnShieldColor->color();
+	lyr.shieldCornerRounding = spinShieldCornerRounding->value();
   }
   else
   {
@@ -339,6 +344,7 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
   setDataDefinedProperty( mBufferColorAttributeComboBox, QgsPalLayerSettings::BufferColor, lyr );
   setDataDefinedProperty( mShieldSizeAttributeComboBox, QgsPalLayerSettings:: ShieldSize, lyr );
   setDataDefinedProperty( mShieldColorAttributeComboBox, QgsPalLayerSettings::ShieldColor, lyr );
+  setDataDefinedProperty( mShieldCornerRoundingAttributeComboBox, QgsPalLayerSettings:: ShieldCornerRounding, lyr );
   setDataDefinedProperty( mXCoordinateComboBox, QgsPalLayerSettings::PositionX, lyr );
   setDataDefinedProperty( mYCoordinateComboBox, QgsPalLayerSettings::PositionY, lyr );
   setDataDefinedProperty( mHorizontalAlignmentComboBox, QgsPalLayerSettings::Hali, lyr );
@@ -406,6 +412,7 @@ void QgsLabelingGui::populateDataDefinedCombos( QgsPalLayerSettings& s )
   comboList << mBufferColorAttributeComboBox;
   comboList << mShieldSizeAttributeComboBox;
   comboList << mShieldColorAttributeComboBox;
+  comboList << mShieldCornerRoundingAttributeComboBox;
   comboList << mXCoordinateComboBox;
   comboList << mYCoordinateComboBox;
   comboList << mHorizontalAlignmentComboBox;
@@ -441,6 +448,7 @@ void QgsLabelingGui::populateDataDefinedCombos( QgsPalLayerSettings& s )
   setCurrentComboValue( mBufferColorAttributeComboBox, s, QgsPalLayerSettings::BufferColor );
   setCurrentComboValue( mShieldSizeAttributeComboBox, s , QgsPalLayerSettings::ShieldSize );
   setCurrentComboValue( mShieldColorAttributeComboBox, s, QgsPalLayerSettings::ShieldColor );
+  setCurrentComboValue( mShieldCornerRoundingAttributeComboBox, s , QgsPalLayerSettings::ShieldCornerRounding );
   setCurrentComboValue( mXCoordinateComboBox, s, QgsPalLayerSettings::PositionX );
   setCurrentComboValue( mYCoordinateComboBox, s, QgsPalLayerSettings::PositionY );
   setCurrentComboValue( mHorizontalAlignmentComboBox, s, QgsPalLayerSettings::Hali );
@@ -495,9 +503,9 @@ void QgsLabelingGui::updatePreview()
   else
     lblFontPreview->setBuffer( 0, Qt::white );
   if ( chkShield->isChecked() )
-    lblFontPreview->setShield( spinShieldSize->value(), btnShieldColor->color() );
+    lblFontPreview->setShield( spinShieldSize->value(), btnShieldColor->color(), spinShieldCornerRounding->value() );
   else
-    lblFontPreview->setShield( 0, Qt::white );
+    lblFontPreview->setShield( 0, Qt::white, 0 );
 }
 
 void QgsLabelingGui::showEngineConfigDialog()
@@ -516,7 +524,7 @@ void QgsLabelingGui::updateUi()
   bool shield = chkShield->isChecked();
   spinShieldSize->setEnabled( shield );
   btnShieldColor->setEnabled( shield );
-
+  spinShieldCornerRounding->setEnabled( shield );
 
   bool scale = chkScaleBasedVisibility->isChecked();
   spinScaleMin->setEnabled( scale );

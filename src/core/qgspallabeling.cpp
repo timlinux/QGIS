@@ -147,6 +147,7 @@ QgsPalLayerSettings::QgsPalLayerSettings()
   bufferColor = Qt::white;
   shieldSize = 0;
   shieldColor = Qt::white;
+  shieldCornerRounding = 0;
   formatNumbers = false;
   decimals = 3;
   plusSign = false;
@@ -179,6 +180,7 @@ QgsPalLayerSettings::QgsPalLayerSettings( const QgsPalLayerSettings& s )
   bufferColor = s.bufferColor;
   shieldSize = s.shieldSize;
   shieldColor = s.shieldColor;
+  shieldCornerRounding = s.shieldCornerRounding;
   formatNumbers = s.formatNumbers;
   decimals = s.decimals;
   plusSign = s.plusSign;
@@ -282,6 +284,7 @@ static void _readDataDefinedPropertyMap( QgsVectorLayer* layer, QMap< QgsPalLaye
   _readDataDefinedProperty( layer, QgsPalLayerSettings::BufferColor, propertyMap );
   _readDataDefinedProperty( layer, QgsPalLayerSettings::ShieldSize, propertyMap );
   _readDataDefinedProperty( layer, QgsPalLayerSettings::ShieldColor, propertyMap );
+  _readDataDefinedProperty( layer, QgsPalLayerSettings::ShieldCornerRounding, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::PositionX, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::PositionY, propertyMap );
   _readDataDefinedProperty( layer,  QgsPalLayerSettings::Hali, propertyMap );
@@ -317,6 +320,7 @@ void QgsPalLayerSettings::readFromLayer( QgsVectorLayer* layer )
   bufferColor = _readColor( layer, "labeling/bufferColor" );
   shieldSize = layer->customProperty( "labeling/shieldSize" ).toDouble();
   shieldColor = _readColor( layer, "labeling/shieldColor" );
+  shieldCornerRounding = layer->customProperty( "labeling/shieldCornerRounding" ).toDouble();
   formatNumbers = layer->customProperty( "labeling/formatNumbers" ).toBool();
   decimals = layer->customProperty( "labeling/decimals" ).toInt();
   plusSign = layer->customProperty( "labeling/plussign" ).toInt();
@@ -357,6 +361,7 @@ void QgsPalLayerSettings::writeToLayer( QgsVectorLayer* layer )
   _writeColor( layer, "labeling/bufferColor", bufferColor );
   layer->setCustomProperty( "labeling/shieldSize", shieldSize );
   _writeColor( layer, "labeling/shieldColor", shieldColor );
+  layer->setCustomProperty( "labeling/shieldCornerRounding", shieldCornerRounding );
   layer->setCustomProperty( "labeling/formatNumbers", formatNumbers );
   layer->setCustomProperty( "labeling/decimals", decimals );
   layer->setCustomProperty( "labeling/plussign", plusSign );
@@ -1108,6 +1113,7 @@ void QgsPalLabeling::drawLabeling( QgsRenderContext& context )
     QColor bufferColor = lyr.bufferColor;
     double shieldSize = lyr.shieldSize;
     QColor shieldColor = lyr.shieldColor;
+	double shieldCornerRounding = lyr.shieldCornerRounding;
 
     //apply data defined settings for the label
     //font size
@@ -1189,6 +1195,13 @@ void QgsPalLabeling::drawLabeling( QgsRenderContext& context )
       {
         shieldColor = lyr.shieldColor;
       }
+    }
+
+	//shield corner rounding amount
+    QVariant dataDefinedShieldCornerRounding = palGeometry->dataDefinedValues().value( QgsPalLayerSettings::ShieldCornerRounding );
+    if ( dataDefinedShieldCornerRounding.isValid() )
+    {
+      shieldCornerRounding = dataDefinedShieldCornerRounding.toDouble();
     }
 
 
@@ -1299,7 +1312,7 @@ void QgsPalLabeling::drawLabelCandidateRect( pal::LabelPosition* lp, QPainter* p
 }
 
 void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, const QFont& f, const QColor& c, const QgsMapToPixel* xform, double bufferSize,
-                                const QColor& bufferColor, bool drawBuffer, double shieldSize, const QColor & shieldColor, bool drawShield )
+                                const QColor& bufferColor, bool drawBuffer, double shieldSize, const QColor & shieldColor, const double shieldCornerRounding, bool drawShield )
 {
   QgsPoint outPt = xform->transform( label->getX(), label->getY() );
 
@@ -1367,7 +1380,7 @@ void QgsPalLabeling::drawLabel( pal::LabelPosition* label, QPainter* painter, co
       QRectF rect( origin, corner );
       painter->setPen( Qt::NoPen );
       painter->setBrush( shieldColor );
-      painter->drawRoundedRect( rect, 1.0, 1.0 );
+      painter->drawRoundedRect( rect, shieldCornerRounding, shieldCornerRounding );
       //painter->drawRect( rect );
     }
 
@@ -1415,11 +1428,12 @@ void QgsPalLabeling::drawLabelBuffer( QPainter* p, QString text, const QFont& fo
   p->drawPath( path );
 }
 
-void QgsPalLabeling::drawLabelShield( QPainter* p, double size, QColor color )
+void QgsPalLabeling::drawLabelShield( QPainter* p, double size, QColor color, double rounding )
 {
   Q_UNUSED( size ); //todo
   Q_UNUSED( p ); //todo
-  Q_UNUSED( color); //todo
+  Q_UNUSED( color ); //todo
+  Q_UNUSED( rounding ); //todo
 }
 
 QgsLabelingEngineInterface* QgsPalLabeling::clone()

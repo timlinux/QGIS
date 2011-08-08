@@ -91,6 +91,7 @@ class CORE_EXPORT QgsPalLayerSettings
       BufferColor,
       ShieldSize,
       ShieldColor,
+	  ShieldCornerRounding,
       PositionX, //x-coordinate data defined label position
       PositionY, //y-coordinate data defined label position
       Hali, //horizontal alignment for data defined label position (Left, Center, Right)
@@ -115,6 +116,7 @@ class CORE_EXPORT QgsPalLayerSettings
     QColor bufferColor;
     double shieldSize; //shield size (in mm)
     QColor shieldColor;
+	double shieldCornerRounding;
     bool formatNumbers;
     int decimals;
     bool plusSign;
@@ -225,9 +227,10 @@ class CORE_EXPORT QgsPalLabeling : public QgsLabelingEngineInterface
     void drawLabelCandidateRect( pal::LabelPosition* lp, QPainter* painter, const QgsMapToPixel* xform );
     //!drawLabel
     void drawLabel( pal::LabelPosition* label, QPainter* painter, const QFont& f, const QColor& c, const QgsMapToPixel* xform, double bufferSize = -1, \
-                    const QColor& bufferColor = QColor( 255, 255, 255 ), bool drawBuffer = false, double shieldSize = 0, const QColor& shieldColor = QColor( 255,255,255 ), bool drawShield = false );
+                    const QColor& bufferColor = QColor( 255, 255, 255 ), bool drawBuffer = false, double shieldSize = 0, const QColor& shieldColor = QColor( 255,255,255 ),
+					const double shieldCornerRounding = 0, bool drawShield = false );
     static void drawLabelBuffer( QPainter* p, QString text, const QFont& font, double size, QColor color );
-    static void drawLabelShield( QPainter* p, double size, QColor color );
+    static void drawLabelShield( QPainter* p, double size, QColor color, double rounding );
 
   protected:
 
