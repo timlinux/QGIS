@@ -1206,11 +1206,11 @@ void QgsPalLabeling::drawLabeling( QgsRenderContext& context )
 
 
     if ( lyr.bufferSize != 0 && lyr.shieldSize != 0 )
-      drawLabel( *it, painter, fontForLabel, fontColor, xform, bufferSize, bufferColor, true, shieldSize, shieldColor, true );
+      drawLabel( *it, painter, fontForLabel, fontColor, xform, bufferSize, bufferColor, true, shieldSize, shieldColor, shieldCornerRounding, true );
     else if ( lyr.bufferSize != 0 )
       drawLabel( *it, painter, fontForLabel, fontColor, xform, bufferSize, bufferColor, true );
     else if ( lyr.shieldSize != 0 )
-      drawLabel( *it, painter, fontForLabel, fontColor, xform, 0, QColor(), false, shieldSize, shieldColor, true );
+      drawLabel( *it, painter, fontForLabel, fontColor, xform, 0, QColor(), false, shieldSize, shieldColor, shieldCornerRounding, true );
 
     drawLabel( *it, painter, fontForLabel, fontColor, xform );
 
