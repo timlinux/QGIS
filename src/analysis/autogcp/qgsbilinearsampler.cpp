@@ -18,7 +18,7 @@ Email : jamesmeyerx@gmail.com
 
 #include "qgsbilinearsampler.h"
 
-double QgsBilinearSampler::samplePoint( QgsRasterDataset* image, int band, double pixel, double line ) const
+double QgsBilinearSampler::samplePoint( QgsRasterDataset* image, int band, double pixel, double line )
 {
   if ( image )
   {

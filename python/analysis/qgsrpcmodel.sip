@@ -13,6 +13,4 @@ class QgsRpcModel : QgsSensorModel
   public:
     QgsRpcModel( QgsGcpSet* gcpSet, QgsRasterDataset* img, QgsElevationModel* dem );  
     virtual ~QgsRpcModel();   
-    double r( double X, double Y, double Z );  
-    double c( double X, double Y, double Z );
 };

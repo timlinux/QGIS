@@ -53,7 +53,7 @@ QgsWaveletTransform::QgsWaveletTransform( QgsRasterDataset* image ):
 
 {
   mInitialized = initialize();
-  mChipSize = ( int )pow( (double) 2, (double) mLevels );
+  mChipSize = ( int )pow( 2, (double)mLevels );
 }//QgsWaveletTransform::QgsWaveletTransform(QgsRasterDataset* image, unsigned int numPoints)
 
 /*******************************************
@@ -64,7 +64,7 @@ void QgsWaveletTransform::setFeatureSize( int xSize, int ySize )
   int fSize = MAX( xSize , ySize );
   //Calculate the number of decomposition levels based on feature size;
   mLevels = ( int ) ceil( log10(( double ) fSize ) / log10(( double ) 2 ) );
-  mChipSize = ( int )pow( (double) 2, (double) mLevels );
+  mChipSize = ( int )pow( 2, (double) mLevels );
 }
 /*******************************************
  *    initialize
@@ -273,13 +273,14 @@ QgsWaveletTransform::PointsList* QgsWaveletTransform::extract( int quantity, int
 const QgsWaveletTransform::PointsList* QgsWaveletTransform::constList( unsigned int column, unsigned int row ) const
 {
   if ( !mExecuted
-       || column < (unsigned int) 0
-       || column >= (unsigned int) mCols
-       || row < (unsigned int) 0
-       || row >= (unsigned int) mRows )
+       || column < 0
+       || column >= mCols
+       || row < 0
+       || row >= mRows )
   {
     return NULL;
   }
+
   return &mGridLists[row * mCols + column];
 
 

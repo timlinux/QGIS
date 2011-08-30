@@ -28,7 +28,7 @@ QgsSqliteDriver::QgsSqliteDriver( const QString path, const QgsHasher::HashAlgor
 
 bool QgsSqliteDriver::openDatabase()
 {
-  if ( !mIsOpen && !mPath.isNull() )
+  /*if ( !mIsOpen && !mPath.isNull() )
   {
     int rc = sqlite3_open( mPath.toAscii().data(), &mDatabase );
     if ( rc )
@@ -41,25 +41,27 @@ bool QgsSqliteDriver::openDatabase()
       mIsOpen = true;
     }
   }
-  return mIsOpen;
+  return mIsOpen;*/
+  return false;
 }
 
 bool QgsSqliteDriver::openDatabase( const QString path )
 {
-  mPath = path;
-  return openDatabase();
+  /*mPath = path;
+  return openDatabase();*/
+  return false;
 }
 
 void QgsSqliteDriver::deleteDatabase()
 {
-  closeDatabase();
-  QFile::remove( mPath );
+  /*closeDatabase();
+  QFile::remove( mPath );*/
 }
 
 QUERY_RESULT QgsSqliteDriver::executeQuery( const QString query, const QByteArray *chip )
 {
   QUERY_RESULT result;
-  char **res;
+  /*char **res;
   int row, col;
   char *error;
   if ( chip != NULL )
@@ -83,15 +85,15 @@ QUERY_RESULT QgsSqliteDriver::executeQuery( const QString query, const QByteArra
       result.pData.append( QString( res[i+col] ) );
     }
     sqlite3_free_table( res );
-  }
+  }*/
   return result;
 }
 
 bool QgsSqliteDriver::createDatabase()
 {
-  try
+  /*try
   {
-    int hashLength = 32;
+    int hashLength;
     if ( hashAlgorithm() == QgsHasher::Md5 || hashAlgorithm() == QgsHasher::Md4 )
     {
       hashLength = 32;
@@ -166,12 +168,13 @@ bool QgsSqliteDriver::createDatabase()
   catch ( QtConcurrent::Exception e )
   {
     return false;
-  }
+  }*/
+  return false;
 }
 
 int QgsSqliteDriver::insertImage( int width, int height, QString hash, double pixelWidthX, double pixelWidthY, double pixelHeightX, double pixelHeightY, double topLeftX, double topLeftY, QString projection )
 {
-  QString queryString = "SELECT id FROM image WHERE hash = '" + hash + "';";
+  /*QString queryString = "SELECT id FROM image WHERE hash = '" + hash + "';";
   QUERY_RESULT result = executeQuery( queryString );
   QString imageId = "-1";
   QString var1;
@@ -224,12 +227,13 @@ int QgsSqliteDriver::insertImage( int width, int height, QString hash, double pi
     queryString += "WHERE id = " + imageId + ";";
     executeQuery( queryString );
   }
-  return imageId.toInt();
+  return imageId.toInt();*/
+  return -1;
 }
 
 int QgsSqliteDriver::insertReferenceSet( int id, int image )
 {
-  QString queryString = "SELECT id FROM gcpSetRef WHERE id = " + QString::number( id ) + ";";
+  /*QString queryString = "SELECT id FROM gcpSetRef WHERE id = " + QString::number( id ) + ";";
   QUERY_RESULT result = executeQuery( queryString );
   QString setId = "-1";
   if ( queryValue( result, 0 ).toInt() < 1 ) // if set doesn't exists
@@ -253,12 +257,13 @@ int QgsSqliteDriver::insertReferenceSet( int id, int image )
     queryString += "WHERE id = " + setId + ";";
     executeQuery( queryString );
   }
-  return setId.toInt();
+  return setId.toInt();*/
+  return -1;
 }
 
 int QgsSqliteDriver::insertRawSet( int id, int image, int referenceSet )
 {
-  QString queryString = "SELECT id FROM gcpSetRaw WHERE id = " + QString::number( id ) + ";";
+  /*QString queryString = "SELECT id FROM gcpSetRaw WHERE id = " + QString::number( id ) + ";";
   QUERY_RESULT result = executeQuery( queryString );
   QString setId = "-1";
   if ( queryValue( result, 0 ).toInt() < 1 ) // if set doesn't exists
@@ -283,12 +288,13 @@ int QgsSqliteDriver::insertRawSet( int id, int image, int referenceSet )
     queryString += "WHERE id = " + setId + ";";
     executeQuery( queryString );
   }
-  return setId.toInt();
+  return setId.toInt();*/
+  return -1;
 }
 
 int QgsSqliteDriver::insertReferenceGcp( int id, double coordinateX, double coordinateY, QByteArray *chip, int chipWidth, int chipHeight, QString chipType, int chipBands, int referenceSet )
 {
-  QString queryString = "SELECT id FROM gcpRef WHERE id = " + QString::number( id ) + ";";
+  /*QString queryString = "SELECT id FROM gcpRef WHERE id = " + QString::number( id ) + ";";
   QUERY_RESULT result = executeQuery( queryString );
   QString var1;
   var1.sprintf( DOUBLE_FORMAT, coordinateX );
@@ -328,12 +334,13 @@ int QgsSqliteDriver::insertReferenceGcp( int id, double coordinateX, double coor
     //executeQuery( queryString, chip );
     executeQuery( queryString );
   }
-  return gcpId.toInt();
+  return gcpId.toInt();*/
+  return -1;
 }
 
 int QgsSqliteDriver::insertRawGcp( int id, double coordinateX, double coordinateY, int referenceGcp, int rawSet )
 {
-  QString queryString = "SELECT id FROM gcpRaw WHERE id = " + QString::number( id ) + ";";
+  /*QString queryString = "SELECT id FROM gcpRaw WHERE id = " + QString::number( id ) + ";";
   QUERY_RESULT result = executeQuery( queryString );
   QString var1;
   var1.sprintf( DOUBLE_FORMAT, coordinateX );
@@ -362,12 +369,13 @@ int QgsSqliteDriver::insertRawGcp( int id, double coordinateX, double coordinate
     queryString += "WHERE id = " + gcpId + ";";
     executeQuery( queryString );
   }
-  return gcpId.toInt();
+  return gcpId.toInt();*/
+  return -1;
 }
 
 QgsGcpSet* QgsSqliteDriver::selectByHash( const QString refHash, const QString rawHash )
 {
-  QgsGcpSet *set = new QgsGcpSet();
+  /*QgsGcpSet *set = new QgsGcpSet();
   QString queryString = "SELECT gcpSetRef.id FROM gcpSetRef, gcpSetRaw, image WHERE gcpSetRef.image = image.id AND image.hash = '" + refHash + "' AND gcpSetRaw.gcpSetRef = gcpSetRef.id AND gcpSetRaw.image = image.id AND image.hash = '" + rawHash + "';";
   QUERY_RESULT result = executeQuery( queryString );
   QString refId = queryValue( result, 0 );
@@ -408,12 +416,13 @@ QgsGcpSet* QgsSqliteDriver::selectByHash( const QString refHash, const QString r
       set->addGcp( gcp );
     }
   }
-  return set;
+  return set;*/
+  return NULL;
 }
 
 QgsGcpSet* QgsSqliteDriver::selectByLocation( double pixelWidthX, double pixelWidthY, double pixelHeightX, double pixelHeightY, double topLeftX, double topLeftY, QString projection )
 {
-  QString var1;
+  /*QString var1;
   var1.sprintf( DOUBLE_FORMAT, pixelWidthX );
   QString var2;
   var2.sprintf( DOUBLE_FORMAT, pixelWidthY );
@@ -450,46 +459,51 @@ QgsGcpSet* QgsSqliteDriver::selectByLocation( double pixelWidthX, double pixelWi
       }
     }
   }
-  return set;
+  return set;*/
+  return NULL;
 }
 
 void QgsSqliteDriver::closeDatabase()
 {
-  if ( mIsOpen )
+  /*if ( mIsOpen )
   {
     sqlite3_close( mDatabase );
     mIsOpen = false;
-  }
+  }*/
 }
 
 bool QgsSqliteDriver::reconnect()
 {
-  closeDatabase();
-  return openDatabase();
+  /*closeDatabase();
+  return openDatabase();*/
+  return false;
 }
 
 QString QgsSqliteDriver::lastError()
 {
-  return QString( sqlite3_errmsg( mDatabase ) );
+  //return QString( sqlite3_errmsg( mDatabase ) );
+  return "";
 }
 
 QString QgsSqliteDriver::queryValue( QUERY_RESULT results, int position )
 {
-  QString res = "-1";
+  /*QString res = "-1";
   if ( results.pData.size() > 0 )
   {
     res = results.pData.at( position );
   }
-  return res;
+  return res;*/
+  return "";
 }
 
 QString QgsSqliteDriver::queryValue( QUERY_RESULT results, QString header )
 {
-  QString res = "-1";
+  /*QString res = "-1";
   if ( results.pData.size() > 0 )
   {
     int position = results.pHeader.indexOf( header );
     res = results.pData.at( position );
   }
-  return res;
+  return res;*/
+  return "";
 }

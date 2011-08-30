@@ -58,8 +58,7 @@ bool QgsDataSource::createSqliteDatabase( const QString path )
 bool QgsDataSource::createPostgresDatabase( const QString name, const QString username, const QString password, const QString host )
 {
   /*mPostgresDriver = new QgsPostgresDriver( name, username, password, host, mHashAlgorithm );
-  return mPostgresDriver->createDatabase();*/
-  return false;
+  return mPostgresDriver->createDatabase();*/return false;
 }
 
 bool QgsDataSource::insertGcpSet( const QgsGcpSet *gcpSet, const QgsRasterDataset *refImage, const QgsRasterDataset *rawImage )
@@ -119,8 +118,8 @@ bool QgsDataSource::insertGcpSet( const QgsGcpSet *gcpSet, const QgsRasterDatase
         if ( refSetId > 0 )
         {
           QgsGcp *gcp = set[i];
-          QgsImageChip *chip = NULL;
-          QByteArray *data = NULL;
+          QgsImageChip *chip;
+          QByteArray *data;
           if ( mType == SQLite )
           {
             chip = dynamic_cast<QgsImageChip*>( gcp->gcpChip() );
@@ -205,9 +204,8 @@ QgsSqlDriver* QgsDataSource::driver()
   else if ( mType == Postgres )
   {
     //return mPostgresDriver;
-    return NULL;
+	return NULL;
   }
-  return NULL;
 }
 
 /*void QgsDataSource::deleteDriver()

@@ -22,7 +22,7 @@ Email : foxhat.solutions@gmail.com
 //****************Includes
 #include <QList> //Internal container
 #include "qgsgcp.h"
-class QgsGcp;
+class ANALYSIS_EXPORT QgsGcp;
 /*!\ingroup analysis
  *
  * This is a container class that represents an entire set of
@@ -40,7 +40,7 @@ class ANALYSIS_EXPORT QgsGcpSet
      *
      *  Copies all GCPs to this set
      */
-    QgsGcpSet( const QgsGcpSet& set );
+    QgsGcpSet(const QgsGcpSet& set);
     /*! \brief QgsGcpSet destructor
      *
      *  Destroys all contained QgsGcp objects
@@ -82,6 +82,8 @@ class ANALYSIS_EXPORT QgsGcpSet
     /*! \brief  Returns the underlying QList
     */
     const QList<QgsGcp*>& constList() const;
+    
+    QgsGcpSet* utmSet();
     /*! \brief Returns a reference to the underlying QList
     */
     QList<QgsGcp*>& list();

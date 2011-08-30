@@ -5,7 +5,7 @@ qgsrasterdataset.cpp - General purpose raster dataset and reader that provides
 Date : 07-May-2010
 Copyright : (C) 2010 by FoxHat Solutions
 Email : foxhat.solutions@gmail.com
-***************************************************************************
+/***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *
@@ -34,10 +34,10 @@ Email : foxhat.solutions@gmail.com
 #endif
 
 double openingProgressStatus = 0;
-int progressFunction( double dfComplete, const char *pszMessage, void *pData )
+int progressFunction( double dfComplete, const char *pszMessage, void *pData)
 {
-  openingProgressStatus = dfComplete;
-  return 1;
+     openingProgressStatus = dfComplete;
+     return 1;
 }
 
 double QgsRasterDataset::progress() const
@@ -45,15 +45,16 @@ double QgsRasterDataset::progress() const
   return openingProgressStatus;
 }
 
-QgsRasterDataset::QgsRasterDataset( QString path, Access access, bool automaticallyOpen ):
+QgsRasterDataset::QgsRasterDataset( QString path, Access access, bool automaticallyOpen):
     mBuffers( NULL ),
     mDataset( NULL ),
     mBaseDataset( NULL ),
     mVirtual( false ),
     mAccess( access ),
-    mOpen( false )
+    mOpen( false ),
+    mWkt( "" )
 {
-  if ( automaticallyOpen )
+  if(automaticallyOpen)
   {
     if ( !open( path, access ) )
     {
@@ -70,7 +71,8 @@ QgsRasterDataset::QgsRasterDataset( GDALDataset* dataset ):
     mFilePath( "" ),
     mBaseDataset( NULL ),
     mVirtual( false ),
-    mOpen( false )
+    mOpen( false ),
+    mWkt( "" )
 {
   if ( !dataset )
   {
@@ -109,7 +111,7 @@ bool QgsRasterDataset::open( QString path, Access access )
   char filename[FILENAME_MAX];
   strcpy( filename, QFile::encodeName( mFilePath ).data() );
 
-  GDALAccess gAccess = GA_ReadOnly;
+  GDALAccess gAccess;
   switch ( access )
   {
     case ReadOnly:
@@ -139,7 +141,8 @@ bool QgsRasterDataset::open( QString path, Access access )
       //Must create a virtual north-up raster
       GDALDataset* vrtDataset = ( GDALDataset* )GDALAutoCreateWarpedVRT( mBaseDataset, NULL, NULL, GRA_Bilinear, 0.1, NULL );
 
-
+      double geoTransform2[6];
+      CPLErr result = GDALGetGeoTransform( vrtDataset,  geoTransform2 );
       if ( vrtDataset == NULL )
       {
         QgsLogger::warning( "Failed to create north-up VRT dataset for raw dataset" );
@@ -164,12 +167,12 @@ bool QgsRasterDataset::open( QString path, Access access )
       strcpy( tempFileName, QFile::encodeName( mTempPath ).data() );
       GDALDriver* driver = mBaseDataset->GetDriver();
 
-      //int nXSize = vrtDataset->GetRasterXSize();
-      //int nYSize = vrtDataset->GetRasterYSize();
-      //int nBands = vrtDataset->GetRasterCount();
-      //GDALDataType eType = vrtDataset->GetRasterBand( 1 )->GetRasterDataType();
+      int nXSize = vrtDataset->GetRasterXSize();
+      int nYSize = vrtDataset->GetRasterYSize();
+      int nBands = vrtDataset->GetRasterCount();
+      GDALDataType eType = vrtDataset->GetRasterBand( 1 )->GetRasterDataType();
       QgsLogger::debug( "Copying Virtual Raster to temporary file..." );
-      mDataset = driver->CreateCopy( tempFileName, vrtDataset, false, NULL, (GDALProgressFunc) progressFunction, NULL );
+      mDataset = driver->CreateCopy( tempFileName, vrtDataset, false, NULL, reinterpret_cast<GDALProgressFunc>(progressFunction), NULL);
       if ( mDataset )
       {
         GDALClose( vrtDataset );
@@ -198,6 +201,7 @@ bool QgsRasterDataset::open( QString path, Access access )
     initialize();
     mOpen = true;
     mFail = false;
+    fetchEpsg(); //Get the epsg number of the raster's projection
     return true;
   }
   else
@@ -381,21 +385,21 @@ void* QgsRasterDataset::readLine( int theBand, int line )
   }
 
   band->GetBlockSize( &blockX, &blockY );
-  // QgsLogger::debug(QString("is good "));
-  //int blocksToRead = mXSize / blockX; //Usually just one.
-  //int yBlock = line / blockY; //Which block will be read
-  // int toAlloc = blocksToRead * blockX * blockY * GDALGetDataTypeSize(band->GetRasterDataType());
+// QgsLogger::debug(QString("is good "));
+  int blocksToRead = mXSize / blockX; //Usually just one.
+  int yBlock = line / blockY; //Which block will be read
+// int toAlloc = blocksToRead * blockX * blockY * GDALGetDataTypeSize(band->GetRasterDataType());
   int toAlloc = 1 * mXSize * ( GDALGetDataTypeSize( type ) / 8 );
   int curbuf = buffer.currentBuffer;
-  //QgsLogger::debug(QString("TO Alloc:")+QString::number(toAlloc));
+//QgsLogger::debug(QString("TO Alloc:")+QString::number(toAlloc));
 
   if ( !buffer.data[curbuf] )
   {
     buffer.data[curbuf] = VSIMalloc( toAlloc );
   }
-  //QgsLogger::debug("Allocated Data",1,"QgsRasterDataset::readLine()");
-  //void* start;
-  //CPLErr result;
+//QgsLogger::debug("Allocated Data",1,"QgsRasterDataset::readLine()");
+  void* start;
+  CPLErr result;
   /* for (int i = 0; i < blocksToRead; ++i)
    {
      start = dataIndex(buffer.data[curbuf], theBand, i * blockX); //Where to start reading data into
@@ -446,7 +450,6 @@ void* QgsRasterDataset::dataIndex( void* data, int band, int index )
     default:;
       //   QgsLogger::warning( "GDAL data type is not supported" );
   }
-  return NULL;
 }//void* QgsWaveletTransform::dataIndex(void* data, int index)
 
 int QgsRasterDataset::rasterBands() const
@@ -537,8 +540,8 @@ bool QgsRasterDataset::transformCoordinate( int& pixelX, int& pixelY, double& ge
     GDALInvGeoTransform( in, coef );
     double resX, resY;
     GDALApplyGeoTransform( coef,  geoX, geoY, &resX, &resY );
-    pixelX = ( int ) QgsRasterDataset::round( resX );
-    pixelY = ( int ) QgsRasterDataset::round( resY );
+    pixelX = ( int ) /*round*/( resX );
+    pixelY = ( int ) /*round*/( resY );
   }
   return true;
 }
@@ -641,7 +644,8 @@ bool QgsRasterDataset::loadWorldFile( QString filename )
 
 bool QgsRasterDataset::setProjection( QString projString )
 {
-  return mDataset->SetProjection( projString.toLatin1().data() );
+  mDataset->SetProjection( projString.toLatin1().data() );
+  return true;
 }
 QString QgsRasterDataset::projection() const
 {

@@ -228,12 +228,12 @@ class ANALYSIS_EXPORT QgsMatrix
     bool validIndex( int row, int col ) const {return ( mData && row >= 0 && row < mRows && col >= 0 && col < mCols );}
   protected:
 
-    /* typedef struct{
-       int row_size, // size of row
-       col_size; // size of col
-       float *data;  // data pointer
-     }matrix_t;*/
-
+   /* typedef struct{
+      int row_size, // size of row
+      col_size; // size of col
+      float *data;  // data pointer
+    }matrix_t;*/
+    
   private:
     int mRows, mCols;
     double* mData;

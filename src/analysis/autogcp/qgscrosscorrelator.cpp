@@ -191,7 +191,7 @@ double QgsCrossCorrelator::correlationCoefficent( double* srcData, double* destD
     destDenom += destDev * destDev;
   }
   double denom = sqrt( srcDenom * destDenom );
-
+  
   return numerator / denom;
 }
 

@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CloudCoverer</class>
+ <widget class="QMainWindow" name="CloudCoverer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>682</width>
+    <height>701</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Cloud Coverer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/sumbandilasat/icons/toolbar/cloudcoverer.png</normaloff>:/sumbandilasat/icons/toolbar/cloudcoverer.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="7" column="0" colspan="5">
+     <widget class="QgsMapCanvas" name="canvas" native="true">
+      <layout class="QGridLayout" name="gridLayout_3"/>
+     </widget>
+    </item>
+    <item row="8" column="0" colspan="5">
+     <widget class="QWidget" name="widget_2" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item row="0" column="1">
+        <widget class="QSlider" name="slider">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Adjust:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QLabel" name="percentage">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>30</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>0%</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Coverage:</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Maximum</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="1" column="3" colspan="2">
+     <widget class="QPushButton" name="settingsButton">
+      <property name="text">
+       <string>Settings</string>
+      </property>
+      <property name="icon">
+       <iconset resource="resources.qrc">
+        <normaloff>:/sumbandilasat/icons/general/settings.png</normaloff>:/sumbandilasat/icons/general/settings.png</iconset>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QWidget" name="widget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item row="0" column="2">
+        <widget class="QToolButton" name="openButton">
+         <property name="text">
+          <string>...</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Image:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="lineEdit"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <action name="actionZoomIn">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/zoomin.png</normaloff>:/icons/georeferencer/zoomin.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom in</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom in</string>
+   </property>
+  </action>
+  <action name="actionZoomOut">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/zoomout.png</normaloff>:/icons/georeferencer/zoomout.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom out</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom out</string>
+   </property>
+  </action>
+  <action name="actionZoomExtent">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/zoomextent.png</normaloff>:/icons/georeferencer/zoomextent.png</iconset>
+   </property>
+   <property name="text">
+    <string>Zoom to extent</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoom to extent</string>
+   </property>
+  </action>
+  <action name="actionPan">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/pan.png</normaloff>:/icons/georeferencer/pan.png</iconset>
+   </property>
+   <property name="text">
+    <string>Pan image</string>
+   </property>
+   <property name="toolTip">
+    <string>Pan image</string>
+   </property>
+  </action>
+  <action name="actionOpenDir">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/folder.png</normaloff>:/icons/georeferencer/folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Scan directory</string>
+   </property>
+   <property name="toolTip">
+    <string>Scan directory</string>
+   </property>
+  </action>
+  <action name="actionAddThumbnail">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/add.png</normaloff>:/icons/georeferencer/add.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Add thumbnail</string>
+   </property>
+  </action>
+  <action name="actionRemoveThumbnail">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/remove.png</normaloff>:/icons/georeferencer/remove.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove thumbnail</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/settings.png</normaloff>:/icons/georeferencer/settings.png</iconset>
+   </property>
+   <property name="text">
+    <string>Settings</string>
+   </property>
+   <property name="toolTip">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionAlready">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/list.png</normaloff>:/icons/georeferencer/list.png</iconset>
+   </property>
+   <property name="text">
+    <string>Working list</string>
+   </property>
+   <property name="toolTip">
+    <string>Working list</string>
+   </property>
+  </action>
+  <action name="actionCrs">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/projection.png</normaloff>:/icons/georeferencer/projection.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select coordinate reference system</string>
+   </property>
+   <property name="toolTip">
+    <string>Select coordinate reference system</string>
+   </property>
+  </action>
+  <action name="actionSelectPoint">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/selectpoint.png</normaloff>:/icons/georeferencer/selectpoint.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select point</string>
+   </property>
+   <property name="toolTip">
+    <string>Select point</string>
+   </property>
+  </action>
+  <action name="actionAcceptPoint">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/acceptpoint.png</normaloff>:/icons/georeferencer/acceptpoint.png</iconset>
+   </property>
+   <property name="text">
+    <string>Accept point</string>
+   </property>
+   <property name="toolTip">
+    <string>Accept point</string>
+   </property>
+  </action>
+  <action name="actionAddGoogle">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/google.png</normaloff>:/icons/georeferencer/google.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add Google satellite layer</string>
+   </property>
+   <property name="toolTip">
+    <string>Add Google satellite layer</string>
+   </property>
+  </action>
+  <action name="actionNextLayer">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/next.png</normaloff>:/icons/georeferencer/next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Next thumbnail</string>
+   </property>
+  </action>
+  <action name="actionPreviousLayer">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/previous.png</normaloff>:/icons/georeferencer/previous.png</iconset>
+   </property>
+   <property name="text">
+    <string>Previous thumbnail</string>
+   </property>
+   <property name="toolTip">
+    <string>Previous thumbnail</string>
+   </property>
+  </action>
+  <action name="actionSelectTable">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/icons/georeferencer/selecttable.png</normaloff>:/icons/georeferencer/selecttable.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select specific thumbnail from table</string>
+   </property>
+   <property name="toolTip">
+    <string>Select specific thumbnail from table</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsMapCanvas</class>
+   <extends>QWidget</extends>
+   <header>qgis.gui</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="resources.qrc"/>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

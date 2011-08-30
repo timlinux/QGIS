@@ -1,0 +1,14 @@
+<RCC>
+  <qresource prefix="leechy/">
+    <file>icons/icon.png</file>
+    <file>icons/start.png</file>
+    <file>icons/stop.png</file>
+    <file>icons/next.png</file>
+    <file>icons/back.png</file>
+    <file>icons/help.png</file>
+    <file>icons/extent.png</file>
+    <file>icons/connection1.png</file>
+    <file>icons/connection2.png</file>
+    <file>icons/connection3.png</file>
+  </qresource>
+</RCC>

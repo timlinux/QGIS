@@ -5,7 +5,7 @@ qgsrasterdataset.cpp - General purpose raster dataset and reader that provides
 Date : 07-May-2010
 Copyright : (C) 2010 by FoxHat Solutions
 Email : foxhat.solutions@gmail.com
-***************************************************************************
+/***************************************************************************
 * *
 * This program is free software; you can redistribute it and/or modify *
 * it under the terms of the GNU General Public License as published by *
@@ -27,6 +27,8 @@ Email : foxhat.solutions@gmail.com
 #include "qgsabstractoperation.h"
 #include <QString>
 #include <gdal_priv.h>
+#include <ogr_spatialref.h>
+#include "qgslogger.h"
 
 /*! \ingroup analysis
  *
@@ -45,7 +47,7 @@ class ANALYSIS_EXPORT QgsRasterDataset : public QgsAbstractOperation
      *
      * Constructs the dataset with the given path and initializes all internal data
      */
-    QgsRasterDataset( QString path, Access access = ReadOnly, bool automaticallyOpen = true );
+    QgsRasterDataset( QString path, Access access = ReadOnly, bool automaticallyOpen = true);
     /*! \brief QgsRasterDataset Constructor
      *
      * Constructs the dataset with the given GDAL dataset.
@@ -205,61 +207,71 @@ class ANALYSIS_EXPORT QgsRasterDataset : public QgsAbstractOperation
      */
     QString projection() const;
     bool operator==( QgsRasterDataset& other );
-
+    
     /*! \brief Gets the current progress of this filter operation*/
     double progress() const;
-
-    void mapToPixel( double mx, double my, int &outx, int &outy )
+    
+    void mapToPixel(double mx, double my, int &outx, int &outy)
     {
       double gt[6];
       mDataset->GetGeoTransform( gt );
       double px;
       double py;
-      if ( gt[2] + gt[4] == 0 )
-      {
-        px = ( mx - gt[0] ) / gt[1];
-        py = ( my - gt[3] ) / gt[5];
+      if (gt[2]+gt[4]==0){
+        px = (mx - gt[0]) / gt[1];
+        py = (my - gt[3]) / gt[5];
       }
       else
       {
-        QgsRasterDataset::ApplyGeoTransform( mx, my, QgsRasterDataset::InvGeoTransform( gt ), px, py );
+	  QgsRasterDataset::ApplyGeoTransform(mx,my,QgsRasterDataset::InvGeoTransform(gt), px, py);
       }
-      outx = int( px + 0.5 );
-      outy = int( py + 0.5 );
+      outx = int(px+0.5);
+      outy = int(py+0.5); 
     }
-
-    static void ApplyGeoTransform( int inx, int iny, double gt[], double &outx, double &outy )
+    
+    static void ApplyGeoTransform(int inx,int iny, double gt[], double &outx, double &outy)
     {
-      outx = gt[0] + inx * gt[1] + iny * gt[2];
-      outy = gt[3] + inx * gt[4] + iny * gt[5];
+      outx = gt[0] + inx*gt[1] + iny*gt[2];
+      outy = gt[3] + inx*gt[4] + iny*gt[5];
     }
 
-    static double* InvGeoTransform( double gt_in[] )
-    {
-
-      double det = gt_in[1] * gt_in[5] - gt_in[2] * gt_in[4];
-
-      double inv_det = 1.0 / det;
-
-      double *gt_out = new double[6];
-      gt_out[1] =  gt_in[5] * inv_det;
-      gt_out[4] = -gt_in[4] * inv_det;
-
-      gt_out[2] = -gt_in[2] * inv_det;
-      gt_out[5] =  gt_in[1] * inv_det;
-      gt_out[0] = ( gt_in[2] * gt_in[3] - gt_in[0] * gt_in[5] ) * inv_det;
-      gt_out[3] = ( -gt_in[1] * gt_in[3] + gt_in[0] * gt_in[4] ) * inv_det;
-
-      return gt_out;
-    }
-
-  static double round(double d)
+  static double* InvGeoTransform(double gt_in[])
   {
-    return floor(d + 0.5);
-  }
 
+    double det = gt_in[1] * gt_in[5] - gt_in[2] * gt_in[4];
 
+    double inv_det = 1.0 / det;
+
+    double *gt_out = new double[6];
+    gt_out[1] =  gt_in[5] * inv_det;
+    gt_out[4] = -gt_in[4] * inv_det;
+
+    gt_out[2] = -gt_in[2] * inv_det;
+    gt_out[5] =  gt_in[1] * inv_det;
+    gt_out[0] = ( gt_in[2] * gt_in[3] - gt_in[0] * gt_in[5]) * inv_det;
+    gt_out[3] = (-gt_in[1] * gt_in[3] + gt_in[0] * gt_in[4]) * inv_det;
+
+    return gt_out;
+ }
+
+    QString wkt(){return mWkt;}
+
+    
   protected:
+    
+    void fetchEpsg()
+    {
+      if(mDataset != NULL)
+      {
+	const char *projection = mDataset->GetProjectionRef();
+	OGRSpatialReference reference(projection);
+	char *wkt = NULL;
+	reference.exportToWkt(&wkt);
+	mWkt = QString(wkt);
+	delete [] wkt;
+      }
+    }
+    
     static bool copyDataset( GDALDataset* srcDs, GDALDataset* destDs );
     GDALDataset* mDataset, *mBaseDataset;
     virtual GDALDataType dataType( int theBand ) const;
@@ -276,8 +288,8 @@ class ANALYSIS_EXPORT QgsRasterDataset : public QgsAbstractOperation
      * \return Returns NULL if an invalid band or line index is given.
     */
     virtual void* readLine( int theBand, int line );
-
-
+    
+    
 
   private:
     void initialize();
@@ -322,6 +334,7 @@ class ANALYSIS_EXPORT QgsRasterDataset : public QgsAbstractOperation
     Access mAccess;
     static const int mBufferCount = 2;
     DataBuffer<mBufferCount>* mBuffers;
+    QString mWkt;
 };
 
 #endif // QGSRASTERDATASET_H

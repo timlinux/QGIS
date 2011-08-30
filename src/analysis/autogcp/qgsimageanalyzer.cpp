@@ -36,9 +36,10 @@ QgsImageAnalyzer::QgsImageAnalyzer( QgsRasterDataset* image ):
     mBandNumber( DEFAULT_BAND ),
     mSearchFeatureRatio( SEARCH_FEATURE_MULTIPLIER ),
     mProgress( 0.0 ),
-    mCorrelationThreshold( 0.85 )
+    mCorrelationThreshold( 0 )
 {
   setChipSize( DEFAULT_CHIP_SIZE, DEFAULT_CHIP_SIZE );
+  WAVELET_PART = 0.7;
 }
 
 
@@ -92,8 +93,8 @@ QgsGcpSet* QgsImageAnalyzer::extractGcps( int amount )
       mImageData->transformCoordinate( pixX, pixY, geoX, geoY, QgsRasterDataset::TM_PIXELGEO );
       gcp->setRefX( geoX );
       gcp->setRefY( geoY );
-      gcp->setRawX( pixX );
-      gcp->setRawY( pixY );
+      gcp->setRawX( 0.0 );
+      gcp->setRawY( 0.0 );
       gcp->setGcpChip( chip );
 
       gcpset->addGcp( gcp );
@@ -151,18 +152,9 @@ QgsGcpSet* QgsImageAnalyzer::matchGcps( QgsGcpSet* gcpSet )
     typedef QList<QgsPoint> PointsList;
 
     QgsLogger::debug( "Starting Cross Correlation" );
-    //int counter = 0;
+    int counter = 0;
     for ( ; it != refList.end(); )
     {
-#ifdef AUTOGCP_DEBUG
-      counter ++;
-      if ( counter == 8 )
-      {
-        int debughere = 1;
-      }
-      printf( "****************************\n" );
-      printf( "Reference Point: (%f,%f)\n", gcp->refX(), gcp->refY() );
-#endif
       QgsGcp* gcp = ( *it );
       PointsList* listPtr = grid->gridList( gcp );
       if ( listPtr != NULL )
@@ -226,6 +218,7 @@ QgsGcpSet* QgsImageAnalyzer::matchGcps( QgsGcpSet* gcpSet )
           }
           else
           {
+	    QgsLogger::debug("ppppppp*****************************************: "+QString::number(bestCorrelation)+"  threshold: "+QString::number(mCorrelationThreshold));
             it = refList.erase( it );
             delete gcp;
           }
@@ -522,46 +515,46 @@ QgsRasterDataset* QgsImageAnalyzer::extractArea( int offsetX, int offsetY, int w
         throw QString( msg );
         break;
       }
-
+	
       double min = srcBand->GetMinimum();
       double max = srcBand->GetMaximum();
-      if ( min < 0 || max > 255 )
+      if(min < 0 || max > 255)
       {
-        int totalIndexes = width * height;
-        double *bufferValues = ( double* ) buffer;
-        for ( int j = 0; j < totalIndexes; ++j )
-        {
-          bufferValues[j] = (( bufferValues[j] - min ) / ( max - min ) ) * 255; //Scale the values to 0 -255
-        }
+	int totalIndexes = width * height;
+	double *bufferValues = (double*) buffer;
+	for ( int j = 0; j < totalIndexes; ++j )
+	{
+	  bufferValues[j] = ((bufferValues[j] - min) / (max - min)) * 255; //Scale the values to 0 -255
+	}
       }
 
-
-
-
+      
+      
+      
       /*double *bufferValues = (double*) buffer;
       int totalIndexes = width * height;
       bool devide = false;
       for ( int j = 0; j < totalIndexes; ++j )
       {
         if(bufferValues[j] > 255)
-      {
-      devide = true;
-      break;
-      }
+	{
+	  devide = true;
+	  break;
+	}
       }
       if(devide)
       {
-      for ( int j = 0; j < totalIndexes; ++j )
-      {
-      bufferValues[j] /= 64;
-      }
+	for ( int j = 0; j < totalIndexes; ++j )
+	{
+	  bufferValues[j] /= 64;
+	}
       }*/
       //printf("RESULT:%d\n",result);
-      if ( CE_Failure == destBand->RasterIO( GF_Write, 0, 0, width, height, buffer, width, height, GDT_Float64, 0, 0 ) )
+      if ( CE_Failure == destBand->RasterIO( GF_Write, 0, 0, width, height, buffer, width, height, GDT_Float64, 0, 0 ))
       {
         sprintf( msg, format, "write to destination", i );
         throw QString( msg );
-      }
+    }
     }
   }
   catch ( QString ex )
@@ -599,6 +592,8 @@ QgsImageAnalyzer::QgsGrid::QgsGrid( int bSize, QgsRasterDataset* img ):
   blocks = new GridBlock[rows*cols]; //1269
   for ( int i = 0; i < ( rows*cols ); i++ )
   {
+    double dCols = cols;
+    double dRows = rows;
     int x = ( i % cols ) * blockSize;
     int y = ( i / cols ) * blockSize;
     GridBlock block;
@@ -624,7 +619,7 @@ void QgsImageAnalyzer::QgsGrid::fillGrid( const QgsWaveletTransform::PointsList*
 {
   int cell;
   int col, row, xPixel, yPixel;
-  //double xGeo, yGeo;
+  double xGeo, yGeo;
   //QList<QgsGcp*> gcpList = gcpSet->list();
   typedef QgsWaveletTransform::PointsList PointsList;
   PointsList::const_iterator it = points->begin();
@@ -639,8 +634,8 @@ void QgsImageAnalyzer::QgsGrid::fillGrid( const QgsWaveletTransform::PointsList*
     QgsPoint point = ( *it );
     xPixel = ( int ) point.x();
     yPixel = ( int ) point.y();
-    col = ( int ) floor( (double) xPixel / blockSize );
-    row = ( int ) floor( (double) yPixel / blockSize );
+    col = ( int ) floor( xPixel / (double) blockSize );
+    row = ( int ) floor( yPixel / (double) blockSize );
     cell = row * cols + col;
     //add gcp to cell
     GridBlock& currentBlock = blocks[cell];
@@ -715,7 +710,7 @@ void QgsImageAnalyzer::setProgress( double value )
 void CPL_STDCALL QgsImageAnalyzer::setWaveletProgress( double progress, void* pProgressArg )
 {
   QgsImageAnalyzer* me = static_cast<QgsImageAnalyzer*>( pProgressArg );
-  me->setProgress( progress * WAVELET_PART );
+  me->setProgress( progress * /*WAVELET_PART*/0.7 );
 }
 
 double QgsImageAnalyzer::correlationThreshold()const

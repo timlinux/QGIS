@@ -161,7 +161,7 @@ bool QgsGeoreferencer::applyGeoreference()
                                        , pVDS
                                        , false
                                        , NULL
-                                       , (GDALProgressFunc) updateProgress
+                                       , reinterpret_cast<GDALProgressFunc>(updateProgress)
                                        , ( void* )this );
   }
   else

@@ -510,7 +510,7 @@ bool QgsProjectionManager::transformCoordinate( double* xCoords, double* yCoords
 bool QgsProjectionManager::crsEquals( const QString& firstCrs, const QString& secondCrs )
 {
   OGRSpatialReference ogrSrc, ogrDest;
-  //OGRCoordinateTransformation *transform;
+  OGRCoordinateTransformation *transform;
 
   char* inputStr = new char[std::max( firstCrs.size(), secondCrs.size() )];
   char* pInput;

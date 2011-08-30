@@ -88,6 +88,7 @@ class RectificationDialog(QDialog):
         self.ui.driver.setCurrentIndex(0)
         self.driverName = self.info[0].pShortName
     except:
+      self.ui.driver.addItem("GeoTiff")
       QgsLogger.debug( "Setting the driver information failed", 1, "rectificationdialog.py", "RectificationDialog::setDriverInfo()")
 
   def changeDriver(self, index):

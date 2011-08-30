@@ -109,7 +109,7 @@ bool QgsGcpTransform::applyTransform()
   GDALWarpOptions* pWarpOptions = GDALCreateWarpOptions();
   pWarpOptions->hSrcDS = ( GDALDatasetH ) pSrcDs;
   pWarpOptions->hDstDS = ( GDALDatasetH )pDstDs;
-  pWarpOptions->pfnProgress = (GDALProgressFunc) updateProgress;
+  pWarpOptions->pfnProgress = reinterpret_cast<GDALProgressFunc>(updateProgress);
   pWarpOptions->pProgressArg = ( void* )this;
   pWarpOptions->pTransformerArg = wrapTransformerArgs( pfnTransformerFunc, pTransformerArgs, adfGeoTransform );
   pWarpOptions->pfnTransformer = GeoToPixelTransform;
