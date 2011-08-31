@@ -399,7 +399,7 @@ class Thumbnail:
 	QgsLogger.debug( "Creating world file", 1, "thumbnail.py", "SumbandilaSat Georeferencer-Thumbnail")
 	self.invalidCoordinates = False
 	return True
-      except BaseException as ee:
+      except BaseException, ee:
 	QgsLogger.debug("************error: "+str(ee))
 	self.invalidCoordinates = True
 	return False
