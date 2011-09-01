@@ -8,10 +8,14 @@ SET (util_SRCS ../core/qgsrenderchecker.cpp)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} 
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}/src/core
-  ${CMAKE_SOURCE_DIR}/src/core/raster
-  ${CMAKE_SOURCE_DIR}/src/core/renderer
-  ${CMAKE_SOURCE_DIR}/src/core/symbology
-  ${CMAKE_SOURCE_DIR}/src/core/symbology-ng
+  ${CMAKE_SOURCE_DIR}/src/analysis
+  ${CMAKE_SOURCE_DIR}/src/analysis/vector
+  ${CMAKE_SOURCE_DIR}/src/analysis/autogcp
+  ${CMAKE_SOURCE_DIR}/src/analysis/sumbandilasat
+  ${CMAKE_SOURCE_DIR}/src/analysis/sumbandilasat/tools/bandaligner
+  ${CMAKE_SOURCE_DIR}/src/analysis/sumbandilasat/tools/cloudcoverer
+  ${CMAKE_SOURCE_DIR}/src/analysis/sumbandilasat/tools/columncorrector
+  ${CMAKE_SOURCE_DIR}/src/analysis/sumbandilasat/tools/linecorrector
   ${QT_INCLUDE_DIR}
   ${GDAL_INCLUDE_DIR}
   ${PROJ_INCLUDE_DIR}
