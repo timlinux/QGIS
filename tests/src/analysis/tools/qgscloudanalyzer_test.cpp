@@ -83,7 +83,11 @@ void QgsCloudAnalyzerTest::cleanupTestCase()
 
 void QgsCloudAnalyzerTest::analyzeTest()
 {
-  QString myTempPath = QDir::tempPath() + QDir::separator();
+  QString myTempPath = QDir::tempPath() + QDir::separator() ;
+  QString myDataDir( TEST_DATA_DIR ); //defined in CmakeLists.txt
+  QString myFileName = myDataDir + "/I0D79/16bit/I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
+  QgsCloudAnalyzer myAnalyzer( myFileName );
+  myAnalyzer.analyze();
   //QFile::remove( myTempPath + "landsat.tif.ovr" );
   //QFile::copy( mTestDataDir + "landsat.tif", myTempPath + "landsat.tif" );
   //QFileInfo myRasterFileInfo( myTempPath + "landsat.tif" );
