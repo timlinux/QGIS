@@ -5,9 +5,13 @@ SET (util_SRCS ../core/qgsrenderchecker.cpp)
 #####################################################
 # Don't forget to include output directory, otherwise
 # the UI file won't be wrapped!
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} 
+INCLUDE_DIRECTORIES(
+  ${CMAKE_CURRENT_SOURCE_DIR} 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../core
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/tools
   ${CMAKE_SOURCE_DIR}/src/core
+  ${CMAKE_SOURCE_DIR}/src/core/symbology-ng
   ${CMAKE_SOURCE_DIR}/src/analysis
   ${CMAKE_SOURCE_DIR}/src/analysis/vector
   ${CMAKE_SOURCE_DIR}/src/analysis/autogcp
@@ -81,7 +85,7 @@ MACRO (ADD_QGIS_TEST testname testsrc)
   ADD_CUSTOM_TARGET(qgis_${testname}moc ALL DEPENDS ${qgis_${testname}_MOC_SRCS})
   ADD_EXECUTABLE(qgis_${testname} ${qgis_${testname}_SRCS})
   ADD_DEPENDENCIES(qgis_${testname} qgis_${testname}moc)
-  TARGET_LINK_LIBRARIES(qgis_${testname} ${QT_LIBRARIES} qgis_core)
+  TARGET_LINK_LIBRARIES(qgis_${testname} ${QT_LIBRARIES} qgis_core qgis_analysis)
   SET_TARGET_PROPERTIES(qgis_${testname}
     PROPERTIES
     # skip the full RPATH for the build tree
@@ -107,4 +111,5 @@ ENDMACRO (ADD_QGIS_TEST)
 #############################################################
 # Tests:
 
-ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
+#ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
+ADD_QGIS_TEST(qgis_vectoranalyzertest tools/qgscloudanalyzer_test.cpp)
