@@ -25,11 +25,17 @@
 #include <QSettings>
 #include <QTime>
 #include <QDesktopServices>
+#include <QDebug>
 
 
 //qgis includes...
 #include <qgsapplication.h>
 #include <qgscloudanalyzer.h>
+#include <qgscloudmask.h>
+#include <qgsvectorlayer.h>
+#include <qgsrasterlayer.h>
+#include <qgsproviderregistry.h>
+#include <qgsmaplayerregistry.h>
 //qgis unit test includes
 #include <qgsrenderchecker.h>
 
@@ -51,6 +57,7 @@ class QgsCloudAnalyzerTest: public QObject
     bool render( QString theFileName );
     QString mTestDataDir;
     QgsMapRenderer * mpMapRenderer;
+    QgsRasterLayer * mpRasterLayer;
     QString mReport;
 };
 
@@ -61,8 +68,16 @@ void QgsCloudAnalyzerTest::initTestCase()
   QString qgisPath = QCoreApplication::applicationDirPath();
   QgsApplication::setPrefixPath( INSTALL_PREFIX, true );
   QgsApplication::showSettings();
+  // Instantiate the plugin directory so that providers are loaded
+  QgsProviderRegistry::instance( QgsApplication::pluginPath() );
+  mpMapRenderer = new QgsMapRenderer();
   //create some objects that will be used in all tests...
   mTestDataDir = QString( TEST_DATA_DIR ) + QDir::separator(); //defined in CmakeLists.txt
+  QString mySumbFileName = mTestDataDir + "I0D79/16bit/I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
+  QFileInfo myRasterFileInfo( mySumbFileName );
+  mpRasterLayer = new QgsRasterLayer( myRasterFileInfo.filePath(),
+                                      myRasterFileInfo.completeBaseName() );
+  QgsMapLayerRegistry::instance()->addMapLayer( mpRasterLayer );
   mReport += "<h1>Cloud Analyzer Tests</h1>\n";
 }
 //runs after all tests
@@ -77,7 +92,6 @@ void QgsCloudAnalyzerTest::cleanupTestCase()
     myFile.close();
     QDesktopServices::openUrl( "file://" + myReportFile );
   }
-
 }
 
 
@@ -87,7 +101,23 @@ void QgsCloudAnalyzerTest::analyzeTest()
   QString myDataDir( TEST_DATA_DIR ); //defined in CmakeLists.txt
   QString myFileName = myDataDir + "/I0D79/16bit/I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
   QgsCloudAnalyzer myAnalyzer( myFileName );
-  myAnalyzer.analyze();
+  myAnalyzer.setThreshold(200);
+  myAnalyzer.setBandUse(1);
+  myAnalyzer.setCloudColor(Qt::green);
+  myAnalyzer.setUnitSize( 5 );
+  QgsCloudMask * mypMask = myAnalyzer.analyze();
+  QgsVectorLayer * mypVectorLayer = mypMask->vectorLayer();
+  // Register the layer with the registry
+  QgsMapLayerRegistry::instance()->addMapLayer( mypVectorLayer );
+  QStringList myLayers;
+  myLayers << mpRasterLayer->id();
+  myLayers << mypVectorLayer->id();
+  qDebug() << myLayers.join(",");
+  mpMapRenderer->setLayerSet( myLayers );
+  mpMapRenderer->setExtent( mpRasterLayer->extent() );
+
+  QVERIFY( render( "cloud_analyzer" ) );
+  
   //QFile::remove( myTempPath + "landsat.tif.ovr" );
   //QFile::copy( mTestDataDir + "landsat.tif", myTempPath + "landsat.tif" );
   //QFileInfo myRasterFileInfo( myTempPath + "landsat.tif" );
@@ -108,6 +138,7 @@ void QgsCloudAnalyzerTest::analyzeTest()
 
 bool QgsCloudAnalyzerTest::render( QString theTestType )
 {
+
   mReport += "<h2>" + theTestType + "</h2>\n";
   QString myDataDir( TEST_DATA_DIR ); //defined in CmakeLists.txt
   QString myTestDataDir = myDataDir + QDir::separator();
