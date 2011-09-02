@@ -81,7 +81,7 @@ MACRO (ADD_QGIS_TEST testname testsrc)
   ADD_CUSTOM_TARGET(qgis_${testname}moc ALL DEPENDS ${qgis_${testname}_MOC_SRCS})
   ADD_EXECUTABLE(qgis_${testname} ${qgis_${testname}_SRCS})
   ADD_DEPENDENCIES(qgis_${testname} qgis_${testname}moc)
-  TARGET_LINK_LIBRARIES(qgis_${testname} ${QT_LIBRARIES} qgis_core)
+  TARGET_LINK_LIBRARIES(qgis_${testname} ${QT_LIBRARIES} qgis_core qgis_analysis)
   SET_TARGET_PROPERTIES(qgis_${testname}
     PROPERTIES
     # skip the full RPATH for the build tree
@@ -107,4 +107,6 @@ ENDMACRO (ADD_QGIS_TEST)
 #############################################################
 # Tests:
 
-ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
+#ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
+ADD_QGIS_TEST(qgis_bandaligner_test tools/bandaligner_test.cpp)
+ADD_QGIS_TEST(qgis_columncorrector_test tools/columncorrector_test.cpp)

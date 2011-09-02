@@ -1,4 +1,5 @@
 #include "qgsimageprocessorthread.h"
+#include <cassert>
 
 //Thread
 
@@ -11,6 +12,7 @@ QgsReadingThread::QgsReadingThread(bool leftRight, int start, int stop, int band
   mStart = start;
   mStop = stop;
   mDataset = dataset;
+
   mGainThreshold = 0.1;
   mBiasThreshold = 0.3;
   mPotentialBadLeft = potentialBadLeft;
@@ -64,17 +66,23 @@ void QgsReadingThread::run()
 
 void QgsReadingThread::readFromLeft(int band, int start, int stop)
 { 
+    printf("HERE 6g readFromLeft(band=%d, start=%d, stop=%d) [enter]\n", band,start,stop);
+
   double progressAdd = 100.0/(stop-start);
   if(progressAdd < 0)
   {
     progressAdd *= -1;
-  }
+  }  
+
   while(!wasStopped && start < stop)
   {
     double *x = mDataset->column(band, start);
     double *y = mDataset->column(band, start+1);
     double m, c;
     double cov00, cov01, cov11, sumsq;
+
+    //printf("HERE 6g readFromLeft (band=%d, i=%d)\n", band, start);
+
     gsl_fit_linear(x, 1 /*Progress by 1 through array*/, y, 1 /*Progress by 1 through array*/, mRows, &c, &m, &cov00, &cov01, &cov11, &sumsq);
     int quality = QgsQualityTester::goodQuality(m, c, mGainThreshold, mBiasThreshold);
     if(quality != 2)
@@ -90,10 +98,14 @@ void QgsReadingThread::readFromLeft(int band, int start, int stop)
     start++;
     mProgress += progressAdd;
   }
+
+  printf("HERE 6g readFromLeft [exit]\n");
 }
 
 void QgsReadingThread::readFromRight(int band, int start, int stop)
 {
+    printf("HERE 6g readFromRight(band=%d, start=%d, stop=%d) [enter]\n", band,start,stop);
+
   double progressAdd = 100.0/(stop-start);
   if(progressAdd < 0)
   {
@@ -105,6 +117,9 @@ void QgsReadingThread::readFromRight(int band, int start, int stop)
     double *y = mDataset->column(band, start-1);
     double m, c;
     double cov00, cov01, cov11, sumsq;
+
+    //printf("HERE 6g readFromRight (band=%d, i=%d)\n", band,start);
+
     gsl_fit_linear(x, 1 /*Progress by 1 through array*/, y, 1 /*Progress by 1 through array*/, mRows, &c, &m, &cov00, &cov01, &cov11, &sumsq);
     int quality = QgsQualityTester::goodQuality(m, c, mGainThreshold, mBiasThreshold);
     if(quality != 2)
@@ -120,6 +135,7 @@ void QgsReadingThread::readFromRight(int band, int start, int stop)
     start--;
     mProgress += progressAdd;
   }
+  printf("HERE 6g readFromRight [exit]\n");
 }
 
 QgsCorrectionThread::QgsCorrectionThread(int start, int stop, int band, int rows, int columns, QgsMemoryRaster *dataset, QList< QList<BadColumn*> > *finalFaults, QgsMemoryRaster *newRaster)
@@ -168,10 +184,22 @@ bool QgsCorrectionThread::hasLogMessage()
 
 void QgsCorrectionThread::run()
 {
+  assert(mFinalFaults->size() > 0);
+  printf("HERE Correction: %s:%d (start=%d,stop=%d)\n",
+         basename(__FILE__), __LINE__, mStart, mStop);
+
   double progressAdd = 100.0/(mStop-mStart);
   for(int i = mStart; i < mStop && !wasStopped; i++)
   {
+    if (mFinalFaults->size() < mBand) {
+        printf("*** WARNING: skipping correction because no faults available!\n");
+        continue;
+    }
+
     BadColumn *bc = mFinalFaults->at(mBand-1).at(i);
+
+    //printf("HERE %s:%d loop=%d\n", basename(__FILE__), __LINE__, i);
+
     double *oldData = mDataset->column(mBand, bc->column);
     double *postData = mDataset->column(mBand, bc->column+1);
     
@@ -199,7 +227,7 @@ void QgsCorrectionThread::run()
     //oldData = NULL;
     //delete [] postData;
     //postData = NULL;
-      
+
     if((newAvg-postAvg) < (oldAvg-postAvg) && bc->c > 0)
     {
       //int *writeData = new int[mRows];
@@ -215,6 +243,7 @@ void QgsCorrectionThread::run()
     //bc = NULL;
     mProgress += progressAdd;
   }
+  printf("HERE Correction: %s:%d [exit]\n", basename(__FILE__), __LINE__);
 }
 
 QgsImageProcessorThread::QgsImageProcessorThread(QString inputPath, QString outputPath, QString checkPath, QString inPath, QString outPath, double gainThreshold, double biasThreshold, int start, int stop)
@@ -289,6 +318,7 @@ void QgsImageProcessorThread::run()
   totalProgress = 0;
   totalProgressBase = 0;
   openDataset(mInputPath);
+
   double startLeft = mStart;
   double startRight = mStop;
   double stopLeft = mStop;
@@ -307,19 +337,40 @@ void QgsImageProcessorThread::run()
   {
     for(int bandNumber = 1; bandNumber <= bands; bandNumber++)
     {
+      printf("HERE X4 (band# = %d) [enter]\n", bandNumber);
+
       rt1 = new QgsReadingThread(false, startLeft, stopLeft-1, bandNumber, rows, columns, dataset, &potentialBadLeft, &potentialBadRight);
       rt2 = new QgsReadingThread(true, startRight-1, stopRight, bandNumber, rows, columns, dataset, &potentialBadLeft, &potentialBadRight);
       rt1->setThresholds(mGainThreshold, mBiasThreshold);
       rt2->setThresholds(mGainThreshold, mBiasThreshold);
+
+      printf("HERE X4 (band# = %d) [start]\n", bandNumber);
+      previousProgress = 0.0;
+#if 0
       rt1->start();
       rt2->start();
-      previousProgress = 0.0;
       while(rt1->isRunning() || rt2->isRunning())
       {
 	handleProgress((rt1->progress()+rt2->progress())/2, "Searching for faulty columns");
 	handleLog(rt1->logMessage());
 	handleLog(rt2->logMessage());
       }
+#else
+      /* Looking for a bug, run sequentially */
+      rt1->start();
+      while(rt1->isRunning()) {
+          handleProgress(rt1->progress(), "Searching for faulty columns");
+          handleLog(rt1->logMessage());
+      }
+
+      rt2->start();
+      while(rt2->isRunning()) {
+          handleProgress(rt2->progress(), "Searching for faulty columns");
+          handleLog(rt2->logMessage());
+      }
+#endif
+
+      printf("HERE X4 (band# = %d) [cleanup]\n", bandNumber);
       while(rt1->hasLogMessage())
       {
 	handleLog(rt1->logMessage());
@@ -332,6 +383,8 @@ void QgsImageProcessorThread::run()
       {
 	calculateFaults(bandNumber);
       }
+
+      printf("HERE X4 (band# = %d) [exit]\n", bandNumber);
     }
   }
   else if(!wasStopped)
@@ -454,11 +507,13 @@ bool QgsImageProcessorThread::openDataset(QString inputPath)
 {
   dataset = new QgsMemoryRaster(inputPath);
   dataset->open();
+
   previousProgress = 0.0;
   while(dataset->isRunning())
   {
     handleProgress(dataset->progress(), "Copying raster to memory");
   }
+
   if(dataset->success())
   {
     bands = dataset->getBands();
@@ -608,54 +663,70 @@ void QgsImageProcessorThread::correctFaults()
   
 void QgsImageProcessorThread::correctBand(int band, QgsMemoryRaster *newRaster)
 {
+  if (finalFaults.size() <= 0) {
+      printf("*** WARNING: no band data in finalFaults list. Skipping correction thread!\n");
+      return;
+  }
+
+  assert(finalFaults.size() > 0);
   int start = 0;
   int stop = finalFaults.at(band-1).size();
   int middle = stop/2;
-  ct1 = new QgsCorrectionThread(start, middle, band, rows, columns, dataset, &finalFaults, newRaster);
-  ct2 = new QgsCorrectionThread(middle, stop, band, rows, columns, dataset, &finalFaults, newRaster);
+  ct1 = new QgsCorrectionThread(start, /*middle*/stop, band, rows, columns, dataset, &finalFaults, newRaster);
+  //ct2 = new QgsCorrectionThread(middle, stop, band, rows, columns, dataset, &finalFaults, newRaster);
   ct1->setThresholds(mGainThreshold, mBiasThreshold);
-  ct2->setThresholds(mGainThreshold, mBiasThreshold);
+  //ct2->setThresholds(mGainThreshold, mBiasThreshold);
   ct1->start();
-  ct2->start();
+  //ct2->start();
   previousProgress = 0.0;
-  while(ct1->isRunning() || ct2->isRunning())
+  while(ct1->isRunning() )//|| ct2->isRunning())
   {
     handleProgress(outputDataset->progress(), "Correcting raster columns");
     handleLog(ct1->logMessage());
-    handleLog(ct2->logMessage());
+    //handleLog(ct2->logMessage());
   }
   while(ct1->hasLogMessage())
   {
     handleLog(ct1->logMessage());
   }
-  while(ct2->hasLogMessage())
-  {
-    handleLog(ct2->logMessage());
-  }
+  //while(ct2->hasLogMessage())
+  //{
+  //  handleLog(ct2->logMessage());
+  //}
   delete ct1;
-  delete ct2;
+  //delete ct2;
   ct1 = NULL;
   ct2 = NULL;
 }
 
-bool QgsImageProcessorThread::writeToFile(QString path)
+static bool writeFaultsToFile(QString path, QList< QList<BadColumn*> > &faults)
 {
-  QFile output(path);
-  if(output.open(QIODevice::WriteOnly))
-  {
-    for(int i = 0; i < finalFaults.size(); i++)
+    QFile output(path);
+
+    if (!output.open(QIODevice::WriteOnly))
+        return false;
+
+    for(int i = 0; i < faults.size(); i++)
     {
+      QList<BadColumn*> badColumns = faults.at(i);
+
       output.write(QString("Band"+QString::number(i+1)+":\t").toAscii().data());
-      for(int j = 0; j < finalFaults.at(i).size(); j++)
+      for(int j = 0; j < badColumns.size(); j++)
       {
-	output.write(QString("[column="+QString::number(finalFaults.at(i)[j]->column)+",gain="+QString::number(finalFaults.at(i)[j]->m)+",bias="+QString::number(finalFaults.at(i)[j]->c)+"]\t").toAscii().data());
+        output.write(QString("[column=" + QString::number(badColumns[j]->column)
+            + ",gain=" + QString::number(badColumns[j]->m)
+            + ",bias=" + QString::number(badColumns[j]->c)+"]\t").toAscii().data());
       }
       output.write("\n");
     }
+
     output.close();
     return true;
-  }
-  return false;
+}
+
+bool QgsImageProcessorThread::writeToFile(QString path)
+{
+    return writeFaultsToFile(path, finalFaults);
 }
 
 bool QgsImageProcessorThread::readFromFile(QString path)
@@ -694,7 +765,11 @@ bool QgsImageProcessorThread::readFromFile(QString path)
     input.close();
     return true;
   }
-  return false;
+  else
+  {
+    return false;
+  }
+
 }
 
 void QgsImageProcessorThread::createCheck()
