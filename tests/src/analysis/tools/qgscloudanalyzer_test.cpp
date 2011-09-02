@@ -77,6 +77,7 @@ void QgsCloudAnalyzerTest::initTestCase()
   QFileInfo myRasterFileInfo( mySumbFileName );
   mpRasterLayer = new QgsRasterLayer( myRasterFileInfo.filePath(),
                                       myRasterFileInfo.completeBaseName() );
+  mpRasterLayer->setContrastEnhancementAlgorithm( QgsContrastEnhancement::StretchToMinimumMaximum, false );
   QgsMapLayerRegistry::instance()->addMapLayer( mpRasterLayer );
   mReport += "<h1>Cloud Analyzer Tests</h1>\n";
 }
@@ -110,8 +111,8 @@ void QgsCloudAnalyzerTest::analyzeTest()
   // Register the layer with the registry
   QgsMapLayerRegistry::instance()->addMapLayer( mypVectorLayer );
   QStringList myLayers;
-  myLayers << mpRasterLayer->id();
   myLayers << mypVectorLayer->id();
+  myLayers << mpRasterLayer->id();
   qDebug() << myLayers.join(",");
   mpMapRenderer->setLayerSet( myLayers );
   mpMapRenderer->setExtent( mpRasterLayer->extent() );
