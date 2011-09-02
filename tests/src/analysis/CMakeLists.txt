@@ -113,4 +113,5 @@ ENDMACRO (ADD_QGIS_TEST)
 # Tests:
 
 #ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
-ADD_QGIS_TEST(qgis_cloudanalyzertest tools/qgscloudanalyzer_test.cpp)
+ADD_QGIS_TEST(cloudanalyzertest tools/qgscloudanalyzer_test.cpp)
+ADD_QGIS_TEST(linecorrectortest tools/qgslinecorrector_test.cpp)
