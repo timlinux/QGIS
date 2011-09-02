@@ -5,9 +5,14 @@ SET (util_SRCS ../core/qgsrenderchecker.cpp)
 #####################################################
 # Don't forget to include output directory, otherwise
 # the UI file won't be wrapped!
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} 
+INCLUDE_DIRECTORIES(
+  ${CMAKE_CURRENT_SOURCE_DIR} 
+  ${CMAKE_CURRENT_SOURCE_DIR}/../core
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/tools
   ${CMAKE_SOURCE_DIR}/src/core
+  ${CMAKE_SOURCE_DIR}/src/core/raster
+  ${CMAKE_SOURCE_DIR}/src/core/symbology-ng
   ${CMAKE_SOURCE_DIR}/src/analysis
   ${CMAKE_SOURCE_DIR}/src/analysis/vector
   ${CMAKE_SOURCE_DIR}/src/analysis/autogcp
@@ -108,5 +113,7 @@ ENDMACRO (ADD_QGIS_TEST)
 # Tests:
 
 #ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
-ADD_QGIS_TEST(qgis_bandaligner_test tools/bandaligner_test.cpp)
-ADD_QGIS_TEST(qgis_columncorrector_test tools/columncorrector_test.cpp)
+ADD_QGIS_TEST(bandaligner_test tools/bandaligner_test.cpp)
+ADD_QGIS_TEST(columncorrector_test tools/columncorrector_test.cpp)
+ADD_QGIS_TEST(cloudanalyzertest tools/qgscloudanalyzer_test.cpp)
+ADD_QGIS_TEST(linecorrectortest tools/qgslinecorrector_test.cpp)
