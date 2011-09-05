@@ -81,7 +81,7 @@ class sumbandilasatPlugin:
     sizePolicy.setHeightForWidth( self.toolBar.sizePolicy().hasHeightForWidth() )
     self.toolBar.setSizePolicy( sizePolicy) 
     self.toolBar.setObjectName( "sumbandilasatToolBar" )
-    self.toolBar.setStyleSheet("QToolBar{ border: 2px solid grey; border-radius: 8px; background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius: 1, fx:0.5, fy:0.5, stop: 1 grey, stop: 0 rgba(0, 0, 0, 0)); background-image: url("+self.getIconPath( "sansa.png", "toolbar" )+"); background-repeat:no-repeat; background-position:right centre;}")
+    #self.toolBar.setStyleSheet("QToolBar{ border: 2px solid grey; border-radius: 8px; background-color: qradialgradient(spread:pad, cx:0.5, cy:0.5, radius: 1, fx:0.5, fy:0.5, stop: 1 grey, stop: 0 rgba(0, 0, 0, 0)); background-image: url("+self.getIconPath( "sansa.png", "toolbar" )+"); background-repeat:no-repeat; background-position:right centre;}")
     
     #Create the action/buttons for the tool bar
     
