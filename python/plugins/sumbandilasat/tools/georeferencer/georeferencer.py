@@ -34,6 +34,7 @@ import sys
 import shutil
 from worldfiler import WorldFiler
 
+
 openlayersFound = False
 import os.path
 if os.path.isfile(QgsApplication.qgisSettingsDirPath()+"python/plugins/openlayers/openlayers_plugin.py"):
@@ -733,6 +734,12 @@ class GeoreferencerWindow(QMainWindow):
     self.defaultDir = path
 
   def openDirectory(self):
+    # Use pdb for debugging
+    import pdb
+    # These lines allow you to set a breakpoint in the app
+    pyqtRemoveInputHook()
+    pdb.set_trace()
+
     mlist = QStringList()
     mdir = QFileDialog.getExistingDirectory( self, "Open Thumbnail Directory", self.defaultDir, QFileDialog.ShowDirsOnly )
     if len(mdir) > 0:
@@ -740,6 +747,7 @@ class GeoreferencerWindow(QMainWindow):
       mlist.append(mdir)
       structure = int(self.settings.value("StructureChoice", QVariant(0)).toString())
       names = self.findFilesRecursively(mlist, structure, "*.jpg")
+      self.ui.messageLabel.setText(names.join(" : "))
       images = []
       for name in names:
 	if not self.settings.value(name).toString() == "Thumbnail":
