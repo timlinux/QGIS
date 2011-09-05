@@ -112,8 +112,8 @@ ENDMACRO (ADD_QGIS_TEST)
 #############################################################
 # Tests:
 
-#ADD_QGIS_TEST(qgis_vectoranalyzertest testqgsvectoranalyzer.cpp)
-ADD_QGIS_TEST(bandaligner_test tools/bandaligner_test.cpp)
-ADD_QGIS_TEST(columncorrector_test tools/columncorrector_test.cpp)
+ADD_QGIS_TEST(vectoranalyzertest testqgsvectoranalyzer.cpp)
+ADD_QGIS_TEST(bandaligner_test tools/qgsbandaligner_test.cpp)
+ADD_QGIS_TEST(columncorrector_test tools/qgscolumncorrector_test.cpp)
 ADD_QGIS_TEST(cloudanalyzertest tools/qgscloudanalyzer_test.cpp)
 ADD_QGIS_TEST(linecorrectortest tools/qgslinecorrector_test.cpp)
