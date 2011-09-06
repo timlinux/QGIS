@@ -99,7 +99,7 @@ void TestBandAlignerTool::simpleFirstTest()
     inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C01_F03_MSSK14K_0.tif");
     inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C02_F03_MSSK14K_0.tif");
 
-    QString outputPath = "/home/fgretief/w/tmp/test_bandaligner-result.tif";
+    QString outputPath = QDir::tempPath() + "test_bandaligner-result.tif";
 
     QgsBandAlignerThread *mThread = new QgsBandAlignerThread(inputPaths, outputPath, "", "", 21 );
 
