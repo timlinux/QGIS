@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>BandAligner</class>
  <widget class="QDialog" name="BandAligner">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
-    <height>541</height>
+    <width>522</width>
+    <height>566</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +20,7 @@
    <iconset resource="resources.qrc">
     <normaloff>:/sumbandilasat/icons/toolbar/bandaligner.png</normaloff>:/sumbandilasat/icons/toolbar/bandaligner.png</iconset>
   </property>
-  <layout class="QGridLayout" name="gridLayout_8">
+  <layout class="QGridLayout" name="gridLayout_12">
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
@@ -44,13 +47,16 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>459</width>
-            <height>484</height>
+            <width>498</width>
+            <height>493</height>
            </rect>
           </property>
-          <layout class="QGridLayout" name="gridLayout_12">
+          <layout class="QGridLayout" name="gridLayout_8">
            <item row="0" column="0">
             <widget class="QGroupBox" name="groupBox">
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
              <property name="title">
               <string>Files</string>
              </property>
@@ -401,6 +407,9 @@
    </item>
    <item row="1" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>

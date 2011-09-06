@@ -9,7 +9,7 @@ from qgis.analysis import *
 
 import gdal
 
-class BandAlignerWindow(QMainWindow):
+class BandAlignerWindow(QDialog):
 
   def getGui(self):
     return self.ui.centralwidget
@@ -212,7 +212,7 @@ class BandAlignerWindow(QMainWindow):
       self.setStartButton()
     else:
       # close the dialog
-      self.reject()
+      self.close()
   
   def help(self):
     pass  

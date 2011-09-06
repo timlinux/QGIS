@@ -7,7 +7,7 @@ from qgis.gui import *
 from qgis.analysis import *
 from ui_linecorrector import Ui_LineCorrector
 
-class LineCorrectorWindow(QWidget):
+class LineCorrectorWindow(QDialog):
 
   def getGui(self):
     return self
@@ -140,8 +140,13 @@ class LineCorrectorWindow(QWidget):
       self.ui.listWidget.addItem(str(value))
   
   def stop(self):
-    self.corrector.stop()
-    self.setStartButton()
+    if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
+      self.corrector.stop()
+      self.setStartButton()
+    else:
+      # close the dialog
+      self.close()
+  
   
   def help(self):
     pass
