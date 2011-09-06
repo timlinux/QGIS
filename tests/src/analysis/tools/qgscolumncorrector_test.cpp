@@ -118,7 +118,7 @@ void TestColumnCorrectorTool::simpleFirstTest()
     m->start();
     while (m->isRunning())
     {
-        sleep(1);
+        QTest::qSleep(1000);
     }
     m->stop();
 

@@ -66,8 +66,6 @@ void QgsReadingThread::run()
 
 void QgsReadingThread::readFromLeft(int band, int start, int stop)
 { 
-    printf("HERE 6g readFromLeft(band=%d, start=%d, stop=%d) [enter]\n", band,start,stop);
-
   double progressAdd = 100.0/(stop-start);
   if(progressAdd < 0)
   {
@@ -80,8 +78,6 @@ void QgsReadingThread::readFromLeft(int band, int start, int stop)
     double *y = mDataset->column(band, start+1);
     double m, c;
     double cov00, cov01, cov11, sumsq;
-
-    //printf("HERE 6g readFromLeft (band=%d, i=%d)\n", band, start);
 
     gsl_fit_linear(x, 1 /*Progress by 1 through array*/, y, 1 /*Progress by 1 through array*/, mRows, &c, &m, &cov00, &cov01, &cov11, &sumsq);
     int quality = QgsQualityTester::goodQuality(m, c, mGainThreshold, mBiasThreshold);
@@ -98,8 +94,6 @@ void QgsReadingThread::readFromLeft(int band, int start, int stop)
     start++;
     mProgress += progressAdd;
   }
-
-  printf("HERE 6g readFromLeft [exit]\n");
 }
 
 void QgsReadingThread::readFromRight(int band, int start, int stop)
@@ -195,7 +189,6 @@ void QgsCorrectionThread::run()
     }
 
     BadColumn *bc = mFinalFaults->at(mBand-1).at(i);
-
 
     double *oldData = mDataset->column(mBand, bc->column);
     double *postData = mDataset->column(mBand, bc->column+1);

@@ -620,11 +620,7 @@ installed in the default locations):
   @cmd
 
 Start the batch file and on the command prompt checkout the QGIS source from
-svn to the source directory qgis-trunk:
-
-  svn co https://svn.osgeo.org/qgis/trunk/qgis qgis-trunk
-
-or using git-svn (from the git shell):
+using git-svn (from the git shell):
 
   git svn clone --username $USER --revision 15611:HEAD https://svn.osgeo.org/qgis/trunk/qgis
 
