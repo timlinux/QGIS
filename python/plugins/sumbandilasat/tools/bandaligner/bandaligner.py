@@ -33,10 +33,8 @@ class BandAlignerWindow(QMainWindow):
     QObject.connect(self.ui.addButton, SIGNAL("clicked()"), self.addBands)
     QObject.connect(self.ui.outputButton, SIGNAL("clicked()"), self.selectOuput)
     
-    QObject.connect(self.ui.backButton, SIGNAL("clicked()"), self.goBack)
-    QObject.connect(self.ui.nextButton, SIGNAL("clicked()"), self.goNext)
-    QObject.connect(self.ui.startButton, SIGNAL("clicked()"), self.start)
-    QObject.connect(self.ui.stopButton, SIGNAL("clicked()"), self.stop)
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.start)
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stop)
     #QObject.connect(self.ui.helpButton, SIGNAL("clicked()"), self.help)
     QObject.connect(self.ui.tabWidget, SIGNAL("currentChanged(int)"), self.changeTab)
     
@@ -68,14 +66,16 @@ class BandAlignerWindow(QMainWindow):
       self.ui.tableWidget.show()
     
   def selectOuput(self):
-    fileName = QFileDialog.getSaveFileName(self, "Save Output Image", self.settings.value("LastPath", QVariant("")).toString())
+    mySettings = QSettings()
+    myLastDir = mySettings.value("bandAligner/lastOutputDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save Output Image", myLastDir )
     if fileName != "":
-      self.settings.setValue("LastPath", fileName)
       self.ui.outputLineEdit.setText(fileName)
+      mySettings.setValue("bandAligner/lastOutputDir", QFileInfo( fileName ).absolutePath())
       if self.ui.xLineEdit.text() != "":
-	self.ui.xLineEdit.setText(fileName+".xmap")
+        self.ui.xLineEdit.setText(fileName+".xmap")
       if self.ui.yLineEdit.text() != "":
-	self.ui.yLineEdit.setText(fileName+".ymap")
+        self.ui.yLineEdit.setText(fileName+".ymap")
     
   def getAllInputBands(self, withId = False, entirePath = True):
     result = []
@@ -83,17 +83,17 @@ class BandAlignerWindow(QMainWindow):
       result.append(self.ui.bandLineEdit.text())
     else:
       for i in range(self.ui.tableWidget.rowCount()):
-	name = ""
-	if entirePath:
-	  name = self.ui.tableWidget.item(i, 0).text()
-	else:
-	  name = self.ui.tableWidget.item(i, 0).text()
-	  index = name.lastIndexOf(QDir.separator())
-	  name = name.right(name.length()-index-1)
-	if withId:
-	  result.append(str(i+1)+". "+name)
-	else:
-	  result.append(name)
+        name = ""
+        if entirePath:
+          name = self.ui.tableWidget.item(i, 0).text()
+        else:
+          name = self.ui.tableWidget.item(i, 0).text()
+          index = name.lastIndexOf(QDir.separator())
+          name = name.right(name.length()-index-1)
+        if withId:
+          result.append(str(i+1)+". "+name)
+        else:
+          result.append(name)
     return result
     
   def updateReferenceBand(self, band = ""):
@@ -103,12 +103,12 @@ class BandAlignerWindow(QMainWindow):
     if self.ui.singleRadioButton.isChecked():
       dataset = gdal.Open(self.ui.bandLineEdit.text().toAscii().data(), gdal.GA_ReadOnly)
       if dataset != None:
-	count = dataset.RasterCount
-	for i in range(count):
-	  self.ui.referenceComboBox.addItem(str(i+1)+". Band "+str(i+1))
+        count = dataset.RasterCount
+        for i in range(count):
+          self.ui.referenceComboBox.addItem(str(i+1)+". Band "+str(i+1))
     else:
       for name in names:
-	self.ui.referenceComboBox.addItem(name)
+        self.ui.referenceComboBox.addItem(name)
     if self.ui.referenceComboBox.count() > index:
       self.ui.referenceComboBox.setCurrentIndex(index)
     
@@ -121,9 +121,9 @@ class BandAlignerWindow(QMainWindow):
     else:
       counter = 0
       for band in self.tempBands:
-	itemPath = QTableWidgetItem(self.tempBands[counter])
-	self.ui.tableWidget.setItem(currentRows+counter, 0, itemPath)
-	counter += 1
+        itemPath = QTableWidgetItem(self.tempBands[counter])
+        self.ui.tableWidget.setItem(currentRows+counter, 0, itemPath)
+        counter += 1
     self.tempBands = []
     self.ui.bandLineEdit.setText("")
     self.updateReferenceBand()
@@ -131,40 +131,40 @@ class BandAlignerWindow(QMainWindow):
   def selectInput(self):
     self.tempBands = []
     self.ui.bandLineEdit.setText("")
-    fileNames = QFileDialog.getOpenFileNames(self, "Select Input Bands", self.settings.value("LastPath", QVariant("")).toString())
+    mySettings = QSettings()
+    myLastDir = mySettings.value("bandAligner/lastInputDir").toString()
+    fileNames = QFileDialog.getOpenFileNames(self, "Select Input Bands", myLastDir )
     if len(fileNames) > 1:
-      self.settings.setValue("LastPath", fileNames[0])
       self.ui.bandLineEdit.setText("<Multiple Files>")
     elif len(fileNames) == 1:
-      self.settings.setValue("LastPath", fileNames[0])
       self.ui.bandLineEdit.setText(fileNames[0])
+    if len(fileNames) > 0:
+      mySettings.setValue("bandAligner/lastInputDir", QFileInfo( fileNames[0] ).absolutePath())
     for f in fileNames:
       self.tempBands.append(f)
     self.updateReferenceBand()
-    
+
   def changeTab(self, i = 0):
     index = self.ui.tabWidget.currentIndex()
-    self.ui.startButton.hide()
-    self.ui.stopButton.hide()
-    self.ui.backButton.hide()
-    self.ui.nextButton.hide()
     if index == 0:
-      self.ui.nextButton.show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
     elif index == self.ui.tabWidget.count()-1:
-      self.ui.backButton.show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
       self.setStartButton()
-    else:
-      self.ui.backButton.show()
-      self.ui.nextButton.show()
       
-  def goBack(self):
-    if self.ui.tabWidget.currentIndex() > 0:
-      self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.currentIndex()-1)
-      
-  def goNext(self):
-    if self.ui.tabWidget.currentIndex() < self.ui.tabWidget.count()-1:
-      self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.currentIndex()+1)
-      
+  def setStartButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.tabWidget.setTabEnabled(0, True)
+      self.ui.tabWidget.setTabEnabled(1, True)
+    
+  def setStopButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.tabWidget.setTabEnabled(0, False)
+      self.ui.tabWidget.setTabEnabled(1, False)
+    
   def progress(self, value):
     self.ui.progressBar.setValue(value)
     if value >= 100:
@@ -174,10 +174,26 @@ class BandAlignerWindow(QMainWindow):
     self.ui.textEdit.append(message)
       
   def start(self):
-    self.ui.progressBar.setValue(0)
-    self.ui.textEdit.clear()
+    myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
+    if myState == "Stop":
+      self.thread.stop()
+      return
+
     inputPaths = self.getAllInputBands()
     outputPath = self.ui.outputLineEdit.text()
+    #sanity check...
+    if len(inputPaths) == 0:
+      QMessageBox.warning(self, qApp.tr("Band Aligner"), qApp.tr("No input file(s) specified.\n"
+                                 "Please correct this before pressing 'run'!"),
+                                QMessageBox.Ok );
+      return
+    if outputPath.isEmpty():
+      QMessageBox.warning(self, qApp.tr("Band Aligner"), qApp.tr("No output file specified.\n"
+                                 "Please correct this before pressing 'run'!"),
+                                QMessageBox.Ok );
+      return
+    self.ui.progressBar.setValue(0)
+    self.ui.textEdit.clear()
     xPath = ""
     yPath = ""
     if self.ui.checkBox.isChecked():
@@ -190,17 +206,26 @@ class BandAlignerWindow(QMainWindow):
     self.setStopButton()
   
   def stop(self):
-    self.thread.stop()
+
+    if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
+      self.thread.stop()
+      self.setStartButton()
+    else:
+      # close the dialog
+      self.reject()
   
   def help(self):
     pass  
   
   def setStopButton(self):
     if self.standAlone:
-      self.ui.startButton.hide()
-      self.ui.stopButton.show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.tabWidget.setTabEnabled(0, False)
+      self.ui.tabWidget.setTabEnabled(1, False)
     
   def setStartButton(self):
     if self.standAlone:
-      self.ui.startButton.show()
-      self.ui.stopButton.hide()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.tabWidget.setTabEnabled(0, True)
+      self.ui.tabWidget.setTabEnabled(1, True)

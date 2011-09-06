@@ -92,7 +92,14 @@ class LineCorrectorWindow(QWidget):
     myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
     if myState == "Stop":
       self.stop()
+      return
     else:
+      #sanity check...
+      if self.ui.inputLineEdit.text().isEmpty(): 
+        QMessageBox.warning(self, qApp.tr("Line Corrector"), qApp.tr("No input file(s) specified.\n"
+                                 "Please correct this before pressing 'run'!"),
+                                QMessageBox.Ok );
+        return
       self.setStopButton()
 
     self.corrector = QgsLineCorrector(self.ui.inputLineEdit.text(), self.ui.outputLineEdit.text(), self.ui.maskLineEdit.text())
