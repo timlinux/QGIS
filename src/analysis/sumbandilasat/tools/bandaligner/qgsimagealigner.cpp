@@ -471,12 +471,13 @@ void QgsImageAligner::estimate(bool deleteOldDisparity)
 
 uint* QgsImageAligner::applyUInt()
 {
-  int size = mWidth*mHeight;
+  const int size = mWidth * mHeight; 
+  // For SumbandilaSat, 8415 x 9588 = 80683020 pixels
+  // => 4 bytes per int gives: 322732080 bytes = 315168 KiB = 307.78 MiB
+  //  And we allocate memory of that size twice! 615.56 MiB
+  // TODO: Need to refactor this code to reduce the memory consumption.
   uint *image = new uint[size];
-  for(int i = 0; i < size; i++)
-  {
-    image[i] = 0;
-  }
+  memset(image, 0, size * sizeof(image[0]));
   
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
@@ -494,39 +495,46 @@ uint* QgsImageAligner::applyUInt()
       
       QList<int> indexes;
       indexes.append((newY-1)*mWidth + (newX-1));
-      indexes.append((newY-1)*mWidth + (newX));
+      indexes.append((newY-1)*mWidth + (newX+0));
       indexes.append((newY-1)*mWidth + (newX+1));
       indexes.append((newY-1)*mWidth + (newX+2));
-      indexes.append((newY)*mWidth + (newX-1));
-      indexes.append((newY)*mWidth + (newX));
-      indexes.append((newY)*mWidth + (newX+1));
-      indexes.append((newY)*mWidth + (newX+2));
+
+      indexes.append((newY+0)*mWidth + (newX-1));
+      indexes.append((newY+0)*mWidth + (newX+0));
+      indexes.append((newY+0)*mWidth + (newX+1));
+      indexes.append((newY+0)*mWidth + (newX+2));
+
       indexes.append((newY+1)*mWidth + (newX-1));
-      indexes.append((newY+1)*mWidth + (newX));
+      indexes.append((newY+1)*mWidth + (newX+0));
       indexes.append((newY+1)*mWidth + (newX+1));
       indexes.append((newY+1)*mWidth + (newX+2));
+
       indexes.append((newY+2)*mWidth + (newX-1));
-      indexes.append((newY+2)*mWidth + (newX));
+      indexes.append((newY+2)*mWidth + (newX+0));
       indexes.append((newY+2)*mWidth + (newX+1));
       indexes.append((newY+2)*mWidth + (newX+2));
       
       bool broke = false;
       for(int i = 0; i < indexes.size(); i++)
       {
-	if(indexes[i] < 0)
-	{
-	  broke = true;
-	  break;
-	}
-	data[i] = base[indexes[i]];
+          int idx = indexes[i];
+          if (0 <= idx && idx < size) 
+          {
+              data[i] = base[idx];
+          } 
+          else 
+          {
+              broke = true;
+              break;
+          }
       }
       if(!broke)
       {
-	int value = cubicConvolution(data, QgsComplex(newX2, newY2));
-	if(!(uint(value) > mBits) && !(uint(value) > mMax))
-	{
-	  image[((mHeight-y)*mWidth - (mWidth-x)) ] = uint(value);
-	}
+          int value = cubicConvolution(data, QgsComplex(newX2, newY2));
+          if(!(uint(value) > mBits) && !(uint(value) > mMax))
+          {
+              image[((mHeight-y)*mWidth - (mWidth-x)) ] = uint(value);
+          }
       }
     }
   }
@@ -551,10 +559,7 @@ int* QgsImageAligner::applyInt()
 {
   int size = mWidth*mHeight;
   int *image = new int[size];
-  for(int i = 0; i < size; i++)
-  {
-    image[i] = 0;
-  }
+  memset(image, 0, size * sizeof(image[0]));
   
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
@@ -591,20 +596,24 @@ int* QgsImageAligner::applyInt()
       bool broke = false;
       for(int i = 0; i < indexes.size(); i++)
       {
-	if(indexes[i] < 0)
-	{
-	  broke = true;
-	  break;
-	}
-	data[i] = base[indexes[i]];
+          int idx = indexes[i];
+          if (0 <= idx && idx < size) 
+          {
+              data[i] = base[idx];
+          }
+          else 
+          {
+              broke = true;
+              break;
+          }
       }
       if(!broke)
       {
-	int value = cubicConvolution(data, QgsComplex(newX2, newY2));
-	if(!(uint(value) > mBits) && !(uint(value) > mMax))
-	{
-	  image[((mHeight-y)*mWidth - (mWidth-x)) ] = int(value);
-	}
+          int value = cubicConvolution(data, QgsComplex(newX2, newY2));
+          if(!(uint(value) > mBits) && !(uint(value) > mMax))
+          {
+              image[((mHeight-y)*mWidth - (mWidth-x)) ] = int(value);
+          }
       }
     }
   }
@@ -629,10 +638,7 @@ double* QgsImageAligner::applyFloat()
 {
   int size = mWidth*mHeight;
   double *image = new double[size];
-  for(int i = 0; i < size; i++)
-  {
-    image[i] = 0.0;
-  }
+  memset(image, 0, size * sizeof(image[0]));
   
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
@@ -669,20 +675,24 @@ double* QgsImageAligner::applyFloat()
       bool broke = false;
       for(int i = 0; i < indexes.size(); i++)
       {
-	if(indexes[i] < 0)
-	{
-	  broke = true;
-	  break;
-	}
-	data[i] = base[indexes[i]];
+          int idx = indexes[i];
+          if (0 <= idx && idx < size) 
+          {
+              data[i] = base[idx];
+          }
+          else
+          {
+              broke = true;
+              break;
+          }
       }
       if(!broke)
       {
-	int value = cubicConvolution(data, QgsComplex(newX2, newY2));
-	if(!(uint(value) > mBits) && !(uint(value) > mMax))
-	{
-	  image[((mHeight-y)*mWidth - (mWidth-x)) ] = double(value);
-	}
+          int value = cubicConvolution(data, QgsComplex(newX2, newY2));
+          if(!(uint(value) > mBits) && !(uint(value) > mMax))
+          {
+              image[((mHeight-y)*mWidth - (mWidth-x)) ] = double(value);
+          }
       }
     }
   }
