@@ -38,8 +38,14 @@
        <string>Input</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_5">
+       <property name="margin">
+        <number>0</number>
+       </property>
        <item row="0" column="0">
         <widget class="QScrollArea" name="scrollArea">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
          <property name="widgetResizable">
           <bool>true</bool>
          </property>
@@ -48,8 +54,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>450</width>
-            <height>421</height>
+            <width>470</width>
+            <height>441</height>
            </rect>
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
@@ -449,5 +455,166 @@
   <include location="../../resources.qrc"/>
   <include location="resources.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>exportCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>exportLineEdit</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>51</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>53</x>
+     <y>219</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>exportCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>exportButton</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>322</x>
+     <y>203</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>447</x>
+     <y>228</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>correctCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>correctLineEdit</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>108</x>
+     <y>251</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>106</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>correctCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>correctButton</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>351</x>
+     <y>253</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>446</x>
+     <y>278</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskLineEdit</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>64</x>
+     <y>304</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>70</x>
+     <y>320</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskButton</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>354</x>
+     <y>299</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>443</x>
+     <y>321</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>loadRadioButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>loadLineEdit</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>120</x>
+     <y>118</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>130</x>
+     <y>143</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>loadRadioButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>loadButton</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>121</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>445</x>
+     <y>146</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>computeRadioButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>loadLineEdit</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>170</x>
+     <y>98</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>219</x>
+     <y>140</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>computeRadioButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>loadButton</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>252</x>
+     <y>95</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>448</x>
+     <y>140</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -30,7 +30,7 @@ import time
 import osgeo.gdal as gdal
 from osgeo.gdalconst import *
 
-class ColumnCorrectorWindow(QMainWindow):
+class ColumnCorrectorWindow(QDialog):
 
   def getGui(self):
     return self.ui.centralwidget
@@ -44,40 +44,28 @@ class ColumnCorrectorWindow(QMainWindow):
     self.standAlone = standAlone
     if not self.standAlone:
       self.ui.tabWidget.removeTab(self.ui.tabWidget.count()-1)
-
-    self.connect(self.ui.maskCheckBox, SIGNAL("stateChanged(int)"), self.toggleOutputTasks)
-    self.connect(self.ui.exportCheckBox, SIGNAL("stateChanged(int)"), self.toggleOutputTasks)
-    self.connect(self.ui.correctCheckBox, SIGNAL("stateChanged(int)"), self.toggleOutputTasks)
-    self.connect(self.ui.loadRadioButton, SIGNAL("clicked()"), self.toggleBadColumns)
-    self.connect(self.ui.computeRadioButton, SIGNAL("clicked()"), self.toggleBadColumns)
     
     self.connect(self.ui.rasterButton, SIGNAL("pressed()"), self.openRaster)
     self.connect(self.ui.loadButton, SIGNAL("pressed()"), self.openBadFile)
     self.connect(self.ui.exportButton, SIGNAL("pressed()"), self.saveBadFile)
     self.connect(self.ui.correctButton, SIGNAL("pressed()"), self.saveCorrectFile)
     self.connect(self.ui.maskButton, SIGNAL("pressed()"), self.saveMaskFile)
-    
-    self.connect(self.ui.nextButton, SIGNAL("pressed()"), self.toggleButtonNext)
-    self.connect(self.ui.backButton, SIGNAL("pressed()"), self.toggleButtonBack)
-    self.connect(self.ui.startButton, SIGNAL("pressed()"), self.startProcess)
-    self.connect(self.ui.stopButton, SIGNAL("pressed()"), self.stopProcess)
-    self.connect(self.ui.tabWidget, SIGNAL("currentChanged(int)"), self.toggleTab)
-    self.toggleOutputTasks()
-    self.toggleBadColumns()
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.startProcess)
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stopProcess)
+
+    self.ui.exportCheckBox.setChecked(False)
+    self.ui.correctCheckBox.setChecked(False)
+    self.ui.computeRadioButton.setChecked(True)
     self.loadRaster(self.getDefaultRaster())
-    
     self.settings = QSettings("QuantumGIS", "SumbandilaSat Georeferencer")
     self.loadSettings()
-    
     self.ui.tabWidget.setCurrentIndex(0)
-    self.changeButtons(0)
-    #self.loadRaster(QString("/home/cstallmann/I03B1_P03_S02_C02_F03_MSSK14K_0.tif"))
     
   #Displays a message to the user
   def showMessage(self, string, type = "info"):
     msgbox = QMessageBox(self.ui.centralwidget)
     msgbox.setText(string)
-    msgbox.setWindowTitle("Sumbandila")
+    msgbox.setWindowTitle("Column Corrector")
     if type == "info":
       msgbox.setIcon(QMessageBox.Information)
     elif type == "error":
@@ -135,57 +123,6 @@ class ColumnCorrectorWindow(QMainWindow):
       self.ui.stopCol.setValue(columns)
       #dataset = None
     
-  def setStartButton(self):
-    if self.standAlone:
-      self.isRunning = False
-      self.ui.startButton.show()
-      self.ui.stopButton.hide()
-      self.ui.tabWidget.setTabEnabled(0, True)
-      self.ui.tabWidget.setTabEnabled(1, True)
-      self.ui.tabWidget.setTabEnabled(2, True)
-    
-  def setStopButton(self):
-    if self.standAlone:
-      self.isRunning = True
-      self.ui.startButton.hide()
-      self.ui.stopButton.show()
-      self.ui.tabWidget.setTabEnabled(0, False)
-      self.ui.tabWidget.setTabEnabled(1, False)
-      self.ui.tabWidget.setTabEnabled(2, False)
-    
-  def toggleBadColumns(self):
-    if self.ui.loadRadioButton.isChecked():
-      self.ui.loadWidget.show()
-    else:
-      self.ui.loadWidget.hide()
-    
-  def changeButtons(self, index):
-    self.ui.nextButton.hide()
-    self.ui.backButton.hide()
-    self.ui.startButton.hide()
-    self.ui.stopButton.hide()
-    if index == 0:
-      self.ui.nextButton.show()
-    elif index == self.ui.tabWidget.count()-1:
-      self.ui.backButton.show()
-      self.setStartButton()
-    else:
-      self.ui.backButton.show()
-      self.ui.nextButton.show()
-    
-  def toggleButtonNext(self):
-    index = self.ui.tabWidget.currentIndex()
-    index += 1
-    self.ui.tabWidget.setCurrentIndex(index)
-    self.changeButtons(index)
-    
-  def toggleButtonBack(self):
-    index = self.ui.tabWidget.currentIndex()
-    if index != 0:
-      index -= 1
-      self.ui.tabWidget.setCurrentIndex(index)
-      self.changeButtons(index)
-    
   def stopProcess(self):
     self.disconnect(self.processor, SIGNAL("updated(int,QString, int)"), self.update)
     self.disconnect(self.processor, SIGNAL("updatedLog(QString)"), self.updateLog)
@@ -197,27 +134,6 @@ class ColumnCorrectorWindow(QMainWindow):
     del self.processor
     self.processor = None
     self.setStartButton()
-    
-  def toggleTab(self, index):
-    self.changeButtons(index)
-    
-  def toggleOutputTasks(self, state = 0):
-    if self.ui.exportCheckBox.isChecked():
-      self.ui.exportWidget.show()
-    else:
-      self.ui.exportWidget.hide()
-    if self.ui.maskCheckBox.isChecked():
-      self.ui.maskWidget.show()
-    else:
-      self.ui.maskWidget.hide()
-    if self.ui.correctCheckBox.isChecked():
-      self.ui.correctWidget.show()
-      self.ui.maskCheckBox.setEnabled(True)
-    else:
-      self.ui.correctWidget.hide()
-      self.ui.maskCheckBox.setChecked(False)
-      self.ui.maskCheckBox.setEnabled(False)
-      self.ui.maskWidget.hide()
     
   def loadSettings(self):
     pass
@@ -279,3 +195,42 @@ class ColumnCorrectorWindow(QMainWindow):
       
   def updateColumns(self, columns):
     self.ui.listWidget.addItem(columns)
+
+
+  def stop(self):
+
+    if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
+      self.thread.stop()
+      self.setStartButton()
+    else:
+      # close the dialog
+      self.close()
+  
+  def help(self):
+    pass  
+  
+  def setStopButton(self):
+    if self.standAlone:
+      self.isRunning = True
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).hide()
+      #stop label used programmatically to see if we are actively running or not
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Cancel")
+      self.ui.tabWidget.setTabEnabled(0, False)
+      self.ui.tabWidget.setTabEnabled(1, False)
+      self.ui.tabWidget.setCurrentIndex(1)
+    
+  def setStartButton(self):
+    if self.standAlone:
+      self.isRunning = False
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Close")
+      self.ui.tabWidget.setTabEnabled(0, True)
+      self.ui.tabWidget.setTabEnabled(1, True)
+
+  def loadResult(self):
+    fileName = self.ui.outputLineEdit.text()
+    fileInfo = QFileInfo(fileName)
+    self.iface.addRasterLayer(fileInfo.filePath())
+
