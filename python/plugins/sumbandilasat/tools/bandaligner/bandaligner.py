@@ -31,18 +31,18 @@ class BandAlignerWindow(QDialog):
     QObject.connect(self.ui.bandLineEdit, SIGNAL("textChanged(const QString &)"), self.updateReferenceBand)
     QObject.connect(self.ui.bandButton, SIGNAL("clicked()"), self.selectInput)
     QObject.connect(self.ui.addButton, SIGNAL("clicked()"), self.addBands)
-    QObject.connect(self.ui.outputButton, SIGNAL("clicked()"), self.selectOuput)
+    QObject.connect(self.ui.outputButton, SIGNAL("clicked()"), self.selectOutput)
+    QObject.connect(self.ui.xButton, SIGNAL("clicked()"), self.selectXOutput)
+    QObject.connect(self.ui.yButton, SIGNAL("clicked()"), self.selectYOutput)
     
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.start)
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stop)
     #QObject.connect(self.ui.helpButton, SIGNAL("clicked()"), self.help)
-    QObject.connect(self.ui.tabWidget, SIGNAL("currentChanged(int)"), self.changeTab)
     
     self.settings = QSettings("QuantumGIS", "SumbandilaSat Band Aligner")
     
     self.selectFiles()
     self.toggleDisparity()
-    self.changeTab()
     self.ui.tabWidget.setCurrentIndex(0)
     
     self.tempBands = []
@@ -64,8 +64,25 @@ class BandAlignerWindow(QDialog):
     else:
       self.ui.addButton.show()
       self.ui.tableWidget.show()
+
+  def selectXOutput(self):
+    mySettings = QSettings()
+    myLastDir = mySettings.value("bandAligner/lastXOutputDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save Output X Image", myLastDir )
+    if fileName != "":
+      self.ui.xLineEdit.setText(fileName)
+      mySettings.setValue("bandAligner/lastXOutputDir", QFileInfo( fileName ).absolutePath())
     
-  def selectOuput(self):
+  def selectYOutput(self):
+    mySettings = QSettings()
+    myLastDir = mySettings.value("bandAligner/lastYOutputDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save Output Y Image", myLastDir )
+    if fileName != "":
+      self.ui.yLineEdit.setText(fileName)
+      mySettings.setValue("bandAligner/lastYOutputDir", QFileInfo( fileName ).absolutePath())
+    
+    
+  def selectOutput(self):
     mySettings = QSettings()
     myLastDir = mySettings.value("bandAligner/lastOutputDir").toString()
     fileName = QFileDialog.getSaveFileName(self, "Save Output Image", myLastDir )
@@ -144,24 +161,17 @@ class BandAlignerWindow(QDialog):
       self.tempBands.append(f)
     self.updateReferenceBand()
 
-  def changeTab(self, i = 0):
-    index = self.ui.tabWidget.currentIndex()
-    if index == 0:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-    elif index == self.ui.tabWidget.count()-1:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-      self.setStartButton()
-      
   def setStartButton(self):
     if self.standAlone:
       self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Close")
       self.ui.tabWidget.setTabEnabled(0, True)
       self.ui.tabWidget.setTabEnabled(1, True)
     
   def setStopButton(self):
     if self.standAlone:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).hide()
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Cancel")
       self.ui.tabWidget.setTabEnabled(0, False)
       self.ui.tabWidget.setTabEnabled(1, False)
     
@@ -169,6 +179,7 @@ class BandAlignerWindow(QDialog):
     self.ui.progressBar.setValue(value)
     if value >= 100:
       self.setStartButton()
+      self.loadResult()
     
   def log(self, message):
     self.ui.textEdit.append(message)
@@ -194,6 +205,7 @@ class BandAlignerWindow(QDialog):
       return
     self.ui.progressBar.setValue(0)
     self.ui.textEdit.clear()
+    self.ui.tabWidget.setCurrentIndex(1)
     xPath = ""
     yPath = ""
     if self.ui.checkBox.isChecked():
@@ -219,13 +231,24 @@ class BandAlignerWindow(QDialog):
   
   def setStopButton(self):
     if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).hide()
+      #stop label used programmatically to see if we are actively running or not
       self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Cancel")
       self.ui.tabWidget.setTabEnabled(0, False)
       self.ui.tabWidget.setTabEnabled(1, False)
+      self.ui.tabWidget.setCurrentIndex(1)
     
   def setStartButton(self):
     if self.standAlone:
       self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
       self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Close")
       self.ui.tabWidget.setTabEnabled(0, True)
       self.ui.tabWidget.setTabEnabled(1, True)
+
+  def loadResult(self):
+    fileName = self.ui.outputLineEdit.text()
+    fileInfo = QFileInfo(fileName)
+    self.iface.addRasterLayer(fileInfo.filePath())
+
