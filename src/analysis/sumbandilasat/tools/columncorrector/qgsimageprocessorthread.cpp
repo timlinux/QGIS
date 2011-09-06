@@ -185,8 +185,6 @@ bool QgsCorrectionThread::hasLogMessage()
 void QgsCorrectionThread::run()
 {
   assert(mFinalFaults->size() > 0);
-  printf("HERE Correction: %s:%d (start=%d,stop=%d)\n",
-         basename(__FILE__), __LINE__, mStart, mStop);
 
   double progressAdd = 100.0/(mStop-mStart);
   for(int i = mStart; i < mStop && !wasStopped; i++)
@@ -197,8 +195,6 @@ void QgsCorrectionThread::run()
     }
 
     BadColumn *bc = mFinalFaults->at(mBand-1).at(i);
-
-    //printf("HERE %s:%d loop=%d\n", basename(__FILE__), __LINE__, i);
 
     double *oldData = mDataset->column(mBand, bc->column);
     double *postData = mDataset->column(mBand, bc->column+1);
@@ -243,7 +239,6 @@ void QgsCorrectionThread::run()
     //bc = NULL;
     mProgress += progressAdd;
   }
-  printf("HERE Correction: %s:%d [exit]\n", basename(__FILE__), __LINE__);
 }
 
 QgsImageProcessorThread::QgsImageProcessorThread(QString inputPath, QString outputPath, QString checkPath, QString inPath, QString outPath, double gainThreshold, double biasThreshold, int start, int stop)
