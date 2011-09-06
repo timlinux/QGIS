@@ -29,8 +29,6 @@ class LineCorrectorWindow(QDialog):
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.start)
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stop)
     #QObject.connect(self.ui.helpButton, SIGNAL("clicked()"), self.help)
-    QObject.connect(self.ui.tabWidget, SIGNAL("currentChanged(int)"), self.changeTab)
-    self.changeTab()
     self.toggleOutputTasks()
     self.ui.tabWidget.setCurrentIndex(0)
     self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
@@ -67,27 +65,6 @@ class LineCorrectorWindow(QDialog):
       self.ui.maskLineEdit.setText(fileName)
       mySettings.setValue("lineCorrector/outputMaskDir", QFileInfo( fileName ).absolutePath())
       
-  def changeTab(self, i = 0):
-    index = self.ui.tabWidget.currentIndex()
-    if index == 0:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-    elif index == self.ui.tabWidget.count()-1:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-      self.setStartButton()
-      
-  def setStartButton(self):
-    if self.standAlone:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
-      self.ui.tabWidget.setTabEnabled(0, True)
-      self.ui.tabWidget.setTabEnabled(1, True)
-    
-  def setStopButton(self):
-    if self.standAlone:
-      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
-      self.ui.tabWidget.setTabEnabled(0, False)
-      self.ui.tabWidget.setTabEnabled(1, False)
-	
   def start(self):
     myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
     if myState == "Stop":
@@ -123,6 +100,9 @@ class LineCorrectorWindow(QDialog):
     QObject.connect(self.corrector, SIGNAL("progressed(double, double, QString)"), self.progress)
     QObject.connect(self.corrector, SIGNAL("logged(QString)"), self.log)
     QObject.connect(self.corrector, SIGNAL("badLinesFound(QList<int>)"), self.badLines)
+    self.ui.progressBar.setValue(0)
+    self.ui.textEdit.clear()
+    self.ui.tabWidget.setCurrentIndex(1)
     self.corrector.start()
   
   def progress(self, value1, value2, string):
@@ -131,6 +111,7 @@ class LineCorrectorWindow(QDialog):
     self.ui.partLabel.setText(string)
     if value1 == 100:
       self.setStartButton()
+      self.loadResult()
     
   def log(self, value):
     self.ui.log.append(value)
@@ -146,7 +127,29 @@ class LineCorrectorWindow(QDialog):
     else:
       # close the dialog
       self.close()
-  
-  
+
   def help(self):
     pass
+  
+  def setStopButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).hide()
+      #stop label used programmatically to see if we are actively running or not
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Cancel")
+      self.ui.tabWidget.setTabEnabled(0, False)
+      self.ui.tabWidget.setTabEnabled(1, False)
+      self.ui.tabWidget.setCurrentIndex(1)
+    
+  def setStartButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Close")
+      self.ui.tabWidget.setTabEnabled(0, True)
+      self.ui.tabWidget.setTabEnabled(1, True)
+
+  def loadResult(self):
+    fileName = self.ui.outputLineEdit.text()
+    fileInfo = QFileInfo(fileName)
+    self.iface.addRasterLayer(fileInfo.filePath())

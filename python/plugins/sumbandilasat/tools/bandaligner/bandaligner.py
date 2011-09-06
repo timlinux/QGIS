@@ -88,11 +88,14 @@ class BandAlignerWindow(QDialog):
     fileName = QFileDialog.getSaveFileName(self, "Save Output Image", myLastDir )
     if fileName != "":
       self.ui.outputLineEdit.setText(fileName)
-      mySettings.setValue("bandAligner/lastOutputDir", QFileInfo( fileName ).absolutePath())
-      if self.ui.xLineEdit.text() != "":
-        self.ui.xLineEdit.setText(fileName+".xmap")
-      if self.ui.yLineEdit.text() != "":
-        self.ui.yLineEdit.setText(fileName+".ymap")
+      myInfo = QFileInfo( fileName )
+      mySettings.setValue("bandAligner/lastOutputDir", myInfo.absolutePath())
+      if self.ui.xLineEdit.text().isEmpty():
+        myXName = fileName.replace( myInfo.completeSuffix(),"" ) + "xmap.tif"   
+        self.ui.xLineEdit.setText( myXName )
+      if self.ui.yLineEdit.text().isEmpty():
+        myYName = fileName.replace( myInfo.completeSuffix(),"" ) + "ymap.tif"   
+        self.ui.yLineEdit.setText( myYName )
     
   def getAllInputBands(self, withId = False, entirePath = True):
     result = []
