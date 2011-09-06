@@ -100,8 +100,9 @@ class LineCorrectorWindow(QDialog):
     QObject.connect(self.corrector, SIGNAL("progressed(double, double, QString)"), self.progress)
     QObject.connect(self.corrector, SIGNAL("logged(QString)"), self.log)
     QObject.connect(self.corrector, SIGNAL("badLinesFound(QList<int>)"), self.badLines)
-    self.ui.progressBar.setValue(0)
-    self.ui.textEdit.clear()
+    self.ui.totalProgressBar.setValue(0)
+    self.ui.partProgressBar.setValue(0)
+    self.ui.log.clear()
     self.ui.tabWidget.setCurrentIndex(1)
     self.corrector.start()
   

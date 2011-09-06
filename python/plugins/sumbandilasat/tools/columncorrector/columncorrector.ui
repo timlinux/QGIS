@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ColumnCorrector</class>
- <widget class="QMainWindow" name="ColumnCorrector">
+ <widget class="QDialog" name="ColumnCorrector">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>528</width>
-    <height>346</height>
+    <width>494</width>
+    <height>514</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,546 +20,433 @@
    <iconset resource="resources.qrc">
     <normaloff>:/sumbandilasat/icons/toolbar/columncorrector.png</normaloff>:/sumbandilasat/icons/toolbar/columncorrector.png</iconset>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <property name="margin">
-     <number>2</number>
-    </property>
-    <item row="0" column="0">
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Input</string>
-       </attribute>
-       <layout class="QFormLayout" name="formLayout_2">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Raster image</string>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Input</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0">
+        <widget class="QScrollArea" name="scrollArea">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>450</width>
+            <height>421</height>
+           </rect>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QWidget" name="widget_2" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="rasterLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="rasterButton">
-             <property name="text">
-              <string>...</string>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <item row="0" column="0">
+            <widget class="QGroupBox" name="groupBox">
+             <property name="title">
+              <string>Input</string>
              </property>
+             <layout class="QGridLayout" name="gridLayout_2">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Raster image</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="rasterLineEdit"/>
+              </item>
+              <item row="0" column="2">
+               <widget class="QToolButton" name="rasterButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Bad columns</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1" colspan="2">
+               <widget class="QRadioButton" name="computeRadioButton">
+                <property name="text">
+                 <string>Compute from image</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1" colspan="2">
+               <widget class="QRadioButton" name="loadRadioButton">
+                <property name="text">
+                 <string>Load from file</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QLineEdit" name="loadLineEdit"/>
+              </item>
+              <item row="3" column="2">
+               <widget class="QToolButton" name="loadButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QGroupBox" name="groupBox_2">
+             <property name="title">
+              <string>Ouput</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_3">
+              <item row="0" column="0" colspan="2">
+               <widget class="QCheckBox" name="exportCheckBox">
+                <property name="text">
+                 <string>Export bad columns to file</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLineEdit" name="exportLineEdit"/>
+              </item>
+              <item row="1" column="1">
+               <widget class="QToolButton" name="exportButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0" colspan="2">
+               <widget class="QCheckBox" name="correctCheckBox">
+                <property name="text">
+                 <string>Correct original image</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLineEdit" name="correctLineEdit"/>
+              </item>
+              <item row="3" column="1">
+               <widget class="QToolButton" name="correctButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0" colspan="2">
+               <widget class="QCheckBox" name="maskCheckBox">
+                <property name="text">
+                 <string>Create check image mask</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLineEdit" name="maskLineEdit"/>
+              </item>
+              <item row="5" column="1">
+               <widget class="QToolButton" name="maskButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Options</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_4">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Thresholds</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QWidget" name="widget_5" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_8">
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_8">
+                   <property name="minimumSize">
+                    <size>
+                     <width>35</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Gain</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="gainThreshold">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>100</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.010000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>0.100000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_10">
+                   <property name="minimumSize">
+                    <size>
+                     <width>35</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>Bias</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QDoubleSpinBox" name="biasThreshold">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>100</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <double>9999.000000000000000</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>6.000000000000000</double>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_11">
+                <property name="text">
+                 <string>Process column</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QWidget" name="widget_8" native="true">
+                <layout class="QHBoxLayout" name="horizontalLayout_9">
+                 <property name="margin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="label_12">
+                   <property name="minimumSize">
+                    <size>
+                     <width>35</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>from</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="startCol">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>100</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>999999</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="label_13">
+                   <property name="minimumSize">
+                    <size>
+                     <width>35</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="text">
+                    <string>to</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="stopCol">
+                   <property name="minimumSize">
+                    <size>
+                     <width>100</width>
+                     <height>0</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>100</width>
+                     <height>16777215</height>
+                    </size>
+                   </property>
+                   <property name="maximum">
+                    <number>999999</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_3">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
             </widget>
            </item>
           </layout>
          </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QRadioButton" name="loadRadioButton">
-          <property name="text">
-           <string>Load from file</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QWidget" name="loadWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="loadLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="loadButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QRadioButton" name="computeRadioButton">
-          <property name="text">
-           <string>Compute from image</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Bad columns</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_3">
-       <attribute name="title">
-        <string>Output</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <widget class="QCheckBox" name="exportCheckBox">
-          <property name="text">
-           <string>Export bad columns to file</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QWidget" name="exportWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="exportLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="exportButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="correctCheckBox">
-          <property name="text">
-           <string>Correct original image</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QWidget" name="correctWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="correctLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="correctButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QCheckBox" name="maskCheckBox">
-          <property name="text">
-           <string>Create check image mask</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QWidget" name="maskWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="maskLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="maskButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_4">
-       <attribute name="title">
-        <string>Parameters</string>
-       </attribute>
-       <layout class="QFormLayout" name="formLayout_3">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>Thresholds</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QWidget" name="widget_5" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_8">
-             <property name="minimumSize">
-              <size>
-               <width>35</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Gain</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="gainThreshold">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="singleStep">
-              <double>0.010000000000000</double>
-             </property>
-             <property name="value">
-              <double>0.100000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_10">
-             <property name="minimumSize">
-              <size>
-               <width>35</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Bias</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="biasThreshold">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="maximum">
-              <double>9999.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>6.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_11">
-          <property name="text">
-           <string>Process column</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QWidget" name="widget_8" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_12">
-             <property name="minimumSize">
-              <size>
-               <width>35</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>from</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="startCol">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="maximum">
-              <number>999999</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_13">
-             <property name="minimumSize">
-              <size>
-               <width>35</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>to</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="stopCol">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="maximum">
-              <number>999999</number>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Execution</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="1" column="2" rowspan="5">
-         <widget class="QListWidget" name="listWidget">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QProgressBar" name="taskProgressBar">
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="taskLabel">
-          <property name="text">
-           <string>Task progress</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_9">
-          <property name="text">
-           <string>Faulty columns</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QProgressBar" name="totalProgressBar">
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Total progress</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QTextEdit" name="log"/>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-    <item row="1" column="0">
-     <widget class="QWidget" name="startWidget" native="true">
-      <layout class="QHBoxLayout" name="horizontalLayout_6">
-       <property name="margin">
-        <number>0</number>
-       </property>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="backButton">
-         <property name="text">
-          <string>Back</string>
-         </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/back.png</normaloff>:/sumbandilasat/icons/general/back.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>22</width>
-           <height>22</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="nextButton">
-         <property name="text">
-          <string>Next</string>
-         </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/next.png</normaloff>:/sumbandilasat/icons/general/next.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>22</width>
-           <height>22</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="startButton">
-         <property name="text">
-          <string>Start</string>
-         </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/start.png</normaloff>:/sumbandilasat/icons/general/start.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>22</width>
-           <height>22</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="stopButton">
-         <property name="text">
-          <string>Stop</string>
-         </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/stop.png</normaloff>:/sumbandilasat/icons/general/stop.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>22</width>
-           <height>22</height>
-          </size>
-         </property>
         </widget>
        </item>
       </layout>
      </widget>
-    </item>
-   </layout>
-  </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Execution</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_6">
+       <item row="0" column="0">
+        <widget class="QLabel" name="taskLabel">
+         <property name="text">
+          <string>Task progress</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="label_9">
+         <property name="text">
+          <string>Faulty columns</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QProgressBar" name="taskProgressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1" rowspan="4">
+        <widget class="QListWidget" name="listWidget">
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Total progress</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QProgressBar" name="totalProgressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QTextEdit" name="log"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <resources>
+  <include location="../../resources.qrc"/>
   <include location="resources.qrc"/>
  </resources>
  <connections/>
