@@ -53,9 +53,15 @@ class ColumnCorrectorWindow(QDialog):
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.startProcess)
     QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stopProcess)
 
-    self.ui.exportCheckBox.setChecked(False)
-    self.ui.correctCheckBox.setChecked(False)
-    self.ui.computeRadioButton.setChecked(True)
+    self.ui.loadRadioButton.setChecked(True) # we actually want if false so...
+    self.ui.computeRadioButton.toggle() #trigger so form updates to hide stuff
+    self.ui.exportCheckBox.setChecked(True) # we actually want if false so...
+    self.ui.exportCheckBox.toggle() #trigger so form updates to hide stuff
+    self.ui.correctCheckBox.setChecked(False) # we actually want if true so...
+    self.ui.correctCheckBox.toggle() #trigger so form updates to show stuff
+    self.ui.maskCheckBox.setChecked(True) # we actually want if false so...
+    self.ui.maskCheckBox.toggle() #trigger so form updates to hide stuff
+    
     self.loadRaster(self.getDefaultRaster())
     self.settings = QSettings("QuantumGIS", "SumbandilaSat Georeferencer")
     self.loadSettings()
@@ -86,24 +92,44 @@ class ColumnCorrectorWindow(QDialog):
     return QFileDialog.getSaveFileName( self, title, defaultDir, fileFilter)
     
   def openRaster(self):
-    path = self.showOpenFileDialog("Open Raster Image", "", "")
-    self.loadRaster(path)
+    mySettings = QSettings()
+    myLastDir = mySettings.value("columnCorrector/lastInputDir").toString()
+    path = self.showOpenFileDialog("Open Raster Image", myLastDir, "")
+    if path != "":
+      self.loadRaster(path)
+      mySettings.setValue("columnCorrector/lastInputDir", QFileInfo( path ).absolutePath())
     
   def openBadFile(self):
-    path = self.showOpenFileDialog("Open Bad Columns", "", "Bad Column Files (*.bad)")
-    self.ui.loadLineEdit.setText(path)
+    mySettings = QSettings()
+    myLastDir = mySettings.value("columnCorrector/lastBadColumnsDir").toString()
+    path = self.showOpenFileDialog("Open Bad Columns", myLastDir, "Bad Column Files (*.bad)")
+    if path != "":
+      self.ui.loadLineEdit.setText(path)
+      mySettings.setValue("columnCorrector/lastBadColumnsDir", QFileInfo( path ).absolutePath())
     
   def saveBadFile(self):
-    path = self.showSaveFileDialog("Save Bad Columns", "", "Bad Column Files (*.bad)")
-    self.ui.exportLineEdit.setText(path)
+    mySettings = QSettings()
+    myLastDir = mySettings.value("columnCorrector/lastBadColumnsDir").toString()
+    path = self.showSaveFileDialog("Save Bad Columns", myLastDir, "Bad Column Files (*.bad)")
+    if path != "":
+      self.ui.exportLineEdit.setText(path)
+      mySettings.setValue("columnCorrector/lastBadColumnsDir", QFileInfo( path ).absolutePath())
     
   def saveCorrectFile(self):
-    path = self.showSaveFileDialog("Save Corrected Raster Image", "", "")
-    self.ui.correctLineEdit.setText(path)
+    mySettings = QSettings()
+    myLastDir = mySettings.value("columnCorrector/lastCorrectFileDir").toString()
+    path = self.showSaveFileDialog("Save Corrected Raster Image", myLastDir, "")
+    if path != "":
+      self.ui.correctLineEdit.setText(path)
+      mySettings.setValue("columnCorrector/lastCorrectFileDir", QFileInfo( path ).absolutePath())
     
   def saveMaskFile(self):
-    path = self.showSaveFileDialog("Save Check Mask", "", "")
-    self.ui.maskLineEdit.setText(path)
+    mySettings = QSettings()
+    myLastDir = mySettings.value("columnMaskor/lastMaskFileDir").toString()
+    path = self.showSaveFileDialog("Save Check Mask", myLastDir, "")
+    if path != "":
+      self.ui.maskLineEdit.setText(path)
+      mySettings.setValue("columnMaskor/lastMaskFileDir", QFileInfo( path ).absolutePath())
     
   def getDefaultRaster(self):
     if self.iface.activeLayer() != None:
@@ -123,17 +149,6 @@ class ColumnCorrectorWindow(QDialog):
       self.ui.stopCol.setValue(columns)
       #dataset = None
     
-  def stopProcess(self):
-    self.disconnect(self.processor, SIGNAL("updated(int,QString, int)"), self.update)
-    self.disconnect(self.processor, SIGNAL("updatedLog(QString)"), self.updateLog)
-    self.disconnect(self.processor, SIGNAL("updatedColumns(QString)"), self.updateColumns)
-    self.processor.stop()
-    while self.processor.isRunning():
-      pass
-    self.processor.releaseMemory()
-    del self.processor
-    self.processor = None
-    self.setStartButton()
     
   def loadSettings(self):
     pass
@@ -142,6 +157,11 @@ class ColumnCorrectorWindow(QDialog):
     pass
     
   def startProcess(self):
+    myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
+    if myState == "Stop":
+      self.thread.stop()
+      return
+
     self.ui.listWidget.clear()
     self.ui.log.clear()
     self.processor = QgsImageProcessor()
@@ -154,17 +174,17 @@ class ColumnCorrectorWindow(QDialog):
       self.processor.setInFilePath(self.ui.loadLineEdit.text())
     else:
       self.processor.setInFilePath("")
-    
+    # name of the bad columns text file
     if self.ui.exportCheckBox.isChecked():
       self.processor.setOutFilePath(self.ui.exportLineEdit.text())
     else:
       self.processor.setOutFilePath("")
-      
+    #name of the outpu raster 
     if self.ui.correctCheckBox.isChecked():
       self.processor.setOutputPath(self.ui.correctLineEdit.text())
     else:
       self.processor.setOutputPath("")
-      
+    # name of the mask output file  
     if self.ui.maskCheckBox.isChecked():
       self.processor.setCheckPath(self.ui.maskLineEdit.text())
     else:
@@ -185,6 +205,7 @@ class ColumnCorrectorWindow(QDialog):
       self.disconnect(self.processor, SIGNAL("updatedColumns(QString)"), self.updateColumns)
       self.processor.releaseMemory()
       self.processor = None
+      self.loadResult()
     else:
       self.ui.taskLabel.setText(action)
       self.ui.taskProgressBar.setValue(progress)
@@ -197,11 +218,19 @@ class ColumnCorrectorWindow(QDialog):
     self.ui.listWidget.addItem(columns)
 
 
-  def stop(self):
-
+  def stopProcess(self):
     if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
-      self.thread.stop()
+      self.disconnect(self.processor, SIGNAL("updated(int,QString, int)"), self.update)
+      self.disconnect(self.processor, SIGNAL("updatedLog(QString)"), self.updateLog)
+      self.disconnect(self.processor, SIGNAL("updatedColumns(QString)"), self.updateColumns)
+      self.processor.stop()
+      while self.processor.isRunning():
+        pass
+      self.processor.releaseMemory()
+      del self.processor
+      self.processor = None
       self.setStartButton()
+
     else:
       # close the dialog
       self.close()
@@ -230,7 +259,14 @@ class ColumnCorrectorWindow(QDialog):
       self.ui.tabWidget.setTabEnabled(1, True)
 
   def loadResult(self):
-    fileName = self.ui.outputLineEdit.text()
+    fileName = None
+    if self.ui.correctCheckBox.isChecked():
+      # corrected the original image so load it now
+      fileName = self.ui.rasterLineEdit.text()
+    else:
+      # corrected image was saved to a new file so load that...
+      fileName = self.ui.correctLineEdit.text()
+    #now load it in the gui
     fileInfo = QFileInfo(fileName)
     self.iface.addRasterLayer(fileInfo.filePath())
 
