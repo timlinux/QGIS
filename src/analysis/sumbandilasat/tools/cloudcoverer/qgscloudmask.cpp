@@ -1,4 +1,6 @@
 #include "qgscloudmask.h"
+#include "qgsfield.h"
+#include <QList>
 
 QgsCloudMask::QgsCloudMask(int rows, int cols, GDALDataset *dataset)
 {
@@ -49,8 +51,13 @@ int QgsCloudMask::columns()
 
 QgsVectorLayer* QgsCloudMask::vectorLayer()
 {
-  QgsVectorLayer *mask = new QgsVectorLayer("Point?crs=epsg:4326", "cloud_mask", "memory");
+  QgsVectorLayer *mask = new QgsVectorLayer("Point?crs=epsg:4326&field=is_cloud:integer", "cloud_mask", "memory");
   QgsVectorDataProvider *pr = mask->dataProvider();
+  QList<QgsField> myList;
+  QgsField myField = QgsField("cloud", QVariant::UInt );
+  myList.append( myField );
+  pr->addAttributes( myList );
+  QgsAttributeMap myMap;
   
   QgsFeatureList l;
   for(int i = 0; i < mRows; i++)
@@ -59,10 +66,10 @@ QgsVectorLayer* QgsCloudMask::vectorLayer()
     {
       if(mData[i][j])
       {
-	QgsFeature fet;
-	fet.setGeometry(QgsGeometry::fromPoint(QgsPoint(j,-i)));
-	l.append(fet);
-
+        QgsFeature fet;
+        fet.setGeometry(QgsGeometry::fromPoint(QgsPoint(j,-i)));
+        fet.addAttribute(0,0);
+        l.append(fet);
       }
     }
   }
@@ -75,7 +82,6 @@ QgsVectorLayer* QgsCloudMask::vectorLayer()
   symbol->setSize(mUnitSize);
   QgsSingleSymbolRendererV2 *renderer = new QgsSingleSymbolRendererV2( symbol );
   mask->setRendererV2(renderer);
-
   return mask;
 }
 

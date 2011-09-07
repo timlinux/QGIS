@@ -102,7 +102,7 @@ void TestColumnCorrectorTool::simpleFirstTest()
     //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C01_F03_MSSK14K_0.tif");
     //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C02_F03_MSSK14K_0.tif");
 
-    QString outputPath = "/home/fgretief/w/tmp/test_columncorrector-result.tif";
+	QString outputPath = "c:/tmp/test_columncorrector-result.tif";
 
     QString inputPath = QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
 
