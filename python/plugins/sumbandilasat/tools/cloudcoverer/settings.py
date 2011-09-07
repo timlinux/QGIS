@@ -19,26 +19,44 @@ class SettingsDialog(QDialog):
     self.connect(self.ui.dirButton, SIGNAL("clicked()"), self.openDirectory)
     self.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.applySettings)
     
-    self.ui.colorButton.setColor(QColor(190,238,44))
     self.loadSettings()
     self.adjustSize()
     
+  def showMessage(self, string, type = "info"):
+    msgbox = QMessageBox(self)
+    msgbox.setText(string)
+    msgbox.setWindowTitle("Sumbandila")
+    if type == "info":
+      msgbox.setIcon(QMessageBox.Information)
+    elif type == "error":
+      msgbox.setIcon(QMessageBox.Critical)
+    elif type == "warning":
+      msgbox.setIcon(QMessageBox.Warning)
+    elif type == "question":
+      msgbox.setIcon(QMessageBox.Question)
+    elif type == "none":
+      msgbox.setIcon(QMessageBox.NoIcon)
+    msgbox.setModal(True)
+    msgbox.exec_()
+
   def loadSettings(self):
-    dirChoice = int(self.settings.value("DirectoryChoice", QVariant(0)).toString())
+    dirChoice = int(self.settings.value("cloudMasker/directoryChoice", QVariant(0)).toString())
     self.ui.dirComboBox.setCurrentIndex(dirChoice)
     self.changeDirChoice(dirChoice)
-    self.ui.dirLineEdit.setText(self.settings.value("DirectoryPath", QVariant("")).toString())
-    bandChoice = int(self.settings.value("BandUse", QVariant(0)).toString())
+    self.ui.dirLineEdit.setText(self.settings.value("cloudMasker/directoryPath", QVariant("")).toString())
+    bandChoice = int(self.settings.value("cloudMasker/bandUse", QVariant(0)).toString())
     self.ui.bandComboBox.setCurrentIndex(bandChoice)
-    self.ui.colorButton.setColor(QColor(self.settings.value("CloudColor", QVariant(""))))
-    self.ui.maskSpinBox.setValue(float(self.settings.value("UnitSize", QVariant(0.0)).toString()))
+    myColor = self.settings.value("cloudMasker/cloudColor","#008000")
+    myColor = QColor( myColor )
+    self.ui.colorButton.setColor( myColor )
+    self.ui.maskSpinBox.setValue(float(self.settings.value("cloudMasker/unitSize", 1).toString()))
     
   def applySettings(self):
-    self.settings.setValue("DirectoryChoice", self.ui.dirComboBox.currentIndex())
-    self.settings.setValue("DirectoryPath", self.ui.dirLineEdit.text())
-    self.settings.setValue("BandUse", self.ui.bandComboBox.currentIndex())
-    self.settings.setValue("CloudColor", self.ui.colorButton.color())
-    self.settings.setValue("UnitSize", self.ui.maskSpinBox.value())
+    self.settings.setValue("cloudMasker/directoryChoice", self.ui.dirComboBox.currentIndex())
+    self.settings.setValue("cloudMasker/directoryPath", self.ui.dirLineEdit.text())
+    self.settings.setValue("cloudMasker/bandUse", self.ui.bandComboBox.currentIndex())
+    self.settings.setValue("cloudMasker/cloudColor", self.ui.colorButton.color())
+    self.settings.setValue("cloudMasker/unitSize", self.ui.maskSpinBox.value())
     self.close()
     
   def selectCloudColor(self):
@@ -65,7 +83,7 @@ class SettingsDialog(QDialog):
     self.ui.bandComboBox.clear()
     for i in range(number):
       self.ui.bandComboBox.addItem("Band"+str(i+1))
-    bandChoice = int(self.settings.value("BandUse", QVariant(0)).toString())
+    bandChoice = int(self.settings.value("cloudMasker/bandUse", QVariant(0)).toString())
     band = 0
     if bandChoice < number and bandChoice >= 0:
       band = bandChoice

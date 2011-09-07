@@ -79,13 +79,13 @@ class CloudCovererWindow(QDialog):
       self.adjustSlider()
     
   def selectImage(self):
-    if int(self.settings.value("DirectoryChoice", QVariant(0)).toString()) == 0:
+    if int(self.settings.value("cloudMasker/directoryChoice", QVariant(0)).toString()) == 0:
       path = QFileDialog.getOpenFileName(self, "Open Image", "")
     else:
-      path = QFileDialog.getOpenFileName(self, "Open Image", self.settings.value("DirectoryPath", QVariant("")).toString())
+      path = QFileDialog.getOpenFileName(self, "Open Image", self.settings.value("cloudMasker/directoryPath", QVariant("")).toString())
     if path != "":
-      if int(self.settings.value("DirectoryChoice", QVariant(0)).toString()) == 1:
-        self.settings.setValue("DirectoryPath", path)
+      if int(self.settings.value("cloudMasker/directoryChoice", QVariant(1)).toString()) == 1:
+        self.settings.setValue("cloudMasker/directoryPath", path)
       self.ui.lineEdit.setText(path)
     
   def resample(self, path):
@@ -165,16 +165,15 @@ class CloudCovererWindow(QDialog):
     
   def reanalyze(self):
     band = 1
-    bandChoice = int(self.settings.value("BandUse", QVariant(0)).toString())
+    bandChoice = int(self.settings.value("cloudMasker/bandUse", QVariant(0)).toString())
     if (bandChoice+1) <= self.bandCount and (bandChoice+1) > 0:
       band = bandChoice+1
     self.analyzer.setBandUse(band)
-    size = float(self.settings.value("UnitSize", QVariant(0.0)).toString())
-    if size <= 0.0:
-      self.settings.setValue("UnitSize", 0.1)
-      size = 0.1
+    size = float(self.settings.value("cloudMasker/unitSize", QVariant(1)).toString())
     self.analyzer.setUnitSize(size)
-    self.analyzer.setCloudColor(QColor(self.settings.value("CloudColor", QVariant(""))))
+    myColor = self.settings.value("cloudMasker/cloudColor","#008000")
+    myColor = QColor( myColor )
+    self.analyzer.setCloudColor( myColor )
     mask = self.analyzer.analyze()
     maskLayer = mask.vectorLayer()
     self.openMask(maskLayer)
