@@ -1599,7 +1599,7 @@ Wilt u het toch afsluiten?</translation>
     <name>GdalToolsDialog</name>
     <message>
         <source>No active raster layers. You must add almost one raster layer to continue.</source>
-        <translation>Geen rasterlaag aktief. Voeg tenminste een rasterlaag toe om door te gaan.</translation>
+        <translation type="obsolete">Geen rasterlaag aktief. Voeg tenminste een rasterlaag toe om door te gaan.</translation>
     </message>
     <message>
         <source>Select the raster file to save the results to</source>
@@ -1751,7 +1751,7 @@ Deaktiveer de &quot;Gebruik doorsnede extent&quot;-optie om een niet leeg result
     </message>
     <message>
         <source>Band to convert:</source>
-        <translation>Band voor &apos;convert&apos;:</translation>
+        <translation type="obsolete">Band voor &apos;convert&apos;:</translation>
     </message>
     <message>
         <source>Select the input file</source>
@@ -1791,7 +1791,7 @@ Deaktiveer de &quot;Gebruik doorsnede extent&quot;-optie om een niet leeg result
     </message>
     <message>
         <source>Select the cutline file</source>
-        <translation>Selecteer het &apos;cutline&apos; bestand</translation>
+        <translation type="obsolete">Selecteer het &apos;cutline&apos; bestand</translation>
     </message>
     <message>
         <source>Output size required</source>
@@ -1808,6 +1808,14 @@ Deaktiveer de &quot;Gebruik doorsnede extent&quot;-optie om een niet leeg result
     <message>
         <source>Select the color configuration file</source>
         <translation>Selecteer het kleur-configuratie bestand</translation>
+    </message>
+    <message>
+        <source>Select the mask file</source>
+        <translation>Selecteer het maskeerbestand</translation>
+    </message>
+    <message>
+        <source>Select the input directory with files for convert</source>
+        <translation>Selecteer de invoermap met de te converteren bestanden</translation>
     </message>
 </context>
 <context>
@@ -1839,6 +1847,13 @@ Deaktiveer de &quot;Gebruik doorsnede extent&quot;-optie om een niet leeg result
     <message>
         <source>Re-Enable</source>
         <translation>Opnieuw inschakelen</translation>
+    </message>
+</context>
+<context>
+    <name>GdalToolsInOutSelector</name>
+    <message>
+        <source>Select...</source>
+        <translation>Selecteren...</translation>
     </message>
 </context>
 <context>
@@ -2512,7 +2527,7 @@ suitable for direct use with Imagine,ArcGIS, GDAL.</source>
     </message>
     <message>
         <source>Cutline</source>
-        <translation>Bijschrift</translation>
+        <translation type="obsolete">Bijschrift</translation>
     </message>
     <message>
         <source>Build Virtual Raster (Catalog)</source>
@@ -2544,7 +2559,7 @@ suitable for direct use with Imagine,ArcGIS, GDAL.</source>
     </message>
     <message>
         <source>Slop</source>
-        <translation>&apos;Slop&apos;</translation>
+        <translation type="obsolete">&apos;Slop&apos;</translation>
     </message>
     <message>
         <source>Aspect</source>
@@ -2645,6 +2660,26 @@ suitable for direct use with Imagine,ArcGIS, GDAL.</source>
     <message>
         <source>Warp (Reproject)</source>
         <translation>Warp (herprojecteren)</translation>
+    </message>
+    <message>
+        <source>Clipping mode</source>
+        <translation>Clipping modus</translation>
+    </message>
+    <message>
+        <source>Mask layer</source>
+        <translation>Maskeerlaag</translation>
+    </message>
+    <message>
+        <source>Band to convert</source>
+        <translation>Te converteren band</translation>
+    </message>
+    <message>
+        <source>Slope</source>
+        <translation>&apos;Slope&apos;</translation>
+    </message>
+    <message>
+        <source>Create an output alpha band</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5112,10 +5147,12 @@ Wilt u het pad (GISBASE) naar uw GRASS installatie wijzen?</translation>
         <source>Estimating normal derivatives...</source>
         <translation>Schatten normaal afgeleiden...</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n geometry error(s) found.</source>
         <comment>number of geometry errors</comment>
-        <translation>%n geometrie-fouten gevonden.
+        <translation>
+            <numerusform>%n geometrie-fout gevonden.</numerusform>
+            <numerusform>%n geometrie-fouten gevonden.</numerusform>
         </translation>
     </message>
     <message>
@@ -5142,10 +5179,12 @@ Wilt u het pad (GISBASE) naar uw GRASS installatie wijzen?</translation>
         <source>line %1 with less than two points</source>
         <translation>lijn %1 heeft minder dan twee punten</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>line %1 contains %n duplicate node(s) at %2</source>
         <comment>number of duplicate nodes</comment>
-        <translation>lijn %1 bevat %n dubbele hoekpunten bij %2
+        <translation>
+            <numerusform>lijn %1 bevat %n dubbele hoekpunt bij %2</numerusform>
+            <numerusform>lijn %1 bevat %n dubbele hoekpunten bij %2</numerusform>
         </translation>
     </message>
     <message>
@@ -5624,6 +5663,18 @@ U ziet deze melding waarschijnlijk omdat er geen DISPLAY-variabele in uw (unix)-
     <message>
         <source>CRS undefined - defaulting to default CRS: %1</source>
         <translation>CRS niet gedefinieerd = val terug op standaard CRS: %1</translation>
+    </message>
+    <message>
+        <source>Cannot open GISRC file</source>
+        <translation>Openen van &apos;GISRC&apos;-bestand mislukt</translation>
+    </message>
+    <message>
+        <source>command: %1 %2</source>
+        <translation>opdracht: %1 %2</translation>
+    </message>
+    <message>
+        <source>Cannot run module</source>
+        <translation>Probleem by uitvoeren van module</translation>
     </message>
 </context>
 <context>
@@ -7183,10 +7234,12 @@ Fouten:  %2
         <source>The layer %1 is not a valid layer and can not be added to the map</source>
         <translation>Laag %1 is geen geldige laag en kan niet worden toegevoegd</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n feature(s) selected on layer %1.</source>
         <comment>number of selected features</comment>
-        <translation>%n features geselecteerd in laag %1.
+        <translation>
+            <numerusform>%n feature geselecteerd in laag %1.</numerusform>
+            <numerusform>%n features geselecteerd in laag %1.</numerusform>
         </translation>
     </message>
     <message>
@@ -7225,10 +7278,12 @@ Fouten negeren?</translation>
         <source>Delete features</source>
         <translation>Kaartobjecten verwijderen</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Delete %n feature(s)?</source>
         <comment>number of features to delete</comment>
-        <translation>%n kaartobjecten verwijderen?
+        <translation>
+            <numerusform>%n kaartobject verwijderen?</numerusform>
+            <numerusform>%n kaartobjecten verwijderen?</numerusform>
         </translation>
     </message>
     <message>
@@ -7367,10 +7422,12 @@ This copy of QGIS writes debugging output.</source>
 Always ignore these errors?</source>
         <translation>Deze fouten altijd negeren?</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n SSL errors occured</source>
         <comment>number of errors</comment>
-        <translation>%n SSL-fouten vonden plaats
+        <translation>
+            <numerusform>%n SSL-fout vond plaats</numerusform>
+            <numerusform>%n SSL-fouten vonden plaats</numerusform>
         </translation>
     </message>
     <message>
@@ -8270,22 +8327,28 @@ p, li { white-space: pre-wrap; }
         <source>Error during search</source>
         <translation>Fout tijdens zoekactie</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Attribute table - %1 (%n Feature(s))</source>
         <comment>feature count</comment>
-        <translation>Attribuut tabel - %1 (%n Objecten)
+        <translation>
+            <numerusform>Attribuut tabel - %1 (%n Object)</numerusform>
+            <numerusform>Attribuut tabel - %1 (%n Objecten)</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Attribute table - %1 :: %n / %2 feature(s) selected</source>
         <comment>feature count</comment>
-        <translation>Attribuut tabel - %1 :: %n / %2 objecten geselecteerd
+        <translation>
+            <numerusform>Attribuut tabel - %1 :: %n / %2 object geselecteerd</numerusform>
+            <numerusform>Attribuut tabel - %1 :: %n / %2 objecten geselecteerd</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Attribute table - %1 (%n matching features)</source>
         <comment>matching features</comment>
-        <translation>Attribuut tabel - %1 (%n gevonden objecten)
+        <translation>
+            <numerusform>Attribuut tabel - %1 (%n gevonden object)</numerusform>
+            <numerusform>Attribuut tabel - %1 (%n gevonden objecten)</numerusform>
         </translation>
     </message>
     <message>
@@ -8737,6 +8800,28 @@ Foutmelding: %2</translation>
         <source>Failed to delete the %1 bookmark from the database. The database said:
 %2</source>
         <translation>Fout bij het verwijderen van de %1 favoriet uit de database. De database meldt:
+%2</translation>
+    </message>
+    <message>
+        <source>&amp;Update</source>
+        <translation>&amp;Bijwerken</translation>
+    </message>
+    <message>
+        <source>Really Update?</source>
+        <translation>Bevestig Bijwerken?</translation>
+    </message>
+    <message>
+        <source>Are you sure you want to update the %1 bookmark?</source>
+        <translation>Weet u zeker dat u favoriet %1 wilt bewerken?</translation>
+    </message>
+    <message>
+        <source>Error updating bookmark</source>
+        <translation>Fout bij het bewerken van favoriet</translation>
+    </message>
+    <message>
+        <source>Failed to update the %1 bookmark. The database said:
+%2</source>
+        <translation>Fout bij het bewerken van de %1 favoriet. De database meldt:
 %2</translation>
     </message>
 </context>
@@ -9640,6 +9725,18 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
         <source>Legend group added</source>
         <translation>Legendagroep toegevoegd</translation>
     </message>
+    <message>
+        <source>Legend map changed</source>
+        <translation>Legendakaart aangepast</translation>
+    </message>
+    <message>
+        <source>Map %1</source>
+        <translation>Kaart %1</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Geen</translation>
+    </message>
 </context>
 <context>
     <name>QgsComposerLegendWidgetBase</name>
@@ -9734,6 +9831,10 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
     <message>
         <source>Auto Update</source>
         <translation>Automatisch Bijwerken</translation>
+    </message>
+    <message>
+        <source>Map</source>
+        <translation>Kaart</translation>
     </message>
 </context>
 <context>
@@ -10391,6 +10492,7 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
     <message>
         <source>Rotation </source>
         <comment>Rotation</comment>
+        <extracomment>Rotation</extracomment>
         <translation>Rotatie</translation>
     </message>
 </context>
@@ -13655,10 +13757,12 @@ p, li { white-space: pre-wrap; }
         <source>Question</source>
         <translation>Vraag</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Are you sure you want to delete %n selected layer(s)?</source>
         <comment>number of layers to delete</comment>
-        <translation>Weet u zeker dat u de %n geselecteerde lagen wilt verwijderen?
+        <translation>
+            <numerusform>Weet u zeker dat u de %n geselecteerde laag wilt verwijderen?</numerusform>
+            <numerusform>Weet u zeker dat u de %n geselecteerde lagen wilt verwijderen?</numerusform>
         </translation>
     </message>
     <message>
@@ -15185,6 +15289,17 @@ p, li { white-space: pre-wrap; }
     </message>
 </context>
 <context>
+    <name>QgsGrassRasterProvider</name>
+    <message>
+        <source>Out of extent</source>
+        <translation>Buiten de extent</translation>
+    </message>
+    <message>
+        <source>null (no data)</source>
+        <translation>null (geen data)</translation>
+    </message>
+</context>
+<context>
     <name>QgsGrassRegion</name>
     <message>
         <source>Cannot write region</source>
@@ -15541,10 +15656,12 @@ in regel %2 kolom %3</translation>
         <source>Unhandled layer will be lost.</source>
         <translation>Niet verwerkte bestanden gaan verloren.</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>There are still %n unhandled layer(s), that will be lost if you closed now.</source>
         <comment>unhandled layers</comment>
-        <translation>Er zijn nog %n niet verwerkte lagen, die gaan verloren als u nu afsluit.
+        <translation>
+            <numerusform>Er is nog %n niet verwerkte laag, die gaat verloren als u nu afsluit.</numerusform>
+            <numerusform>Er zijn nog %n niet verwerkte lagen, die gaan verloren als u nu afsluit.</numerusform>
         </translation>
     </message>
 </context>
@@ -15709,12 +15826,15 @@ in regel %2 kolom %3</translation>
         <source>Closing down connection</source>
         <translation>Verbinding wordt afgesloten</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Network timed out after %n second(s) of inactivity.
 This may be a problem in your network connection or at the WMS server.</source>
         <comment>inactivity timeout</comment>
-        <translation>Netwerkverbinding verbroken na %n seconden van inaktiviteit.
-Er kan een probleem zijn met uw netwerkverbinding, of bij de WMS-server.
+        <translation>
+            <numerusform>Netwerkverbinding verbroken na %n seconde van inaktiviteit.
+Er kan een probleem zijn met uw netwerkverbinding, of bij de WMS-server.</numerusform>
+            <numerusform>Netwerkverbinding verbroken na %n seconden van inaktiviteit.
+Er kan een probleem zijn met uw netwerkverbinding, of bij de WMS-server.</numerusform>
         </translation>
     </message>
 </context>
@@ -17515,6 +17635,10 @@ Er kan een probleem zijn met uw netwerkverbinding, of bij de WMS-server.
         <source>Cut edges detected. Make sure the line splits features into multiple parts.</source>
         <translation>Snijvlakken gedetecteerd. Zorg dat de lijn de objecten in meerdere delen splitst.</translation>
     </message>
+    <message>
+        <source>The geometry is invalid. Please repair before trying to split it.</source>
+        <translation>De geometrie is ongeldig. Herstel deze eerst voordat u hem wilt splitsen.</translation>
+    </message>
 </context>
 <context>
     <name>QgsMapToolVertexEdit</name>
@@ -18962,7 +19086,7 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <source>Selecting this will unselect the &apos;make lines less&apos; jagged toggle</source>
-        <translation>Dit selecteren zal &apos;maak lijnen minder rafelig&apos; deselecteren</translation>
+        <translation type="obsolete">Dit selecteren zal &apos;maak lijnen minder rafelig&apos; deselecteren</translation>
     </message>
     <message>
         <source>Snapping</source>
@@ -19993,7 +20117,7 @@ geometrische objecten.</translation>
     <name>QgsPluginInstaller</name>
     <message>
         <source>Couldn&apos;t parse output from the repository</source>
-        <translation>Antwoord van de repository kan niet worden begrepen (geparseerd)</translation>
+        <translation type="obsolete">Antwoord van de repository kan niet worden begrepen (geparseerd)</translation>
     </message>
     <message>
         <source>Couldn&apos;t open the local plugin directory</source>
@@ -20597,7 +20721,7 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <source>Abort fetching</source>
-        <translation>Ophalen afgebroken</translation>
+        <translation>Ophalen afbreken</translation>
     </message>
     <message>
         <source>Repository</source>
@@ -21627,10 +21751,12 @@ Hierdoor zal het kiezen van een projectie niet werken...</translation>
         <source>Query Result</source>
         <translation>Query Resultaten</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>The where clause returned %n row(s).</source>
         <comment>returned test rows</comment>
-        <translation>Het &apos;where&apos;-filter levert %n rijen op.
+        <translation>
+            <numerusform>Het &apos;where&apos;-filter levert %n rij op.</numerusform>
+            <numerusform>Het &apos;where&apos;-filter levert %n rijen op.</numerusform>
         </translation>
     </message>
     <message>
@@ -23138,10 +23264,12 @@ p, li { white-space: pre-wrap; }
         <source>Filter</source>
         <translation>Filter</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Filter returned %n feature(s)</source>
         <comment>number of filtered features</comment>
-        <translation>Filter levert %n objecten
+        <translation>
+            <numerusform>Filter levert %n object</numerusform>
+            <numerusform>Filter levert %n objecten</numerusform>
         </translation>
     </message>
     <message>
@@ -23329,15 +23457,15 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <source>No grouping</source>
-        <translation>Geen groepering</translation>
+        <translation type="obsolete">Geen groepering</translation>
     </message>
     <message>
         <source>Group by filter</source>
-        <translation>Groepeer op filter</translation>
+        <translation type="obsolete">Groepeer op filter</translation>
     </message>
     <message>
         <source>Group by scale</source>
-        <translation>Groepeer op schaal</translation>
+        <translation type="obsolete">Groepeer op schaal</translation>
     </message>
     <message>
         <source>Label</source>
@@ -23350,6 +23478,49 @@ p, li { white-space: pre-wrap; }
     <message>
         <source>Max. scale</source>
         <translation>Max. schaalwaarde</translation>
+    </message>
+    <message>
+        <source>Priority</source>
+        <translation>Prioriteit</translation>
+    </message>
+    <message>
+        <source>Priority when symbol levels are enabled (only first matching rule will be applied)</source>
+        <translation>Prioriteit wanneer gebruikmakend van symboollagen (alleen de eerste geldige regel zal worden toegepast)</translation>
+    </message>
+    <message>
+        <source>Increase priority</source>
+        <translation>Prioriteit verhogen</translation>
+    </message>
+    <message>
+        <source>Decrease priority</source>
+        <translation>Prioriteit verlagen</translation>
+    </message>
+    <message>
+        <source>Enable symbol levels</source>
+        <translation>Symboollagen gebruiken</translation>
+    </message>
+    <message>
+        <source>Use only first matched rule</source>
+        <translation>Alleen eerste geldige regel gebruiken</translation>
+    </message>
+    <message>
+        <source>Behavior</source>
+        <translation>Gedrag</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <comment>No grouping for displaying rules</comment>
+        <translation>Geen</translation>
+    </message>
+    <message>
+        <source>By filter</source>
+        <comment>Group rules by filter</comment>
+        <translation>Op filter</translation>
+    </message>
+    <message>
+        <source>By scale</source>
+        <comment>Group rules by scale</comment>
+        <translation>Op schaal</translation>
     </message>
 </context>
 <context>
@@ -23686,10 +23857,12 @@ p, li { white-space: pre-wrap; }
         <source>There is no attribute &apos;%1&apos; in the current vector layer. Please select an existing attribute</source>
         <translation>Er is geen attribuut &apos;%1&apos; in de huidige vectorlaag. Selecteer een aanwezig attribuut</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Found %n matching feature(s).</source>
         <comment>test result</comment>
-        <translation>%n passende objecten gevonden.
+        <translation>
+            <numerusform>%n passend object gevonden.</numerusform>
+            <numerusform>%n passende objecten gevonden.</numerusform>
         </translation>
     </message>
     <message>
@@ -24110,10 +24283,12 @@ De foutmelding was:
         <source>Insufficient number of layers</source>
         <translation type="obsolete">Onvoldoende kaartlagen</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n selected geometries</source>
         <comment>selected geometries</comment>
-        <translation>%n geselecteerde geometrieën
+        <translation>
+            <numerusform>%n geselecteerde geometrie</numerusform>
+            <numerusform>%n geselecteerde geometrieën</numerusform>
         </translation>
     </message>
     <message>
@@ -26047,76 +26222,100 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
         <source>no renderer</source>
         <translation>geen &apos;renderer&apos;</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n attribute(s) deleted.</source>
         <comment>deleted attributes count</comment>
-        <translation>GESLAAGD: %n attributen verwijderd.
+        <translation>
+            <numerusform>GESLAAGD: %n attribuut verwijderd.</numerusform>
+            <numerusform>GESLAAGD: %n attributen verwijderd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n attribute(s) not deleted.</source>
         <comment>not deleted attributes count</comment>
-        <translation>FOUT: %n attributen niet verwijderd.
+        <translation>
+            <numerusform>FOUT: %n attribuut niet verwijderd.</numerusform>
+            <numerusform>FOUT: %n attributen niet verwijderd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n attribute(s) added.</source>
         <comment>added attributes count</comment>
-        <translation>GESLAAGD: %n attributen toegevoegd.
+        <translation>
+            <numerusform>GESLAAGD: %n attribuut toegevoegd.</numerusform>
+            <numerusform>GESLAAGD: %n attributen toegevoegd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n new attribute(s) not added</source>
         <comment>not added attributes count</comment>
-        <translation>FOUT: %n nieuwe attributen niet toegevoegd
+        <translation>
+            <numerusform>FOUT: %n nieuw attribuut niet toegevoegd</numerusform>
+            <numerusform>FOUT: %n nieuwe attributen niet toegevoegd</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n attribute value(s) changed.</source>
         <comment>changed attribute values count</comment>
-        <translation>GESLAAGD: %n attribuutwaarden aangepast.
+        <translation>
+            <numerusform>GESLAAGD: %n attribuutwaarde aangepast.</numerusform>
+            <numerusform>GESLAAGD: %n attribuutwaarden aangepast.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n attribute value change(s) not applied.</source>
         <comment>not changed attribute values count</comment>
-        <translation>FOUT: %n attribuutwaarden zijn niet aangepast.
+        <translation>
+            <numerusform>FOUT: %n attribuutwaarde is niet aangepast.</numerusform>
+            <numerusform>FOUT: %n attribuutwaarden zijn niet aangepast.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n feature(s) added.</source>
         <comment>added features count</comment>
-        <translation>GESLAAGD: %n objecten toegevoegd.
+        <translation>
+            <numerusform>GESLAAGD: %n object toegevoegd.</numerusform>
+            <numerusform>GESLAAGD: %n objecten toegevoegd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n feature(s) not added.</source>
         <comment>not added features count</comment>
-        <translation>FOUT: %n objecten niet toegevoegd.
+        <translation>
+            <numerusform>FOUT: %n object niet toegevoegd.</numerusform>
+            <numerusform>FOUT: %n objecten niet toegevoegd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n geometries were changed.</source>
         <comment>changed geometries count</comment>
-        <translation>GESLAAGD: %n geometrieën zijn aangepast.
+        <translation>
+            <numerusform>GESLAAGD: %n geometrie aangepast.</numerusform>
+            <numerusform>GESLAAGD: %n geometrieën zijn aangepast.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n geometries not changed.</source>
         <comment>not changed geometries count</comment>
-        <translation>FOUT: %n geometrieën niet aangepast.
+        <translation>
+            <numerusform>FOUT: %n geometrie niet aangepast.</numerusform>
+            <numerusform>FOUT: %n geometrieën niet aangepast.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>SUCCESS: %n feature(s) deleted.</source>
         <comment>deleted features count</comment>
-        <translation>GESLAAGD: %n objecten verwijderd.
+        <translation>
+            <numerusform>GESLAAGD: %n object verwijderd.</numerusform>
+            <numerusform>GESLAAGD: %n objecten verwijderd.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>ERROR: %n feature(s) not deleted.</source>
         <comment>not deleted features count</comment>
-        <translation>FOUT: %n objecten niet verwijderd.
+        <translation>
+            <numerusform>FOUT: %n object niet verwijderd.</numerusform>
+            <numerusform>FOUT: %n objecten niet verwijderd.</numerusform>
         </translation>
     </message>
     <message>
@@ -26486,6 +26685,10 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
         <source>None</source>
         <translation>Geen</translation>
     </message>
+    <message>
+        <source>Empty</source>
+        <translation>Leeg</translation>
+    </message>
 </context>
 <context>
     <name>QgsVectorLayerPropertiesBase</name>
@@ -26759,7 +26962,7 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
     </message>
     <message>
         <source>Date defined position</source>
-        <translation>Datum-bepaalde positie</translation>
+        <translation type="obsolete">Datum-bepaalde positie</translation>
     </message>
     <message>
         <source>x</source>
@@ -26772,6 +26975,10 @@ Moeten de bestaande klassen worden verwijderd voor de nieuwe klassificatie?</tra
     <message>
         <source>Color</source>
         <translation>Kleur</translation>
+    </message>
+    <message>
+        <source>Data defined position</source>
+        <translation>Data-bepaalde positie</translation>
     </message>
 </context>
 <context>
@@ -27139,10 +27346,12 @@ verschilt van de GetCapabilities URL
 
 Dit kan een serverconfiguratie fout zijn. Moet de URL worden gebruikt?</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Coordinate Reference System (%n available)</source>
         <comment>crs count</comment>
-        <translation>Ruimtelijke Referentie Systemen (%n beschikbaar)
+        <translation>
+            <numerusform>Ruimtelijke Referentie Systeem (%n beschikbaar)</numerusform>
+            <numerusform>Ruimtelijke Referentie Systemen (%n beschikbaar)</numerusform>
         </translation>
     </message>
     <message>
@@ -27169,10 +27378,12 @@ Dit kan een serverconfiguratie fout zijn. Moet de URL worden gebruikt?</translat
         <source>No image encoding selected</source>
         <translation>Geen image-encoding geselecteerd</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n Layer(s) selected</source>
         <comment>selected layer count</comment>
-        <translation>%n Lagen geselecteerd
+        <translation>
+            <numerusform>%n Laag geselecteerd</numerusform>
+            <numerusform>%n Lagen geselecteerd</numerusform>
         </translation>
     </message>
     <message>
@@ -27228,10 +27439,12 @@ Dit kan een serverconfiguratie fout zijn. Moet de URL worden gebruikt?</translat
         <source>XML files (*.xml *XML)</source>
         <translation>XML bestanden (*.xml *.XML)</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>Options (%n coordinate reference systems available)</source>
         <comment>crs count</comment>
-        <translation>Opties (%n ruimtelijke referentie systemen beschikbaar)
+        <translation>
+            <numerusform>Opties (%n ruimtelijke referentie systeem beschikbaar)</numerusform>
+            <numerusform>Opties (%n ruimtelijke referentie systemen beschikbaar)</numerusform>
         </translation>
     </message>
 </context>
@@ -27388,6 +27601,22 @@ Dit kan een serverconfiguratie fout zijn. Moet de URL worden gebruikt?</translat
     <message>
         <source>Load</source>
         <translation>Laden</translation>
+    </message>
+    <message>
+        <source>Move selected layer UP</source>
+        <translation>Selectie naar boven verplaatsen</translation>
+    </message>
+    <message>
+        <source>Up</source>
+        <translation>Omhoog</translation>
+    </message>
+    <message>
+        <source>Move selected layer DOWN</source>
+        <translation>Selectie naar beneden verplaatsen</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Naar beneden</translation>
     </message>
 </context>
 <context>
@@ -27656,10 +27885,12 @@ Antwoord was:
         <source>Dom Exception</source>
         <translation>DOM-fout</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>%n tile requests in background</source>
         <comment>tile request count</comment>
-        <translation>%n tile-aanvragen op de achtergrond
+        <translation>
+            <numerusform>%n tile-aanvraag op de achtergrond</numerusform>
+            <numerusform>%n tile-aanvragen op de achtergrond</numerusform>
         </translation>
     </message>
     <message>
@@ -27670,31 +27901,37 @@ Antwoord was:
         <source>Getting tiles via WMS.</source>
         <translation>Tiles via WMS ophalen.</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>, %n cache hits</source>
         <comment>tile cache hits</comment>
-        <translation>, %n cache hits
+        <translation>
+            <numerusform>, %n cache hit</numerusform>
+            <numerusform>, %n cache hits</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>, %n cache misses.</source>
         <comment>tile cache missed</comment>
-        <translation>, %n cache misses.
+        <translation>
+            <numerusform>, %n cache miss.</numerusform>
+            <numerusform>, %n cache misses.</numerusform>
         </translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>, %n errors.</source>
         <comment>errors</comment>
-        <translation>, %n fouten.
+        <translation>
+            <numerusform>, %n fout.</numerusform>
+            <numerusform>, %n fouten.</numerusform>
         </translation>
     </message>
     <message>
         <source>tile request err %1: %2</source>
-        <translation>tile request fout %1: %2</translation>
+        <translation type="obsolete">tile request fout %1: %2</translation>
     </message>
     <message>
         <source>map request error %1: %2</source>
-        <translation>kaart request fout %1: %2</translation>
+        <translation type="obsolete">kaart request fout %1: %2</translation>
     </message>
     <message>
         <source>empty capabilities document</source>
@@ -27745,10 +27982,12 @@ Tried URL: %1</source>
         <source>(Unknown error code)</source>
         <translation>(Onbekende foutcode)</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>(and %n more)</source>
         <comment>crs</comment>
-        <translation>(en %n meer)
+        <translation>
+            <numerusform>(en %n meer)</numerusform>
+            <numerusform>(en %n meer)</numerusform>
         </translation>
     </message>
     <message>
@@ -27798,6 +28037,32 @@ Tried URL: %1</source>
     <message>
         <source>identify request redirected.</source>
         <translation>Identificatieverzoek geredirect.</translation>
+    </message>
+    <message>
+        <source>Tile request error</source>
+        <translation>tile request fout</translation>
+    </message>
+    <message>
+        <source>Status: %1
+Reason phrase: %2</source>
+        <translation>Status: %1
+Omschrijving: %2</translation>
+    </message>
+    <message>
+        <source>response: %1</source>
+        <translation>response: %1</translation>
+    </message>
+    <message>
+        <source>Map request error</source>
+        <translation>Map request fout</translation>
+    </message>
+    <message>
+        <source>Response: %1</source>
+        <translation>Response: %1</translation>
+    </message>
+    <message>
+        <source>Map request error %1: %2</source>
+        <translation>Map request fout %1: %2</translation>
     </message>
 </context>
 <context>
@@ -28353,10 +28618,12 @@ Omschrijving: %2</translation>
         <source>Query Result</source>
         <translation>Query Resultaten</translation>
     </message>
-    <message>
+    <message numerus="yes">
         <source>The where clause returned %n row(s).</source>
         <comment>returned test rows</comment>
-        <translation>Het &apos;where&apos;-filter levert %n rijen op.
+        <translation>
+            <numerusform>Het &apos;where&apos;-filter levert %n rij op.</numerusform>
+            <numerusform>Het &apos;where&apos;-filter levert %n rijen op.</numerusform>
         </translation>
     </message>
     <message>
@@ -31757,6 +32024,10 @@ Plugin wordt niet geladen.</translation>
     </message>
     <message>
         <source>Maximal tolerance value (higher value=more simplification)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rebuild topology of a vector in mapset</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

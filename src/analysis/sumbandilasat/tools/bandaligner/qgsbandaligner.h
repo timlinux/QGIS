@@ -19,21 +19,21 @@ class ANALYSIS_EXPORT QgsBandAlignerThread;
 
 class ANALYSIS_EXPORT QgsBandAligner : public QObject
 {
-  
+
     Q_OBJECT
-  
+
   signals:
-  
+
     void logged(QString message);
     void progressed(double progress);
-    
+
   public slots:
-  
+
     void logReceived(QString message);
     void progressReceived(double progress);
-  
+
   public:
-    
+
     enum Transformation
     {
       Disparity = 0,
@@ -43,17 +43,17 @@ class ANALYSIS_EXPORT QgsBandAligner : public QObject
       Polynomial4 = 4,
       Polynomial5 = 5
     };
-    
-    
+
+
     QgsBandAligner(QStringList input, QString output, QString disparityXPath = "", QString disparityYPath = "", int blockSize = 201, int referenceBand = 1, QgsBandAligner::Transformation transformation = QgsBandAligner::Disparity, int minimumGcps = 512, double refinementTolerance = 1.9);
     ~QgsBandAligner();
     void start();
     void stop();
-    
+
   private:
     QgsBandAlignerThread *mThread;
 };
-  
+
 class ANALYSIS_EXPORT QgsBandAlignerThread : public QThread
 {
   

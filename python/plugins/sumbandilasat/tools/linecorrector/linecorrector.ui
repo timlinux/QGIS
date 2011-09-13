@@ -1,379 +1,356 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>LineCorrector</class>
- <widget class="QMainWindow" name="LineCorrector">
+ <widget class="QDialog" name="LineCorrector">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>528</width>
-    <height>303</height>
+    <width>554</width>
+    <height>466</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Line Corrector</string>
   </property>
-  <property name="windowIcon">
-   <iconset resource="resources.qrc">
-    <normaloff>:/sumbandilasat/icons/toolbar/linecorrector.png</normaloff>:/sumbandilasat/icons/toolbar/linecorrector.png</iconset>
-  </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <property name="margin">
-     <number>2</number>
-    </property>
-    <item row="1" column="0">
-     <widget class="QWidget" name="widget_10" native="true">
-      <layout class="QGridLayout" name="gridLayout_8">
+  <layout class="QGridLayout" name="gridLayout_7">
+   <item row="0" column="0">
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Input</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_5">
        <property name="margin">
         <number>0</number>
        </property>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="nextButton">
-         <property name="text">
-          <string>Next</string>
+       <item row="0" column="0">
+        <widget class="QScrollArea" name="scrollArea">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
          </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/next.png</normaloff>:/sumbandilasat/icons/general/next.png</iconset>
+         <property name="widgetResizable">
+          <bool>true</bool>
          </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>530</width>
+            <height>393</height>
+           </rect>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="0" column="0">
+            <widget class="QGroupBox" name="groupBox">
+             <property name="title">
+              <string>Input</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_2">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label">
+                <property name="text">
+                 <string>Raster image</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="inputLineEdit"/>
+              </item>
+              <item row="0" column="2">
+               <widget class="QToolButton" name="inputButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QGroupBox" name="groupBox_2">
+             <property name="title">
+              <string>Output</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_3">
+              <item row="0" column="0">
+               <widget class="QCheckBox" name="outputCheckBox">
+                <property name="text">
+                 <string>Correct original image</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLineEdit" name="outputLineEdit"/>
+              </item>
+              <item row="1" column="1">
+               <widget class="QToolButton" name="outputButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0" colspan="2">
+               <widget class="QCheckBox" name="maskCheckBox">
+                <property name="text">
+                 <string>Create check image mask</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLineEdit" name="maskLineEdit"/>
+              </item>
+              <item row="3" column="1">
+               <widget class="QToolButton" name="maskButton">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Correction options</string>
+             </property>
+             <layout class="QGridLayout" name="gridLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_3">
+                <property name="text">
+                 <string>Correction phase 1</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QComboBox" name="phase1ComboBox">
+                <property name="currentIndex">
+                 <number>2</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>No Correction</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Column-based Correction</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Line-based Correction</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>Correction phase 2</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="phase2ComboBox">
+                <property name="currentIndex">
+                 <number>1</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>No Correction</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Column-based Correction</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Line-based Correction</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="2" column="0" colspan="2">
+               <widget class="QCheckBox" name="recalculateCheckBox">
+                <property name="text">
+                 <string>Recalculate line drops after phase 1</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Execution</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="4" column="0" rowspan="4">
+        <widget class="QTextEdit" name="log">
+         <property name="readOnly">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="backButton">
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Back</string>
+          <string>Total progress</string>
          </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/back.png</normaloff>:/sumbandilasat/icons/general/back.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QProgressBar" name="totalProgressBar">
+         <property name="value">
+          <number>0</number>
          </property>
         </widget>
        </item>
        <item row="0" column="0">
-        <spacer name="horizontalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="4">
-        <widget class="QPushButton" name="stopButton">
+        <widget class="QLabel" name="partLabel">
          <property name="text">
-          <string>Stop</string>
-         </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/stop.png</normaloff>:/sumbandilasat/icons/general/stop.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>24</width>
-           <height>24</height>
-          </size>
+          <string>Task Progress</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="3">
-        <widget class="QPushButton" name="startButton">
+       <item row="1" column="0">
+        <widget class="QProgressBar" name="partProgressBar">
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="label_9">
          <property name="text">
-          <string>Start</string>
+          <string>Faulty lines</string>
          </property>
-         <property name="icon">
-          <iconset resource="resources.qrc">
-           <normaloff>:/sumbandilasat/icons/general/start.png</normaloff>:/sumbandilasat/icons/general/start.png</iconset>
-         </property>
-         <property name="iconSize">
+        </widget>
+       </item>
+       <item row="1" column="1" rowspan="7">
+        <widget class="QListWidget" name="listWidget">
+         <property name="maximumSize">
           <size>
-           <width>24</width>
-           <height>24</height>
+           <width>100</width>
+           <height>16777215</height>
           </size>
          </property>
         </widget>
        </item>
       </layout>
      </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="currentIndex">
-       <number>3</number>
-      </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Input</string>
-       </attribute>
-       <layout class="QFormLayout" name="formLayout_2">
-        <property name="fieldGrowthPolicy">
-         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-        </property>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Raster image</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QWidget" name="widget_2" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="inputLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="inputButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_3">
-       <attribute name="title">
-        <string>Output</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="2" column="0" colspan="2">
-         <widget class="QCheckBox" name="outputCheckBox">
-          <property name="text">
-           <string>Correct original image</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0" colspan="2">
-         <widget class="QCheckBox" name="maskCheckBox">
-          <property name="text">
-           <string>Create check image mask</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0" colspan="2">
-         <widget class="QWidget" name="maskWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="maskLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="maskButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QWidget" name="outputWidget" native="true">
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="outputLineEdit"/>
-           </item>
-           <item>
-            <widget class="QToolButton" name="outputButton">
-             <property name="text">
-              <string>...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="6" column="0">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_4">
-       <attribute name="title">
-        <string>Correction</string>
-       </attribute>
-       <layout class="QFormLayout" name="formLayout">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Correction phase 1</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="phase1ComboBox">
-          <property name="currentIndex">
-           <number>2</number>
-          </property>
-          <item>
-           <property name="text">
-            <string>No Correction</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Column-based Correction</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Line-based Correction</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Correction phase 2</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="phase2ComboBox">
-          <property name="currentIndex">
-           <number>1</number>
-          </property>
-          <item>
-           <property name="text">
-            <string>No Correction</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Column-based Correction</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Line-based Correction</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="0" colspan="2">
-         <widget class="QWidget" name="widget" native="true">
-          <layout class="QGridLayout" name="gridLayout_5">
-           <property name="margin">
-            <number>0</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QCheckBox" name="recalculateCheckBox">
-             <property name="text">
-              <string>Recalculate line drops after phase 1</string>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Execution</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="4" column="0" rowspan="4">
-         <widget class="QTextEdit" name="log"/>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Total progress</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QProgressBar" name="totalProgressBar">
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="partLabel">
-          <property name="text">
-           <string>Progress</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QProgressBar" name="partProgressBar">
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_9">
-          <property name="text">
-           <string>Faulty lines</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" rowspan="7">
-         <widget class="QListWidget" name="listWidget">
-          <property name="maximumSize">
-           <size>
-            <width>100</width>
-            <height>16777215</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
  </widget>
- <resources>
-  <include location="resources.qrc"/>
- </resources>
- <connections/>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>outputCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>outputLineEdit</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>74</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>82</x>
+     <y>154</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>outputCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>outputButton</receiver>
+   <slot>setHidden(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>53</x>
+     <y>126</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>511</x>
+     <y>157</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskLineEdit</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>60</x>
+     <y>179</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>62</x>
+     <y>202</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>maskCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>maskButton</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>395</x>
+     <y>180</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>507</x>
+     <y>198</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

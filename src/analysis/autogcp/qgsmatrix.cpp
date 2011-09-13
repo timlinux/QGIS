@@ -602,7 +602,7 @@ QgsMatrix& QgsMatrix::operator*=( const double & value )
 }
 QgsMatrix& QgsMatrix::operator/=( const double & value )
 {
-  QgsMatrix::divide( this, this, value );
+  return *QgsMatrix::divide( this, this, value );
 }
 
 bool QgsMatrix::operator==( const QgsMatrix& other )const

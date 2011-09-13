@@ -7,10 +7,10 @@ from qgis.gui import *
 from qgis.analysis import *
 from ui_linecorrector import Ui_LineCorrector
 
-class LineCorrectorWindow(QMainWindow):
+class LineCorrectorWindow(QDialog):
 
   def getGui(self):
-    return self.ui.centralwidget
+    return self
 
   def __init__(self, iface, standAlone = True):
     QMainWindow.__init__( self )
@@ -25,91 +25,60 @@ class LineCorrectorWindow(QMainWindow):
     QObject.connect(self.ui.inputButton, SIGNAL("clicked()"), self.selectInput)
     QObject.connect(self.ui.outputButton, SIGNAL("clicked()"), self.selectOuput)
     QObject.connect(self.ui.maskButton, SIGNAL("clicked()"), self.selectMask)
-    self.connect(self.ui.maskCheckBox, SIGNAL("stateChanged(int)"), self.toggleOutputTasks)
-    self.connect(self.ui.outputCheckBox, SIGNAL("stateChanged(int)"), self.toggleOutputTasks)
     
-    QObject.connect(self.ui.backButton, SIGNAL("clicked()"), self.goBack)
-    QObject.connect(self.ui.nextButton, SIGNAL("clicked()"), self.goNext)
-    QObject.connect(self.ui.startButton, SIGNAL("clicked()"), self.start)
-    QObject.connect(self.ui.stopButton, SIGNAL("clicked()"), self.stop)
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Ok), SIGNAL("clicked()"), self.start)
+    QObject.connect(self.ui.buttonBox.button(QDialogButtonBox.Cancel), SIGNAL("clicked()"), self.stop)
     #QObject.connect(self.ui.helpButton, SIGNAL("clicked()"), self.help)
-    QObject.connect(self.ui.tabWidget, SIGNAL("currentChanged(int)"), self.changeTab)
-    self.changeTab()
     self.toggleOutputTasks()
     self.ui.tabWidget.setCurrentIndex(0)
+    self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
     
     self.tempBands = []
     
   def toggleOutputTasks(self, state = 0):
-    if self.ui.maskCheckBox.isChecked():
-      self.ui.maskWidget.show()
-    else:
-      self.ui.maskWidget.hide()
-    if self.ui.outputCheckBox.isChecked():
-      self.ui.outputWidget.show()
-      self.ui.maskCheckBox.setEnabled(True)
-    else:
-      self.ui.outputWidget.hide()
-      self.ui.maskCheckBox.setChecked(False)
-      self.ui.maskCheckBox.setEnabled(False)
-      self.ui.maskWidget.hide()
+    self.ui.outputLineEdit.setVisible(False)
+    self.ui.outputButton.setVisible(False)
+    self.ui.maskLineEdit.setVisible(False)
+    self.ui.maskButton.setVisible(False)
     
   def selectInput(self):
-    fileName = QFileDialog.getOpenFileName(self, "Select Input Image")
+    mySettings = QSettings()
+    myLastDir = mySettings.value("lineCorrector/lastImageDir").toString()
+    fileName = QFileDialog.getOpenFileName(self, "Select Input Image", myLastDir)
     if fileName != "":
       self.ui.inputLineEdit.setText(fileName)
+      mySettings.setValue("lineCorrector/lastImageDir", QFileInfo( fileName ).absolutePath())
       
   def selectOuput(self):
-    fileName = QFileDialog.getSaveFileName(self, "Save Output Image")
+    mySettings = QSettings()
+    myLastDir = mySettings.value("lineCorrector/outputDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save Output Image", myLastDir)
     if fileName != "":
       self.ui.outputLineEdit.setText(fileName)
+      mySettings.setValue("lineCorrector/outputDir", QFileInfo( fileName ).absolutePath())
       
   def selectMask(self):
-    fileName = QFileDialog.getSaveFileName(self, "Save Output Mask")
+    mySettings = QSettings()
+    myLastDir = mySettings.value("lineCorrector/outputMaskDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save Output Mask", myLastDir)
     if fileName != "":
       self.ui.maskLineEdit.setText(fileName)
+      mySettings.setValue("lineCorrector/outputMaskDir", QFileInfo( fileName ).absolutePath())
       
-  def changeTab(self, i = 0):
-    index = self.ui.tabWidget.currentIndex()
-    self.ui.startButton.hide()
-    self.ui.stopButton.hide()
-    self.ui.backButton.hide()
-    self.ui.nextButton.hide()
-    if index == 0:
-      self.ui.nextButton.show()
-    elif index == self.ui.tabWidget.count()-1:
-      self.ui.backButton.show()
-      self.setStartButton()
-    else:
-      self.ui.backButton.show()
-      self.ui.nextButton.show()
-      
-  def goBack(self):
-    if self.ui.tabWidget.currentIndex() > 0:
-      self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.currentIndex()-1)
-      
-  def goNext(self):
-    if self.ui.tabWidget.currentIndex() < self.ui.tabWidget.count()-1:
-      self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.currentIndex()+1)
-      
-  def setStartButton(self):
-    if self.standAlone:
-      self.ui.startButton.show()
-      self.ui.stopButton.hide()
-      self.ui.tabWidget.setTabEnabled(0, True)
-      self.ui.tabWidget.setTabEnabled(1, True)
-      self.ui.tabWidget.setTabEnabled(2, True)
-    
-  def setStopButton(self):
-    if self.standAlone:
-      self.ui.startButton.hide()
-      self.ui.stopButton.show()
-      self.ui.tabWidget.setTabEnabled(0, False)
-      self.ui.tabWidget.setTabEnabled(1, False)
-      self.ui.tabWidget.setTabEnabled(2, False)   
-	
   def start(self):
-    self.setStopButton()
+    myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
+    if myState == "Stop":
+      self.stop()
+      return
+    else:
+      #sanity check...
+      if self.ui.inputLineEdit.text().isEmpty(): 
+        QMessageBox.warning(self, qApp.tr("Line Corrector"), qApp.tr("No input file(s) specified.\n"
+                                 "Please correct this before pressing 'run'!"),
+                                QMessageBox.Ok );
+        return
+      self.setStopButton()
+
     self.corrector = QgsLineCorrector(self.ui.inputLineEdit.text(), self.ui.outputLineEdit.text(), self.ui.maskLineEdit.text())
     
     phase1 = QgsLineCorrector.None
@@ -131,6 +100,10 @@ class LineCorrectorWindow(QMainWindow):
     QObject.connect(self.corrector, SIGNAL("progressed(double, double, QString)"), self.progress)
     QObject.connect(self.corrector, SIGNAL("logged(QString)"), self.log)
     QObject.connect(self.corrector, SIGNAL("badLinesFound(QList<int>)"), self.badLines)
+    self.ui.totalProgressBar.setValue(0)
+    self.ui.partProgressBar.setValue(0)
+    self.ui.log.clear()
+    self.ui.tabWidget.setCurrentIndex(1)
     self.corrector.start()
   
   def progress(self, value1, value2, string):
@@ -139,6 +112,7 @@ class LineCorrectorWindow(QMainWindow):
     self.ui.partLabel.setText(string)
     if value1 == 100:
       self.setStartButton()
+      self.loadResult()
     
   def log(self, value):
     self.ui.log.append(value)
@@ -148,8 +122,35 @@ class LineCorrectorWindow(QMainWindow):
       self.ui.listWidget.addItem(str(value))
   
   def stop(self):
-    self.corrector.stop()
-    self.setStartButton()
-  
+    if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
+      self.corrector.stop()
+      self.setStartButton()
+    else:
+      # close the dialog
+      self.close()
+
   def help(self):
     pass
+  
+  def setStopButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).hide()
+      #stop label used programmatically to see if we are actively running or not
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Stop")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Cancel")
+      self.ui.tabWidget.setTabEnabled(0, False)
+      self.ui.tabWidget.setTabEnabled(1, False)
+      self.ui.tabWidget.setCurrentIndex(1)
+    
+  def setStartButton(self):
+    if self.standAlone:
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).show()
+      self.ui.buttonBox.button(QDialogButtonBox.Ok).setText("Run")
+      self.ui.buttonBox.button(QDialogButtonBox.Cancel).setText("Close")
+      self.ui.tabWidget.setTabEnabled(0, True)
+      self.ui.tabWidget.setTabEnabled(1, True)
+
+  def loadResult(self):
+    fileName = self.ui.outputLineEdit.text()
+    fileInfo = QFileInfo(fileName)
+    self.iface.addRasterLayer(fileInfo.filePath())

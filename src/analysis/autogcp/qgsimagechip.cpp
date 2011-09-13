@@ -31,7 +31,7 @@ QgsImageChip::QgsImageChip( const QgsImageChip& other ): QgsRasterDataset( NULL 
 
 const QgsImageChip&  QgsImageChip::operator =( const QgsImageChip & other )
 {
-
+	return NULL;
 }
 
 QgsImageChip* QgsImageChip::createImageChip( int width, int height, GDALDataType type,  int bands )

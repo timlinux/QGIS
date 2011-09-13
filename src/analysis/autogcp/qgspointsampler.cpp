@@ -18,7 +18,7 @@ Email : jamesmeyerx@gmail.com
 
 #include "qgspointsampler.h"
 
-double QgsPointSampler::samplePoint( QgsRasterDataset* image, int band, double pixel, double line ) const
+double QgsPointSampler::samplePoint( QgsRasterDataset* image, int band, double pixel, double line )
 {
   if ( image && band > 0 && band <= image->rasterBands() )
   {

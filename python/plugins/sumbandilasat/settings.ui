@@ -180,7 +180,7 @@
              <double>9999.989999999999782</double>
             </property>
             <property name="value">
-             <double>6.000000000000000</double>
+             <double>8.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -444,7 +444,7 @@
              <number>9999</number>
             </property>
             <property name="value">
-             <number>512</number>
+             <number>2048</number>
             </property>
            </widget>
           </item>
@@ -470,7 +470,7 @@
              <double>999.990000000000009</double>
             </property>
             <property name="value">
-             <double>1.900000000000000</double>
+             <double>25.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -552,7 +552,7 @@
    <item row="1" column="0">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="standardButtons">
-      <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel</set>
+      <set>QDialogButtonBox::Apply|QDialogButtonBox::Cancel|QDialogButtonBox::RestoreDefaults</set>
      </property>
     </widget>
    </item>

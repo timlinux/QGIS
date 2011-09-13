@@ -58,6 +58,7 @@ SET(QGIS_ANALYSIS_SRCS
   autogcp/qgsgcptransform.cpp
   autogcp/qgstpstransform.cpp
   autogcp/qgscoordinatesystemtransform.cpp
+  autogcp/qgspointsampler.cpp
   sumbandilasat/tools/columncorrector/qgsimageprocessor.cpp
   sumbandilasat/tools/columncorrector/qgsimageprocessorthread.cpp
   sumbandilasat/tools/columncorrector/qgsmemoryraster.cpp
@@ -164,6 +165,7 @@ autogcp/qgsimageanalyzer.h
 autogcp/qgsrasterdataset.h
 autogcp/qgssampler.h
 autogcp/qgsbilinearsampler.h
+autogcp/qgspointsampler.h
 autogcp/qgsmatrix.cpp
 autogcp/qgsimagefilter.h
 autogcp/qgsorthorectificationfilter.h

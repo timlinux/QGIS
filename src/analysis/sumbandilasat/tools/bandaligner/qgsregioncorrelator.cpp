@@ -67,8 +67,8 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
   }
   QgsRegionCorrelator::fourierTransformNew(dataRef, max);
   QgsRegionCorrelator::fourierTransformNew(dataNew, max);
-  gsl_complex dRef[max*max];
-  gsl_complex dNew[max*max];
+  gsl_complex *dRef = new gsl_complex[max*max];
+  gsl_complex *dNew = new gsl_complex[max*max];
   counter = 0;
   for(int i = 0; i < max*max; i++)
   {
@@ -94,8 +94,8 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
 
   //Multiply and calculate the absolute values for the result
   //Determine if any element evaluates to true. Equivalent to numpy: any()
-  gsl_complex res[max*max];
-  double resAbs[max*max];
+  gsl_complex *res = new gsl_complex[max*max];
+  double *resAbs = new double[max*max];
   bool any = false;
   counter = 0;
   for(int i = 0; i < max*max; i++)
@@ -109,9 +109,12 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
      counter++;
   }
 
+  delete [] dRef;
+  delete [] dNew;
+
   if(any)
   {
-    double conj[max*max*2];
+    double *conj = new double[max*max*2];
     counter = 0;
     for(int i = 0; i < max*max*2; i+=2)
     {
@@ -128,10 +131,13 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
       counter++;
     }
 
+	delete [] res;
+	delete [] resAbs;
+
     QgsRegionCorrelator::inverseFourierTransformNew(conj, max);
 
     double *corr = QgsRegionCorrelator::inverseShift(conj, max);
-    QList<QList<double> > interest = QgsRegionCorrelator::getSubset(corr, floor((max-regionRef->width)/2), floor((max+regionRef->width)/2), floor((max-regionRef->height)/2), floor((max+regionRef->height)/2), max);
+    QList<QList<double> > interest = QgsRegionCorrelator::getSubset(corr, floor((max-regionRef->width)/2.0), floor((max+regionRef->width)/2.0), floor((max-regionRef->height)/2.0), floor((max+regionRef->height)/2.0), max);
     double theMax = LONG_MIN;
     QList<QList<int> > indexes;
     QList<QList<int> > values;
@@ -255,6 +261,7 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion *regionRef,
     delete [] dataNew;
     delete [] refD;
     delete [] newD;
+    delete [] conj;
     return QgsRegionCorrelationResult(true, x, y, max, theMax, confidence, snr);
   }
   else
@@ -350,12 +357,12 @@ double* QgsRegionCorrelator::caclculateGradient(uint *array, int dimension, int 
 
 int QgsRegionCorrelator::smallestPowerOfTwo(int value1, int value2)
 {
-  if(sqrt(value1) == int(sqrt(value1)))
+  if(sqrt((double)value1) == int(sqrt((double)value1)))
   {
     return value1;
   }
   int n = max(value1, value2);
-  int result = floor(2*ceil(log(n)/log(2)));
+  int result = floor(2.0*ceil(log((double)n)/log(2.0)));
   return result*result;
 }
 

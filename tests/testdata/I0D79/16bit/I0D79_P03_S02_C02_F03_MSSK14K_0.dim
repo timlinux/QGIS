@@ -1,0 +1,3022 @@
+<?xml version="1.0" ?>
+<!--?xml-stylesheet href="STYLE.XSL" type="text/xsl" ?-->
+<Dimap_Document xmlns:dim="http://www.spotimage.fr/Dimap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="W:\dev_dpl1asu\Units\DataProcessingLevel1ASoftwareUnit\Source\DimapSchema\SunSpace.xsd">
+    <Metadata_Id>
+        <METADATA_FORMAT version="1.1">DIMAP</METADATA_FORMAT>
+        <METADATA_PROFILE>SPOTSCENE_1A</METADATA_PROFILE>
+    </Metadata_Id>
+    <Dataset_Id>
+        <DATASET_NAME />
+        <COPYRIGHT />
+        <DATASET_TN_PATH href="ICON.JPG" />
+        <DATASET_TN_FORMAT version="6b">JPEG</DATASET_TN_FORMAT>
+        <DATASET_QL_PATH href="PREVIEW.JPG" />
+        <DATASET_QL_FORMAT version="6b">JPEG</DATASET_QL_FORMAT>
+    </Dataset_Id>
+    <Dataset_Frame>
+        <Vertex>
+            <FRAME_LAT unit="DEG">-16.1285292053553</FRAME_LAT>
+            <FRAME_LON unit="DEG">-48.1840812311799</FRAME_LON>
+            <FRAME_ROW>1</FRAME_ROW>
+            <FRAME_COL>1</FRAME_COL>
+        </Vertex>
+        <Vertex>
+            <FRAME_LAT unit="DEG">-16.1908924020928</FRAME_LAT>
+            <FRAME_LON unit="DEG">-47.6678850212362</FRAME_LON>
+            <FRAME_ROW>1</FRAME_ROW>
+            <FRAME_COL>8415</FRAME_COL>
+        </Vertex>
+        <Vertex>
+            <FRAME_LAT unit="DEG">-15.6511333646456</FRAME_LAT>
+            <FRAME_LON unit="DEG">-47.5488640087222</FRAME_LON>
+            <FRAME_ROW>9588</FRAME_ROW>
+            <FRAME_COL>8415</FRAME_COL>
+        </Vertex>
+        <Vertex>
+            <FRAME_LAT unit="DEG">-15.5982476589843</FRAME_LAT>
+            <FRAME_LON unit="DEG">-48.0643300196215</FRAME_LON>
+            <FRAME_ROW>9588</FRAME_ROW>
+            <FRAME_COL>1</FRAME_COL>
+        </Vertex>
+        <Scene_Center>
+            <FRAME_LAT unit="DEG">-15.8926912361087</FRAME_LAT>
+            <FRAME_LON unit="DEG">-47.8791374574549</FRAME_LON>
+            <FRAME_ROW>4794</FRAME_ROW>
+            <FRAME_COL>4208</FRAME_COL>
+        </Scene_Center>
+        <SCENE_ORIENTATION unit="DEG">150.026650373485</SCENE_ORIENTATION>
+    </Dataset_Frame>
+    <Coordinate_Reference_System>
+        <GEO_TABLES version="5.2">EPSG</GEO_TABLES>
+        <Horizontal_CS>
+            <HORIZONTAL_CS_CODE>epsg:4326</HORIZONTAL_CS_CODE>
+            <HORIZONTAL_CS_TYPE>GEOGRAPHIC</HORIZONTAL_CS_TYPE>
+            <HORIZONTAL_CS_NAME>WGS 84</HORIZONTAL_CS_NAME>
+        </Horizontal_CS>
+    </Coordinate_Reference_System>
+    <Raster_CS>
+        <RASTER_CS_TYPE>POINT</RASTER_CS_TYPE>
+        <PIXEL_ORIGIN>1</PIXEL_ORIGIN>
+    </Raster_CS>
+    <Geoposition>
+        <Geoposition_Points>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1840812311799</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1285292053553</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1328274455051</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1347151106786</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0815023311417</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1409110123519</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0300430756167</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1471244960876</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.978570242084</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.153341005099</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9269597376863</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1595755271994</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8753324570529</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.16581345927</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8236254423133</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1720624067983</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7717753413162</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1783300296276</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7199035730574</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1846016518506</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6678850212362</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1908924020928</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>0</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1453598518561</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0665726117587</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>420</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0949073404894</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.07261615994</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1261</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0443833755781</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0786668427499</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2102</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9937261672995</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0847320466539</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2944</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9430544442954</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0907975451995</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3785</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.892246089987</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0968779447276</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4627</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8414201651525</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1029589854408</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5468</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7905147364423</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.109048068327</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6309</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7394674778414</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1151526341161</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7151</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6883979744076</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.1212583700423</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7992</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>958</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1587164603566</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0068971465233</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1089346791776</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.012806239138</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0590827568838</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0187196628322</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0090997683527</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0246446161507</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9591029045691</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0305671856834</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9089717184241</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0365016173252</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8588237273713</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0424339770605</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8085978671837</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0483714728796</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7582326894784</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0543213382482</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7078462265148</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0602696056053</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.65731703621</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0662305871598</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>1917</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1219571549872</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9587862494647</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>420</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0725898270454</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9645901965693</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1261</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0231515338032</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9703960454215</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2102</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9735818723315</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9762108463178</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2944</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9239970837082</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9820209311861</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3785</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8742777327892</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.987840261756</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4627</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8245403908388</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9936551604382</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5468</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7747245152849</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9994726827024</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6309</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7247691763516</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0052998971916</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7151</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6747914651913</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-16.0111231096601</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7992</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>2876</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1356300399974</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9089145799396</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0865653835452</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9146073136489</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.037430270306</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9202994266534</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9881646869512</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9259978142408</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.938884180726</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.931689069272</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8894700688895</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9373868549376</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8400382267136</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.943077766088</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7905285031121</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9487686987726</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.740880363225</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9544665494786</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.691210198538</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.960157913907</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6413983334018</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9658564571874</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>3834</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.100390850975</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8675721978981</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>420</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0513838962395</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8731555909372</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1261</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0023050775424</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8787359945344</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2102</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9530944463877</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8843201529589</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2944</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9038674196926</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8898949161516</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3785</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8545054418886</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8954736556941</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4627</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8051242641974</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9010432343411</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5468</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7556637978591</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9066103930268</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6309</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7060635634334</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9121818611859</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7151</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6564398377641</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.9177445188861</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7992</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>4793</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.1137507822629</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8199958143362</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0647024039655</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8254898355911</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0155816815669</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.830978357291</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9663286123997</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8364679970029</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9170587106345</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8419458159012</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8676533151196</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8474249413978</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8182282765231</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8528924589264</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7687234510643</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8583549783779</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.719078301841</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8638190855364</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6694092084885</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8692719005272</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.619596492862</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8747264896613</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>5752</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0782940230959</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7752448657878</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>420</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0289623731646</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7806758999978</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1261</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9795561100274</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7860989273074</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2102</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9300148567072</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7915204705794</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2944</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8804547806619</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.796927740071</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3785</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8307564988355</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8023336824</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4627</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7810365252417</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8077255434962</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5468</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7312343367752</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8131098341872</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6309</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6812890050669</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8184930286078</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7151</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6313175886581</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.8238624246997</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7992</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>6710</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0906034804025</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7214349350145</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0408837325921</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7268188629284</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9910878355124</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7321920238403</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9411549098357</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7375608644267</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8912020166491</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7429127078044</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8411088015066</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7482603560587</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7909926788721</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7535911805009</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7407926195042</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7589116109327</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6904471802066</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.764228026637</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6400743307637</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7695278699123</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.5895526448988</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7748238138387</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>7669</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0521450599448</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.667168392391</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>420</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0017783334029</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6725240591281</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1261</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.951331837995</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6778660311756</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2102</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9007438463389</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6832006997569</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2944</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8501329065691</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6885154556038</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3785</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7993770292423</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6938229985956</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4627</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7485951317981</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6991107808833</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5468</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6977253281997</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7043851715536</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6309</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6467052984359</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7096524744623</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7151</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.5956545402011</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.7149002327924</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7992</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>8628</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0643300196215</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.5982476589843</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>0</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-48.0131973640572</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6036101577742</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>841</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9619827418227</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6089555503889</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>1682</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.9106234350723</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6142902139085</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>2524</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8592397501234</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6196015264545</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>3365</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.8077077849698</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6249021665553</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>4207</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7561482248538</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6301795890907</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5048</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.7044981870086</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6354401428167</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>5889</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.6526943415212</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6406900941743</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>6731</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.600857969439</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6459170122751</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>7572</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+            <Tie_Point>
+                <TIE_POINT_CRS_X>-47.5488640087222</TIE_POINT_CRS_X>
+                <TIE_POINT_CRS_Y>-15.6511333646456</TIE_POINT_CRS_Y>
+                <TIE_POINT_CRS_Z>0</TIE_POINT_CRS_Z>
+                <TIE_POINT_DATA_X>8414</TIE_POINT_DATA_X>
+                <TIE_POINT_DATA_Y>9587</TIE_POINT_DATA_Y>
+            </Tie_Point>
+        </Geoposition_Points>
+    </Geoposition>
+    <Production>
+        <DATASET_PRODUCER_NAME>SunSpace, (Tel) +27-21-880-8100, (Fax) +27-21-880-1703</DATASET_PRODUCER_NAME>
+        <DATASET_PRODUCER_URL href="http://www.sunspace.co.za" />
+        <DATASET_PRODUCTION_DATE>2011-08-31T13:28:56</DATASET_PRODUCTION_DATE>
+        <PRODUCT_TYPE>SSIS-L1A-1</PRODUCT_TYPE>
+        <PRODUCT_INFO>SunSpace Level 1A Product</PRODUCT_INFO>
+        <Production_Facility>
+            <SOFTWARE_NAME />
+            <SOFTWARE_VERSION />
+            <PROCESSING_CENTER />
+        </Production_Facility>
+    </Production>
+    <Dataset_Sources>
+        <Source_Information>
+            <SOURCE_TYPE>SCENE</SOURCE_TYPE>
+            <SOURCE_DESCRIPTION>SumbandilaSAT</SOURCE_DESCRIPTION>
+            <Scene_Source>
+                <MISSION>ZA002</MISSION>
+                <MISSION_INDEX>003</MISSION_INDEX>
+                <INSTRUMENT>MSSK14K</INSTRUMENT>
+                <INSTRUMENT_INDEX>1</INSTRUMENT_INDEX>
+                <IMAGING_DATE>2011-05-14</IMAGING_DATE>
+                <IMAGING_TIME>11:33:14</IMAGING_TIME>
+                <INCIDENCE_ANGLE unit="DEG">3.99026222979549</INCIDENCE_ANGLE>
+                <VIEWING_ANGLE unit="DEG">3.69454155941743</VIEWING_ANGLE>
+                <SUN_AZIMUTH unit="DEG">58.889937733721</SUN_AZIMUTH>
+                <SUN_ELEVATION unit="DEG">26.9256165180001</SUN_ELEVATION>
+            </Scene_Source>
+        </Source_Information>
+    </Dataset_Sources>
+    <Raster_Dimensions>
+        <NCOLS>1024</NCOLS> <!-- test image, should be 8415 -->
+        <NROWS>1024</NROWS> <!-- test image, should be 9588 -->
+        <NBANDS>1</NBANDS>
+    </Raster_Dimensions>
+    <Raster_Encoding>
+        <NBITS>12</NBITS>
+        <BYTEORDER>INTEL</BYTEORDER>
+        <COMPRESSION_NAME>NONE</COMPRESSION_NAME>
+        <DATA_TYPE>UNSIGNED</DATA_TYPE>
+    </Raster_Encoding>
+    <Data_Access>
+        <DATA_FILE_ORGANISATION>BAND_COMPOSITE</DATA_FILE_ORGANISATION>
+        <DATA_FILE_FORMAT version="1.0">GEOTIFF</DATA_FILE_FORMAT>
+        <DATA_FILE_FORMAT_DESC>NONE</DATA_FILE_FORMAT_DESC>
+        <Data_File>
+            <DATA_FILE_PATH href="I0D79_P03_S02_C02_F03_MSSK14K_0.tif" />
+        </Data_File>
+    </Data_Access>
+    <Data_Processing>
+        <PROCESSING_LEVEL>1A</PROCESSING_LEVEL>
+        <GEOMETRIC_PROCESSING>RAW</GEOMETRIC_PROCESSING>
+        <RADIOMETRIC_PROCESSING>SYSTEM</RADIOMETRIC_PROCESSING>
+        <Processing_Options>
+            <PROCESSING_OPTIONS_DATE>2011-08-01T08:00:00.000</PROCESSING_OPTIONS_DATE>
+            <Correction_Algorithm Index="0">
+                <ALGORITHM_TYPE>BlackLevelGainCorrection</ALGORITHM_TYPE>
+                <ALGORITHM_NAME>Black level and AFE gain correction</ALGORITHM_NAME>
+            </Correction_Algorithm>
+            <Correction_Algorithm Index="1">
+                <ALGORITHM_TYPE>OddEvenCorrection</ALGORITHM_TYPE>
+                <ALGORITHM_NAME>CCD Odd Even Pixel correction</ALGORITHM_NAME>
+                <Parameters PlatformID="3" SensorID="2" ChannelID="2">
+                    <ForwardMotionCompensation Index="1">
+                        <Even>
+                            <M>2.407407400</M>
+                            <C>1.225739000</C>
+                        </Even>
+                    </ForwardMotionCompensation>
+                    <ForwardMotionCompensation Index="4">
+                        <Odd>
+                            <M>1.034330000</M>
+                            <C>1.225739000</C>
+                        </Odd>
+                    </ForwardMotionCompensation>
+                </Parameters>
+            </Correction_Algorithm>
+            <Correction_Algorithm Index="2">
+                <ALGORITHM_TYPE>FlatFieldCorrection</ALGORITHM_TYPE>
+                <ALGORITHM_NAME>Flat field correction</ALGORITHM_NAME>
+                <Parameters PlatformID="3" SensorID="2" ChannelID="2">
+                    <Pixel Index="1">0.7746824006</Pixel>
+                    <Pixel Index="2">0.9741900986</Pixel>
+                    <Pixel Index="3">0.9637248142</Pixel>
+                    <Pixel Index="4">0.9748450435</Pixel>
+                    <Pixel Index="5">0.9801136396</Pixel>
+                    <Pixel Index="6">0.9782783455</Pixel>
+                    <Pixel Index="7">0.9900157195</Pixel>
+                    <Pixel Index="8">0.9804739953</Pixel>
+                    <Pixel Index="9">0.9840559018</Pixel>
+                    <Pixel Index="10">0.9845257265</Pixel>
+                    <Pixel Index="11">0.9943707324</Pixel>
+                    <Pixel Index="12">0.9764124386</Pixel>
+                    <Pixel Index="13">0.9898687252</Pixel>
+                    <Pixel Index="14">0.9714117416</Pixel>
+                    <Pixel Index="15">0.9844822768</Pixel>
+                    <Pixel Index="16">0.9721950770</Pixel>
+                    <Pixel Index="17">0.9762315735</Pixel>
+                    <Pixel Index="18">0.9709758436</Pixel>
+                    <Pixel Index="19">0.9572352186</Pixel>
+                    <Pixel Index="20">0.9720584150</Pixel>
+                    <Pixel Index="21">0.9811476778</Pixel>
+                    <Pixel Index="22">0.9581045755</Pixel>
+                    <Pixel Index="23">0.9760732749</Pixel>
+                    <Pixel Index="24">0.9608912040</Pixel>
+                    <Pixel Index="25">0.9676398418</Pixel>
+                    <Pixel Index="26">0.9744091455</Pixel>
+                    <Pixel Index="27">0.9773770907</Pixel>
+                    <Pixel Index="28">0.9838753559</Pixel>
+                    <Pixel Index="29">0.9757474771</Pixel>
+                    <Pixel Index="30">0.9778105060</Pixel>
+                    <Pixel Index="31">0.9876037451</Pixel>
+                    <Pixel Index="32">0.9720584150</Pixel>
+                    <Pixel Index="33">0.9850735098</Pixel>
+                    <Pixel Index="34">0.9818757599</Pixel>
+                    <Pixel Index="35">0.9820792073</Pixel>
+                    <Pixel Index="36">0.9804739953</Pixel>
+                    <Pixel Index="37">0.9773277118</Pixel>
+                    <Pixel Index="38">0.9701925082</Pixel>
+                    <Pixel Index="39">0.9788274268</Pixel>
+                    <Pixel Index="40">0.9768615401</Pixel>
+                    <Pixel Index="41">0.9768644607</Pixel>
+                    <Pixel Index="42">0.9637794967</Pixel>
+                    <Pixel Index="43">0.9776255684</Pixel>
+                    <Pixel Index="44">0.9686251131</Pixel>
+                    <Pixel Index="45">0.9744358940</Pixel>
+                    <Pixel Index="46">0.9585404735</Pixel>
+                    <Pixel Index="47">0.9727018461</Pixel>
+                    <Pixel Index="48">0.9534245895</Pixel>
+                    <Pixel Index="49">0.9705813011</Pixel>
+                    <Pixel Index="50">0.9486064237</Pixel>
+                    <Pixel Index="51">0.9713129597</Pixel>
+                    <Pixel Index="52">0.9642925645</Pixel>
+                    <Pixel Index="53">0.9632329501</Pixel>
+                    <Pixel Index="54">0.9743772041</Pixel>
+                    <Pixel Index="55">0.9627247743</Pixel>
+                    <Pixel Index="56">0.9585085321</Pixel>
+                    <Pixel Index="57">0.9562493470</Pixel>
+                    <Pixel Index="58">0.9581045755</Pixel>
+                    <Pixel Index="59">0.9579819733</Pixel>
+                    <Pixel Index="60">0.9529886915</Pixel>
+                    <Pixel Index="61">0.9596149837</Pixel>
+                    <Pixel Index="62">0.9506379610</Pixel>
+                    <Pixel Index="63">0.9476763559</Pixel>
+                    <Pixel Index="64">0.9415757073</Pixel>
+                    <Pixel Index="65">0.9492284072</Pixel>
+                    <Pixel Index="66">0.9436057267</Pixel>
+                    <Pixel Index="67">0.9469781201</Pixel>
+                    <Pixel Index="68">0.9381706496</Pixel>
+                    <Pixel Index="69">0.9493661327</Pixel>
+                    <Pixel Index="70">0.9413047154</Pixel>
+                    <Pixel Index="71">0.9451117279</Pixel>
+                    <Pixel Index="72">0.9439546820</Pixel>
+                    <Pixel Index="73">0.9480593270</Pixel>
+                    <Pixel Index="74">0.9445731112</Pixel>
+                    <Pixel Index="75">0.9488779347</Pixel>
+                    <Pixel Index="76">0.9344565302</Pixel>
+                    <Pixel Index="77">0.9404620200</Pixel>
+                    <Pixel Index="78">0.9400083122</Pixel>
+                    <Pixel Index="79">0.9335556292</Pixel>
+                    <Pixel Index="80">0.9361391122</Pixel>
+                    <Pixel Index="81">0.9330661403</Pixel>
+                    <Pixel Index="82">0.9440416247</Pixel>
+                    <Pixel Index="83">0.9426488740</Pixel>
+                    <Pixel Index="84">0.9287044392</Pixel>
+                    <Pixel Index="85">0.9426832005</Pixel>
+                    <Pixel Index="86">0.9310551696</Pixel>
+                    <Pixel Index="87">0.9387333757</Pixel>
+                    <Pixel Index="88">0.9400083122</Pixel>
+                    <Pixel Index="89">0.9380276753</Pixel>
+                    <Pixel Index="90">0.9434416141</Pixel>
+                    <Pixel Index="91">0.9388498554</Pixel>
+                    <Pixel Index="92">0.9479560531</Pixel>
+                    <Pixel Index="93">0.9503825522</Pixel>
+                    <Pixel Index="94">0.9337883817</Pixel>
+                    <Pixel Index="95">0.9456068509</Pixel>
+                    <Pixel Index="96">0.9305421018</Pixel>
+                    <Pixel Index="97">0.9479849644</Pixel>
+                    <Pixel Index="98">0.9310551696</Pixel>
+                    <Pixel Index="99">0.9396702076</Pixel>
+                    <Pixel Index="100">0.9366069516</Pixel>
+                    <Pixel Index="101">0.9440050697</Pixel>
+                    <Pixel Index="102">0.9371064967</Pixel>
+                    <Pixel Index="103">0.9460679496</Pixel>
+                    <Pixel Index="104">0.9356260444</Pixel>
+                    <Pixel Index="105">0.9449966505</Pixel>
+                    <Pixel Index="106">0.9327058103</Pixel>
+                    <Pixel Index="107">0.9389338424</Pixel>
+                    <Pixel Index="108">0.9462556932</Pixel>
+                    <Pixel Index="109">0.9350044165</Pixel>
+                    <Pixel Index="110">0.9327377517</Pixel>
+                    <Pixel Index="111">0.9388515854</Pixel>
+                    <Pixel Index="112">0.9291403372</Pixel>
+                    <Pixel Index="113">0.9434862217</Pixel>
+                    <Pixel Index="114">0.9348924282</Pixel>
+                    <Pixel Index="115">0.9452488713</Pixel>
+                    <Pixel Index="116">0.9365750103</Pixel>
+                    <Pixel Index="117">0.9395765094</Pixel>
+                    <Pixel Index="118">0.9400083122</Pixel>
+                    <Pixel Index="119">0.9421257064</Pixel>
+                    <Pixel Index="120">0.9356260444</Pixel>
+                    <Pixel Index="121">0.9409945922</Pixel>
+                    <Pixel Index="122">0.9366069516</Pixel>
+                    <Pixel Index="123">0.9496684613</Pixel>
+                    <Pixel Index="124">0.9366069516</Pixel>
+                    <Pixel Index="125">0.9360554708</Pixel>
+                    <Pixel Index="126">0.9450090092</Pixel>
+                    <Pixel Index="127">0.9318621267</Pixel>
+                    <Pixel Index="128">0.9361391122</Pixel>
+                    <Pixel Index="129">0.9458788935</Pixel>
+                    <Pixel Index="130">0.9377065073</Pixel>
+                    <Pixel Index="131">0.9453874517</Pixel>
+                    <Pixel Index="132">0.9365750103</Pixel>
+                    <Pixel Index="133">0.9376398435</Pixel>
+                    <Pixel Index="134">0.9411398092</Pixel>
+                    <Pixel Index="135">0.9340566497</Pixel>
+                    <Pixel Index="136">0.9366069516</Pixel>
+                    <Pixel Index="137">0.9405744383</Pixel>
+                    <Pixel Index="138">0.9365750103</Pixel>
+                    <Pixel Index="139">0.9424910415</Pixel>
+                    <Pixel Index="140">0.9237037422</Pixel>
+                    <Pixel Index="141">0.9463246014</Pixel>
+                    <Pixel Index="142">0.9400083122</Pixel>
+                    <Pixel Index="143">0.9419342891</Pixel>
+                    <Pixel Index="144">0.9460731620</Pixel>
+                    <Pixel Index="145">0.9361132971</Pixel>
+                    <Pixel Index="146">0.9434416141</Pixel>
+                    <Pixel Index="147">0.9466670043</Pixel>
+                    <Pixel Index="148">0.9310551696</Pixel>
+                    <Pixel Index="149">0.9414581294</Pixel>
+                    <Pixel Index="150">0.9314910677</Pixel>
+                    <Pixel Index="151">0.9351112820</Pixel>
+                    <Pixel Index="152">0.9450090092</Pixel>
+                    <Pixel Index="153">0.9387832697</Pixel>
+                    <Pixel Index="154">0.9400083122</Pixel>
+                    <Pixel Index="155">0.9399531654</Pixel>
+                    <Pixel Index="156">0.9332753139</Pixel>
+                    <Pixel Index="157">0.9431437560</Pixel>
+                    <Pixel Index="158">0.9321057997</Pixel>
+                    <Pixel Index="159">0.9385153890</Pixel>
+                    <Pixel Index="160">0.9299236726</Pixel>
+                    <Pixel Index="161">0.9330217098</Pixel>
+                    <Pixel Index="162">0.9276218677</Pixel>
+                    <Pixel Index="163">0.9309223691</Pixel>
+                    <Pixel Index="164">0.9406267414</Pixel>
+                    <Pixel Index="165">0.9410971446</Pixel>
+                    <Pixel Index="166">0.9395724141</Pixel>
+                    <Pixel Index="167">0.9381871231</Pixel>
+                    <Pixel Index="168">0.9337883817</Pixel>
+                    <Pixel Index="169">0.9359993635</Pixel>
+                    <Pixel Index="170">0.9356260444</Pixel>
+                    <Pixel Index="171">0.9396703948</Pixel>
+                    <Pixel Index="172">0.9314910677</Pixel>
+                    <Pixel Index="173">0.9309122528</Pixel>
+                    <Pixel Index="174">0.9271087999</Pixel>
+                    <Pixel Index="175">0.9338239306</Pixel>
+                    <Pixel Index="176">0.9310551696</Pixel>
+                    <Pixel Index="177">0.9371649543</Pixel>
+                    <Pixel Index="178">0.9286724978</Pixel>
+                    <Pixel Index="179">0.9295418441</Pixel>
+                    <Pixel Index="180">0.9356260444</Pixel>
+                    <Pixel Index="181">0.9262510593</Pixel>
+                    <Pixel Index="182">0.9337883817</Pixel>
+                    <Pixel Index="183">0.9367281671</Pixel>
+                    <Pixel Index="184">0.9339434623</Pixel>
+                    <Pixel Index="185">0.9409402240</Pixel>
+                    <Pixel Index="186">0.9209385887</Pixel>
+                    <Pixel Index="187">0.9268824040</Pixel>
+                    <Pixel Index="188">0.9247580694</Pixel>
+                    <Pixel Index="189">0.9247999792</Pixel>
+                    <Pixel Index="190">0.9271087999</Pixel>
+                    <Pixel Index="191">0.9302744870</Pixel>
+                    <Pixel Index="192">0.9151545563</Pixel>
+                    <Pixel Index="193">0.9285761829</Pixel>
+                    <Pixel Index="194">0.9331417083</Pixel>
+                    <Pixel Index="195">0.9242694414</Pixel>
+                    <Pixel Index="196">0.9281913713</Pixel>
+                    <Pixel Index="197">0.9175680399</Pixel>
+                    <Pixel Index="198">0.9255414048</Pixel>
+                    <Pixel Index="199">0.9236302984</Pixel>
+                    <Pixel Index="200">0.9185878582</Pixel>
+                    <Pixel Index="201">0.9198604802</Pixel>
+                    <Pixel Index="202">0.9165563209</Pixel>
+                    <Pixel Index="203">0.9229701139</Pixel>
+                    <Pixel Index="204">0.9271051027</Pixel>
+                    <Pixel Index="205">0.9225059646</Pixel>
+                    <Pixel Index="206">0.9247261280</Pixel>
+                    <Pixel Index="207">0.9187595751</Pixel>
+                    <Pixel Index="208">0.9337883817</Pixel>
+                    <Pixel Index="209">0.9206404918</Pixel>
+                    <Pixel Index="210">0.9204255208</Pixel>
+                    <Pixel Index="211">0.9401590236</Pixel>
+                    <Pixel Index="212">0.9172914549</Pixel>
+                    <Pixel Index="213">0.9265914424</Pixel>
+                    <Pixel Index="214">0.9185878582</Pixel>
+                    <Pixel Index="215">0.9172223159</Pixel>
+                    <Pixel Index="216">0.9226211707</Pixel>
+                    <Pixel Index="217">0.9235625753</Pixel>
+                    <Pixel Index="218">0.9146414884</Pixel>
+                    <Pixel Index="219">0.9300393979</Pixel>
+                    <Pixel Index="220">0.9152599176</Pixel>
+                    <Pixel Index="221">0.9243394480</Pixel>
+                    <Pixel Index="222">0.9247580694</Pixel>
+                    <Pixel Index="223">0.9252127919</Pixel>
+                    <Pixel Index="224">0.9291403372</Pixel>
+                    <Pixel Index="225">0.9257277519</Pixel>
+                    <Pixel Index="226">0.9247580694</Pixel>
+                    <Pixel Index="227">0.9224101154</Pixel>
+                    <Pixel Index="228">0.9185878582</Pixel>
+                    <Pixel Index="229">0.9233173149</Pixel>
+                    <Pixel Index="230">0.9213247675</Pixel>
+                    <Pixel Index="231">0.9285871660</Pixel>
+                    <Pixel Index="232">0.9356260444</Pixel>
+                    <Pixel Index="233">0.9198283768</Pixel>
+                    <Pixel Index="234">0.9260544726</Pixel>
+                    <Pixel Index="235">0.9233360394</Pixel>
+                    <Pixel Index="236">0.9108042298</Pixel>
+                    <Pixel Index="237">0.9245128609</Pixel>
+                    <Pixel Index="238">0.9185878582</Pixel>
+                    <Pixel Index="239">0.9310832088</Pixel>
+                    <Pixel Index="240">0.9180747903</Pixel>
+                    <Pixel Index="241">0.9317430883</Pixel>
+                    <Pixel Index="242">0.9321927425</Pixel>
+                    <Pixel Index="243">0.9292657492</Pixel>
+                    <Pixel Index="244">0.9213247675</Pixel>
+                    <Pixel Index="245">0.9301594266</Pixel>
+                    <Pixel Index="246">0.9176388923</Pixel>
+                    <Pixel Index="247">0.9257631214</Pixel>
+                    <Pixel Index="248">0.9237037422</Pixel>
+                    <Pixel Index="249">0.9243226735</Pixel>
+                    <Pixel Index="250">0.9243718906</Pixel>
+                    <Pixel Index="251">0.9144941954</Pixel>
+                    <Pixel Index="252">0.9186932195</Pixel>
+                    <Pixel Index="253">0.9210027349</Pixel>
+                    <Pixel Index="254">0.9176388923</Pixel>
+                    <Pixel Index="255">0.9176688167</Pixel>
+                    <Pixel Index="256">0.9281594299</Pixel>
+                    <Pixel Index="257">0.9247195194</Pixel>
+                    <Pixel Index="258">0.9271051027</Pixel>
+                    <Pixel Index="259">0.9253750889</Pixel>
+                    <Pixel Index="260">0.9176388923</Pixel>
+                    <Pixel Index="261">0.9245970733</Pixel>
+                    <Pixel Index="262">0.9176388923</Pixel>
+                    <Pixel Index="263">0.9272586412</Pixel>
+                    <Pixel Index="264">0.9176388923</Pixel>
+                    <Pixel Index="265">0.9235076818</Pixel>
+                    <Pixel Index="266">0.9135871612</Pixel>
+                    <Pixel Index="267">0.9184959002</Pixel>
+                    <Pixel Index="268">0.9165563209</Pixel>
+                    <Pixel Index="269">0.9198928099</Pixel>
+                    <Pixel Index="270">0.9294558332</Pixel>
+                    <Pixel Index="271">0.9192222181</Pixel>
+                    <Pixel Index="272">0.9204255208</Pixel>
+                    <Pixel Index="273">0.9228392938</Pixel>
+                    <Pixel Index="274">0.9159378917</Pixel>
+                    <Pixel Index="275">0.9288688623</Pixel>
+                    <Pixel Index="276">0.9252711372</Pixel>
+                    <Pixel Index="277">0.9157308986</Pixel>
+                    <Pixel Index="278">0.9255414048</Pixel>
+                    <Pixel Index="279">0.9085565758</Pixel>
+                    <Pixel Index="280">0.9281594299</Pixel>
+                    <Pixel Index="281">0.9258893807</Pixel>
+                    <Pixel Index="282">0.9142055904</Pixel>
+                    <Pixel Index="283">0.9222579326</Pixel>
+                    <Pixel Index="284">0.9135871612</Pixel>
+                    <Pixel Index="285">0.9269767538</Pixel>
+                    <Pixel Index="286">0.9287044392</Pixel>
+                    <Pixel Index="287">0.9106728867</Pixel>
+                    <Pixel Index="288">0.9241396402</Pixel>
+                    <Pixel Index="289">0.9108918679</Pixel>
+                    <Pixel Index="290">0.9129091871</Pixel>
+                    <Pixel Index="291">0.9206436122</Pixel>
+                    <Pixel Index="292">0.9081407405</Pixel>
+                    <Pixel Index="293">0.9238800776</Pixel>
+                    <Pixel Index="294">0.9165563209</Pixel>
+                    <Pixel Index="295">0.9193134418</Pixel>
+                    <Pixel Index="296">0.9180747903</Pixel>
+                    <Pixel Index="297">0.9148890772</Pixel>
+                    <Pixel Index="298">0.9237037422</Pixel>
+                    <Pixel Index="299">0.9209911340</Pixel>
+                    <Pixel Index="300">0.9176388923</Pixel>
+                    <Pixel Index="301">0.9190731110</Pixel>
+                    <Pixel Index="302">0.9085032186</Pixel>
+                    <Pixel Index="303">0.9261100461</Pixel>
+                    <Pixel Index="304">0.9142055904</Pixel>
+                    <Pixel Index="305">0.9182446703</Pixel>
+                    <Pixel Index="306">0.9107722885</Pixel>
+                    <Pixel Index="307">0.9168338652</Pixel>
+                    <Pixel Index="308">0.9170204631</Pixel>
+                    <Pixel Index="309">0.9234624678</Pixel>
+                    <Pixel Index="310">0.9176388923</Pixel>
+                    <Pixel Index="311">0.9205099044</Pixel>
+                    <Pixel Index="312">0.9181519602</Pixel>
+                    <Pixel Index="313">0.9183932890</Pixel>
+                    <Pixel Index="314">0.9260544726</Pixel>
+                    <Pixel Index="315">0.9039417080</Pixel>
+                    <Pixel Index="316">0.9221081029</Pixel>
+                    <Pixel Index="317">0.9095491383</Pixel>
+                    <Pixel Index="318">0.9211591370</Pixel>
+                    <Pixel Index="319">0.9226732537</Pixel>
+                    <Pixel Index="320">0.9151545563</Pixel>
+                    <Pixel Index="321">0.9244364009</Pixel>
+                    <Pixel Index="322">0.9142055904</Pixel>
+                    <Pixel Index="323">0.9092370534</Pixel>
+                    <Pixel Index="324">0.9113915113</Pixel>
+                    <Pixel Index="325">0.9122348180</Pixel>
+                    <Pixel Index="326">0.9045568488</Pixel>
+                    <Pixel Index="327">0.9133864059</Pixel>
+                    <Pixel Index="328">0.9079582094</Pixel>
+                    <Pixel Index="329">0.9155481822</Pixel>
+                    <Pixel Index="330">0.9130740933</Pixel>
+                    <Pixel Index="331">0.9066740060</Pixel>
+                    <Pixel Index="332">0.9185878582</Pixel>
+                    <Pixel Index="333">0.8985124091</Pixel>
+                    <Pixel Index="334">0.9176388923</Pixel>
+                    <Pixel Index="335">0.9098358458</Pixel>
+                    <Pixel Index="336">0.9051715808</Pixel>
+                    <Pixel Index="337">0.9113918682</Pixel>
+                    <Pixel Index="338">0.9041209508</Pixel>
+                    <Pixel Index="339">0.9130759750</Pixel>
+                    <Pixel Index="340">0.9051752780</Pixel>
+                    <Pixel Index="341">0.9081596748</Pixel>
+                    <Pixel Index="342">0.9142055904</Pixel>
+                    <Pixel Index="343">0.9114503865</Pixel>
+                    <Pixel Index="344">0.9098233226</Pixel>
+                    <Pixel Index="345">0.9144068954</Pixel>
+                    <Pixel Index="346">0.8961412685</Pixel>
+                    <Pixel Index="347">0.9141945933</Pixel>
+                    <Pixel Index="348">0.9090407808</Pixel>
+                    <Pixel Index="349">0.9003300466</Pixel>
+                    <Pixel Index="350">0.9079901507</Pixel>
+                    <Pixel Index="351">0.9019607722</Pixel>
+                    <Pixel Index="352">0.9062578495</Pixel>
+                    <Pixel Index="353">0.9086589736</Pixel>
+                    <Pixel Index="354">0.9035759416</Pixel>
+                    <Pixel Index="355">0.9165557755</Pixel>
+                    <Pixel Index="356">0.9194765549</Pixel>
+                    <Pixel Index="357">0.9072346541</Pixel>
+                    <Pixel Index="358">0.9142055904</Pixel>
+                    <Pixel Index="359">0.9008550818</Pixel>
+                    <Pixel Index="360">0.9157240599</Pixel>
+                    <Pixel Index="361">0.9117999652</Pixel>
+                    <Pixel Index="362">0.9146414884</Pixel>
+                    <Pixel Index="363">0.9074076067</Pixel>
+                    <Pixel Index="364">0.9028245475</Pixel>
+                    <Pixel Index="365">0.8976811600</Pixel>
+                    <Pixel Index="366">0.9096592100</Pixel>
+                    <Pixel Index="367">0.9130581808</Pixel>
+                    <Pixel Index="368">0.9126381953</Pixel>
+                    <Pixel Index="369">0.9047957258</Pixel>
+                    <Pixel Index="370">0.9101722779</Pixel>
+                    <Pixel Index="371">0.9019791551</Pixel>
+                    <Pixel Index="372">0.9062259081</Pixel>
+                    <Pixel Index="373">0.8992060991</Pixel>
+                    <Pixel Index="374">0.9062259081</Pixel>
+                    <Pixel Index="375">0.8993088250</Pixel>
+                    <Pixel Index="376">0.9108042298</Pixel>
+                    <Pixel Index="377">0.8950281727</Pixel>
+                    <Pixel Index="378">0.9062578495</Pixel>
+                    <Pixel Index="379">0.9188614397</Pixel>
+                    <Pixel Index="380">0.9146414884</Pixel>
+                    <Pixel Index="381">0.9199956468</Pixel>
+                    <Pixel Index="382">0.9057900100</Pixel>
+                    <Pixel Index="383">0.8959712509</Pixel>
+                    <Pixel Index="384">0.9106081759</Pixel>
+                    <Pixel Index="385">0.9029030115</Pixel>
+                    <Pixel Index="386">0.9120099405</Pixel>
+                    <Pixel Index="387">0.9019508455</Pixel>
+                    <Pixel Index="388">0.9012571524</Pixel>
+                    <Pixel Index="389">0.9078438391</Pixel>
+                    <Pixel Index="390">0.8972727655</Pixel>
+                    <Pixel Index="391">0.9004690836</Pixel>
+                    <Pixel Index="392">0.9070092435</Pixel>
+                    <Pixel Index="393">0.9110001028</Pixel>
+                    <Pixel Index="394">0.9142055904</Pixel>
+                    <Pixel Index="395">0.9070246289</Pixel>
+                    <Pixel Index="396">0.9157240599</Pixel>
+                    <Pixel Index="397">0.9100455656</Pixel>
+                    <Pixel Index="398">0.9079582094</Pixel>
+                    <Pixel Index="399">0.9083817232</Pixel>
+                    <Pixel Index="400">0.9036078829</Pixel>
+                    <Pixel Index="401">0.9059015670</Pixel>
+                    <Pixel Index="402">0.9041209508</Pixel>
+                    <Pixel Index="403">0.9108009555</Pixel>
+                    <Pixel Index="404">0.9113915113</Pixel>
+                    <Pixel Index="405">0.9128804078</Pixel>
+                    <Pixel Index="406">0.9070092435</Pixel>
+                    <Pixel Index="407">0.9105154190</Pixel>
+                    <Pixel Index="408">0.9079582094</Pixel>
+                    <Pixel Index="409">0.9055473937</Pixel>
+                    <Pixel Index="410">0.9037095471</Pixel>
+                    <Pixel Index="411">0.9185425846</Pixel>
+                    <Pixel Index="412">0.9146414884</Pixel>
+                    <Pixel Index="413">0.9059976384</Pixel>
+                    <Pixel Index="414">0.9109556132</Pixel>
+                    <Pixel Index="415">0.9112510822</Pixel>
+                    <Pixel Index="416">0.8961412685</Pixel>
+                    <Pixel Index="417">0.9120860900</Pixel>
+                    <Pixel Index="418">0.9001745810</Pixel>
+                    <Pixel Index="419">0.9173156794</Pixel>
+                    <Pixel Index="420">0.9136925225</Pixel>
+                    <Pixel Index="421">0.9093480820</Pixel>
+                    <Pixel Index="422">0.9130740933</Pixel>
+                    <Pixel Index="423">0.9137746439</Pixel>
+                    <Pixel Index="424">0.9090407808</Pixel>
+                    <Pixel Index="425">0.9065352107</Pixel>
+                    <Pixel Index="426">0.9022061183</Pixel>
+                    <Pixel Index="427">0.9147326562</Pixel>
+                    <Pixel Index="428">0.9067709173</Pixel>
+                    <Pixel Index="429">0.9073795331</Pixel>
+                    <Pixel Index="430">0.9122907579</Pixel>
+                    <Pixel Index="431">0.9034167012</Pixel>
+                    <Pixel Index="432">0.9075223113</Pixel>
+                    <Pixel Index="433">0.9074074393</Pixel>
+                    <Pixel Index="434">0.9070092435</Pixel>
+                    <Pixel Index="435">0.9156377467</Pixel>
+                    <Pixel Index="436">0.9012571524</Pixel>
+                    <Pixel Index="437">0.9035681430</Pixel>
+                    <Pixel Index="438">0.9075223113</Pixel>
+                    <Pixel Index="439">0.8963345688</Pixel>
+                    <Pixel Index="440">0.9180747903</Pixel>
+                    <Pixel Index="441">0.9020637914</Pixel>
+                    <Pixel Index="442">0.8961412685</Pixel>
+                    <Pixel Index="443">0.9073986472</Pixel>
+                    <Pixel Index="444">0.9001745810</Pixel>
+                    <Pixel Index="445">0.9073945218</Pixel>
+                    <Pixel Index="446">0.9070092435</Pixel>
+                    <Pixel Index="447">0.9066789201</Pixel>
+                    <Pixel Index="448">0.8980071753</Pixel>
+                    <Pixel Index="449">0.9042894560</Pixel>
+                    <Pixel Index="450">0.9096592100</Pixel>
+                    <Pixel Index="451">0.9026578460</Pixel>
+                    <Pixel Index="452">0.8961412685</Pixel>
+                    <Pixel Index="453">0.8947840630</Pixel>
+                    <Pixel Index="454">0.9051752780</Pixel>
+                    <Pixel Index="455">0.9052529408</Pixel>
+                    <Pixel Index="456">0.9001745810</Pixel>
+                    <Pixel Index="457">0.9032424906</Pixel>
+                    <Pixel Index="458">0.9096592100</Pixel>
+                    <Pixel Index="459">0.8977947239</Pixel>
+                    <Pixel Index="460">0.9052769422</Pixel>
+                    <Pixel Index="461">0.9011792412</Pixel>
+                    <Pixel Index="462">0.9090407808</Pixel>
+                    <Pixel Index="463">0.9027173219</Pixel>
+                    <Pixel Index="464">0.8961412685</Pixel>
+                    <Pixel Index="465">0.9062246923</Pixel>
+                    <Pixel Index="466">0.8984919990</Pixel>
+                    <Pixel Index="467">0.8979343873</Pixel>
+                    <Pixel Index="468">0.9036078829</Pixel>
+                    <Pixel Index="469">0.9016067040</Pixel>
+                    <Pixel Index="470">0.9001745810</Pixel>
+                    <Pixel Index="471">0.8943714244</Pixel>
+                    <Pixel Index="472">0.8961412685</Pixel>
+                    <Pixel Index="473">0.8975226073</Pixel>
+                    <Pixel Index="474">0.8969246039</Pixel>
+                    <Pixel Index="475">0.8935744262</Pixel>
+                    <Pixel Index="476">0.9070092435</Pixel>
+                    <Pixel Index="477">0.8973488998</Pixel>
+                    <Pixel Index="478">0.9095256045</Pixel>
+                    <Pixel Index="479">0.9054227836</Pixel>
+                    <Pixel Index="480">0.9001745810</Pixel>
+                    <Pixel Index="481">0.8932733909</Pixel>
+                    <Pixel Index="482">0.9051715808</Pixel>
+                    <Pixel Index="483">0.8991689496</Pixel>
+                    <Pixel Index="484">0.9070092435</Pixel>
+                    <Pixel Index="485">0.9035153483</Pixel>
+                    <Pixel Index="486">0.8951923026</Pixel>
+                    <Pixel Index="487">0.9009705267</Pixel>
+                    <Pixel Index="488">0.8956282006</Pixel>
+                    <Pixel Index="489">0.9116295576</Pixel>
+                    <Pixel Index="490">0.8941097312</Pixel>
+                    <Pixel Index="491">0.8992912200</Pixel>
+                    <Pixel Index="492">0.8933263958</Pixel>
+                    <Pixel Index="493">0.9008559527</Pixel>
+                    <Pixel Index="494">0.8917590007</Pixel>
+                    <Pixel Index="495">0.8954325581</Pixel>
+                    <Pixel Index="496">0.8969246039</Pixel>
+                    <Pixel Index="497">0.9022267767</Pixel>
+                    <Pixel Index="498">0.8861582931</Pixel>
+                    <Pixel Index="499">0.8871928722</Pixel>
+                    <Pixel Index="500">0.8917590007</Pixel>
+                    <Pixel Index="501">0.8921280884</Pixel>
+                    <Pixel Index="502">0.9050944110</Pixel>
+                    <Pixel Index="503">0.8893379497</Pixel>
+                    <Pixel Index="504">0.8922720685</Pixel>
+                    <Pixel Index="505">0.8935966948</Pixel>
+                    <Pixel Index="506">0.8927079666</Pixel>
+                    <Pixel Index="507">0.8968875670</Pixel>
+                    <Pixel Index="508">0.8930554039</Pixel>
+                    <Pixel Index="509">0.9001924176</Pixel>
+                    <Pixel Index="510">0.8951923026</Pixel>
+                    <Pixel Index="511">0.8824787681</Pixel>
+                    <Pixel Index="512">0.8917590007</Pixel>
+                    <Pixel Index="513">0.8886838366</Pixel>
+                    <Pixel Index="514">0.8945738734</Pixel>
+                    <Pixel Index="515">0.8907830098</Pixel>
+                    <Pixel Index="516">0.8894082702</Pixel>
+                    <Pixel Index="517">0.8939423105</Pixel>
+                    <Pixel Index="518">0.8866431167</Pixel>
+                    <Pixel Index="519">0.8752370526</Pixel>
+                    <Pixel Index="520">0.8885090235</Pixel>
+                    <Pixel Index="521">0.8851434093</Pixel>
+                    <Pixel Index="522">0.8911405715</Pixel>
+                    <Pixel Index="523">0.8896952235</Pixel>
+                    <Pixel Index="524">0.8928415721</Pixel>
+                    <Pixel Index="525">0.8948681137</Pixel>
+                    <Pixel Index="526">0.8831608892</Pixel>
+                    <Pixel Index="527">0.8796801306</Pixel>
+                    <Pixel Index="528">0.8871072590</Pixel>
+                    <Pixel Index="529">0.8748083479</Pixel>
+                    <Pixel Index="530">0.8877256881</Pixel>
+                    <Pixel Index="531">0.8796496462</Pixel>
+                    <Pixel Index="532">0.8737718486</Pixel>
+                    <Pixel Index="533">0.8833951057</Pixel>
+                    <Pixel Index="534">0.8827249911</Pixel>
+                    <Pixel Index="535">0.8931256080</Pixel>
+                    <Pixel Index="536">0.8766601413</Pixel>
+                    <Pixel Index="537">0.8883318490</Pixel>
+                    <Pixel Index="538">0.8872126203</Pixel>
+                    <Pixel Index="539">0.8813475301</Pixel>
+                    <Pixel Index="540">0.8842923862</Pixel>
+                    <Pixel Index="541">0.8791264316</Pixel>
+                    <Pixel Index="542">0.8782410592</Pixel>
+                    <Pixel Index="543">0.9007178776</Pixel>
+                    <Pixel Index="544">0.8827249911</Pixel>
+                    <Pixel Index="545">0.8877756418</Pixel>
+                    <Pixel Index="546">0.8846398236</Pixel>
+                    <Pixel Index="547">0.8816721341</Pixel>
+                    <Pixel Index="548">0.8871072590</Pixel>
+                    <Pixel Index="549">0.8878702923</Pixel>
+                    <Pixel Index="550">0.8951923026</Pixel>
+                    <Pixel Index="551">0.8942948435</Pixel>
+                    <Pixel Index="552">0.8758903287</Pixel>
+                    <Pixel Index="553">0.8932421036</Pixel>
+                    <Pixel Index="554">0.8850757216</Pixel>
+                    <Pixel Index="555">0.8863392624</Pixel>
+                    <Pixel Index="556">0.8855887895</Pixel>
+                    <Pixel Index="557">0.8844059239</Pixel>
+                    <Pixel Index="558">0.8827249911</Pixel>
+                    <Pixel Index="559">0.8836685716</Pixel>
+                    <Pixel Index="560">0.8867583037</Pixel>
+                    <Pixel Index="561">0.8956335235</Pixel>
+                    <Pixel Index="562">0.8850757216</Pixel>
+                    <Pixel Index="563">0.8842906700</Pixel>
+                    <Pixel Index="564">0.8808910257</Pixel>
+                    <Pixel Index="565">0.8731170236</Pixel>
+                    <Pixel Index="566">0.8922720685</Pixel>
+                    <Pixel Index="567">0.8834636026</Pixel>
+                    <Pixel Index="568">0.8816424197</Pixel>
+                    <Pixel Index="569">0.8932775431</Pixel>
+                    <Pixel Index="570">0.8687711516</Pixel>
+                    <Pixel Index="571">0.8861360793</Pixel>
+                    <Pixel Index="572">0.8827249911</Pixel>
+                    <Pixel Index="573">0.8870471178</Pixel>
+                    <Pixel Index="574">0.8887898410</Pixel>
+                    <Pixel Index="575">0.8801049054</Pixel>
+                    <Pixel Index="576">0.8827249911</Pixel>
+                    <Pixel Index="577">0.8831296656</Pixel>
+                    <Pixel Index="578">0.8742077466</Pixel>
+                    <Pixel Index="579">0.8823814760</Pixel>
+                    <Pixel Index="580">0.8749910820</Pixel>
+                    <Pixel Index="581">0.8815429975</Pixel>
+                    <Pixel Index="582">0.8811575961</Pixel>
+                    <Pixel Index="583">0.8771494705</Pixel>
+                    <Pixel Index="584">0.8827249911</Pixel>
+                    <Pixel Index="585">0.8687633119</Pixel>
+                    <Pixel Index="586">0.8867583037</Pixel>
+                    <Pixel Index="587">0.8803446073</Pixel>
+                    <Pixel Index="588">0.8760736535</Pixel>
+                    <Pixel Index="589">0.8816310039</Pixel>
+                    <Pixel Index="590">0.8707744447</Pixel>
+                    <Pixel Index="591">0.8745583196</Pixel>
+                    <Pixel Index="592">0.8776091072</Pixel>
+                    <Pixel Index="593">0.8763506734</Pixel>
+                    <Pixel Index="594">0.8698254788</Pixel>
+                    <Pixel Index="595">0.8822790169</Pixel>
+                    <Pixel Index="596">0.8718570162</Pixel>
+                    <Pixel Index="597">0.8877812967</Pixel>
+                    <Pixel Index="598">0.8718570162</Pixel>
+                    <Pixel Index="599">0.8729065191</Pixel>
+                    <Pixel Index="600">0.8846398236</Pixel>
+                    <Pixel Index="601">0.8769835135</Pixel>
+                    <Pixel Index="602">0.8792916892</Pixel>
+                    <Pixel Index="603">0.8777302727</Pixel>
+                    <Pixel Index="604">0.8860246875</Pixel>
+                    <Pixel Index="605">0.8857257559</Pixel>
+                    <Pixel Index="606">0.8726403515</Pixel>
+                    <Pixel Index="607">0.8823067958</Pixel>
+                    <Pixel Index="608">0.8788557912</Pixel>
+                    <Pixel Index="609">0.8797090603</Pixel>
+                    <Pixel Index="610">0.8827249911</Pixel>
+                    <Pixel Index="611">0.8725596180</Pixel>
+                    <Pixel Index="612">0.8726084102</Pixel>
+                    <Pixel Index="613">0.8700781949</Pixel>
+                    <Pixel Index="614">0.8709080503</Pixel>
+                    <Pixel Index="615">0.8757434480</Pixel>
+                    <Pixel Index="616">0.8674747483</Pixel>
+                    <Pixel Index="617">0.8724392920</Pixel>
+                    <Pixel Index="618">0.8812065217</Pixel>
+                    <Pixel Index="619">0.8694595552</Pixel>
+                    <Pixel Index="620">0.8783427233</Pixel>
+                    <Pixel Index="621">0.8745876635</Pixel>
+                    <Pixel Index="622">0.8754544306</Pixel>
+                    <Pixel Index="623">0.8804493605</Pixel>
+                    <Pixel Index="624">0.8687711516</Pixel>
+                    <Pixel Index="625">0.8718041816</Pixel>
+                    <Pixel Index="626">0.8726403515</Pixel>
+                    <Pixel Index="627">0.8731335520</Pixel>
+                    <Pixel Index="628">0.8651737371</Pixel>
+                    <Pixel Index="629">0.8617256832</Pixel>
+                    <Pixel Index="630">0.8726403515</Pixel>
+                    <Pixel Index="631">0.8656268933</Pixel>
+                    <Pixel Index="632">0.8732268394</Pixel>
+                    <Pixel Index="633">0.8664249251</Pixel>
+                    <Pixel Index="634">0.8670388503</Pixel>
+                    <Pixel Index="635">0.8729530671</Pixel>
+                    <Pixel Index="636">0.8679878162</Pixel>
+                    <Pixel Index="637">0.8705780490</Pixel>
+                    <Pixel Index="638">0.8687711516</Pixel>
+                    <Pixel Index="639">0.8687565176</Pixel>
+                    <Pixel Index="640">0.8546212581</Pixel>
+                    <Pixel Index="641">0.8747547486</Pixel>
+                    <Pixel Index="642">0.8512198976</Pixel>
+                    <Pixel Index="643">0.8668753939</Pixel>
+                    <Pixel Index="644">0.8592729998</Pixel>
+                    <Pixel Index="645">0.8632102957</Pixel>
+                    <Pixel Index="646">0.8743094108</Pixel>
+                    <Pixel Index="647">0.8630951001</Pixel>
+                    <Pixel Index="648">0.8607914693</Pixel>
+                    <Pixel Index="649">0.8580722252</Pixel>
+                    <Pixel Index="650">0.8553548742</Pixel>
+                    <Pixel Index="651">0.8699591632</Pixel>
+                    <Pixel Index="652">0.8597371421</Pixel>
+                    <Pixel Index="653">0.8705796530</Pixel>
+                    <Pixel Index="654">0.8584896644</Pixel>
+                    <Pixel Index="655">0.8672191260</Pixel>
+                    <Pixel Index="656">0.8631421998</Pixel>
+                    <Pixel Index="657">0.8690548172</Pixel>
+                    <Pixel Index="658">0.8685253784</Pixel>
+                    <Pixel Index="659">0.8711691277</Pixel>
+                    <Pixel Index="660">0.8545715388</Pixel>
+                    <Pixel Index="661">0.8598718971</Pixel>
+                    <Pixel Index="662">0.8557907723</Pixel>
+                    <Pixel Index="663">0.8577714595</Pixel>
+                    <Pixel Index="664">0.8569222693</Pixel>
+                    <Pixel Index="665">0.8584700315</Pixel>
+                    <Pixel Index="666">0.8631421998</Pixel>
+                    <Pixel Index="667">0.8578423912</Pixel>
+                    <Pixel Index="668">0.8539248654</Pixel>
+                    <Pixel Index="669">0.8599468068</Pixel>
+                    <Pixel Index="670">0.8569222693</Pixel>
+                    <Pixel Index="671">0.8610635872</Pixel>
+                    <Pixel Index="672">0.8603555712</Pixel>
+                    <Pixel Index="673">0.8673096448</Pixel>
+                    <Pixel Index="674">0.8607914693</Pixel>
+                    <Pixel Index="675">0.8581169430</Pixel>
+                    <Pixel Index="676">0.8613045371</Pixel>
+                    <Pixel Index="677">0.8624506965</Pixel>
+                    <Pixel Index="678">0.8581415028</Pixel>
+                    <Pixel Index="679">0.8517784463</Pixel>
+                    <Pixel Index="680">0.8589538067</Pixel>
+                    <Pixel Index="681">0.8612843643</Pixel>
+                    <Pixel Index="682">0.8607914693</Pixel>
+                    <Pixel Index="683">0.8545089328</Pixel>
+                    <Pixel Index="684">0.8670388503</Pixel>
+                    <Pixel Index="685">0.8559491405</Pixel>
+                    <Pixel Index="686">0.8506571104</Pixel>
+                    <Pixel Index="687">0.8545771281</Pixel>
+                    <Pixel Index="688">0.8530078409</Pixel>
+                    <Pixel Index="689">0.8514296665</Pixel>
+                    <Pixel Index="690">0.8657921663</Pixel>
+                    <Pixel Index="691">0.8516955962</Pixel>
+                    <Pixel Index="692">0.8613045371</Pixel>
+                    <Pixel Index="693">0.8511476777</Pixel>
+                    <Pixel Index="694">0.8550074369</Pixel>
+                    <Pixel Index="695">0.8704859931</Pixel>
+                    <Pixel Index="696">0.8523758889</Pixel>
+                    <Pixel Index="697">0.8614479734</Pixel>
+                    <Pixel Index="698">0.8595722358</Pixel>
+                    <Pixel Index="699">0.8426778527</Pixel>
+                    <Pixel Index="700">0.8603555712</Pixel>
+                    <Pixel Index="701">0.8408913872</Pixel>
+                    <Pixel Index="702">0.8460542943</Pixel>
+                    <Pixel Index="703">0.8652855596</Pixel>
+                    <Pixel Index="704">0.8359377134</Pixel>
+                    <Pixel Index="705">0.8569184118</Pixel>
+                    <Pixel Index="706">0.8460542943</Pixel>
+                    <Pixel Index="707">0.8523072349</Pixel>
+                    <Pixel Index="708">0.8478882598</Pixel>
+                    <Pixel Index="709">0.8415605766</Pixel>
+                    <Pixel Index="710">0.8479202012</Pixel>
+                    <Pixel Index="711">0.8528835654</Pixel>
+                    <Pixel Index="712">0.8455412265</Pixel>
+                    <Pixel Index="713">0.8501892947</Pixel>
+                    <Pixel Index="714">0.8439738314</Pixel>
+                    <Pixel Index="715">0.8561386754</Pixel>
+                    <Pixel Index="716">0.8449227973</Pixel>
+                    <Pixel Index="717">0.8447803414</Pixel>
+                    <Pixel Index="718">0.8533248548</Pixel>
+                    <Pixel Index="719">0.8433845662</Pixel>
+                    <Pixel Index="720">0.8450733871</Pixel>
+                    <Pixel Index="721">0.8488784676</Pixel>
+                    <Pixel Index="722">0.8372028160</Pixel>
+                    <Pixel Index="723">0.8556589797</Pixel>
+                    <Pixel Index="724">0.8444868993</Pixel>
+                    <Pixel Index="725">0.8472220299</Pixel>
+                    <Pixel Index="726">0.8580048408</Pixel>
+                    <Pixel Index="727">0.8489733044</Pixel>
+                    <Pixel Index="728">0.8460542943</Pixel>
+                    <Pixel Index="729">0.8425270788</Pixel>
+                    <Pixel Index="730">0.8405405295</Pixel>
+                    <Pixel Index="731">0.8567634901</Pixel>
+                    <Pixel Index="732">0.8405405295</Pixel>
+                    <Pixel Index="733">0.8526226969</Pixel>
+                    <Pixel Index="734">0.8431904960</Pixel>
+                    <Pixel Index="735">0.8384082240</Pixel>
+                    <Pixel Index="736">0.8545715388</Pixel>
+                    <Pixel Index="737">0.8457270795</Pixel>
+                    <Pixel Index="738">0.8410720159</Pixel>
+                    <Pixel Index="739">0.8421812300</Pixel>
+                    <Pixel Index="740">0.8432676658</Pixel>
+                    <Pixel Index="741">0.8484473275</Pixel>
+                    <Pixel Index="742">0.8370202848</Pixel>
+                    <Pixel Index="743">0.8460636738</Pixel>
+                    <Pixel Index="744">0.8523758889</Pixel>
+                    <Pixel Index="745">0.8351514811</Pixel>
+                    <Pixel Index="746">0.8595722358</Pixel>
+                    <Pixel Index="747">0.8455728079</Pixel>
+                    <Pixel Index="748">0.8365843868</Pixel>
+                    <Pixel Index="749">0.8465140387</Pixel>
+                    <Pixel Index="750">0.8451053284</Pixel>
+                    <Pixel Index="751">0.8416679757</Pixel>
+                    <Pixel Index="752">0.8471368658</Pixel>
+                    <Pixel Index="753">0.8427720900</Pixel>
+                    <Pixel Index="754">0.8460542943</Pixel>
+                    <Pixel Index="755">0.8458099120</Pixel>
+                    <Pixel Index="756">0.8410535973</Pixel>
+                    <Pixel Index="757">0.8399249602</Pixel>
+                    <Pixel Index="758">0.8462926205</Pixel>
+                    <Pixel Index="759">0.8431982818</Pixel>
+                    <Pixel Index="760">0.8399894445</Pixel>
+                    <Pixel Index="761">0.8490208642</Pixel>
+                    <Pixel Index="762">0.8376387140</Pixel>
+                    <Pixel Index="763">0.8429850184</Pixel>
+                    <Pixel Index="764">0.8460542943</Pixel>
+                    <Pixel Index="765">0.8395293737</Pixel>
+                    <Pixel Index="766">0.8393710153</Pixel>
+                    <Pixel Index="767">0.8397452039</Pixel>
+                    <Pixel Index="768">0.8349887475</Pixel>
+                    <Pixel Index="769">0.8334209277</Pixel>
+                    <Pixel Index="770">0.8412361285</Pixel>
+                    <Pixel Index="771">0.8367026648</Pixel>
+                    <Pixel Index="772">0.8474523618</Pixel>
+                    <Pixel Index="773">0.8332692567</Pixel>
+                    <Pixel Index="774">0.8384220494</Pixel>
+                    <Pixel Index="775">0.8394540802</Pixel>
+                    <Pixel Index="776">0.8432676658</Pixel>
+                    <Pixel Index="777">0.8366565025</Pixel>
+                    <Pixel Index="778">0.8449999671</Pixel>
+                    <Pixel Index="779">0.8371428909</Pixel>
+                    <Pixel Index="780">0.8393710153</Pixel>
+                    <Pixel Index="781">0.8292333261</Pixel>
+                    <Pixel Index="782">0.8444868993</Pixel>
+                    <Pixel Index="783">0.8366783086</Pixel>
+                    <Pixel Index="784">0.8314685028</Pixel>
+                    <Pixel Index="785">0.8402155840</Pixel>
+                    <Pixel Index="786">0.8440374784</Pixel>
+                    <Pixel Index="787">0.8260605589</Pixel>
+                    <Pixel Index="788">0.8432676658</Pixel>
+                    <Pixel Index="789">0.8297885167</Pixel>
+                    <Pixel Index="790">0.8381517819</Pixel>
+                    <Pixel Index="791">0.8387768811</Pixel>
+                    <Pixel Index="792">0.8370202848</Pixel>
+                    <Pixel Index="793">0.8402734364</Pixel>
+                    <Pixel Index="794">0.8270997578</Pixel>
+                    <Pixel Index="795">0.8385311117</Pixel>
+                    <Pixel Index="796">0.8381517819</Pixel>
+                    <Pixel Index="797">0.8376306901</Pixel>
+                    <Pixel Index="798">0.8337695140</Pixel>
+                    <Pixel Index="799">0.8325120333</Pixel>
+                    <Pixel Index="800">0.8281688064</Pixel>
+                    <Pixel Index="801">0.8337885849</Pixel>
+                    <Pixel Index="802">0.8241207725</Pixel>
+                    <Pixel Index="803">0.8386036118</Pixel>
+                    <Pixel Index="804">0.8326380170</Pixel>
+                    <Pixel Index="805">0.8357259671</Pixel>
+                    <Pixel Index="806">0.8326380170</Pixel>
+                    <Pixel Index="807">0.8316965208</Pixel>
+                    <Pixel Index="808">0.8342054121</Pixel>
+                    <Pixel Index="809">0.8380757523</Pixel>
+                    <Pixel Index="810">0.8406176993</Pixel>
+                    <Pixel Index="811">0.8402695787</Pixel>
+                    <Pixel Index="812">0.8352879835</Pixel>
+                    <Pixel Index="813">0.8286815620</Pixel>
+                    <Pixel Index="814">0.8337695140</Pixel>
+                    <Pixel Index="815">0.8398941237</Pixel>
+                    <Pixel Index="816">0.8314685028</Pixel>
+                    <Pixel Index="817">0.8380314501</Pixel>
+                    <Pixel Index="818">0.8270862350</Pixel>
+                    <Pixel Index="819">0.8332687259</Pixel>
+                    <Pixel Index="820">0.8365843868</Pixel>
+                    <Pixel Index="821">0.8351964821</Pixel>
+                    <Pixel Index="822">0.8440190598</Pixel>
+                    <Pixel Index="823">0.8349964049</Pixel>
+                    <Pixel Index="824">0.8406176993</Pixel>
+                    <Pixel Index="825">0.8275450619</Pixel>
+                    <Pixel Index="826">0.8337695140</Pixel>
+                    <Pixel Index="827">0.8419655854</Pixel>
+                    <Pixel Index="828">0.8355018153</Pixel>
+                    <Pixel Index="829">0.8346539403</Pixel>
+                    <Pixel Index="830">0.8288185363</Pixel>
+                    <Pixel Index="831">0.8327943618</Pixel>
+                    <Pixel Index="832">0.8355018153</Pixel>
+                    <Pixel Index="833">0.8246100836</Pixel>
+                    <Pixel Index="834">0.8331510848</Pixel>
+                    <Pixel Index="835">0.8355082938</Pixel>
+                    <Pixel Index="836">0.8372028160</Pixel>
+                    <Pixel Index="837">0.8335905817</Pixel>
+                    <Pixel Index="838">0.8326380170</Pixel>
+                    <Pixel Index="839">0.8347188317</Pixel>
+                    <Pixel Index="840">0.8428043172</Pixel>
+                    <Pixel Index="841">0.8283093777</Pixel>
+                    <Pixel Index="842">0.8381517819</Pixel>
+                    <Pixel Index="843">0.8302742502</Pixel>
+                    <Pixel Index="844">0.8225533774</Pixel>
+                    <Pixel Index="845">0.8392992458</Pixel>
+                    <Pixel Index="846">0.8236529331</Pixel>
+                    <Pixel Index="847">0.8331238595</Pixel>
+                    <Pixel Index="848">0.8416683293</Pixel>
+                    <Pixel Index="849">0.8317214476</Pixel>
+                    <Pixel Index="850">0.8337695140</Pixel>
+                    <Pixel Index="851">0.8234161286</Pixel>
+                    <Pixel Index="852">0.8288185363</Pixel>
+                    <Pixel Index="853">0.8305339583</Pixel>
+                    <Pixel Index="854">0.8247355045</Pixel>
+                    <Pixel Index="855">0.8422443491</Pixel>
+                    <Pixel Index="856">0.8174374934</Pixel>
+                    <Pixel Index="857">0.8408486726</Pixel>
+                    <Pixel Index="858">0.8309554350</Pixel>
+                    <Pixel Index="859">0.8310709107</Pixel>
+                    <Pixel Index="860">0.8326380170</Pixel>
+                    <Pixel Index="861">0.8291542504</Pixel>
+                    <Pixel Index="862">0.8305195369</Pixel>
+                    <Pixel Index="863">0.8244997950</Pixel>
+                    <Pixel Index="864">0.8271181764</Pixel>
+                    <Pixel Index="865">0.8355965689</Pixel>
+                    <Pixel Index="866">0.8170015954</Pixel>
+                    <Pixel Index="867">0.8268480949</Pixel>
+                    <Pixel Index="868">0.8270862350</Pixel>
+                    <Pixel Index="869">0.8291440648</Pixel>
+                    <Pixel Index="870">0.8275221330</Pixel>
+                    <Pixel Index="871">0.8243542539</Pixel>
+                    <Pixel Index="872">0.8227039672</Pixel>
+                    <Pixel Index="873">0.8384551869</Pixel>
+                    <Pixel Index="874">0.8213022026</Pixel>
+                    <Pixel Index="875">0.8283777150</Pixel>
+                    <Pixel Index="876">0.8236848744</Pixel>
+                    <Pixel Index="877">0.8247909092</Pixel>
+                    <Pixel Index="878">0.8236848744</Pixel>
+                    <Pixel Index="879">0.8294237959</Pixel>
+                    <Pixel Index="880">0.8179505613</Pixel>
+                    <Pixel Index="881">0.8266442983</Pixel>
+                    <Pixel Index="882">0.8155998308</Pixel>
+                    <Pixel Index="883">0.8267839282</Pixel>
+                    <Pixel Index="884">0.8112175630</Pixel>
+                    <Pixel Index="885">0.8243098064</Pixel>
+                    <Pixel Index="886">0.8247355045</Pixel>
+                    <Pixel Index="887">0.8282978769</Pixel>
+                    <Pixel Index="888">0.8349887475</Pixel>
+                    <Pixel Index="889">0.8217247681</Pixel>
+                    <Pixel Index="890">0.8152692941</Pixel>
+                    <Pixel Index="891">0.8176381079</Pixel>
+                    <Pixel Index="892">0.8170015954</Pixel>
+                    <Pixel Index="893">0.8302523709</Pixel>
+                    <Pixel Index="894">0.8146508649</Pixel>
+                    <Pixel Index="895">0.8200826707</Pixel>
+                    <Pixel Index="896">0.8270862350</Pixel>
+                    <Pixel Index="897">0.8229099435</Pixel>
+                    <Pixel Index="898">0.8241170753</Pixel>
+                    <Pixel Index="899">0.8204016926</Pixel>
+                    <Pixel Index="900">0.8247355045</Pixel>
+                    <Pixel Index="901">0.8283053870</Pixel>
+                    <Pixel Index="902">0.8155998308</Pixel>
+                    <Pixel Index="903">0.8313140843</Pixel>
+                    <Pixel Index="904">0.8180841668</Pixel>
+                    <Pixel Index="905">0.8171404930</Pixel>
+                    <Pixel Index="906">0.8264678058</Pixel>
+                    <Pixel Index="907">0.8152952911</Pixel>
+                    <Pixel Index="908">0.8155998308</Pixel>
+                    <Pixel Index="909">0.8240350916</Pixel>
+                    <Pixel Index="910">0.8127849581</Pixel>
+                    <Pixel Index="911">0.8288957139</Pixel>
+                    <Pixel Index="912">0.8220855380</Pixel>
+                    <Pixel Index="913">0.8205729058</Pixel>
+                    <Pixel Index="914">0.8221174794</Pixel>
+                    <Pixel Index="915">0.8196805957</Pixel>
+                    <Pixel Index="916">0.8299011077</Pixel>
+                    <Pixel Index="917">0.8182587294</Pixel>
+                    <Pixel Index="918">0.8230529225</Pixel>
+                    <Pixel Index="919">0.8234212810</Pixel>
+                    <Pixel Index="920">0.8079675859</Pixel>
+                    <Pixel Index="921">0.8263933929</Pixel>
+                    <Pixel Index="922">0.8220855380</Pixel>
+                    <Pixel Index="923">0.8106389736</Pixel>
+                    <Pixel Index="924">0.8281503878</Pixel>
+                    <Pixel Index="925">0.8242141578</Pixel>
+                    <Pixel Index="926">0.8217700420</Pixel>
+                    <Pixel Index="927">0.8166684857</Pixel>
+                    <Pixel Index="928">0.8142149669</Pixel>
+                    <Pixel Index="929">0.8199070930</Pixel>
+                    <Pixel Index="930">0.8116718796</Pixel>
+                    <Pixel Index="931">0.8232676433</Pixel>
+                    <Pixel Index="932">0.8095349810</Pixel>
+                    <Pixel Index="933">0.8209108471</Pixel>
+                    <Pixel Index="934">0.8196331433</Pixel>
+                    <Pixel Index="935">0.8132969682</Pixel>
+                    <Pixel Index="936">0.8225214360</Pixel>
+                    <Pixel Index="937">0.8207160454</Pixel>
+                    <Pixel Index="938">0.8123001344</Pixel>
+                    <Pixel Index="939">0.8268753123</Pixel>
+                    <Pixel Index="940">0.8146508649</Pixel>
+                    <Pixel Index="941">0.8252998701</Pixel>
+                    <Pixel Index="942">0.8219214254</Pixel>
+                    <Pixel Index="943">0.8081758273</Pixel>
+                    <Pixel Index="944">0.8190011914</Pixel>
+                    <Pixel Index="945">0.8103579647</Pixel>
+                    <Pixel Index="946">0.8146508649</Pixel>
+                    <Pixel Index="947">0.8207686782</Pixel>
+                    <Pixel Index="948">0.8123490600</Pixel>
+                    <Pixel Index="949">0.8243167070</Pixel>
+                    <Pixel Index="950">0.8180522255</Pixel>
+                    <Pixel Index="951">0.8145504982</Pixel>
+                    <Pixel Index="952">0.8151639328</Pixel>
+                    <Pixel Index="953">0.8202184006</Pixel>
+                    <Pixel Index="954">0.8150867630</Pixel>
+                    <Pixel Index="955">0.8216901137</Pixel>
+                    <Pixel Index="956">0.8071842505</Pixel>
+                    <Pixel Index="957">0.8306004932</Pixel>
+                    <Pixel Index="958">0.8095349810</Pixel>
+                    <Pixel Index="959">0.8247886331</Pixel>
+                    <Pixel Index="960">0.8121665289</Pixel>
+                    <Pixel Index="961">0.8159064034</Pixel>
+                    <Pixel Index="962">0.8247355045</Pixel>
+                    <Pixel Index="963">0.8241397808</Pixel>
+                    <Pixel Index="964">0.8123001344</Pixel>
+                    <Pixel Index="965">0.8208628370</Pixel>
+                    <Pixel Index="966">0.8112175630</Pixel>
+                    <Pixel Index="967">0.8107806077</Pixel>
+                    <Pixel Index="968">0.8190011914</Pixel>
+                    <Pixel Index="969">0.8210171422</Pixel>
+                    <Pixel Index="970">0.8264678058</Pixel>
+                    <Pixel Index="971">0.8127906777</Pixel>
+                    <Pixel Index="972">0.8264678058</Pixel>
+                    <Pixel Index="973">0.8260008846</Pixel>
+                    <Pixel Index="974">0.8112175630</Pixel>
+                    <Pixel Index="975">0.8234206435</Pixel>
+                    <Pixel Index="976">0.8088668325</Pixel>
+                    <Pixel Index="977">0.8126520391</Pixel>
+                    <Pixel Index="978">0.8130834698</Pixel>
+                    <Pixel Index="979">0.8117406851</Pixel>
+                    <Pixel Index="980">0.8196515619</Pixel>
+                    <Pixel Index="981">0.8136239092</Pixel>
+                    <Pixel Index="982">0.8224344933</Pixel>
+                    <Pixel Index="983">0.8142840881</Pixel>
+                    <Pixel Index="984">0.8146508649</Pixel>
+                    <Pixel Index="985">0.8234920564</Pixel>
+                    <Pixel Index="986">0.8112175630</Pixel>
+                    <Pixel Index="987">0.8241372460</Pixel>
+                    <Pixel Index="988">0.8190011914</Pixel>
+                    <Pixel Index="989">0.8172064748</Pixel>
+                    <Pixel Index="990">0.8230664453</Pixel>
+                    <Pixel Index="991">0.8175838531</Pixel>
+                    <Pixel Index="992">0.8146508649</Pixel>
+                    <Pixel Index="993">0.8251241541</Pixel>
+                    <Pixel Index="994">0.8087516456</Pixel>
+                    <Pixel Index="995">0.8164455663</Pixel>
+                    <Pixel Index="996">0.8202515725</Pixel>
+                    <Pixel Index="997">0.8200538023</Pixel>
+                    <Pixel Index="998">0.8213341440</Pixel>
+                    <Pixel Index="999">0.8211971796</Pixel>
+                    <Pixel Index="1000">0.8231681094</Pixel>
+                    <Pixel Index="1001">0.8213015980</Pixel>
+                    <Pixel Index="1002">0.8146508649</Pixel>
+                    <Pixel Index="1003">0.8261448608</Pixel>
+                    <Pixel Index="1004">0.8190331327</Pixel>
+                    <Pixel Index="1005">0.8184259174</Pixel>
+                    <Pixel Index="1006">0.8112175630</Pixel>
+                    <Pixel Index="1007">0.8216091632</Pixel>
+                    <Pixel Index="1008">0.8251714025</Pixel>
+                    <Pixel Index="1009">0.8165188364</Pixel>
+                    <Pixel Index="1010">0.8225533774</Pixel>
+                    <Pixel Index="1011">0.8152541935</Pixel>
+                    <Pixel Index="1012">0.8185652933</Pixel>
+                    <Pixel Index="1013">0.8255656206</Pixel>
+                    <Pixel Index="1014">0.8146508649</Pixel>
+                    <Pixel Index="1015">0.8229531818</Pixel>
+                    <Pixel Index="1016">0.8247674459</Pixel>
+                    <Pixel Index="1017">0.8168987300</Pixel>
+                    <Pixel Index="1018">0.8291177723</Pixel>
+                    <Pixel Index="1019">0.8172922692</Pixel>
+                    <Pixel Index="1020">0.8146189235</Pixel>
+                    <Pixel Index="1021">0.8317130878</Pixel>
+                    <Pixel Index="1022">0.8096501679</Pixel>
+                    <Pixel Index="1023">0.8267972165</Pixel>
+                    <Pixel Index="1024">0.8101632358</Pixel>
+                    <Pixel Index="1025">0.8246155606</Pixel>
+                    <Pixel Index="1026">0.8264678058</Pixel>
+                    <Pixel Index="1027">0.8186452050</Pixel>
+                    <Pixel Index="1028">0.8185200649</Pixel>
+                    <Pixel Index="1029">0.8299320262</Pixel>
+                    <Pixel Index="1030">0.8146508649</Pixel>
+                </Parameters>
+            </Correction_Algorithm>
+            <Correction_Algorithm Index="3">
+                <ALGORITHM_TYPE>AbsoluteCalibration</ALGORITHM_TYPE>
+                <ALGORITHM_NAME>Absolute Calibration</ALGORITHM_NAME>
+                <Parameters PlatformID="3" SensorID="2" ChannelID="2">
+                    <ForwardMotionCompensation Index="0">
+                        <M>1.000000000</M>
+                        <C>0.000000000</C>
+                    </ForwardMotionCompensation>
+                    <ForwardMotionCompensation Index="1">
+                        <M>1.000000000</M>
+                        <C>0.000000000</C>
+                    </ForwardMotionCompensation>
+                    <ForwardMotionCompensation Index="4">
+                        <M>1.000000000</M>
+                        <C>0.000000000</C>
+                    </ForwardMotionCompensation>
+                </Parameters>
+            </Correction_Algorithm>
+        </Processing_Options>
+    </Data_Processing>
+    <Data_Strip>
+        <Sensor_Configuration>
+            <Time_Stamp>
+                <LINE_PERIOD unit="S">0.00354</LINE_PERIOD>
+                <SCENE_CENTER_TIME>2011-05-14T11:33:14.665</SCENE_CENTER_TIME>
+                <SCENE_CENTER_LINE>4793</SCENE_CENTER_LINE>
+                <SCENE_CENTER_COL>4207</SCENE_CENTER_COL>
+            </Time_Stamp>
+            <Imager_Geometry>
+                <PIXEL_WIDTH unit="M">0.000005</PIXEL_WIDTH>
+                <FOCAL_LENGTH unit="M">0.405</FOCAL_LENGTH>
+                <OFFSET_X unit="M">0.0</OFFSET_X>
+                <OFFSET_Y unit="M">0.0</OFFSET_Y>
+            </Imager_Geometry>
+            <Band_List>
+                <Band Index="0">
+                    <BAND_INDEX>1</BAND_INDEX>
+                    <NAME>Green</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>1</SENSOR_ID>
+                    <CHANNEL_ID>0</CHANNEL_ID>
+                </Band>
+                <Band Index="1">
+                    <BAND_INDEX>2</BAND_INDEX>
+                    <NAME>Xan</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>1</SENSOR_ID>
+                    <CHANNEL_ID>1</CHANNEL_ID>
+                </Band>
+                <Band Index="2">
+                    <BAND_INDEX>3</BAND_INDEX>
+                    <NAME>Blue</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>1</SENSOR_ID>
+                    <CHANNEL_ID>2</CHANNEL_ID>
+                </Band>
+                <Band Index="3">
+                    <BAND_INDEX>4</BAND_INDEX>
+                    <NAME>Red</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>2</SENSOR_ID>
+                    <CHANNEL_ID>0</CHANNEL_ID>
+                </Band>
+                <Band Index="4">
+                    <BAND_INDEX>5</BAND_INDEX>
+                    <NAME>NIR</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>2</SENSOR_ID>
+                    <CHANNEL_ID>1</CHANNEL_ID>
+                </Band>
+                <Band Index="5">
+                    <BAND_INDEX>6</BAND_INDEX>
+                    <NAME>Red edge</NAME>
+                    <PLATFORM_ID>3</PLATFORM_ID>
+                    <SENSOR_ID>2</SENSOR_ID>
+                    <CHANNEL_ID>2</CHANNEL_ID>
+                </Band>
+            </Band_List>
+        </Sensor_Configuration>
+        <Sensor_Calibration>
+            <METHOD>NOINFO</METHOD>
+            <Calibration />
+        </Sensor_Calibration>
+        <Ephemeris>
+            <SATELLITE_ALTITUDE unit="M">0</SATELLITE_ALTITUDE>
+            <NADIR_LAT unit="DEG">-15.838613824835</NADIR_LAT>
+            <NADIR_LON unit="DEG">-48.2806655099764</NADIR_LON>
+            <Sgp4_Tle>
+                <LINE1>1 35870U 09049F_  11134.86214478  .00001940 .00000-0 .91339-4 0  8368</LINE1>
+                <LINE2>1 35870U 09049F_  11134.86214478  .00001940 .00000-0 .91339-4 0  8368</LINE2>
+            </Sgp4_Tle>
+            <Points>
+                <!--Coordinates in inertial frame (ECI)-->
+                <!--Units are in meters and meters per second-->
+                <Point>
+                    <TIME>2011-05-14T11:32:55.000</TIME>
+                    <Location>
+                        <X>6657920.6382533</X>
+                        <Y>-341541.890071379</Y>
+                        <Z>-1724401.46356633</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6657920.6382533</X>
+                        <Y>-341541.890071379</Y>
+                        <Z>-1724401.46356633</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:32:56.000</TIME>
+                    <Location>
+                        <X>6655987.51067924</X>
+                        <Y>-342439.823469287</Y>
+                        <Z>-1731705.5538303</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6655987.51067924</X>
+                        <Y>-342439.823469287</Y>
+                        <Z>-1731705.5538303</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:32:57.000</TIME>
+                    <Location>
+                        <X>6654046.25026789</X>
+                        <Y>-343337.338457383</Y>
+                        <Z>-1739007.52224486</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6654046.25026789</X>
+                        <Y>-343337.338457383</Y>
+                        <Z>-1739007.52224486</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:32:58.000</TIME>
+                    <Location>
+                        <X>6652096.8594522</X>
+                        <Y>-344234.433942379</Y>
+                        <Z>-1746307.35988017</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6652096.8594522</X>
+                        <Y>-344234.433942379</Y>
+                        <Z>-1746307.35988017</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:32:59.000</TIME>
+                    <Location>
+                        <X>6650139.34067538</X>
+                        <Y>-345131.108831395</Y>
+                        <Z>-1753605.05780821</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6650139.34067538</X>
+                        <Y>-345131.108831395</Y>
+                        <Z>-1753605.05780821</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:00.000</TIME>
+                    <Location>
+                        <X>6648173.61714301</X>
+                        <Y>-346027.398082708</Y>
+                        <Z>-1760900.90058364</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6648173.61714301</X>
+                        <Y>-346027.398082708</Y>
+                        <Z>-1760900.90058364</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:01.000</TIME>
+                    <Location>
+                        <X>6646199.84948736</X>
+                        <Y>-346923.228485902</Y>
+                        <Z>-1768194.29223464</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6646199.84948736</X>
+                        <Y>-346923.228485902</Y>
+                        <Z>-1768194.29223464</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:02.000</TIME>
+                    <Location>
+                        <X>6644217.96126026</X>
+                        <Y>-347818.635017577</Y>
+                        <Z>-1775485.51741015</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6644217.96126026</X>
+                        <Y>-347818.635017577</Y>
+                        <Z>-1775485.51741015</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:03.000</TIME>
+                    <Location>
+                        <X>6642227.95494511</X>
+                        <Y>-348713.616586883</Y>
+                        <Z>-1782774.5671924</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6642227.95494511</X>
+                        <Y>-348713.616586883</Y>
+                        <Z>-1782774.5671924</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:04.000</TIME>
+                    <Location>
+                        <X>6640229.8330348</X>
+                        <Y>-349608.172103704</Y>
+                        <Z>-1790061.43266796</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6640229.8330348</X>
+                        <Y>-349608.172103704</Y>
+                        <Z>-1790061.43266796</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:05.000</TIME>
+                    <Location>
+                        <X>6638223.59803264</X>
+                        <Y>-350502.300478267</Y>
+                        <Z>-1797346.10492472</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6638223.59803264</X>
+                        <Y>-350502.300478267</Y>
+                        <Z>-1797346.10492472</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:06.000</TIME>
+                    <Location>
+                        <X>6636209.25245179</X>
+                        <Y>-351396.000621394</Y>
+                        <Z>-1804628.5750538</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6636209.25245179</X>
+                        <Y>-351396.000621394</Y>
+                        <Z>-1804628.5750538</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:07.000</TIME>
+                    <Location>
+                        <X>6634186.71728174</X>
+                        <Y>-352289.307375294</Y>
+                        <Z>-1811909.12701544</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6634186.71728174</X>
+                        <Y>-352289.307375294</Y>
+                        <Z>-1811909.12701544</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:08.000</TIME>
+                    <Location>
+                        <X>6632156.15779581</X>
+                        <Y>-353182.147773294</Y>
+                        <Z>-1819187.16608785</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6632156.15779581</X>
+                        <Y>-353182.147773294</Y>
+                        <Z>-1819187.16608785</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:09.000</TIME>
+                    <Location>
+                        <X>6630117.49533019</X>
+                        <Y>-354074.556675698</Y>
+                        <Z>-1826462.97632389</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6630117.49533019</X>
+                        <Y>-354074.556675698</Y>
+                        <Z>-1826462.97632389</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:10.000</TIME>
+                    <Location>
+                        <X>6628070.73243766</X>
+                        <Y>-354966.532995607</Y>
+                        <Z>-1833736.54882694</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6628070.73243766</X>
+                        <Y>-354966.532995607</Y>
+                        <Z>-1833736.54882694</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:11.000</TIME>
+                    <Location>
+                        <X>6626015.87168079</X>
+                        <Y>-355858.075646724</Y>
+                        <Z>-1841007.87470364</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6626015.87168079</X>
+                        <Y>-355858.075646724</Y>
+                        <Z>-1841007.87470364</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:12.000</TIME>
+                    <Location>
+                        <X>6623952.91563257</X>
+                        <Y>-356749.183543108</Y>
+                        <Z>-1848276.94506204</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6623952.91563257</X>
+                        <Y>-356749.183543108</Y>
+                        <Z>-1848276.94506204</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:13.000</TIME>
+                    <Location>
+                        <X>6621881.86687564</X>
+                        <Y>-357639.855599494</Y>
+                        <Z>-1855543.75101406</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6621881.86687564</X>
+                        <Y>-357639.855599494</Y>
+                        <Z>-1855543.75101406</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:14.000</TIME>
+                    <Location>
+                        <X>6619802.72800261</X>
+                        <Y>-358530.09073114</Y>
+                        <Z>-1862808.28367438</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6619802.72800261</X>
+                        <Y>-358530.09073114</Y>
+                        <Z>-1862808.28367438</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:15.000</TIME>
+                    <Location>
+                        <X>6617715.41747718</X>
+                        <Y>-359419.923644599</Y>
+                        <Z>-1870070.82629957</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6617715.41747718</X>
+                        <Y>-359419.923644599</Y>
+                        <Z>-1870070.82629957</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:16.000</TIME>
+                    <Location>
+                        <X>6615620.10586417</X>
+                        <Y>-360309.281657155</Y>
+                        <Z>-1877330.78564046</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6615620.10586417</X>
+                        <Y>-360309.281657155</Y>
+                        <Z>-1877330.78564046</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:17.000</TIME>
+                    <Location>
+                        <X>6613516.71197277</X>
+                        <Y>-361198.199493981</Y>
+                        <Z>-1884588.44505045</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6613516.71197277</X>
+                        <Y>-361198.199493981</Y>
+                        <Z>-1884588.44505045</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:18.000</TIME>
+                    <Location>
+                        <X>6611405.23843515</X>
+                        <Y>-362086.676072639</Y>
+                        <Z>-1891843.79565661</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6611405.23843515</X>
+                        <Y>-362086.676072639</Y>
+                        <Z>-1891843.79565661</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:19.000</TIME>
+                    <Location>
+                        <X>6609285.68789344</X>
+                        <Y>-362974.71031122</Y>
+                        <Z>-1899096.82858882</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6609285.68789344</X>
+                        <Y>-362974.71031122</Y>
+                        <Z>-1899096.82858882</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:20.000</TIME>
+                    <Location>
+                        <X>6607158.0629998</X>
+                        <Y>-363862.30112834</Y>
+                        <Z>-1906347.5349796</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6607158.0629998</X>
+                        <Y>-363862.30112834</Y>
+                        <Z>-1906347.5349796</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:21.000</TIME>
+                    <Location>
+                        <X>6605022.36641643</X>
+                        <Y>-364749.447443103</Y>
+                        <Z>-1913595.90596389</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6605022.36641643</X>
+                        <Y>-364749.447443103</Y>
+                        <Z>-1913595.90596389</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:22.000</TIME>
+                    <Location>
+                        <X>6602878.51440216</X>
+                        <Y>-365636.183841207</Y>
+                        <Z>-1920842.22416487</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6602878.51440216</X>
+                        <Y>-365636.183841207</Y>
+                        <Z>-1920842.22416487</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:23.000</TIME>
+                    <Location>
+                        <X>6600726.68214067</X>
+                        <Y>-366522.437893049</Y>
+                        <Z>-1928085.89766003</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6600726.68214067</X>
+                        <Y>-366522.437893049</Y>
+                        <Z>-1928085.89766003</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:24.000</TIME>
+                    <Location>
+                        <X>6598566.78623488</X>
+                        <Y>-367408.244203524</Y>
+                        <Z>-1935327.20917405</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6598566.78623488</X>
+                        <Y>-367408.244203524</Y>
+                        <Z>-1935327.20917405</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:25.000</TIME>
+                    <Location>
+                        <X>6596398.82938683</X>
+                        <Y>-368293.601693909</Y>
+                        <Z>-1942566.14985329</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6596398.82938683</X>
+                        <Y>-368293.601693909</Y>
+                        <Z>-1942566.14985329</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:26.000</TIME>
+                    <Location>
+                        <X>6594222.8143078</X>
+                        <Y>-369178.509286333</Y>
+                        <Z>-1949802.71084945</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6594222.8143078</X>
+                        <Y>-369178.509286333</Y>
+                        <Z>-1949802.71084945</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:27.000</TIME>
+                    <Location>
+                        <X>6592038.7437193</X>
+                        <Y>-370062.965903327</Y>
+                        <Z>-1957036.88331597</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6592038.7437193</X>
+                        <Y>-370062.965903327</Y>
+                        <Z>-1957036.88331597</Z>
+                    </Velocity>
+                </Point>
+                <Point>
+                    <TIME>2011-05-14T11:33:28.000</TIME>
+                    <Location>
+                        <X>6589846.62035267</X>
+                        <Y>-370946.970468049</Y>
+                        <Z>-1964268.65840978</Z>
+                    </Location>
+                    <Velocity>
+                        <X>6589846.62035267</X>
+                        <Y>-370946.970468049</Y>
+                        <Z>-1964268.65840978</Z>
+                    </Velocity>
+                </Point>
+            </Points>
+        </Ephemeris>
+        <Satellite_Attitudes>
+            <Raw_Attitudes>
+                <Aocs_Attitude>
+                    <Angles_List>
+                        <Angles>
+                            <TIME>2011-05-14T11:32:55.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>17.66</PITCH>
+                            <YAW>-0.43</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:32:56.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>16.7</PITCH>
+                            <YAW>-0.44</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:32:57.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>15.74</PITCH>
+                            <YAW>-0.46</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:32:58.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>14.78</PITCH>
+                            <YAW>-0.48</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:32:59.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>13.82</PITCH>
+                            <YAW>-0.49</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:00.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>12.85</PITCH>
+                            <YAW>-0.5</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:01.000</TIME>
+                            <ROLL>5.22</ROLL>
+                            <PITCH>11.89</PITCH>
+                            <YAW>-0.53</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:02.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>10.93</PITCH>
+                            <YAW>-0.55</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:03.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>9.97</PITCH>
+                            <YAW>-0.56</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:04.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>9.01</PITCH>
+                            <YAW>-0.58</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:05.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>8.05</PITCH>
+                            <YAW>-0.6</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:06.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>7.08</PITCH>
+                            <YAW>-0.61</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:07.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>6.12</PITCH>
+                            <YAW>-0.64</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:08.000</TIME>
+                            <ROLL>5.21</ROLL>
+                            <PITCH>5.15</PITCH>
+                            <YAW>-0.66</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:09.000</TIME>
+                            <ROLL>5.2</ROLL>
+                            <PITCH>4.19</PITCH>
+                            <YAW>-0.69</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:10.000</TIME>
+                            <ROLL>5.2</ROLL>
+                            <PITCH>3.23</PITCH>
+                            <YAW>-0.72</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:11.000</TIME>
+                            <ROLL>5.2</ROLL>
+                            <PITCH>2.27</PITCH>
+                            <YAW>-0.75</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:12.000</TIME>
+                            <ROLL>5.19</ROLL>
+                            <PITCH>1.31</PITCH>
+                            <YAW>-0.79</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:13.000</TIME>
+                            <ROLL>5.19</ROLL>
+                            <PITCH>0.35</PITCH>
+                            <YAW>-0.82</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:14.000</TIME>
+                            <ROLL>5.19</ROLL>
+                            <PITCH>-0.61</PITCH>
+                            <YAW>-0.85</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:15.000</TIME>
+                            <ROLL>5.18</ROLL>
+                            <PITCH>-1.58</PITCH>
+                            <YAW>-0.88</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:16.000</TIME>
+                            <ROLL>5.18</ROLL>
+                            <PITCH>-2.54</PITCH>
+                            <YAW>-0.92</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:17.000</TIME>
+                            <ROLL>5.18</ROLL>
+                            <PITCH>-3.5</PITCH>
+                            <YAW>-0.95</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:18.000</TIME>
+                            <ROLL>5.17</ROLL>
+                            <PITCH>-4.47</PITCH>
+                            <YAW>-0.98</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:19.000</TIME>
+                            <ROLL>5.17</ROLL>
+                            <PITCH>-5.44</PITCH>
+                            <YAW>-1</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:20.000</TIME>
+                            <ROLL>5.16</ROLL>
+                            <PITCH>-6.4</PITCH>
+                            <YAW>-1.03</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:21.000</TIME>
+                            <ROLL>5.16</ROLL>
+                            <PITCH>-7.37</PITCH>
+                            <YAW>-1.06</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:22.000</TIME>
+                            <ROLL>5.15</ROLL>
+                            <PITCH>-8.33</PITCH>
+                            <YAW>-1.09</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:23.000</TIME>
+                            <ROLL>5.15</ROLL>
+                            <PITCH>-9.3</PITCH>
+                            <YAW>-1.12</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:24.000</TIME>
+                            <ROLL>5.15</ROLL>
+                            <PITCH>-10.26</PITCH>
+                            <YAW>-1.14</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:25.000</TIME>
+                            <ROLL>5.14</ROLL>
+                            <PITCH>-11.23</PITCH>
+                            <YAW>-1.16</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:26.000</TIME>
+                            <ROLL>5.14</ROLL>
+                            <PITCH>-12.2</PITCH>
+                            <YAW>-1.19</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:27.000</TIME>
+                            <ROLL>5.14</ROLL>
+                            <PITCH>-13.16</PITCH>
+                            <YAW>-1.21</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                        <Angles>
+                            <TIME>2011-05-14T11:33:28.000</TIME>
+                            <ROLL>5.13</ROLL>
+                            <PITCH>-14.13</PITCH>
+                            <YAW>-1.23</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angles>
+                    </Angles_List>
+                    <Angular_Speeds_List>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:32:55.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.067</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:32:56.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.066</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:32:57.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.066</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:32:58.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.065</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:32:59.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.065</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:00.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.064</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:01.000</TIME>
+                            <ROLL>0.009</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.064</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:02.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.063</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:03.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.063</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:04.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.063</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:05.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.062</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:06.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.062</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:07.000</TIME>
+                            <ROLL>0.009</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.062</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:08.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.061</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:09.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.061</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:10.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.061</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:11.000</TIME>
+                            <ROLL>0.009</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.06</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:12.000</TIME>
+                            <ROLL>0.008</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.06</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:13.000</TIME>
+                            <ROLL>0.01</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.06</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:14.000</TIME>
+                            <ROLL>0.01</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.06</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:15.000</TIME>
+                            <ROLL>0.01</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:16.000</TIME>
+                            <ROLL>0.011</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:17.000</TIME>
+                            <ROLL>0.014</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:18.000</TIME>
+                            <ROLL>0.007</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:19.000</TIME>
+                            <ROLL>0.018</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:20.000</TIME>
+                            <ROLL>0.006</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:21.000</TIME>
+                            <ROLL>0.016</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:22.000</TIME>
+                            <ROLL>0.01</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:23.000</TIME>
+                            <ROLL>0.015</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:24.000</TIME>
+                            <ROLL>0.013</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:25.000</TIME>
+                            <ROLL>0.014</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:26.000</TIME>
+                            <ROLL>0.015</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:27.000</TIME>
+                            <ROLL>0.015</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                        <Angular_Speeds>
+                            <TIME>2011-05-14T11:33:28.000</TIME>
+                            <ROLL>0.015</ROLL>
+                            <PITCH>-0.958</PITCH>
+                            <YAW>0.059</YAW>
+                            <OUT_OF_RANGE>N</OUT_OF_RANGE>
+                        </Angular_Speeds>
+                    </Angular_Speeds_List>
+                </Aocs_Attitude>
+            </Raw_Attitudes>
+        </Satellite_Attitudes>
+    </Data_Strip>
+    <Image_Display>
+        <Band_Display_Order>
+            <RED_CHANNEL>4</RED_CHANNEL>
+            <GREEN_CHANNEL>1</GREEN_CHANNEL>
+            <BLUE_CHANNEL>3</BLUE_CHANNEL>
+        </Band_Display_Order>
+    </Image_Display>
+</Dimap_Document>

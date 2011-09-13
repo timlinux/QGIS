@@ -40,14 +40,14 @@ void QgsCloudAnalyzer::calculateValues()
       band->RasterIO(GF_Read, 0, i, mCols, 1, data, mCols, 1, GDT_UInt32, 0, 0);
       for(int j = 0; j < mCols; j++)
       {
-	if(data[j] > mHighest)
-	{
-	  mHighest = data[j];
-	}
-	if(data[j] < mLowest)
-	{
-	  mLowest = data[j];
-	}
+        if(data[j] > mHighest)
+        {
+          mHighest = data[j];
+        }
+        if(data[j] < mLowest)
+        {
+          mLowest = data[j];
+        }
       }
       delete [] data;
     }
@@ -73,12 +73,12 @@ QgsCloudMask* QgsCloudAnalyzer::analyze()
     {
       if(data[j] > mThreshold)
       {
-	counter++;
-	mask->setValue(i, j, true);
+        counter++;
+        mask->setValue(i, j, true);
       }
       else
       {
-	mask->setValue(i, j, false);
+        mask->setValue(i, j, false);
       }
     }
     delete [] data;
