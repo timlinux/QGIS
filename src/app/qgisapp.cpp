@@ -4888,6 +4888,9 @@ void QgisApp::options()
 
     //do we need this? TS
     mMapCanvas->refresh();
+
+    mRasterFileFilter.clear();
+    QgsRasterLayer::buildSupportedRasterFileFilter( mRasterFileFilter );
   }
 
   delete optionsDialog;
