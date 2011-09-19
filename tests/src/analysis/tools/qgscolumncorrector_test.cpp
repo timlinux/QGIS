@@ -91,20 +91,14 @@ void TestColumnCorrectorTool::cleanupTestCase()
       QTextStream myQTextStream( &myFile );
       myQTextStream << mReport;
       myFile.close();
-      QDesktopServices::openUrl( "file://" + myReportFile );
+      QDesktopServices::openUrl( QUrl::fromUserInput(myReportFile) );
     }
 }
 
 void TestColumnCorrectorTool::simpleFirstTest()
 {
-    //QStringList inputPaths;
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif");
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C01_F03_MSSK14K_0.tif");
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C02_F03_MSSK14K_0.tif");
-
-    QString outputPath = "/home/fgretief/w/tmp/test_columncorrector-result.tif";
-
-    QString inputPath = QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
+    QString outputPath = QString(TEST_DATA_DIR) + "/test_columncorrector-result.tif";
+    QString inputPath = QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif";    
 
     QgsImageProcessor *m = new QgsImageProcessor();
 

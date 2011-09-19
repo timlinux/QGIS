@@ -90,7 +90,7 @@ void QgsLineCorrectorTest::cleanupTestCase()
     QTextStream myQTextStream( &myFile );
     myQTextStream << mReport;
     myFile.close();
-    QDesktopServices::openUrl( "file://" + myReportFile );
+    QDesktopServices::openUrl( QUrl::fromUserInput(myReportFile) );
   }
 }
 

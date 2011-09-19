@@ -91,7 +91,7 @@ void QgsCloudAnalyzerTest::cleanupTestCase()
     QTextStream myQTextStream( &myFile );
     myQTextStream << mReport;
     myFile.close();
-    QDesktopServices::openUrl( "file://" + myReportFile );
+    QDesktopServices::openUrl( QUrl::fromUserInput(myReportFile) );
   }
 }
 
@@ -139,7 +139,6 @@ void QgsCloudAnalyzerTest::analyzeTest()
 
 bool QgsCloudAnalyzerTest::render( QString theTestType )
 {
-
   mReport += "<h2>" + theTestType + "</h2>\n";
   QString myDataDir( TEST_DATA_DIR ); //defined in CmakeLists.txt
   QString myTestDataDir = myDataDir + QDir::separator();
