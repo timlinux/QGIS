@@ -18,6 +18,7 @@
 
 #include <QApplication>
 #include <QEvent>
+#include <QStringList>
 
 #include <qgis.h>
 
@@ -201,6 +202,37 @@ class CORE_EXPORT QgsApplication: public QApplication
       @note: this method was added in version 1.6*/
     static QString relativePathToAbsolutePath( QString rpath, QString targetPath );
 
+    /** Sets the GDAL_SKIP environment variable to include the specified driver 
+     * and then calls GDALDriverManager::AutoSkipDrivers() to unregister it. The
+     * driver name should be the short format of the Gdal driver name e.g. GTIFF.
+     * @note added in 2.0
+     */
+    static void skipGdalDriver( QString theDriver );
+
+    /** Sets the GDAL_SKIP environment variable to exclude the specified driver 
+     * and then calls GDALDriverManager::AutoSkipDrivers() to unregister it. The
+     * driver name should be the short format of the Gdal driver name e.g. GTIFF.
+     * @note added in 2.0
+     */
+    static void restoreGdalDriver( QString theDriver );
+
+    /** Returns the list of gdal drivers that should be skipped (based on
+     * GDAL_SKIP environment variable) 
+     * @note added in 2.0
+     */
+    static QStringList skippedGdalDrivers( ){ return mGdalSkipList; };
+
+    /** Apply the skipped drivers list to gdal
+     * @see skipGdalDriver
+     * @see restoreGdalDriver
+     * @see skippedGdalDrivers
+     * @note added in 2.0 */
+    static void applyGdalSkippedDrivers();
+
+  signals:
+    void preNotify( QObject * receiver, QEvent * event, bool * done );
+
+
   private:
     static QObject* mFileOpenEventReceiver;
     static QStringList mFileOpenEventList;
@@ -212,6 +244,12 @@ class CORE_EXPORT QgsApplication: public QApplication
     static QStringList mDefaultSvgPaths;
 
     static QString mConfigPath;
+
+    /** List of gdal drivers to be skipped. Uses GDAL_SKIP to exclude them. 
+     * @see skipGdalDriver, restoreGdalDriver 
+     * @note added in 2.0 */
+    static QStringList mGdalSkipList;
+
 };
 
 #endif

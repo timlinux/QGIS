@@ -100,6 +100,10 @@ void TestColumnCorrectorTool::simpleFirstTest()
     QString outputPath = QString(TEST_DATA_DIR) + "/test_columncorrector-result.tif";
     QString inputPath = QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif";    
 
+	QString outputPath = "c:/tmp/test_columncorrector-result.tif";
+
+    QString inputPath = QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif";
+
     QgsImageProcessor *m = new QgsImageProcessor();
 
     m->setInputPath(inputPath);

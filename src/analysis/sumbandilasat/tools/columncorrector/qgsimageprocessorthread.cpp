@@ -208,8 +208,8 @@ void QgsCorrectionThread::run()
       double newAvg = 0.0;
       for(int j = 0; j < mRows; j++)
       {
-	newData[j] = oldData[j] - (((oldData[j]*bc->m) + bc->c) - oldData[j]);
-	newAvg += newData[j];
+        newData[j] = oldData[j] - (((oldData[j]*bc->m) + bc->c) - oldData[j]);
+        newAvg += newData[j];
       }
       newAvg /= mRows;
     
@@ -223,7 +223,7 @@ void QgsCorrectionThread::run()
       //int *writeData = new int[mRows];
       //for(int j = 0; j < mRows; j++)
       //{
-	//writeData[j] = (int) newData[j];
+        //writeData[j] = (int) newData[j];
       //}
       mOutset->setColumn(mBand, bc->column, newData);
       log.enqueue("Column "+QString::number(bc->column)+" was fixed");
@@ -340,9 +340,9 @@ void QgsImageProcessorThread::run()
       rt2->start();
       while(rt1->isRunning() || rt2->isRunning())
       {
-	handleProgress((rt1->progress()+rt2->progress())/2, "Searching for faulty columns");
-	handleLog(rt1->logMessage());
-	handleLog(rt2->logMessage());
+        handleProgress((rt1->progress()+rt2->progress())/2, "Searching for faulty columns");
+        handleLog(rt1->logMessage());
+        handleLog(rt2->logMessage());
       }
 #else
       /* Looking for a bug, run sequentially */
@@ -362,15 +362,15 @@ void QgsImageProcessorThread::run()
       printf("HERE X4 (band# = %d) [cleanup]\n", bandNumber);
       while(rt1->hasLogMessage())
       {
-	handleLog(rt1->logMessage());
+        handleLog(rt1->logMessage());
       }
       while(rt2->hasLogMessage())
       {
-	handleLog(rt2->logMessage());
+        handleLog(rt2->logMessage());
       }
       if(!wasStopped)
       {
-	calculateFaults(bandNumber);
+        calculateFaults(bandNumber);
       }
 
       printf("HERE X4 (band# = %d) [exit]\n", bandNumber);
@@ -469,8 +469,8 @@ void QgsImageProcessorThread::releaseMemory()
     {
       if(finalFaults[i][j] != NULL)
       {
-	delete finalFaults[i][j];
-	finalFaults[i][j] = NULL;
+        delete finalFaults[i][j];
+        finalFaults[i][j] = NULL;
       }
     }
   }
@@ -521,57 +521,57 @@ void QgsImageProcessorThread::calculateFaults(int band)
     for(int right = 0; right < potentialBadRight.size(); right++)
     {
       if(
-	left < potentialBadLeft.size()-1 
-	&& (potentialBadLeft[left]->column+2) == potentialBadLeft.at(left+1)->column
-	&& potentialBadLeft[left]->column+1 == potentialBadRight.at(right)->column
-	&& (potentialBadRight[right]->column-2) == potentialBadRight.at(right+1)->column
-	)
+        left < potentialBadLeft.size()-1 
+        && (potentialBadLeft[left]->column+2) == potentialBadLeft.at(left+1)->column
+        && potentialBadLeft[left]->column+1 == potentialBadRight.at(right)->column
+        && (potentialBadRight[right]->column-2) == potentialBadRight.at(right+1)->column
+        )
       {
-	BadColumn *bc = new BadColumn();
-	bc->column = potentialBadRight[right]->column;
-	bc->m = potentialBadRight[right]->m;
-	bc->c = potentialBadRight[right]->c;
-	faults.append(bc);
-	handleLog("Column "+QString::number(bc->column)+" considered bad");
-	emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
-	left++; //ensures that the next column is not tested because it is part of this test (pattern)
-	break;
+        BadColumn *bc = new BadColumn();
+        bc->column = potentialBadRight[right]->column;
+        bc->m = potentialBadRight[right]->m;
+        bc->c = potentialBadRight[right]->c;
+        faults.append(bc);
+        handleLog("Column "+QString::number(bc->column)+" considered bad");
+        emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
+        left++; //ensures that the next column is not tested because it is part of this test (pattern)
+        break;
       }
       else if(potentialBadLeft.at(left)->column == potentialBadRight.at(right)->column)
       {
-	/*int quality1 = QgsQualityTester::goodQuality(potentialBadLeft.at(right)->m, potentialBadLeft.at(right)->c, mGainThreshold, mBiasThreshold);
-	int quality2 = QgsQualityTester::goodQuality(potentialBadRight.at(right)->m, potentialBadRight.at(right)->c, mGainThreshold, mBiasThreshold);
-	if(quality1 == quality2)
-	{*/
-	  BadColumn *bc = new BadColumn();
-	  bc->column = potentialBadLeft.at(left)->column;
-	  bc->m = potentialBadLeft.at(left)->m;
-	  bc->c = potentialBadLeft.at(left)->c;
-	  faults.append(bc);
-	  handleLog("Column "+QString::number(bc->column)+" considered bad");
-	  emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
-	  break;
-	//}
+        /*int quality1 = QgsQualityTester::goodQuality(potentialBadLeft.at(right)->m, potentialBadLeft.at(right)->c, mGainThreshold, mBiasThreshold);
+        int quality2 = QgsQualityTester::goodQuality(potentialBadRight.at(right)->m, potentialBadRight.at(right)->c, mGainThreshold, mBiasThreshold);
+        if(quality1 == quality2)
+        {*/
+          BadColumn *bc = new BadColumn();
+          bc->column = potentialBadLeft.at(left)->column;
+          bc->m = potentialBadLeft.at(left)->m;
+          bc->c = potentialBadLeft.at(left)->c;
+          faults.append(bc);
+          handleLog("Column "+QString::number(bc->column)+" considered bad");
+          emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
+          break;
+        //}
       }
       else if(potentialBadLeft.at(left)->column == potentialBadRight.at(right)->column-2)
       {
-	double *x = dataset->column(band, potentialBadLeft.at(left)->column);
-	double *y = dataset->column(band, potentialBadLeft.at(left)->column+1);
-	double m, c;
-	double cov00, cov01, cov11, sumsq;
-	gsl_fit_linear(x, 1 /*Progress by 1 through array*/, y, 1 /*Progress by 1 through array*/, rows, &c, &m, &cov00, &cov01, &cov11, &sumsq);
-	int quality = QgsQualityTester::goodQuality(m, c, mGainThreshold, mBiasThreshold);
-	if(quality != 2)
-	{
-	  BadColumn *bc = new BadColumn();
-	  bc->column = potentialBadLeft.at(left)->column+1;
-	  bc->m = m;
-	  bc->c = c;
-	  faults.append(bc);
-	  handleLog("Column "+QString::number(bc->column)+" considered bad");
-	  emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
-	  break;
-	}
+        double *x = dataset->column(band, potentialBadLeft.at(left)->column);
+        double *y = dataset->column(band, potentialBadLeft.at(left)->column+1);
+        double m, c;
+        double cov00, cov01, cov11, sumsq;
+        gsl_fit_linear(x, 1 /*Progress by 1 through array*/, y, 1 /*Progress by 1 through array*/, rows, &c, &m, &cov00, &cov01, &cov11, &sumsq);
+        int quality = QgsQualityTester::goodQuality(m, c, mGainThreshold, mBiasThreshold);
+        if(quality != 2)
+        {
+          BadColumn *bc = new BadColumn();
+          bc->column = potentialBadLeft.at(left)->column+1;
+          bc->m = m;
+          bc->c = c;
+          faults.append(bc);
+          handleLog("Column "+QString::number(bc->column)+" considered bad");
+          emit updatedColumns("Band "+QString::number(band)+": "+QString::number(bc->column));
+          break;
+        }
       }
     }
   }
@@ -582,8 +582,8 @@ void QgsImageProcessorThread::calculateFaults(int band)
     {
       if(faults.at(i)->column == potentialBadLeft.at(left)->column)
       {
-	gotIt = true;
-	break;
+        gotIt = true;
+        break;
       }
     }
     if(!gotIt)
@@ -598,8 +598,8 @@ void QgsImageProcessorThread::calculateFaults(int band)
     {
       if(faults.at(i)->column == potentialBadRight.at(right)->column)
       {
-	gotIt = true;
-	break;
+        gotIt = true;
+        break;
       }
     }
     if(!gotIt)
@@ -734,20 +734,20 @@ bool QgsImageProcessorThread::readFromFile(QString path)
       QList<BadColumn*> badColumns;
       while(line.contains("["))
       {
-	BadColumn *bc = new BadColumn();
-	start = line.indexOf("[");
-	int end = line.indexOf("]");
-	QString values = line.mid(start+1, end-(start+1));
-	int newStart = values.indexOf("column=");
-	int newEnd = values.indexOf("gain=");
-	bc->column = values.mid(newStart+7, newEnd-(newStart+8)).toInt();
-	newStart = values.indexOf("gain=");
-	newEnd = values.indexOf("bias=");
-	bc->m = values.mid(newStart+5, newEnd-(newStart+6)).toDouble();
-	newStart = values.indexOf("bias=");
-	bc->c = values.right(values.length()-(newStart+5)).toDouble();
-	line = line.right(line.length() - (end+1));
-	badColumns.append(bc);
+        BadColumn *bc = new BadColumn();
+        start = line.indexOf("[");
+        int end = line.indexOf("]");
+        QString values = line.mid(start+1, end-(start+1));
+        int newStart = values.indexOf("column=");
+        int newEnd = values.indexOf("gain=");
+        bc->column = values.mid(newStart+7, newEnd-(newStart+8)).toInt();
+        newStart = values.indexOf("gain=");
+        newEnd = values.indexOf("bias=");
+        bc->m = values.mid(newStart+5, newEnd-(newStart+6)).toDouble();
+        newStart = values.indexOf("bias=");
+        bc->c = values.right(values.length()-(newStart+5)).toDouble();
+        line = line.right(line.length() - (end+1));
+        badColumns.append(bc);
       }
       finalFaults.append(badColumns);
     }

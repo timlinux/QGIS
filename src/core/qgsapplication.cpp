@@ -18,6 +18,7 @@
 #include "qgsmaplayerregistry.h"
 #include "qgsproviderregistry.h"
 #include "qgsexception.h"
+#include "qgslogger.h"
 
 #include <QDir>
 #include <QFileOpenEvent>
@@ -34,6 +35,8 @@
 #include "qgsconfig.h"
 
 #include <ogr_api.h>
+#include <gdal_priv.h>
+#include <cpl_conv.h> // for setting gdal options
 
 QObject * QgsApplication::mFileOpenEventReceiver;
 QStringList QgsApplication::mFileOpenEventList;
@@ -43,6 +46,9 @@ QString QgsApplication::mPkgDataPath;
 QString QgsApplication::mThemeName;
 QStringList QgsApplication::mDefaultSvgPaths;
 QString QgsApplication::mConfigPath = QDir::homePath() + QString( "/.qgis/" );
+
+QStringList QgsApplication::mGdalSkipList;
+
 
 /*!
   \class QgsApplication
@@ -75,6 +81,25 @@ QgsApplication::QgsApplication( int & argc, char ** argv, bool GUIenabled, QStri
   }
 
   mDefaultSvgPaths << qgisSettingsDirPath() + QString( "svg/" );
+
+  // set a working directory up for gdal to write .aux.xml files into
+  // for cases where the raster dir is read only to the user
+  // if the env var is already set it will be used preferentially
+  QString myPamPath = qgisSettingsDirPath() + QString( "gdal_pam/" );
+  QDir myDir( myPamPath );
+  if ( !myDir.exists() )
+  {
+    myDir.mkpath( myPamPath ); //fail silently
+  }
+  
+#if defined(Q_WS_WIN32) || defined(WIN32)
+  CPLSetConfigOption("GDAL_PAM_PROXY_DIR", myPamPath.toUtf8());
+#else
+  //under other OS's we use an environment var so the user can 
+  //override the path if he likes
+  int myChangeFlag = 0; //whether we want to force the env var to change
+  setenv( "GDAL_PAM_PROXY_DIR", myPamPath.toUtf8(), myChangeFlag );
+#endif
 }
 
 QgsApplication::~QgsApplication()
@@ -622,4 +647,43 @@ QString QgsApplication::relativePathToAbsolutePath( QString rpath, QString targe
 #endif
 
   return targetElems.join( "/" );
+}
+
+void QgsApplication::skipGdalDriver( QString theDriver )
+{
+  if ( mGdalSkipList.contains( theDriver ) || theDriver.isEmpty() )
+  {
+    return;
+  }
+  mGdalSkipList << theDriver;
+  applyGdalSkippedDrivers();
+}
+
+void QgsApplication::restoreGdalDriver( QString theDriver )
+{
+  if ( !mGdalSkipList.contains( theDriver ) )
+  {
+    return;
+  }
+  int myPos = mGdalSkipList.indexOf( theDriver );
+  if ( myPos >= 0 )
+  {
+    mGdalSkipList.removeAt( myPos );
+  }
+  applyGdalSkippedDrivers();
+}
+
+void QgsApplication::applyGdalSkippedDrivers()
+{
+  mGdalSkipList.removeDuplicates();
+  QString myDriverList = mGdalSkipList.join(" ");
+  QgsDebugMsg( "Gdal Skipped driver list set to:" );
+  QgsDebugMsg( myDriverList );
+#if defined(Q_WS_WIN32) || defined(WIN32)
+  CPLSetConfigOption("GDAL_SKIP", myDriverList.toUtf8());
+#else
+  int myChangeFlag = 1; //whether we want to force the env var to change
+  setenv( "GDAL_SKIP", myDriverList.toUtf8(), myChangeFlag );
+#endif
+  GetGDALDriverManager()->AutoSkipDrivers();
 }

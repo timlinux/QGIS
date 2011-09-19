@@ -10,7 +10,7 @@ from ui_cloudcoverer import Ui_CloudCoverer
 import gdal
 from gdalconst import *
 
-class CloudCovererWindow(QMainWindow):
+class CloudCovererWindow(QDialog):
 
   def __init__(self, iface):
     QMainWindow.__init__( self )
@@ -33,6 +33,7 @@ class CloudCovererWindow(QMainWindow):
     self.connect(self.ui.openButton, SIGNAL("clicked()"), self.selectImage)
     self.connect(self.ui.settingsButton, SIGNAL("clicked()"), self.openSettings)
     self.connect(self.ui.lineEdit, SIGNAL("textChanged(const QString&)"), self.changeFile)
+    self.connect(self.ui.buttonBox.button(QDialogButtonBox.Save), SIGNAL("clicked()"), self.saveToShp)
         
     self.xDevider = 10
     self.yDevider = 10
@@ -45,7 +46,7 @@ class CloudCovererWindow(QMainWindow):
     
   #Displays a message to the user
   def showMessage(self, string, type = "info"):
-    msgbox = QMessageBox(self.ui.centralwidget)
+    msgbox = QMessageBox(self)
     msgbox.setText(string)
     msgbox.setWindowTitle("Sumbandila")
     if type == "info":
@@ -78,17 +79,19 @@ class CloudCovererWindow(QMainWindow):
       self.adjustSlider()
     
   def selectImage(self):
-    if int(self.settings.value("DirectoryChoice", QVariant(0)).toString()) == 0:
+    if int(self.settings.value("cloudMasker/directoryChoice", QVariant(0)).toString()) == 0:
       path = QFileDialog.getOpenFileName(self, "Open Image", "")
     else:
-      path = QFileDialog.getOpenFileName(self, "Open Image", self.settings.value("DirectoryPath", QVariant("")).toString())
+      path = QFileDialog.getOpenFileName(self, "Open Image", self.settings.value("cloudMasker/directoryPath", QVariant("")).toString())
     if path != "":
-      if int(self.settings.value("DirectoryChoice", QVariant(0)).toString()) == 1:
-	self.settings.setValue("DirectoryPath", path)
+      if int(self.settings.value("cloudMasker/directoryChoice", QVariant(1)).toString()) == 1:
+        self.settings.setValue("cloudMasker/directoryPath", path)
       self.ui.lineEdit.setText(path)
     
   def resample(self, path):
-    f = QFile(QDir.temp().absolutePath()+"/qgis_sumbandilasat/cloudy.tif")
+    myFileName = QDir.temp().absolutePath()+QDir.separator()+"cloudy.tif"
+    #self.showMessage(myFileName)
+    f = QFile( myFileName )
     if f.exists():
       f.remove()
     dataset = gdal.Open(str(path), GA_ReadOnly)
@@ -96,19 +99,18 @@ class CloudCovererWindow(QMainWindow):
       process = QProcess(self)
       self.connect(process, SIGNAL("finished(int, QProcess::ExitStatus)"), self.processFinished)
       self.finishedResampling = False
-      tempPath = QDir.temp().absolutePath()+"/qgis_sumbandilasat/cloudy.tif"
       width = dataset.RasterXSize
       height = dataset.RasterYSize
       self.bandCount = dataset.RasterCount
       while width > 1000 and height > 1000:
-	width /= self.xDevider
-	height /= self.yDevider
-      process.start('gdal_translate -of GTiff -co PROFILE=BASELINE -outsize '+str(width)+' '+str(height)+' '+path+' '+tempPath)
+        width /= self.xDevider
+        height /= self.yDevider
+      process.start('gdal_translate -of GTiff -co PROFILE=BASELINE -outsize '+str(width)+' '+str(height)+' '+path+' '+ myFileName)
       process.waitForStarted()
       process.waitForFinished()
       while not self.finishedResampling:
-	pass
-      return tempPath
+        pass
+      return myFileName
     return ""
     
   def processFinished(self, a, b):
@@ -119,14 +121,18 @@ class CloudCovererWindow(QMainWindow):
       self.ui.slider.setMinimum(self.analyzer.lowestValue())
       self.ui.slider.setMaximum(self.analyzer.highestValue())
       self.ui.slider.setValue(self.analyzer.highestValue()*0.95)
+      self.ui.spinBox.setMinimum(self.analyzer.lowestValue())
+      self.ui.spinBox.setMaximum(self.analyzer.highestValue())
+      self.ui.spinBox.setValue(self.analyzer.highestValue()*0.95)
   
   def pressSlider(self):
     self.sliderPressed = True
     
   def releaseSlider(self):
-    self.analyzer.setThreshold(self.ui.slider.value())
-    self.reanalyze()
-    self.sliderPressed = False
+    if self.analyzer != None:
+      self.analyzer.setThreshold(self.ui.slider.value())
+      self.reanalyze()
+      self.sliderPressed = False
     
   def update(self, value = 0):
     if not self.sliderPressed:
@@ -159,18 +165,34 @@ class CloudCovererWindow(QMainWindow):
     
   def reanalyze(self):
     band = 1
-    bandChoice = int(self.settings.value("BandUse", QVariant(0)).toString())
+    bandChoice = int(self.settings.value("cloudMasker/bandUse", QVariant(0)).toString())
     if (bandChoice+1) <= self.bandCount and (bandChoice+1) > 0:
       band = bandChoice+1
     self.analyzer.setBandUse(band)
-    size = float(self.settings.value("UnitSize", QVariant(0.0)).toString())
-    if size <= 0.0:
-      self.settings.setValue("UnitSize", 0.1)
-      size = 0.1
+    size = float(self.settings.value("cloudMasker/unitSize", QVariant(1)).toString())
     self.analyzer.setUnitSize(size)
-    self.analyzer.setCloudColor(QColor(self.settings.value("CloudColor", QVariant(""))))
+    myColor = self.settings.value("cloudMasker/cloudColor","#008000")
+    myColor = QColor( myColor )
+    self.analyzer.setCloudColor( myColor )
     mask = self.analyzer.analyze()
     maskLayer = mask.vectorLayer()
     self.openMask(maskLayer)
+    myCrs = QgsCoordinateReferenceSystem("CRS:84")
+    myPath = QDir.tempPath() + QDir.separator() + "clouds.shp"
+
+  def saveToShp(self):
+    mySettings = QSettings()
+    myLastDir = mySettings.value("cloudMasker/lastOutputDir").toString()
+    fileName = QFileDialog.getSaveFileName(self, "Save as shapefile", myLastDir,"Shapefile (*.shp)" )
+    if fileName != "":
+      mySettings.setValue("cloudMasker/lastOutputDir", QFileInfo( fileName ).absolutePath())
+      mask = self.analyzer.analyze()
+      maskLayer = mask.vectorLayer()
+      if maskLayer:
+        myCrs = QgsCoordinateReferenceSystem("CRS:84")
+        error = QgsVectorFileWriter.writeAsVectorFormat(mask.vectorLayer(), fileName,"UTF-8", myCrs)
+        self.iface.addVectorLayer(fileName, "clouds", "ogr")
+      else:
+        showMessage("There was a problem writing the file to disk")
     
     
