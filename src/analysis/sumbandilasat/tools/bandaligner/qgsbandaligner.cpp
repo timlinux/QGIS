@@ -1,10 +1,15 @@
 #include "qgsbandaligner.h"
 
+#include <QDir>
+#define QGISDEBUG
+#include <QDebug>
+#include <qgslogger.h>
+
 QgsBandAligner::QgsBandAligner(QStringList input, QString output, QString disparityXPath, QString disparityYPath, int blockSize, int referenceBand, QgsBandAligner::Transformation transformation, int minimumGcps, double refinementTolerance)
 {
   mThread = new QgsBandAlignerThread(input, output, disparityXPath, disparityYPath, blockSize, referenceBand, transformation, minimumGcps, refinementTolerance);
   QObject::connect(mThread, SIGNAL(progressed(double)), this, SLOT(progressReceived(double)));
-  QObject::connect(mThread, SIGNAL(logged(QString)), this, SLOT(logReceived(QString)));
+  QObject::connect(mThread, SIGNAL(logged(QString)), this, SLOT(logReceived(QString))); 
 }
 
 QgsBandAligner::~QgsBandAligner()
@@ -81,11 +86,14 @@ void QgsBandAlignerThread::run()
 {
   double progress = 0;
   emit progressed(progress);
-  emit logged("Preparing input data ...");
+  emit logged("Preparing input data ...");  
+  
   if (GDALGetDriverCount() == 0)
-  {
-    GDALAllRegister();
-  }
+      GDALAllRegister();  
+  
+  if (mInputDataset != NULL)
+      GDALClose(mInputDataset);
+
   mInputDataset = (GDALDataset*) GDALOpen(mInputPath[mReferenceBand].toAscii().data(), GA_ReadOnly);
   mBands = mInputPath.size();
   mWidth = mInputDataset->GetRasterXSize();
@@ -94,15 +102,24 @@ void QgsBandAlignerThread::run()
   {
     mBands = mInputDataset->GetRasterCount();
   }
-  
-  progress += 1;
-  emit progressed(progress);
+    
+  QList<int> bands;
+  for(int i = 0; i < mBands; i++)
+  {
+    if(mReferenceBand != (i+1))
+    {
+      bands.append(i+1);
+    }
+  }
   
   if(mStopped)
   {
-    emit progressed(100);
-    emit logged("Process determinated.");
-    return;
+      emit progressed(100);
+      emit logged("Process determinated.");
+      goto out1;
+  } else {
+      progress += 1;
+      emit progressed(progress);
   }
   
   GDALDataType type = mInputDataset->GetRasterBand(1)->GetRasterDataType();
@@ -115,78 +132,91 @@ void QgsBandAlignerThread::run()
     mOutputDataset = mInputDataset->GetDriver()->Create(mOutputPath.toAscii().data(), mWidth, mHeight, mBands, type, 0);
     
     char **metadata = mInputDataset->GetDriver()->GetMetadata();
-    
+
+    QgsDebugMsg("Flipping first band vertically");
+
     //Flip write the first band
-    int row = 0;
-    for(int i = mHeight-1; i >= 0; i--)
+    int *scanlineBuffer = (int*) malloc(sizeof(int) * mWidth);
+    for(int i = mHeight - 1, row = 0; i >= 0; row++, i--)
     {
-      int *firstBand = (int*) malloc(sizeof(int) * mWidth);
-      mInputDataset->GetRasterBand(1)->RasterIO(GF_Read, 0, row, mWidth, 1, firstBand, mWidth, 1, type, 0, 0);
-      mOutputDataset->GetRasterBand(1)->RasterIO(GF_Write, 0, i, mWidth, 1, firstBand, mWidth, 1, type, 0, 0);
-      row++;
-      free(firstBand);
+        mInputDataset->GetRasterBand(1)->RasterIO(GF_Read, 0, row, mWidth, 1, scanlineBuffer, mWidth, 1, type, 0, 0);
+        mOutputDataset->GetRasterBand(1)->RasterIO(GF_Write, 0, i, mWidth, 1, scanlineBuffer, mWidth, 1, type, 0, 0);
     }
+    free(scanlineBuffer);
     
     mOutputDataset->SetMetadata(metadata);
     mOutputDataset->FlushCache();
+  } 
+  else 
+  {
+    mOutputDataset = NULL;
   }
-  GDALDataset *disparityMapX = NULL;
-  GDALDataset *disparityMapY = NULL;
   
   if(mStopped)
   {
     emit progressed(100);
     emit logged("Process determinated.");
-    return;
+    goto out2;
   }
-  
-  progress += 2;
-  emit progressed(progress);
+  else 
+  {  
+    progress += 2;
+    emit progressed(progress);
+  }
 
-  if(mDisparityXPath != "" && mTransformation == QgsBandAligner::Disparity)
+  GDALDataset *disparityMapX = NULL;
+  GDALDataset *disparityMapY = NULL;
+
+  if (mTransformation == QgsBandAligner::Disparity)
   {
-    disparityMapX = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(mDisparityXPath.toAscii().data(), mWidth, mHeight, mBands, GDT_Float32, NULL);
+      if (mDisparityXPath == "") {
+          mDisparityXPath = QDir::tempPath() + "/disparity-map-x.tif";
+      }
+      disparityMapX = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(mDisparityXPath.toAscii().data(), mWidth, mHeight, mBands, GDT_Float32, NULL);
+
+      if (mDisparityYPath == "") {
+          mDisparityYPath = QDir::tempPath() + "/disparity-map-y.tif";
+      }      
+      disparityMapY = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(mDisparityYPath.toAscii().data(), mWidth, mHeight, mBands, GDT_Float32, NULL);
   }
-  if(mDisparityYPath != "" && mTransformation == QgsBandAligner::Disparity)
-  {
-    disparityMapY = GetGDALDriverManager()->GetDriverByName("GTiff")->Create(mDisparityYPath.toAscii().data(), mWidth, mHeight, mBands, GDT_Float32, NULL);
-  }
-  
-  if(mTransformation != QgsBandAligner::Disparity)
+  else // if(mTransformation != QgsBandAligner::Disparity)
   {
     QString gcps = "-gcp 0 0 0 0 -gcp 0 "+QString::number(mHeight)+" 0 "+QString::number(mHeight)+" -gcp "+QString::number(mWidth)+" 0 "+QString::number(mWidth)+" 0 -gcp "+QString::number(mWidth)+" "+QString::number(mHeight)+" "+QString::number(mWidth)+" "+QString::number(mHeight)+" ";
+    
+    QString cmdline = "gdal_translate -a_srs EPSG:4326 "+gcps+mInputPath[mReferenceBand-1]+" "+mInputPath[mReferenceBand-1]+".gcps";
+    
+    QgsDebugMsg("Calling: '" + cmdline + "'");
     QProcess p;
-    p.start("gdal_translate -a_srs EPSG:4326 "+gcps+mInputPath[mReferenceBand-1]+" "+mInputPath[mReferenceBand-1]+".gcps");
+    p.start(cmdline);
     p.waitForFinished(999999);
-    p.start("gdalwarp -multi -t_srs EPSG:4326 "+mInputPath[mReferenceBand-1]+".gcps "+mInputPath[mReferenceBand-1]+".warped");
+    
+    cmdline = "gdalwarp -multi -t_srs EPSG:4326 "+mInputPath[mReferenceBand-1]+".gcps "+mInputPath[mReferenceBand-1]+".warped";
+    QgsDebugMsg("Calling: '" + cmdline + "'");
+    p.start(cmdline);
     p.waitForFinished(999999);
+    
     QFile f(mInputPath[mReferenceBand-1]+".gcps");
+    QgsDebugMsg("Removing file: '" + f.fileName() + "'");
     f.remove();
   }
   
-  QList<int> bands;
-  for(int i = 0; i < mBands; i++)
-  {
-    if(mReferenceBand != (i+1))
-    {
-      bands.append(i+1);
-    }
-  }
-  
   if(mStopped)
   {
     emit progressed(100);
     emit logged("Process determinated.");
-    return;
+    goto out3;
   }
-  
-  progress += 1;
-  emit progressed(progress);
- 
+  else
+  {
+    progress += 1;
+    emit progressed(progress);
+  }
+
   double div = bands.size();
   for(int i = 0; i < bands.size(); i++)
   {
     emit logged("Starting to analyze band "+QString::number(bands[i])+" ...");
+
     QgsImageAligner *aligner;
     if(mInputPath.size() == 1)
     {
@@ -199,121 +229,145 @@ void QgsBandAlignerThread::run()
     
     if(mStopped)
     {
+      delete aligner;      
       emit progressed(100);
       emit logged("Process determinated.");
-      return;
+      goto out3;
     }
     
     progress += 1/div;
     emit progressed(progress);
-    
     emit logged("Scanning band "+QString::number(bands[i])+" ...");
-    aligner->scan();
+    
+    aligner->scan(); // ************************** STEP 1 ********************
+    
     progress += 24/div;
     emit progressed(progress);
+
     if(mStopped)
     {
+      delete aligner;
       emit progressed(100);
       emit logged("Process determinated.");
-      return;
+      goto out3;
     }
+
+    //-------------------------------------------------------------------------
     
     if(mTransformation == QgsBandAligner::Disparity)
     {
-      aligner->eliminate(mRefinementTolerance);
+      aligner->eliminate(mRefinementTolerance);   // ************************** STEP 2 ********************
+
       emit logged("Estimating pixels for band "+QString::number(bands[i])+" ...");
-      aligner->estimate();
+
+      aligner->estimate(); // ************************** STEP 3 ********************
       
-      progress += 20/div;
-      emit progressed(progress);
       if(mStopped)
       {
-	emit progressed(100);
-	emit logged("Process determinated.");
-	return;
+          delete aligner;
+          emit progressed(100);
+          emit logged("Process determinated.");
+          goto out3;
+      }
+      else
+      {
+          progress += 20/div;
+          emit progressed(progress);
       }
 
       if(disparityMapX != NULL)
       {
-	emit logged("Writing the x-based disparity map for band "+QString::number(bands[i])+" ...");
-	disparityMapX->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), aligner->disparityReal(), aligner->width(), aligner->height(), GDT_Float64, 0, 0);
-	disparityMapX->FlushCache();
+          emit logged("Writing the x-based disparity map for band "+QString::number(bands[i])+" ...");
+          disparityMapX->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), aligner->disparityReal(), aligner->width(), aligner->height(), GDT_Float64, 0, 0);
+          disparityMapX->FlushCache();
       }
-      
-      progress += 10/div;
-      emit progressed(progress);
+
       if(mStopped)
       {
-	emit progressed(100);
-	emit logged("Process determinated.");
-	return;
+          delete aligner;
+          emit progressed(100);
+          emit logged("Process determinated.");
+          goto out3;
+      } 
+      else 
+      {  
+          progress += 10/div;
+          emit progressed(progress);
       }
-      
+
       if(disparityMapY != NULL)
       {
-	emit logged("Writing the y-based disparity map for band "+QString::number(bands[i])+" ...");
-	disparityMapY->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), aligner->disparityImag(), aligner->width(), aligner->height(), GDT_Float64, 0, 0);
-	disparityMapY->FlushCache();
+          emit logged("Writing the y-based disparity map for band "+QString::number(bands[i])+" ...");
+          disparityMapY->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), aligner->disparityImag(), aligner->width(), aligner->height(), GDT_Float64, 0, 0);
+          disparityMapY->FlushCache();
       }
       
       progress += 10/div;
       emit progressed(progress);
+
       if(mStopped)
       {
-	emit progressed(100);
-	emit logged("Process determinated.");
-	return;
+          delete aligner;
+          emit progressed(100);
+          emit logged("Process determinated.");
+          goto out3;
       }
-      
+
+      aligner->alignImageBand(disparityMapX, disparityMapY, mOutputDataset, bands[i]);
+      mOutputDataset->FlushCache();
+
+#if 1
+      QgsDebugMsg("[OUTPUT] pixel type = " + (int)type);
       if(type == GDT_UInt32 || type == GDT_UInt16)
       {
-	
-	uint *data = aligner->applyUInt();
-	mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_UInt32, 0, 0);
-	mOutputDataset->FlushCache();
-	delete [] data;
+          uint *data = aligner->applyUInt();
+          mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_UInt32, 0, 0);
+          mOutputDataset->FlushCache();
+          delete [] data;
       }
       else if(type == GDT_Float32)
       {
-	double *data = aligner->applyFloat();
-	mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_Float32, 0, 0);
-	mOutputDataset->FlushCache();
-	delete [] data;
+          double *data = aligner->applyFloat();
+          mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_Float32, 0, 0);
+          mOutputDataset->FlushCache();
+          delete [] data;
       }
       else
       {
-	int *data = aligner->applyInt();
-	mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_Int32, 0, 0);
-	mOutputDataset->FlushCache();
-	delete [] data;
+          int *data = aligner->applyInt();
+          mOutputDataset->GetRasterBand(bands[i])->RasterIO(GF_Write, 0, 0, aligner->width(), aligner->height(), data, aligner->width(), aligner->height(), GDT_Int32, 0, 0);
+          mOutputDataset->FlushCache();
+          delete [] data;
       }
+#endif
     }
-    else
+    else // if (mTransformation != QgsBandAligner::Disparity)
     {
+#if 0    
       QProcess p;
       QString gcps = "";
       double xSteps = ceil(mWidth / double(mBlockSize));
       double ySteps = ceil(mHeight / double(mBlockSize));
       for(int h = 0; h < ySteps; h++)
       {
-	for(int w = 0; w < xSteps; w++)
-	{
-	  if(aligner->gcps()[h][w].real() == aligner->gcps()[h][w].real() && aligner->gcps()[h][w].imag() == aligner->gcps()[h][w].imag())
-	  {
-	    double xDis = aligner->gcps()[h][w].real();
-	    double yDis = aligner->gcps()[h][w].imag();
-	    gcps += " -gcp " + QString::number(w*mBlockSize) + " " + QString::number(h*mBlockSize) + " " + QString::number(w*mBlockSize+xDis) + " " + QString::number(h*mBlockSize+yDis);
-	  }
-	}
+          for(int w = 0; w < xSteps; w++)
+          {
+              if(aligner->gcps()[h][w].real() == aligner->gcps()[h][w].real() && aligner->gcps()[h][w].imag() == aligner->gcps()[h][w].imag())
+              {
+                  double xDis = aligner->gcps()[h][w].real();
+                  double yDis = aligner->gcps()[h][w].imag();
+                  gcps += " -gcp " + QString::number(w*mBlockSize) + " " + QString::number(h*mBlockSize) + " " + QString::number(w*mBlockSize+xDis) + " " + QString::number(h*mBlockSize+yDis);
+              }
+          }
       }
       emit logged("Processing the GCPs for band "+QString::number(bands[i])+".");
       progress += 20/div;
       emit progressed(progress);
       if(mStopped)
       {
-	emit progressed(100);
-	emit logged("Process determinated.");
-	return;
+          emit progressed(100);
+          emit logged("Process determinated.");
+          return;
       }
       emit logged("Adding the GCPs to band "+QString::number(bands[i])+".");
       p.start("gdal_translate -a_srs EPSG:4326 "+gcps+" "+mInputPath[bands[i]-1]+" "+mInputPath[bands[i]-1]+".gcps");
@@ -322,45 +376,51 @@ void QgsBandAlignerThread::run()
       emit progressed(progress);
       if(mStopped)
       {
-	emit progressed(100);
-	emit logged("Process determinated.");
-	return;
+          emit progressed(100);
+          emit logged("Process determinated.");
+          return;
       }
       emit logged("Warping band "+QString::number(bands[i])+".");
       if(mTransformation == QgsBandAligner::ThinPlateSpline)
       {
-	p.start("gdalwarp -multi -t_srs EPSG:4326 -tps "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
-	p.waitForFinished(999999);
+          p.start("gdalwarp -multi -t_srs EPSG:4326 -tps "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
+          p.waitForFinished(999999);
       }
       else if(mTransformation == QgsBandAligner::Polynomial2)
       {
-	p.start("gdalwarp -multi -t_srs EPSG:4326 -order 2 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
-	p.waitForFinished(999999);
+          p.start("gdalwarp -multi -t_srs EPSG:4326 -order 2 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
+          p.waitForFinished(999999);
       }
       else if(mTransformation == QgsBandAligner::Polynomial3)
       {
-	p.start("gdalwarp -multi -t_srs EPSG:4326 -order 3 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
-	p.waitForFinished(999999);
+          p.start("gdalwarp -multi -t_srs EPSG:4326 -order 3 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
+          p.waitForFinished(999999);
       }
       else if(mTransformation == QgsBandAligner::Polynomial4)
       {
-	p.start("gdalwarp -multi -t_srs EPSG:4326 -order 4 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
-	p.waitForFinished(999999);
+          p.start("gdalwarp -multi -t_srs EPSG:4326 -order 4 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
+          p.waitForFinished(999999);
       }
       else if(mTransformation == QgsBandAligner::Polynomial5)
       {
-	p.start("gdalwarp -multi -t_srs EPSG:4326 -order 5 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
-	p.waitForFinished(999999);
+          p.start("gdalwarp -multi -t_srs EPSG:4326 -order 5 -refine_gcps "+QString::number(mRefinementTolerance)+" "+QString::number(mMinimumGcps)+" "+mInputPath[bands[i]-1]+".gcps "+mInputPath[bands[i]-1]+".warped");
+          p.waitForFinished(999999);
       }
       QFile f(mInputPath[bands[i]-1]+".gcps");
       f.remove();
-    }
+#endif
+    } 
+    //-------------------------------------------------------------------------
+
     progress += 29/div;
     emit progressed(progress);
+
     delete aligner;
+
     emit logged("Alignment for band "+QString::number(bands[i])+" completed.");
-  }
-  
+  } 
+
+#if 0
   emit logged("Finalizing image structure and metadata...");
   if(mTransformation != QgsBandAligner::Disparity)
   {
@@ -395,18 +455,14 @@ void QgsBandAlignerThread::run()
     QFile geo(mOutputPath.toAscii().data()+QString(".geoless"));
     geo.remove();
   }
-  
+#endif  
 
-  if(mOutputDataset != NULL)
-  {
-    GDALClose(mOutputDataset);
-    mOutputDataset = NULL;
-  }
-  if(mInputDataset != NULL)
-  {
-    GDALClose(mInputDataset);
-    mInputDataset = NULL;
-  }
+  progress = 100.0;
+  emit progressed(progress);
+  emit logged("Band alignment for the image completed.");
+  emit logged("<<Finished>>");
+
+out3:
   if(disparityMapX != NULL)
   {
     GDALClose(disparityMapX);
@@ -415,8 +471,19 @@ void QgsBandAlignerThread::run()
   {
     GDALClose(disparityMapY);
   }
-  progress = 100.0;
-  emit progressed(progress);
-  emit logged("Band alignment for the image completed.");
-  emit logged("<<Finished>>");
+
+out2:
+  if(mOutputDataset != NULL)
+  {
+    GDALClose(mOutputDataset);
+    mOutputDataset = NULL;
+  }
+
+out1:
+  if(mInputDataset != NULL)
+  {
+    GDALClose(mInputDataset);
+    mInputDataset = NULL;
+  }
 }
+

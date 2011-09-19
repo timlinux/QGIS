@@ -58,7 +58,7 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
   public:
     
   QgsRegionCorrelator();
-  static QgsRegionCorrelationResult findRegion(QgsRegion *regionRef, QgsRegion *regionNew, int bits);
+  static QgsRegionCorrelationResult findRegion(QgsRegion &regionRef, QgsRegion &regionNew, int bits);
   
   protected:
     /*
@@ -85,8 +85,10 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     /*
     Calculate the gradient of the array
     */
-    static double* caclculateGradient(uint *array, int dimension, int bits, double order = 2.0);
-    
+    //static double* calculateGradient(uint *data, int width, int height, int bits, double order = 2.0);
+
+    static gsl_complex* calculateGradient(gsl_complex *buffer, int rowStride, uint *data, int width, int height, int bits, double order = 2.0);
+
     /*
     Find the smallest power of 2 bigger than the biggest of size1 and size2 dimentions
     */
@@ -96,6 +98,7 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     Inverse shift
     */
     static double* inverseShift(double *data, int dimension);
+    static double* ifftShiftComplex(double *data, int dimension);
     
     /*
     Cut out a certain area of the array
@@ -107,6 +110,8 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     */
     static QList<QList<double> > getQListSubset(QList<QList<double> > data, int fromRow, int toRow, int fromCol, int toCol);
     
+    static double quantifySNR(gsl_complex *data, int dim, double x, double y);
+
     static double quantifySnr(QList<QList<double> > array, double x, double y);
     
     static double quantifyConfidence(QList<QList<double> > array);

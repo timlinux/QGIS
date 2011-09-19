@@ -1,5 +1,9 @@
 #include "qgsimagealigner.h"
 
+#undef QT_NO_DEBUG
+#define QT_NO_EXCEPTIONS 1
+#include <QtGlobal>
+
 QgsImageAligner::QgsImageAligner()
 {
   mRealDisparity = NULL;
@@ -158,19 +162,22 @@ void QgsImageAligner::eliminate(double sigmaWeight)
   int c2 = 0;
   for(int j = 0; j < mWidth; j++)
   {
-    for(int i = 0; i < mHeight; i++)
-    {
-      if(mRealDisparity[i][j].real() != 0.0 && mRealDisparity[i][j].real() == mRealDisparity[i][j].real() && mRealDisparity[i][j].imag() != 0.0 && mRealDisparity[i][j].imag() == mRealDisparity[i][j].imag())
+      for(int i = 0; i < mHeight; i++)
       {
-	mRealDisparity[i][j] = mReal[c1][c2];
-	c1++;
-	if(c1>=ySteps)
-	{
-	  c2++;
-	  c1 = 0;
-	}
+          if (mRealDisparity[i][j].real() != 0.0 && 
+              mRealDisparity[i][j].real() == mRealDisparity[i][j].real() && 
+              mRealDisparity[i][j].imag() != 0.0 && 
+              mRealDisparity[i][j].imag() == mRealDisparity[i][j].imag())
+          {
+              mRealDisparity[i][j] = mReal[c1][c2];
+              c1++;
+              if(c1>=ySteps)
+              {
+                  c2++;
+                  c1 = 0;
+              }
+          }
       }
-    }
   }
   delete [] x;
   delete [] y;
@@ -191,6 +198,8 @@ void QgsImageAligner::scan()
   double ySteps = ceil(mHeight / double(mBlockSize));
   double xDiff = (xSteps * mBlockSize - mWidth) / (xSteps - 1);
   double yDiff = (ySteps * mBlockSize - mHeight) / (ySteps - 1);
+  
+  // allocate memory and set it to zero
   mRealDisparity = new QgsComplex*[mHeight];
   for(int i = 0; i < mHeight; i++)
   {
@@ -201,6 +210,7 @@ void QgsImageAligner::scan()
     }
   }
   
+  // alocate memory and set it to zero
   mReal = new QgsComplex*[int(ySteps)];
   for(int i = 0; i < int(ySteps); i++)
   {
@@ -210,32 +220,39 @@ void QgsImageAligner::scan()
       mReal[i][j] = QgsComplex();
     }
   }
-  
-  QMutex mutex;
-  QgsComplex c;
-  
+   
   int xCounter = 0;
   for(int x = 0; x < xSteps; x++)
   {
-    int yCounter = 0;
     int newX = floor((x + 0.5) * mBlockSize - x * xDiff);
+
+    int yCounter = 0;
     for(int y = 0; y < ySteps; y++)
     {
       int newY = floor((y + 0.5) * mBlockSize - y * yDiff);
+
       double point[2];
       point[0] = newX;
       point[1] = newY;
       QgsComplex c;
+      
       mRealDisparity[newY][newX] = findPoint(point, c);
+
       mReal[yCounter][xCounter] = mRealDisparity[newY][newX];
-      /*if(mReal[yCounter][xCounter].real() == 0.0 && mReal[yCounter][xCounter].imag() == 0.0)
+
+      /*
+      if(mReal[yCounter][xCounter].real() == 0.0 && mReal[yCounter][xCounter].imag() == 0.0)
       {
-	mSnrTooLow.append(QgsComplex(yCounter, xCounter));
-      }*/
+	    mSnrTooLow.append(QgsComplex(yCounter, xCounter));
+      }
+      */
+
       yCounter++;
     }
     xCounter++;
   }
+
+  // FIXME: why do we close the dataset here?
   GDALClose(mInputDataset);
   mInputDataset = (GDALDataset*) GDALOpen(mInputPath.toAscii().data(), GA_ReadOnly);
 }
@@ -245,80 +262,93 @@ QgsComplex QgsImageAligner::findPoint(double *point, QgsComplex estimate)
   double newPoint[2];
   newPoint[0] = point[0] + estimate.real();
   newPoint[1] = point[1] + estimate.imag();
-  double corrX = estimate.real();
-  double corrY = estimate.imag();
-  QgsRegion *region1 = region(mInputDataset, point, mBlockSize, mReferenceBand);
-  QgsRegion *region2 = region(mTranslateDataset, newPoint, mBlockSize, mUnreferencedBand);
 
-  double val = 0;
-  for(int i = 0; i < region2->width*region2->height; i++)
+  QgsRegion region1, region2;
+  uint max1 = region(mInputDataset->GetRasterBand(mReferenceBand), NULL, point, mBlockSize, region1);
+  uint max2 = region(mTranslateDataset->GetRasterBand(mUnreferencedBand), NULL, newPoint, mBlockSize, region2);
+
+  mMax = max1 > max2 ? max1 : max2;
+
+  double sum2 = 0;
+  for(int i = 0; i < (region2.width * region2.height); i++)
   {
-    val += region2->data[i];
+    sum2 += region2.data[i];
   }
   
   //If chip is water
-  /*if(mBits-val/(region2->width*region2->height)< 55)
+  /*
+  if((mBits - sum2 / (region2.width*region2.height)) < 55)
   {
     cout<<"water ("<<point[0]<<", "<<point[1]<<")"<<endl;
-    delete [] region1->data;
-    delete [] region2->data;
-    delete region1;
-    delete region2;
+    delete [] region1.data;
+    delete [] region2.data;
     return QgsComplex();
-  }*/
+  }
+  */
   
   QgsRegionCorrelationResult corrData = QgsRegionCorrelator::findRegion(region1, region2, mBits);
   
-  delete [] region1->data;
-  delete [] region2->data;
-  delete region1;
-  delete region2;
+  delete [] region1.data;
+  delete [] region2.data;
+  
+  double corrX = estimate.real();
+  double corrY = estimate.imag();
+
   if(corrData.wasSet)
   {
     corrX = corrData.x;
     corrY = corrData.y;
+
     //cout<<"Point found("<<point[0]<<" "<<point[1]<<"): "<<corrX<<", "<<corrY<<endl;
     //cout<<"match ("<<point[0]<<", "<<point[1]<<"): "<<corrData.match<<endl;
       //cout<<"SNR ("<<point[0]<<", "<<point[1]<<") = "<<corrData.snr<<endl;
     /*if(corrData.snr > -24 && corrData.snr < -27)
-    {
-      return QgsComplex();
+    {      return QgsComplex();
     }*/
   }
   else
   {
     //cout<<"This point could not be found in the other band"<<endl;
   }
-  newPoint[0] = point[0]+corrX;
-  newPoint[1] = point[1]+corrY;
-  return QgsComplex(newPoint[0]-point[0], newPoint[1]-point[1]);
+
+  newPoint[0] = point[0] + corrX;
+  newPoint[1] = point[1] + corrY;
+  return QgsComplex(newPoint[0] - point[0], newPoint[1] - point[1]);
 }
 
-QgsRegion* QgsImageAligner::region(GDALDataset* dataset, double* point, int dimension, int band)
+uint QgsImageAligner::region(GDALRasterBand* rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region)
 {
-  int x = int(round(point[0]));
-  int y = int(round(point[1]));
-  QgsRegion *region = new QgsRegion;
-  region->width = dimension;
-  region->height = dimension;
-  //unsigned int *data = (unsigned int*) CPLMalloc(sizeof(unsigned int)*region.width*region.height);
-  uint *data = new uint[region->width*region->height];
- // mMutex->lock();
-  dataset->GetRasterBand(band)->RasterIO(GF_Read, x-dimension/2, y-dimension/2, region->width, region->height, data, region->width, region->height, GDT_UInt32, 0, 0);
-  //mMutex->unlock();
-  for(int i = 0; i < region->width*region->height; i++)
-  {
-    if(data[i] > mMax)
+    Q_CHECK_PTR(rasterBand);
+
+    int x = int(point[0] + 0.5);
+    int y = int(point[1] + 0.5);
+
+    region.width = dimension;
+    region.height = dimension;
+    region.data = new uint[region.width * region.height];
+
+    //if (mutex) mutex->lock();
+   
+    rasterBand->RasterIO(GF_Read, x - region.width/2, y - region.height/2, region.width, region.height, region.data, region.width, region.height, GDT_UInt32, 0, 0);
+    
+    //if (mutex) mutex->unlock();
+
+    uint max = 0;
+    
+    for(int i = 0; i < region.width * region.height; i++)
     {
-      mMax = data[i];
+        uint value = region.data[i];
+
+        if (max < value)
+            max = value;
+
+        region.data[i] = mBits - value;
     }
-    data[i] = mBits-data[i];
-  }
-  region->data = data;
-  return region;
+
+    return max;
 }
 
-void QgsImageAligner::estimate(bool deleteOldDisparity)
+void QgsImageAligner::estimate()
 {
   //Create empty disparity map
   mDisparityReal = (double*) malloc(mHeight*mWidth*sizeof(double));
@@ -342,132 +372,191 @@ void QgsImageAligner::estimate(bool deleteOldDisparity)
   int yTo = ySteps+1;
   for(int x = 0; x < xTo; x++)
   {
-    int x1 = floor((x-0.5)*mBlockSize - fabs((double)(x-1))*xDiff);
-    int x2 = floor((x+0.5)*mBlockSize - x*xDiff);
-    if(!(x1 > 0 && x1 <= mWidth-blockB))
-    {
-      x1 = x2;
-    }
-    if(!(x2 > 0 && x2 <= mWidth-blockB))
-    {
-      x2 = x1;
-    }
-    
-    int newX;
-    int startX;
-    if(x2 - x1)
-    {
-      newX = x2-x1;
-      startX = x1;
-    }
-    else
-    {
-      newX = min(x1, mWidth-x1);
-      startX = x1;
-      if(x1 <= blockB)
+      int x1 = floor((x-0.5)*mBlockSize - fabs((double)(x-1))*xDiff);
+      int x2 = floor((x+0.5)*mBlockSize - x*xDiff);
+
+      if(!(x1 > 0 && x1 <= mWidth-blockB))
       {
-	startX = 0;
+          x1 = x2;
       }
-    }
-    for(int y = 0; y < yTo; y++)
-    {
-      int y1 = floor((y-0.5)*mBlockSize - fabs((double)(y-1))*yDiff);
-      int y2 = floor((y+0.5)*mBlockSize - y*yDiff);
-      if(!(y1 > 0 && y1 <= mHeight-blockB))
+      if(!(x2 > 0 && x2 <= mWidth-blockB))
       {
-	y1 = y2;
-      }
-      if(!(y2 > 0 && y2 <= mHeight-blockB))
-      {
-	y2 = y1;
-      }
-      
-      QgsComplex p1;
-      QgsComplex p2;
-      QgsComplex p3;
-      QgsComplex p4;
-      
-      if(y1 < mHeight && x1 < mWidth)
-      {
-	p1 = mRealDisparity[y1][x1];
-      }
-      else
-      {
-	p1 = QgsComplex(0.0, 0.0);
-      }
-      
-      if(y1 < mHeight && x2 < mWidth)
-      {
-	p2 = mRealDisparity[y1][x2];
-      }
-      else
-      {
-	p2 = QgsComplex(0.0, 0.0);
-      }
-      
-      if(y2 < mHeight && x1 < mWidth)
-      {
-	p3 = mRealDisparity[y2][x1];
-      }
-      else
-      {
-	p3 = QgsComplex(0.0, 0.0);
-      }
-      
-      if(y2 < mHeight && x2 < mWidth)
-      {
-	p4 = mRealDisparity[y2][x2];
-      }
-      else
-      {
-	p4 = QgsComplex(0.0, 0.0);
+          x2 = x1;
       }
 
-      int newY;
-      int startY;
-      if(y2-y1)
+      int newX;
+      int startX;
+      if(x2 - x1)
       {
-	newY = y2-y1;
-	startY = y1;
+          newX = x2-x1;
+          startX = x1;
       }
       else
       {
-	newY = min(y1, mHeight-y1);
-	startY = y1;
-	if(y1 <= blockB)
-	{
-	  startY = 0;
-	}
+          newX = min(x1, mWidth-x1);
+          startX = x1;
+          if(x1 <= blockB)
+          {
+              startX = 0;
+          }
       }
-      	  
-      for(int xSub = 0; xSub < newX; xSub++)
+
+      for(int y = 0; y < yTo; y++)
       {
-	int newXSub = startX + xSub;
-	QgsComplex top = (p2*double(xSub) + p1*double(newX-xSub)) / double(newX);
-	QgsComplex bottom = (p4*double(xSub) + p3*double(newX-xSub)) / double(newX);
-	for(int ySub = 0; ySub < newY; ySub++)
-	{
-	  int newYSub = startY + ySub;
- 	  QgsComplex middle = (top*double(newY - ySub) + bottom*double(ySub)) / double(newY);
-	  //cout<<"Real2: "<<newY<<" "<<y1<<" "<<y2<<" "<<p1.imag()<<" "<<middle.imag()<<endl;
-	  int index = newYSub*mWidth + newXSub;
-	  mDisparityReal[index] = middle.real();
-	  mDisparityImag[index] = middle.imag();
-	}
+          int y1 = floor((y-0.5)*mBlockSize - fabs((double)(y-1))*yDiff);
+          int y2 = floor((y+0.5)*mBlockSize - y*yDiff);
+          if(!(y1 > 0 && y1 <= mHeight-blockB))
+          {
+              y1 = y2;
+          }
+          if(!(y2 > 0 && y2 <= mHeight-blockB))
+          {
+              y2 = y1;
+          }
+
+          int newY;
+          int startY;
+          if(y2-y1)
+          {
+              newY = y2-y1;
+              startY = y1;
+          }
+          else
+          {
+              newY = min(y1, mHeight-y1);
+              startY = y1;
+              if(y1 <= blockB)
+              {
+                  startY = 0;
+              }
+          }
+
+          QgsComplex p1;
+          QgsComplex p2;
+          QgsComplex p3;
+          QgsComplex p4;
+
+          if(y1 < mHeight && x1 < mWidth)
+          {
+              p1 = mRealDisparity[y1][x1];
+          }
+          else
+          {
+              p1 = QgsComplex(0.0, 0.0);
+          }
+
+          if(y1 < mHeight && x2 < mWidth)
+          {
+              p2 = mRealDisparity[y1][x2];
+          }
+          else
+          {
+              p2 = QgsComplex(0.0, 0.0);
+          }
+
+          if(y2 < mHeight && x1 < mWidth)
+          {
+              p3 = mRealDisparity[y2][x1];
+          }
+          else
+          {
+              p3 = QgsComplex(0.0, 0.0);
+          }
+
+          if(y2 < mHeight && x2 < mWidth)
+          {
+              p4 = mRealDisparity[y2][x2];
+          }
+          else
+          {
+              p4 = QgsComplex(0.0, 0.0);
+          }
+
+          for(int xSub = 0; xSub < newX; xSub++)
+          {
+              int newXSub = startX + xSub;
+              QgsComplex top = (p2*double(xSub) + p1*double(newX-xSub)) / double(newX);
+              QgsComplex bottom = (p4*double(xSub) + p3*double(newX-xSub)) / double(newX);
+              for(int ySub = 0; ySub < newY; ySub++)
+              {
+                  int newYSub = startY + ySub;                  
+                  QgsComplex middle = (top*double(newY - ySub) + bottom*double(ySub)) / double(newY);
+
+                  //cout<<"Real2: "<<newY<<" "<<y1<<" "<<y2<<" "<<p1.imag()<<" "<<middle.imag()<<endl;
+                  int index = newYSub*mWidth + newXSub;
+                  
+                  mDisparityReal[index] = middle.real();
+                  mDisparityImag[index] = middle.imag();
+              }
+          }
       }
-    }
   }
-  //We delete the disparity map here, to free up memory for computers with lower memory capacity
-  if(deleteOldDisparity && mRealDisparity != NULL)
+
+  if (mRealDisparity != NULL)
   {
-    for(int i = 0; i < mHeight; i++)
-    {
-      delete [] mRealDisparity[i];
-    }
-    delete [] mRealDisparity;
-    mRealDisparity = NULL;
+      for(int i = 0; i < mHeight; i++)
+      {
+          delete [] mRealDisparity[i];
+      }
+      delete [] mRealDisparity;
+      mRealDisparity = NULL;
   }
 }
+
+void QgsImageAligner::alignImageBand(GDALDataset *disparityMapX, GDALDataset *disparityMapY, GDALDataset *outputData, int nBand)
+{
+    Q_CHECK_PTR(disparityMapX);
+    Q_CHECK_PTR(disparityMapY);
+    Q_CHECK_PTR(outputData);
+
+__asm int 3; // Hard code a debugger breakpoint in C++
+
+    GDALRasterBand *disparityReal = disparityMapX->GetRasterBand(nBand);
+    GDALRasterBand *disparityImag = disparityMapY->GetRasterBand(nBand);
+    GDALRasterBand *dst = outputData->GetRasterBand(nBand);
+    GDALRasterBand *src = mTranslateDataset->GetRasterBand(mUnreferencedBand);
+
+    float* scanLineDisparityReal = ( float * ) CPLMalloc( sizeof( float ) * mWidth );
+    float* scanLineDisparityImag = ( float * ) CPLMalloc( sizeof( float ) * mWidth );
+    float* resultLine = ( float * ) CPLMalloc( sizeof( float ) * mWidth );
+
+    float data[16];
+
+    for(int y = 0; y < mHeight; y++)
+    {
+        disparityReal->RasterIO(GF_Read, 0, y, mWidth, 1, scanLineDisparityReal, mWidth, 1, GDT_Float32, 0, 0);
+        disparityImag->RasterIO(GF_Read, 0, y, mWidth, 1, scanLineDisparityImag, mWidth, 1, GDT_Float32, 0, 0);
+
+        for(int x = 0; x < mWidth; x++)
+        {
+            QgsComplex trans;
+            trans.setReal(-scanLineDisparityReal[x]);
+            trans.setImag(-scanLineDisparityImag[x]);   
+
+            float newX1 = floor(x + trans.real());
+            float newY1 = floor(y + trans.imag());
+            float newX2 = x + trans.real() - newX1;
+            float newY2 = y + trans.imag() - newY1;
+
+            if (1 <= x && x < mWidth-2) 
+            {
+                src->RasterIO(GF_Read, newX1-1, newY1-1, 4, 4, data, 4, 4, GDT_Float32, 0, 0);
+
+                float value = 1; //cubicConvolution(data, QgsComplex(newX2, newY2));
+
+
+                resultLine[x] = value;
+            }
+            else
+            {
+                resultLine[x] = 0; // TODO: no data value
+            }
+        }
+
+        dst->RasterIO(GF_Write, 0, y, mWidth, 1, resultLine, mWidth, 1, GDT_Float32, 0, 0);
+    }
+}
+
 
 uint* QgsImageAligner::applyUInt()
 {
@@ -478,7 +567,9 @@ uint* QgsImageAligner::applyUInt()
   // TODO: Need to refactor this code to reduce the memory consumption.
   uint *image = new uint[size];
   memset(image, 0, size * sizeof(image[0]));
-  
+
+#if 1  
+
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
   for(int x = 0; x < mWidth; x++)
@@ -539,8 +630,9 @@ uint* QgsImageAligner::applyUInt()
     }
   }
   delete [] base;
-  
-  
+
+#endif
+
   if(mDisparityReal != NULL)
   {
     free(mDisparityReal);
@@ -561,6 +653,7 @@ int* QgsImageAligner::applyInt()
   int *image = new int[size];
   memset(image, 0, size * sizeof(image[0]));
   
+#if 0
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
   for(int x = 0; x < mWidth; x++)
@@ -618,7 +711,7 @@ int* QgsImageAligner::applyInt()
     }
   }
   delete [] base;
-  
+#endif  
   
   if(mDisparityReal != NULL)
   {
@@ -640,6 +733,7 @@ double* QgsImageAligner::applyFloat()
   double *image = new double[size];
   memset(image, 0, size * sizeof(image[0]));
   
+#if 0
   int *base = new int[size];
   mTranslateDataset->GetRasterBand(mUnreferencedBand)->RasterIO(GF_Read, 0, 0, mWidth, mHeight, base, mWidth, mHeight, GDT_Int32, 0, 0);
   for(int x = 0; x < mWidth; x++)
@@ -697,7 +791,7 @@ double* QgsImageAligner::applyFloat()
     }
   }
   delete [] base;
-  
+#endif  
   
   if(mDisparityReal != NULL)
   {
@@ -774,14 +868,19 @@ void QgsPointDetectionThread::run()
   newPoint[1] = mPoint[1] + mEstimate.imag();
   double corrX = mEstimate.real();
   double corrY = mEstimate.imag();
-  QgsRegion *region1 = region(mInputDataset, mPoint, mBlockSize, mReferenceBand);
-  QgsRegion *region2 = region(mTranslateDataset, newPoint, mBlockSize, mUnreferencedBand);
+
+  QgsRegion region1, region2;
+  uint max1 = region(mInputDataset->GetRasterBand(mReferenceBand), mMutex, mPoint, mBlockSize, region1);
+  uint max2 = region(mTranslateDataset->GetRasterBand(mUnreferencedBand), mMutex, newPoint, mBlockSize, region2);
+  
+  if (mMax != NULL) 
+     *mMax = max1 > max2 ? max1 : max2;
   
   QgsRegionCorrelationResult corrData = QgsRegionCorrelator::findRegion(region1, region2, mBits);
-  delete [] region1->data;
-  delete [] region2->data;
-  delete region1;
-  delete region2;
+  
+  delete [] region1.data;
+  delete [] region2.data;
+
   if(corrData.wasSet)
   {
     corrX = corrData.x;
@@ -797,26 +896,33 @@ void QgsPointDetectionThread::run()
   mResult = QgsComplex(newPoint[0]-mPoint[0], newPoint[1]-mPoint[1]);
 }
 
-QgsRegion* QgsPointDetectionThread::region(GDALDataset* dataset, double* point, int dimension, int band)
+uint QgsPointDetectionThread::region(GDALRasterBand *rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region)
 {
-  int x = int(round(point[0]));
-  int y = int(round(point[1]));
-  QgsRegion *region = new QgsRegion;
-  region->width = dimension;
-  region->height = dimension;
-  //unsigned int *data = (unsigned int*) CPLMalloc(sizeof(unsigned int)*region.width*region.height);
-  uint *data = new uint[region->width*region->height];
-  mMutex->lock();
-  dataset->GetRasterBand(band)->RasterIO(GF_Read, x-dimension/2, y-dimension/2, region->width, region->height, data, region->width, region->height, GDT_UInt32, 0, 0);
-  mMutex->unlock();
-  for(int i = 0; i < region->width*region->height; i++)
-  {
-    if(data[i] > *mMax)
+    Q_CHECK_PTR(rasterBand);
+    Q_CHECK_PTR(mutex);
+
+    int x = int(point[0] + 0.5);
+    int y = int(point[1] + 0.5);
+  
+    region.width = dimension;
+    region.height = dimension;
+    region.data = new uint[region.width * region.height];
+ 
+    mutex->lock();
+    rasterBand->RasterIO(GF_Read, x - region.width/2, y - region.height/2, region.width, region.height, region.data, region.width, region.height, GDT_UInt32, 0, 0);
+    mutex->unlock();
+
+    int max = 0;
+
+    for(int i = 0; i < (region.width * region.height); i++)
     {
-      *mMax = data[i];
+        int value = region.data[i];
+    
+        if (max < value)
+            max = value;
+
+        region.data[i] = mBits - value;
     }
-    data[i] = mBits-data[i];
-  }
-  region->data = data;
-  return region;
+  
+    return max;
 }

@@ -51,12 +51,12 @@ class ANALYSIS_EXPORT QgsImageAligner
     This method scans through the image at given block sizes
     */
     void scan();
-    
+
     /*
     This function returns an estimated Disparity matrix based on the current Real_Disp (Real Dispariry Matrix)
     returns an interpolated disparity map
     */
-    void estimate(bool deleteOldDisparity = true);
+    void estimate();
     
     /*
     Eliminate bad GCPs
@@ -71,6 +71,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     uint *applyUInt();
     int *applyInt();
     double *applyFloat();
+    void alignImageBand(GDALDataset *disparityMapX, GDALDataset *disparityMapY, GDALDataset *outputData, int nBand);      
     
     int width(){return mWidth;}
     int height(){return mHeight;}
@@ -95,7 +96,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     int cubicConvolution(double *array, QgsComplex point);
     
     QgsComplex findPoint(double *point, QgsComplex estimate = 0);
-    QgsRegion* region(GDALDataset* dataset, double* point, int dimension, int band);
+    uint region(GDALRasterBand* rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region);
     
     bool isBad(double value, double deviation, double mean, double sigmaWeight = 2.0);
     
@@ -111,6 +112,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     int mReferenceBand;
     int mUnreferencedBand;
     int mBlockSize;
+
     QgsComplex **mRealDisparity;
     double* mDisparityReal;
     double* mDisparityImag;
@@ -133,15 +135,17 @@ class ANALYSIS_EXPORT QgsPointDetectionThread : public QThread
     void setPoint(double *point, QgsComplex estimate = 0);
     
     /*
-    This method reads a region from an image of size dim
-    inputs
-    Image : a handle to a gdal opened image
-    point : the central point of the region
-    dim : the dimentions of the region
-    band : the band of interest
-    returns Region :The requested Region
-    */
-    QgsRegion* region(GDALDataset* dataset, double* point, int dimension, int band);
+     * This method reads a region from an image of size dim
+     * 
+     * inputs
+     *  rasterBand : a handle to the gdal raster band of interest
+     *  point : the central point of the region
+     *  dim : the dimentions of the region    
+     *  region : the requested region to be filled with data
+     * returns 
+     *  max : the maximum value of the pixels in the region
+     */    
+    uint QgsPointDetectionThread::region(GDALRasterBand *rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region);
     
     void run();
     

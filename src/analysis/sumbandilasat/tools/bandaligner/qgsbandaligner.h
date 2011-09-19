@@ -70,7 +70,7 @@ class ANALYSIS_EXPORT QgsBandAlignerThread : public QThread
     ~QgsBandAlignerThread();
     void run();
     void stop();
-    
+
   private:
     
     int mReferenceBand;
