@@ -57,6 +57,11 @@ QgsRegionCorrelationResult QgsRegionCorrelator::findRegion(QgsRegion &regionRef,
 //  fprintf(f, " %d", profileTimer.elapsed());
 //  profileTimer.start();
 
+    for (int i = 0; i < regionRef.width * regionRef.height; ++i)
+        regionRef.data[i] = bits - regionRef.data[i];
+    for (int i = 0; i < regionNew.width * regionNew.height; ++i)
+        regionNew.data[i] = bits - regionNew.data[i];    
+
     QgsRegionCorrelator::calculateGradient(dataRef, max, regionRef.data, regionRef.width, regionRef.height, bits);
     QgsRegionCorrelator::calculateGradient(dataNew, max, regionNew.data, regionNew.width, regionNew.height, bits);
 

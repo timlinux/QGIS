@@ -87,7 +87,7 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     */
     //static double* calculateGradient(uint *data, int width, int height, int bits, double order = 2.0);
 
-    static gsl_complex* calculateGradient(gsl_complex *buffer, int rowStride, uint *data, int width, int height, int bits, double order = 2.0);
+    static gsl_complex* calculateGradient(gsl_complex *buffer, int rowStride, uint *data, int width, int height,int bits, double order = 2.0);
 
     /*
     Find the smallest power of 2 bigger than the biggest of size1 and size2 dimentions

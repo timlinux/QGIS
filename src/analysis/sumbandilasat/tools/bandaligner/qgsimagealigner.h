@@ -11,6 +11,7 @@
 #include <iostream>
 #include "gsl/gsl_statistics_double.h"
 #include "gsl/gsl_blas.h"
+#include "qgsprogressmonitor.h"
 
 using namespace std;
 
@@ -47,31 +48,33 @@ class ANALYSIS_EXPORT QgsImageAligner
     */
     ~QgsImageAligner();
     
+
+  protected:
     /*
     This method scans through the image at given block sizes
     */
-    void scan();
+    //void scan();
 
     /*
     This function returns an estimated Disparity matrix based on the current Real_Disp (Real Dispariry Matrix)
     returns an interpolated disparity map
     */
-    void estimate();
+    //void estimate();
     
     /*
     Eliminate bad GCPs
     fixed: the values that are fixed from previous levels
     */
-    void eliminate(double sigmaWeight = 2.0);
+    //void eliminate(double sigmaWeight = 2.0);
     
     /*
     This method applies the disparity map to the imag_trans 
     returns a corrected transformation of imag_trans
     */
-    uint *applyUInt();
-    int *applyInt();
-    double *applyFloat();
-    void alignImageBand(GDALDataset *disparityMapX, GDALDataset *disparityMapY, GDALDataset *outputData, int nBand);      
+    //uint *applyUInt();
+    //int *applyInt();
+    //double *applyFloat();
+    //void alignImageBand(GDALDataset *disparityMapX, GDALDataset *disparityMapY, GDALDataset *outputData, int nBand);      
     
     int width(){return mWidth;}
     int height(){return mHeight;}
@@ -79,9 +82,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     double* disparityImag(){return mDisparityImag;}
     QgsComplex **realDisparity(){return mRealDisparity;}
     QgsComplex **gcps(){return mReal;}
-    
-  protected:
-    
+        
     /*
     Open the images
     */
@@ -95,10 +96,10 @@ class ANALYSIS_EXPORT QgsImageAligner
     */
     int cubicConvolution(double *array, QgsComplex point);
     
-    QgsComplex findPoint(double *point, QgsComplex estimate = 0);
-    uint region(GDALRasterBand* rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region);
+    //QgsComplex findPoint(double *point, QgsComplex estimate = 0);
+    //uint region(GDALRasterBand* rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region);
     
-    bool isBad(double value, double deviation, double mean, double sigmaWeight = 2.0);
+    //bool isBad(double value, double deviation, double mean, double sigmaWeight = 2.0);
     
   private:
     QString mInputPath;
@@ -119,6 +120,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     QgsComplex **mReal;
 };
 
+#if 0
 class ANALYSIS_EXPORT QgsPointDetectionThread : public QThread
 {
   public:
@@ -167,5 +169,16 @@ class ANALYSIS_EXPORT QgsPointDetectionThread : public QThread
     GDALDataset *mInputDataset;
     GDALDataset *mTranslateDataset;
 };
+#endif
+
+extern void performImageAlignment(
+        QgsProgressMonitor &monitor,
+        QString outputPath,
+        QString disparityXPath,
+        QString disparityYPath,
+        QString disparityPath,
+        QList<GDALRasterBand*> &mBands, 
+        int nRefBand, 
+        int nBlockSize);
 
 #endif

@@ -134,13 +134,8 @@ int clamp(int value, int vmin, int vmax)
     return result;
 }
 
-void copyBand(GDALDataset *srcDataSet, int srcBand, GDALDataset *dstDataSet, int dstBand, int xOffset = 0, int yOffset = 0)
+void copyBand(GDALRasterBand *srcRasterBand, GDALRasterBand *dstRasterBand, int xOffset = 0, int yOffset = 0)
 {
-    GDALRasterBand *srcRasterBand = srcDataSet->GetRasterBand(srcBand);
-    Q_CHECK_PTR(srcRasterBand);
-    GDALRasterBand *dstRasterBand = dstDataSet->GetRasterBand(dstBand);
-    Q_CHECK_PTR(dstRasterBand);
-
     int width = srcRasterBand->GetXSize();
     int height = srcRasterBand->GetYSize();
     GDALDataType dataType = srcRasterBand->GetRasterDataType();
@@ -183,19 +178,19 @@ void TestBandAlignerTool::combineBandsInTiffTest()
 
     outputDataset = driver->Create("J:/tmp/fruit-basket.1024x768-a.tif", mWidth, mHeight, 1, mDataType, 0);    
     outputMetadata = driver->GetMetadata();    
-    copyBand(inputDataset, 1, outputDataset, 1, +3, -30);
+    copyBand(inputDataset->GetRasterBand(1), outputDataset->GetRasterBand(1), +3, -30);
     outputDataset->SetMetadata(outputMetadata);
     GDALClose(outputDataset);
 
     outputDataset = driver->Create("J:/tmp/fruit-basket.1024x768-b.tif", mWidth, mHeight, 1, mDataType, 0);    
     outputMetadata = driver->GetMetadata();    
-    copyBand(inputDataset, 2, outputDataset, 1, 0, 0);
+    copyBand(inputDataset->GetRasterBand(2), outputDataset->GetRasterBand(1), 0, 0);
     outputDataset->SetMetadata(outputMetadata);
     GDALClose(outputDataset);
 
     outputDataset = driver->Create("J:/tmp/fruit-basket.1024x768-c.tif", mWidth, mHeight, 1, mDataType, 0);    
     outputMetadata = driver->GetMetadata();    
-    copyBand(inputDataset, 3, outputDataset, 1, -5, +25);
+    copyBand(inputDataset->GetRasterBand(3), outputDataset->GetRasterBand(1), -5, +25);
     outputDataset->SetMetadata(outputMetadata);
     GDALClose(outputDataset);
 
@@ -680,15 +675,12 @@ public:
 
 } StatisticsState;
 
-GDALDataset *scanDisparityMap(GDALDataset *inputRef, GDALDataset *input, QString disparityPath, 
-                              StatisticsState stats[], int mBlockSize = BLOCK_SIZE, int mBits = D_BITS)
+GDALDataset *scanDisparityMap(GDALRasterBand *refRasterBand, 
+                              GDALRasterBand *srcRasterBand, 
+                              QString disparityPath, 
+                              StatisticsState stats[], 
+                              int mBlockSize = BLOCK_SIZE, int mBits = D_BITS)
 {
-    Q_CHECK_PTR(inputRef);
-    Q_CHECK_PTR(input);
-
-    GDALRasterBand *refRasterBand = inputRef->GetRasterBand(1);
-    GDALRasterBand *srcRasterBand = input->GetRasterBand(1);
-
     CPLErr err;
 
     Q_CHECK_PTR(refRasterBand);
@@ -1554,25 +1546,46 @@ void TestBandAlignerTool::createDisparityMap()
     QString dispYPath = "J:/tmp/test6-y.tif";
     QString dispInterPath = "J:/tmp/test6-s.tif";
 
-    QList<int> bandList;
-    bandList.append(2);
-    bandList.append(1);
-    bandList.append(3);
-
-    QTime stageTimer;
-
-    Q_ASSERT(inputPaths.size() == bandList.size());
+    QList<GDALRasterBand *> mBands; // inputs
+    int nRefBand;
 
     if (GDALGetDriverCount() == 0)
         GDALAllRegister();
     
+    //{
+        GDALDataset *inputDataset1 = (GDALDataset*)GDALOpen(inputPaths[0].toAscii().data(), GA_ReadOnly);
+        Q_CHECK_PTR(inputDataset1);
+
+        mBands.append(inputDataset1->GetRasterBand(1)); // first band
+
+        GDALDataset* inputRefDataset = (GDALDataset*)GDALOpen(inputPaths[1].toAscii().data(), GA_ReadOnly);
+        Q_CHECK_PTR(inputRefDataset);
+
+        mBands.append(inputRefDataset->GetRasterBand(1)); // second band
+
+        GDALDataset *inputDataset2 = (GDALDataset*)GDALOpen(inputPaths[2].toAscii().data(), GA_ReadOnly);
+        Q_CHECK_PTR(inputDataset2);
+
+        mBands.append(inputDataset2->GetRasterBand(1)); // third band
+        
+        nRefBand = 1; // second band
+    //}
+
+    //----------------------------------------------------------------
+
     GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");    
 
-    GDALDataset* inputRefDataset = (GDALDataset*)GDALOpen(inputPaths[1].toAscii().data(), GA_ReadOnly);
-    Q_CHECK_PTR(inputRefDataset);
+    //----------------------------------------------------------------
 
-    int mWidth = inputRefDataset->GetRasterXSize();
-    int mHeight = inputRefDataset->GetRasterYSize();
+    if (mBands.size() < 2) {
+        printf("Not enough bands to continue, quiting\n");
+        return; // nothing to do
+    }
+
+    Q_ASSERT(0 <= nRefBand && nRefBand < mBands.size());
+
+    int mWidth = mBands[nRefBand]->GetXSize();
+    int mHeight = mBands[nRefBand]->GetYSize();
 
     /* Delete to output file. Just in case there is one lying around that is faulty */
     unlink(outputPath.toAscii().data()); // FIXME: append bands
@@ -1580,29 +1593,32 @@ void TestBandAlignerTool::createDisparityMap()
     GDALDataset *outputDataSet = driver->Create(outputPath.toAscii().data(), mWidth, mHeight, 3, /*GDT_UInt16*/GDT_Byte, 0);
     Q_CHECK_PTR(outputDataSet);
 
-    // ------------------------------------
-    /* Copy the reference band over to the output file */
-
-    copyBand(inputRefDataset, 1, outputDataSet, 1);
+    QTime stageTimer;
 
     // ------------------------------------
 
-    for (int i = 1; i < inputPaths.size(); ++i)
+    for (int i = 1; i < mBands.size(); ++i)
     {
-        StatisticsState stats[2];
+        if (i == nRefBand) {
+            /* Copy the reference band over to the output file */
+            copyBand(mBands[i], outputDataSet->GetRasterBand(1+i));
+            continue;
+        }
+
+        Q_CHECK_PTR(mBands[nRefBand]);
+        Q_CHECK_PTR(mBands[i]);
 
         GDALDataset *disparityDataset;
         GDALDataset *disparityXDataSet;
         GDALDataset *disparityYDataSet;
 
-        GDALDataset *inputDataset = (GDALDataset*)GDALOpen(inputPaths[i].toAscii().data(), GA_ReadOnly);
-        Q_CHECK_PTR(inputDataset);
+        StatisticsState stats[2];
 
         // ------------------------------------
         {    
             stageTimer.start();
 
-        disparityDataset = scanDisparityMap(inputRefDataset, inputDataset, dispInterPath, stats, 61);
+        disparityDataset = scanDisparityMap(mBands[nRefBand], mBands[i], dispInterPath, stats, 61);
 
             printf("Runtime for scanDisparityMap was %d ms\n", stageTimer.elapsed());
         }
@@ -1633,18 +1649,20 @@ void TestBandAlignerTool::createDisparityMap()
             disparityYDataSet->GetRasterBand(1));
 
             printf("Runtime for estimateDisparityMap was %d ms\n", stageTimer.elapsed());
-
-            GDALClose(disparityDataset);
         }
+        // ------------------------------------
+
+        GDALClose(disparityDataset);
+
         // ------------------------------------
         {
             stageTimer.start();
 
         applyDisparityMap(
-            inputDataset->GetRasterBand(1),
+            mBands[i],
             disparityXDataSet->GetRasterBand(1), 
             disparityYDataSet->GetRasterBand(1), 
-            outputDataSet->GetRasterBand(bandList(i)));
+            outputDataSet->GetRasterBand(1+i) );
             
             int applyRunTimeMs = stageTimer.elapsed();
             printf("Runtime for applyDisparityMap was %d ms\n", applyRunTimeMs);
@@ -1653,8 +1671,6 @@ void TestBandAlignerTool::createDisparityMap()
 
         GDALClose(disparityYDataSet);
         GDALClose(disparityXDataSet);
-
-        GDALClose(inputDataset);
     }
 #if 0   
     // ------------------------------------
@@ -1751,7 +1767,10 @@ void TestBandAlignerTool::createDisparityMap()
 #endif
 
     GDALClose(outputDataSet);
+
+    GDALClose(inputDataset2);
     GDALClose(inputRefDataset);
+    GDALClose(inputDataset1);
 }
 
 void TestBandAlignerTool::simpleFirstTest()

@@ -51,6 +51,16 @@ class BandAlignerWindow(QDialog):
   def toggleDisparity(self, value = 0):
     if self.ui.checkBox.isChecked():
       self.ui.disparityWidget.show()
+
+      outputFileName = self.ui.outputLineEdit.text()
+      if not outputFileName.isEmpty():
+        myInfo = QFileInfo( outputFileName )
+        if self.ui.xLineEdit.text().isEmpty():
+          myXName = outputFileName.replace( myInfo.completeSuffix(),"" ) + "xmap.tif"
+          self.ui.xLineEdit.setText( myXName )
+        if self.ui.yLineEdit.text().isEmpty():
+          myYName = outputFileName.replace( myInfo.completeSuffix(),"" ) + "ymap.tif"
+          self.ui.yLineEdit.setText( myYName )
     else:
       self.ui.disparityWidget.hide()
     
@@ -67,7 +77,9 @@ class BandAlignerWindow(QDialog):
 
   def selectXOutput(self):
     mySettings = QSettings()
-    myLastDir = mySettings.value("bandAligner/lastXOutputDir").toString()
+    myLastDir = self.ui.xLineEdit.text()
+    if myLastDir.isEmpty():
+        myLastDir = mySettings.value("bandAligner/lastXOutputDir").toString()
     fileName = QFileDialog.getSaveFileName(self, "Save Output X Image", myLastDir )
     if fileName != "":
       self.ui.xLineEdit.setText(fileName)
@@ -75,26 +87,29 @@ class BandAlignerWindow(QDialog):
     
   def selectYOutput(self):
     mySettings = QSettings()
-    myLastDir = mySettings.value("bandAligner/lastYOutputDir").toString()
+    myLastDir = self.ui.yLineEdit.text()
+    if myLastDir.isEmpty():        
+      myLastDir = mySettings.value("bandAligner/lastYOutputDir").toString()
     fileName = QFileDialog.getSaveFileName(self, "Save Output Y Image", myLastDir )
     if fileName != "":
       self.ui.yLineEdit.setText(fileName)
       mySettings.setValue("bandAligner/lastYOutputDir", QFileInfo( fileName ).absolutePath())
-    
-    
+        
   def selectOutput(self):
     mySettings = QSettings()
-    myLastDir = mySettings.value("bandAligner/lastOutputDir").toString()
+    myLastDir = self.ui.outputLineEdit.text()
+    if myLastDir.isEmpty():
+      myLastDir = mySettings.value("bandAligner/lastOutputDir").toString()
     fileName = QFileDialog.getSaveFileName(self, "Save Output Image", myLastDir )
     if fileName != "":
       self.ui.outputLineEdit.setText(fileName)
       myInfo = QFileInfo( fileName )
       mySettings.setValue("bandAligner/lastOutputDir", myInfo.absolutePath())
       if self.ui.xLineEdit.text().isEmpty():
-        myXName = fileName.replace( myInfo.completeSuffix(),"" ) + "xmap.tif"   
+        myXName = fileName.replace( myInfo.completeSuffix(),"" ) + "xmap.tif"
         self.ui.xLineEdit.setText( myXName )
       if self.ui.yLineEdit.text().isEmpty():
-        myYName = fileName.replace( myInfo.completeSuffix(),"" ) + "ymap.tif"   
+        myYName = fileName.replace( myInfo.completeSuffix(),"" ) + "ymap.tif"
         self.ui.yLineEdit.setText( myYName )
     
   def getAllInputBands(self, withId = False, entirePath = True):
@@ -129,6 +144,11 @@ class BandAlignerWindow(QDialog):
     else:
       for name in names:
         self.ui.referenceComboBox.addItem(name)
+    if index < 0:
+        if self.ui.referenceComboBox.count() == 3:
+            index = 1
+        else:
+            index = 0
     if self.ui.referenceComboBox.count() > index:
       self.ui.referenceComboBox.setCurrentIndex(index)
     
@@ -178,15 +198,16 @@ class BandAlignerWindow(QDialog):
       self.ui.tabWidget.setTabEnabled(0, False)
       self.ui.tabWidget.setTabEnabled(1, False)
     
-  def progress(self, value):
-    self.ui.progressBar.setValue(value)
-    if value >= 100:
-      self.setStartButton()
-      self.loadResult()
-    
   def log(self, message):
     self.ui.textEdit.append(message)
-      
+    
+  def progress(self, value):
+    self.ui.progressBar.setValue(value)
+    
+  def finished(self, status):
+    self.setStartButton()
+    self.loadResult()
+              
   def start(self):
     myState = self.ui.buttonBox.button(QDialogButtonBox.Ok).text()
     if myState == "Stop":
@@ -209,19 +230,27 @@ class BandAlignerWindow(QDialog):
     self.ui.progressBar.setValue(0)
     self.ui.textEdit.clear()
     self.ui.tabWidget.setCurrentIndex(1)
-    xPath = ""
-    yPath = ""
+
+    self.thread = QgsBandAligner(inputPaths, outputPath);
     if self.ui.checkBox.isChecked():
-      xPath = self.ui.xLineEdit.text()
-      yPath = self.ui.yLineEdit.text()
-    self.thread = QgsBandAligner(inputPaths, outputPath, xPath, yPath, self.ui.spinBox.value(), self.ui.referenceComboBox.currentIndex()+1)
-    QObject.connect(self.thread, SIGNAL("progressed(double)"), self.progress)
-    QObject.connect(self.thread, SIGNAL("logged(QString)"), self.log)
+        self.thread.SetDisparityXPath( self.ui.xLineEdit.text() )
+        self.thread.SetDisparityYPath( self.ui.yLineEdit.text() )
+    self.thread.SetBlockSize( self.ui.spinBox.value() )
+    self.thread.SetReferenceBand(1 + self.ui.referenceComboBox.currentIndex())
+    #self.thread.SetTransformationType(QgsBandAligner::Disparity)
+    #self.thread.SetMinimumGCPs(512)
+    #self.thread.SetRefinementTolerance(1.9)
+
+    self.monitor = QgsProgressMonitor()
+    QObject.connect(self.monitor, SIGNAL("progressed(double)"), self.progress)
+    QObject.connect(self.monitor, SIGNAL("logged(QString)"), self.log)
+    QObject.connect(self.monitor, SIGNAL("finished(int)"), self.finished)
+    self.thread.SetProgressMonitor(self.monitor)
+    
     self.thread.start()
     self.setStopButton()
   
   def stop(self):
-
     if self.ui.buttonBox.button(QDialogButtonBox.Ok).text() == "Stop":
       self.thread.stop()
       self.setStartButton()
@@ -253,5 +282,5 @@ class BandAlignerWindow(QDialog):
   def loadResult(self):
     fileName = self.ui.outputLineEdit.text()
     fileInfo = QFileInfo(fileName)
-    self.iface.addRasterLayer(fileInfo.filePath())
-
+    if fileInfo.exists():
+        self.iface.addRasterLayer(fileInfo.filePath())

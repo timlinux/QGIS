@@ -70,6 +70,7 @@ SET(QGIS_ANALYSIS_SRCS
   sumbandilasat/tools/bandaligner/qgsbandaligner.cpp
   sumbandilasat/tools/bandaligner/qgsimagealigner.cpp
   sumbandilasat/tools/bandaligner/qgsregioncorrelator.cpp
+  sumbandilasat/tools/bandaligner/qgsprogressmonitor.cpp
 )
 
 INCLUDE_DIRECTORIES(BEFORE raster)
@@ -90,9 +91,10 @@ SET(QGIS_ANALYSIS_MOC_HDRS
   sumbandilasat/tools/columncorrector/qgsimageprocessor.h
   sumbandilasat/tools/columncorrector/qgsimageprocessorthread.h
   sumbandilasat/tools/linecorrector/qgslinecorrector.h
+  sumbandilasat/tools/linecorrector/qgsmemorylineraster.h
   sumbandilasat/tools/bandaligner/qgsbandaligner.h
   sumbandilasat/tools/bandaligner/qgsimagealigner.h
-  sumbandilasat/tools/linecorrector/qgsmemorylineraster.h
+  sumbandilasat/tools/bandaligner/qgsprogressmonitor.h
 )
 
 QT4_WRAP_CPP(QGIS_ANALYSIS_MOC_SRCS ${QGIS_ANALYSIS_MOC_HDRS})

@@ -6,11 +6,6 @@ class QgsBandAligner : QObject
 #include <qgsbandaligner.h>
 %End
 
-  signals:
-    
-    void progressed(double progress);
-    void logged(QString message);
-
   public:
 
     enum Transformation
@@ -22,9 +17,21 @@ class QgsBandAligner : QObject
       Polynomial4 = 4,
       Polynomial5 = 5
     };
+    
+    QgsBandAligner(QStringList inputs, QString output);
 
-    QgsBandAligner(QStringList input, QString output, QString disparityXPath = "", QString disparityYPath = "", int blockSize = 201, int referenceBand = 1, QgsBandAligner::Transformation transformation = QgsBandAligner::Disparity, int minimumGcps = 512, double refinementTolerance = 1.9);
+    void ClearInputPaths();
+    void AppendInputPath(QString value);
+    void SetOutputPath(QString value);
+    void SetDisparityXPath(QString value);
+    void SetDisparityYPath(QString value);
+    void SetReferenceBand(int value);
+    void SetBlockSize(int value);
+    void SetTransformationType(QgsBandAligner::Transformation value);
+    void SetMinimumGCPs(int value);
+    void SetRefinementTolerance(double value);   
+    void SetProgressMonitor(QgsProgressMonitor *monitor);
+
     void start();
     void stop();
-
 };
