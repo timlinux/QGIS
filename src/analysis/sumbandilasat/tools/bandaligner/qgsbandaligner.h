@@ -1,41 +1,19 @@
 #ifndef QGSBANDALIGNER_H
 #define QGSBANDALIGNER_H
 
-#include <QString>
-#include <QThread>
-#include <QObject>
-#include <QStringList>
-#include <QList>
-#include <QProcess>
-#include <QFile>
-#include <QTextStream>
-#include <gdal_priv.h>
-#include <iostream>
-#include "qgsimagealigner.h"
 #include "qgsprogressmonitor.h"
+#include "qgsimagealigner.h"
 
-using namespace std;
-
-class ANALYSIS_EXPORT QgsBandAlignerThread;
+#include <QString>
+#include <QStringList>
 
 class ANALYSIS_EXPORT QgsBandAligner : public QObject
 {
-
     Q_OBJECT
-
-  signals:
-
-    void logged(QString message);
-    void progressed(double progress);
-
-  public slots:
-
-    void logReceived(QString message);
-    void progressReceived(double progress);
 
   public:
 
-    enum Transformation
+    enum Transformation // unused
     {
       Disparity = 0,
       ThinPlateSpline = 1,
@@ -61,14 +39,10 @@ class ANALYSIS_EXPORT QgsBandAligner : public QObject
     void start();
     void stop();
 
-    static void QgsBandAligner::execute(QgsProgressMonitor *monitor, QgsBandAligner *self);
-    
     void executeDisparity(QgsProgressMonitor &monitor);
-    void executeWarp(QgsProgressMonitor &monitor);
 
-  //private:
-  //  QgsBandAlignerThread *mThread;
-
+    static void execute(QgsProgressMonitor *monitor, QgsBandAligner *self);
+    
   public:      
     inline int GetBlockSize() { return mBlockSize; }
     inline void SetBlockSize(int value) { mBlockSize = value; };
@@ -107,48 +81,10 @@ class ANALYSIS_EXPORT QgsBandAligner : public QObject
     QString mDisparityXPath;
     QString mDisparityYPath;
     QStringList mInputPaths;
-    QgsBandAligner::Transformation mTransformationType;
-    int mMinimumGCPs;
-    double mRefinementTolerance;
+    QgsBandAligner::Transformation mTransformationType; // unused
+    int mMinimumGCPs; // unused
+    double mRefinementTolerance; // unused
     QgsProgressMonitor *mMonitor;
-};
-
-class ANALYSIS_EXPORT QgsBandAlignerThread : public QThread
-{
-  
-    Q_OBJECT
-  
-  signals:
-  
-    void logged(QString message);
-    void progressed(double progress);
-  
-  public:
-    
-    QgsBandAlignerThread(QStringList input, QString output, QString disparityXPath = "", QString disparityYPath = "", int blockSize = 201, int referenceBand = 1, QgsBandAligner::Transformation transformation = QgsBandAligner::Disparity, int minimumGcps = 512, double refinementTolerance = 1.9);
-    ~QgsBandAlignerThread();
-    void run();
-    void stop();
-
-  private:
-    void run_disparity(QgsProgressMonitor &monitor);
-    void run_gdalwarp();
-    
-    int mReferenceBand;
-    QStringList mInputPath;
-    QString mOutputPath;
-    QString mDisparityXPath;
-    QString mDisparityYPath;
-    int mBlockSize;
-    GDALDataset *mInputDataset;
-    GDALDataset *mOutputDataset;
-    int mBands;
-    int mWidth;
-    int mHeight;
-    bool mStopped;
-    QgsBandAligner::Transformation mTransformation;
-    int mMinimumGcps;
-    double mRefinementTolerance;
 };
 
 #endif
