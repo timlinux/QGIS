@@ -1,6 +1,26 @@
 #include "qgsregioncorrelator.h"
 
+#include <fftw3.h>
+
+#include <gsl/gsl_fft_complex.h>
+#include <gsl/gsl_complex_math.h>
+
+#include <math.h>
+#include <limits.h>
+#include <iostream>
+
+#include <QString>
+#include <QList>
 #include <QTime>
+
+using namespace std;
+
+#define REAL(z,i) ((z)[2*(i)])
+#define IMAG(z,i) ((z)[2*(i)+1])
+
+void circshift(double *out, const double *in, int xdim, int ydim, int xshift, int yshift);
+
+#define fftshift(out, in, x, y) circshift(out, in, x, y, (x/2), (y/2))
 
 // Round up to next higher power of 2 (return x if it's already a power of 2).
 // Reference: http://aggregate.org/MAGIC/#Next%20Largest%20Power%20of%202
@@ -541,6 +561,7 @@ double* QgsRegionCorrelator::inverseShift(double *data, int dimension)
     return data;
 }
 
+#if 0
 QList<QList<double> > QgsRegionCorrelator::getSubset(double *data, int fromRow, int toRow, int fromCol, int toCol, int dimension)
 {
   QList<QList<double> > result;
@@ -558,7 +579,9 @@ QList<QList<double> > QgsRegionCorrelator::getSubset(double *data, int fromRow, 
   }
   return result;
 }
+#endif
 
+#if 0
 QList<QList<double> > QgsRegionCorrelator::getQListSubset(QList<QList<double> > data, int fromRow, int toRow, int fromCol, int toCol)
 {
   //int rows = toRow-fromRow;
@@ -576,6 +599,7 @@ QList<QList<double> > QgsRegionCorrelator::getQListSubset(QList<QList<double> > 
   }
   return result;
 }
+#endif
 
 void QgsRegionCorrelator::fourierTransform(double *array, int size)
 {
@@ -806,6 +830,7 @@ double QgsRegionCorrelator::quantifySNR(gsl_complex *data, int dim, double x, do
 }
 
 
+#if 0
 double QgsRegionCorrelator::quantifySnr(QList<QList<double> > array, double x, double y)
 {
   QList<QList<double> > sub = QgsRegionCorrelator::getQListSubset(array, y-1, y+2, x-1, x+2);
@@ -844,7 +869,9 @@ double QgsRegionCorrelator::quantifySnr(QList<QList<double> > array, double x, d
     return 50.0;
   }
 }
+#endif
 
+#if 0
 double QgsRegionCorrelator::quantifyConfidence(QList<QList<double> > array)
 {/*
   int points = array.size() * array[0].size();
@@ -855,3 +882,4 @@ double QgsRegionCorrelator::quantifyConfidence(QList<QList<double> > array)
 		return 1-1/conf*/
   return 0.0;
 }
+#endif

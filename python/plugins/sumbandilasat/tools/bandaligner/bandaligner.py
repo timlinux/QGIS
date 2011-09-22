@@ -145,10 +145,7 @@ class BandAlignerWindow(QDialog):
       for name in names:
         self.ui.referenceComboBox.addItem(name)
     if index < 0:
-        if self.ui.referenceComboBox.count() == 3:
-            index = 1
-        else:
-            index = 0
+      index = 0
     if self.ui.referenceComboBox.count() > index:
       self.ui.referenceComboBox.setCurrentIndex(index)
     

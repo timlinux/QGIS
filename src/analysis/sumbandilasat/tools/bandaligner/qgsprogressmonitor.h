@@ -2,6 +2,7 @@
 #define __QGS_PROGRESS_MONITOR_H__
 
 #include <QObject>
+#include <QString>
 
 class ANALYSIS_EXPORT QgsProgressMonitor : public QObject
 {

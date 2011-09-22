@@ -1,20 +1,13 @@
 #ifndef QGSIMAGEALIGNER_H
 #define QGSIMAGEALIGNER_H
 
-#include <QString>
-#include <QThread>
-#include <QMutex>
-#include <gdal_priv.h>
-#include <math.h>
-#include "qgscomplex.h"
-#include "qgsregioncorrelator.h"
-#include <iostream>
-#include "gsl/gsl_statistics_double.h"
-#include "gsl/gsl_blas.h"
 #include "qgsprogressmonitor.h"
 
-using namespace std;
+#include <QString>
+#include <QList>
+#include <gdal_priv.h>
 
+#if 0
 /*
 This class captures the complextities of alligning images/bands typical usage would be:
   -> initiate the class with the images and the bands of interest as well as the block size [for more info look at the init method]
@@ -31,7 +24,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     /*
     Default constructor
     */
-    QgsImageAligner();
+    //QgsImageAligner();
     
     /*
     Constructor
@@ -76,12 +69,12 @@ class ANALYSIS_EXPORT QgsImageAligner
     //double *applyFloat();
     //void alignImageBand(GDALDataset *disparityMapX, GDALDataset *disparityMapY, GDALDataset *outputData, int nBand);      
     
-    int width(){return mWidth;}
-    int height(){return mHeight;}
-    double* disparityReal(){return mDisparityReal;}
-    double* disparityImag(){return mDisparityImag;}
-    QgsComplex **realDisparity(){return mRealDisparity;}
-    QgsComplex **gcps(){return mReal;}
+    //int width(){return mWidth;}
+    //int height(){return mHeight;}
+    //double* disparityReal(){return mDisparityReal;}
+    //double* disparityImag(){return mDisparityImag;}
+    //QgsComplex **realDisparity(){return mRealDisparity;}
+    //QgsComplex **gcps(){return mReal;}
         
     /*
     Open the images
@@ -94,7 +87,7 @@ class ANALYSIS_EXPORT QgsImageAligner
     point: Is the shift x = point.real y = point.imag !!
     returns point: Is the cubic convolution depending on the shift in point
     */
-    int cubicConvolution(double *array, QgsComplex point);
+    //int cubicConvolution(double *array, QgsComplex point);
     
     //QgsComplex findPoint(double *point, QgsComplex estimate = 0);
     //uint region(GDALRasterBand* rasterBand, QMutex *mutex, double point[], int dimension, QgsRegion &region);
@@ -102,23 +95,25 @@ class ANALYSIS_EXPORT QgsImageAligner
     //bool isBad(double value, double deviation, double mean, double sigmaWeight = 2.0);
     
   private:
-    QString mInputPath;
-    QString mTranslatePath;
-    GDALDataset *mInputDataset;
-    GDALDataset *mTranslateDataset;
-    int mWidth;
-    int mHeight;
-    int mBits;
-    int mMax;
-    int mReferenceBand;
-    int mUnreferencedBand;
-    int mBlockSize;
+    //QString mInputPath;
+    //QString mTranslatePath;
+    //GDALDataset *mInputDataset;
+    //GDALDataset *mTranslateDataset;
+    //int mWidth;
+    //int mHeight;
+    //int mBits;
+    //int mMax;
+    //int mReferenceBand;
+    //int mUnreferencedBand;
+    //int mBlockSize;
 
-    QgsComplex **mRealDisparity;
-    double* mDisparityReal;
-    double* mDisparityImag;
-    QgsComplex **mReal;
+    //QgsComplex **mRealDisparity;
+    //double* mDisparityReal;
+    //double* mDisparityImag;
+    //QgsComplex **mReal;
 };
+
+#endif
 
 #if 0
 class ANALYSIS_EXPORT QgsPointDetectionThread : public QThread

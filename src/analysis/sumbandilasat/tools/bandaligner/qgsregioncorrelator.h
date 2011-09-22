@@ -1,27 +1,7 @@
 #ifndef QGSREGIONCORRELATOR_H
 #define QGSREGIONCORRELATOR_H
 
-#define REAL(z,i) ((z)[2*(i)])
-#define IMAG(z,i) ((z)[2*(i)+1])
-
-#define fftshift(out, in, x, y) circshift(out, in, x, y, (x/2), (y/2))
-
-#include <fftw3.h>
-
-
-#include <gsl/gsl_fft_complex.h>
 #include <gsl/gsl_complex_math.h>
-
-#include <math.h>
-#include <limits.h>
-#include <iostream>
-
-#include <QString>
-#include <QList>
-
-#define round(val) (floor(val))
-
-using namespace std;
 
 struct QgsRegionCorrelationResult
 {
@@ -46,12 +26,10 @@ struct QgsRegionCorrelationResult
 
 struct QgsRegion
 {
-  uint *data;
+  unsigned int *data;
   int width;
   int height;
 };
-
-void circshift(double *out, const double *in, int xdim, int ydim, int xshift, int yshift);
 
 class ANALYSIS_EXPORT QgsRegionCorrelator
 {
@@ -87,7 +65,7 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     */
     //static double* calculateGradient(uint *data, int width, int height, int bits, double order = 2.0);
 
-    static gsl_complex* calculateGradient(gsl_complex *buffer, int rowStride, uint *data, int width, int height,int bits, double order = 2.0);
+    static gsl_complex* calculateGradient(gsl_complex *buffer, int rowStride, unsigned int *data, int width, int height,int bits, double order = 2.0);
 
     /*
     Find the smallest power of 2 bigger than the biggest of size1 and size2 dimentions
@@ -103,18 +81,17 @@ class ANALYSIS_EXPORT QgsRegionCorrelator
     /*
     Cut out a certain area of the array
     */
-    static QList<QList<double> > getSubset(double *data, int fromRow, int toRow, int fromCol, int toCol, int dimension);
+    //static QList<QList<double> > getSubset(double *data, int fromRow, int toRow, int fromCol, int toCol, int dimension);
     
     /*
     Cut out a certain area of the QList
     */
-    static QList<QList<double> > getQListSubset(QList<QList<double> > data, int fromRow, int toRow, int fromCol, int toCol);
+    //static QList<QList<double> > getQListSubset(QList<QList<double> > data, int fromRow, int toRow, int fromCol, int toCol);
     
     static double quantifySNR(gsl_complex *data, int dim, double x, double y);
 
-    static double quantifySnr(QList<QList<double> > array, double x, double y);
-    
-    static double quantifyConfidence(QList<QList<double> > array);
+    //static double quantifySnr(QList<QList<double> > array, double x, double y);    
+    //static double quantifyConfidence(QList<QList<double> > array);
     
   
   private:
