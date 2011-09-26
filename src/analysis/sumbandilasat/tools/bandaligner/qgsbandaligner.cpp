@@ -142,7 +142,7 @@ void QgsBandAligner::executeDisparity(QgsProgressMonitor &monitor)
     monitor.Log("Starting band alignment on the image ...");    
     stopwatch.start();
 
-    /*QgsImageAligner::*/performImageAlignment(monitor, 
+    QgsImageAligner::performImageAlignment(monitor, 
         mOutputPath, mDisparityXPath, mDisparityYPath, 
         disparityPath, inputBands, mReferenceBand, mBlockSize);
       
