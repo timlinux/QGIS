@@ -756,7 +756,7 @@ void QgsRasterLayerProperties::sync()
     {
       labelDefaultContrastEnhancementAlgorithm->setText( tr( "No Stretch" ) );
     }
-    mDefaultStandardDeviation = myQSettings.value( "/Raster/defaultStandardDeviation", 1.0 ).toDouble();
+    mDefaultStandardDeviation = myQSettings.value( "/Raster/defaultStandardDeviation", 2.0 ).toDouble();
     sboxThreeBandStdDev->setValue( mDefaultStandardDeviation );
   }
 
@@ -1885,7 +1885,7 @@ void QgsRasterLayerProperties::refreshHistogram()
   // bin in all selected layers, and the min. It then draws a scaled line between min
   // and max - scaled to image height. 1 line drawn per selected band
   //
-  const int BINCOUNT = 255;
+  const int BINCOUNT = 256;
   bool myIgnoreOutOfRangeFlag = true;
   bool myThoroughBandScanFlag = false;
   int myBandCountInt = mRasterLayer->bandCount();

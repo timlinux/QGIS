@@ -13,6 +13,7 @@ SUBDIRS (copyright_label
   spatialquery
   sqlanywhere
   roadgraph
+  darwin_core
   )
 
 IF (WITH_SPATIALITE)
