@@ -1,0 +1,41 @@
+These are the commands used to generate the redux version of the original image:
+
+J:\TestData\I0BDA\16bit
+> gdal_translate -srcwin 5000 4736 1024 1024 I0BDA_P03_S02_C00_F03_MSSK14K_0.tif I0BDA_P03_S02_C00_F03_MSSK14K_0x.tif
+Input file size is 8415, 9588
+0...10...20...30...40...50...60...70...80...90...100 - done.
+
+J:\TestData\I0BDA\16bit
+> gdal_translate -srcwin 5000 4736 1024 1024 I0BDA_P03_S02_C01_F03_MSSK14K_0.tif I0BDA_P03_S02_C01_F03_MSSK14K_0x.tif
+Input file size is 8415, 9588
+0...10...20...30...40...50...60...70...80...90...100 - done.
+
+J:\TestData\I0BDA\16bit
+> gdal_translate -srcwin 5000 4736 1024 1024 I0BDA_P03_S02_C02_F03_MSSK14K_0.tif I0BDA_P03_S02_C02_F03_MSSK14K_0x.tif
+Input file size is 8415, 9588
+0...10...20...30...40...50...60...70...80...90...100 - done.
+
+J:\TestData\I0BDA\16bit
+> gdalinfo I0BDA_P03_S02_C02_F03_MSSK14K_0.tif > note1.txt  
+
+J:\TestData\I0BDA\16bit
+> gdalinfo I0BDA_P03_S02_C02_F03_MSSK14K_0x.tif > note2.txt
+
+
+J:\TestData\I0BDA-redux\16bit
+> W:\dev_dpl1asu\bin\ReduceBits.exe --auto I0BDA_P03_S02_C01_F03_MSSK14K_0x.tif
+Input file: I0BDA_P03_S02_C01_F03_MSSK14K_0x.tif
+Output file: I0BDA_P03_S02_C01_F03_MSSK14K_0x_8bits.tif
+Image: 1024 x 1024 x 1 x 16 bits
+
+J:\TestData\I0BDA-redux\16bit
+> W:\dev_dpl1asu\bin\ReduceBits.exe --auto I0BDA_P03_S02_C00_F03_MSSK14K_0x.tif
+Input file: I0BDA_P03_S02_C00_F03_MSSK14K_0x.tif
+Output file: I0BDA_P03_S02_C00_F03_MSSK14K_0x_8bits.tif
+Image: 1024 x 1024 x 1 x 16 bits
+
+J:\TestData\I0BDA-redux\16bit
+> W:\dev_dpl1asu\bin\ReduceBits.exe --auto I0BDA_P03_S02_C02_F03_MSSK14K_0x.tif
+Input file: I0BDA_P03_S02_C02_F03_MSSK14K_0x.tif
+Output file: I0BDA_P03_S02_C02_F03_MSSK14K_0x_8bits.tif
+Image: 1024 x 1024 x 1 x 16 bits

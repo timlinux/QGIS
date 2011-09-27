@@ -42,6 +42,10 @@ Email                : sherman at mrcc dot com
 class TestBandAlignerTool: public QObject
 {
     Q_OBJECT;
+ 
+  public slots:
+    void logProgress(QString message);
+    
   private slots:
     void initTestCase();// will be called before the first testfunction is executed.
     void cleanupTestCase();// will be called after the last testfunction was executed.
@@ -56,6 +60,8 @@ class TestBandAlignerTool: public QObject
     //void combineBandsInTiffTest();
     void concurTest();
     //void combineBandsInTiffWithOffsetTest();
+
+    
 
   private:
     bool render( QString theFileName );
@@ -96,6 +102,11 @@ void TestBandAlignerTool::cleanupTestCase()
       myFile.close();  
       QDesktopServices::openUrl( QUrl::fromUserInput(myReportFile) );
     }
+}
+
+void TestBandAlignerTool::logProgress(QString message)
+{
+    printf(" %s\n", message.toAscii().data());
 }
 
 #if 0
@@ -442,33 +453,36 @@ void TestBandAlignerTool::createDisparityMap()
 
 void TestBandAlignerTool::simpleFirstTest()
 {
-    //QStringList inputPaths;
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C00_F03_MSSK14K_0.tif");
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C01_F03_MSSK14K_0.tif");
-    //inputPaths.append(QString(TEST_DATA_DIR) + "/I0D79/16bit/" + "I0D79_P03_S02_C02_F03_MSSK14K_0.tif");
-    //QString outputPath = QDir::tempPath() + "test_bandaligner-result" + ".tif";
+    const bool cleanupOutput = true;
 
     QStringList inputPaths;
-    inputPaths.append("J:/TestData/I0BDA/16bit/I0BDA_P03_S02_C01_F03_MSSK14K_0.tif");
-    inputPaths.append("J:/TestData/I0BDA/16bit/I0BDA_P03_S02_C02_F03_MSSK14K_0.tif");
-    inputPaths.append("J:/TestData/I0BDA/16bit/I0BDA_P03_S02_C00_F03_MSSK14K_0.tif");
+    QString outputPath;
 
-    QString outputPath = "J:/tmp/test3.tif";
-    QString dispXPath = "J:/tmp/test3-x.tif";
-    QString dispYPath = "J:/tmp/test3-y.tif";
-    QString dispGridPath = "J:/tmp/test3-grid.tif";
+    QString id = "I0BDA";
+    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C01_F03_MSSK14K_0.tif");
+    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C02_F03_MSSK14K_0.tif");
+    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C00_F03_MSSK14K_0.tif");
+    //outputPath = QDir::tempPath() + "test_bandaligner-result" + ".tif";
+    outputPath = "J:/tmp/test3.tif";
 
     QgsBandAligner *aligner = new QgsBandAligner(inputPaths, outputPath);
+    aligner->SetReferenceBand(1);
+    aligner->SetBlockSize(125);
+
+#if 0
+    QFileInfo o(outputPath);
+    QString dispXPath = o.path() + QDir::separator() + o.completeBaseName() + ".xmap" + ".tif";
+    QString dispYPath = o.path() + QDir::separator() + o.completeBaseName() + ".ymap" + ".tif";
     aligner->SetDisparityXPath(dispXPath);
-    aligner->SetDisparityXPath(dispYPath);
+    aligner->SetDisparityYPath(dispYPath);
+#endif
 
     QgsProgressMonitor monitor;
-
+    QObject::connect(&monitor, SIGNAL(logged(QString)), this, SLOT(logProgress(QString)));
+  
     QgsBandAligner::execute(&monitor, aligner);
     
-
     // ----- Compare the results and generate the report -----
-#if 0
     QFileInfo myRasterFileInfo( outputPath );
     QgsRasterLayer * mypOutputRasterLayer = new QgsRasterLayer( myRasterFileInfo.filePath(), myRasterFileInfo.completeBaseName() );
     mypOutputRasterLayer->setContrastEnhancementAlgorithm( QgsContrastEnhancement::StretchToMinimumMaximum, false );
@@ -482,7 +496,15 @@ void TestBandAlignerTool::simpleFirstTest()
     mpMapRenderer->setExtent( mypOutputRasterLayer->extent() );
 
     QVERIFY( render( "band_aligner" ) );
+
+    /* Remove the files we created on successfull completion */
+    if (cleanupOutput) {
+        unlink(outputPath.toAscii().data());
+#if 0
+        unlink(dispXPath.toAscii().data());
+        unlink(dispYPath.toAscii().data());
 #endif
+    }
 }
 
 //
