@@ -9,7 +9,6 @@
 #include <QtCore>
 #include <gdal_priv.h>
 
-
 #include <QThread>
 #include <QMutex>
 #include <math.h>
@@ -41,18 +40,6 @@ void QgsBandAligner::execute(QgsProgressMonitor *monitor, QgsBandAligner *self)
     try 
     {
         self->executeDisparity(*monitor);
-        /*
-        switch (self->mTransformationType) 
-        {
-        case QgsBandAligner::Disparity:
-            self->executeDisparity(*monitor);
-            break;
-
-        default:
-            self->executeWarp(*monitor);
-            break;
-        }
-        */
     } 
     catch(...)    
     {
