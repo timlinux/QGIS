@@ -2,6 +2,7 @@
 #define QGSDARWINCOREPROVIDER_H
 
 #include "qgsvectordataprovider.h"
+#include "qgscoordinatereferencesystem.h"
 #include <expat.h>
 #include <QFile>
 
