@@ -126,8 +126,8 @@ void scanDisparityMap(QgsProgressMonitor &monitor,
     }
 
     QgsRegionCorrelator::QgsRegion region1, region2;
-    region1.data = (unsigned int *)VSIMalloc3(ceil(xStepSize), ceil(yStepSize), sizeof(unsigned int));
-    region2.data = (unsigned int *)VSIMalloc3(ceil(xStepSize), ceil(yStepSize), sizeof(unsigned int));
+    region1.data = (unsigned int *)VSIMalloc3(1+ceil(xStepSize), 1+ceil(yStepSize), sizeof(unsigned int));
+    region2.data = (unsigned int *)VSIMalloc3(1+ceil(xStepSize), 1+ceil(yStepSize), sizeof(unsigned int));
     
     /* Initialise the statistics state variables */
     stats[0].InitialiseState();
@@ -717,19 +717,22 @@ static double bicubic_interpolation(void *data, GDALDataType dataType, float shi
 
 static inline void store_in_buffer(void *buffer, int index, GDALDataType dataType, double value)
 {
+    Q_CHECK_PTR(buffer);
+    Q_ASSERT(index >= 0);
+
     switch (dataType)
     {
         case GDT_Byte:
             ((unsigned char *)buffer)[index] = value;
             break;
         case GDT_UInt16:
-            ((unsigned int *)buffer)[index] = value;
+            ((unsigned short *)buffer)[index] = value;
             break;
         case GDT_UInt32:
             ((unsigned int *)buffer)[index] = value;
             break;
         case GDT_Int16:
-            ((signed int *)buffer)[index] = value;
+            ((signed short *)buffer)[index] = value;
             break;
         case GDT_Int32:
             ((signed int *)buffer)[index] = value;
@@ -822,7 +825,7 @@ static void applyDisparityMap(QgsProgressMonitor &monitor,
             }
         }
 
-        outputRasterData->RasterIO(GF_Write, 0, y, mWidth, 1, outputBuffer, mWidth, 1, GDT_Float32, 0, 0);
+        outputRasterData->RasterIO(GF_Write, 0, y, mWidth, 1, outputBuffer, mWidth, 1, outDataType, 0, 0);
     }
 
     stats.FinaliseState();
@@ -898,22 +901,19 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
 
     bool removeDisparityXFile = disparityXPath.isEmpty();
     bool removeDisparityYFile = disparityXPath.isEmpty();
-    bool removeDisparityFile = disparityGridPath.isEmpty();
+    bool removeDisparityGridFile = disparityGridPath.isEmpty();
 
-#ifndef NDEBUG_XXX
-    QString tmpPath = "J:/tmp/";
-#else
-    QString tmpPath = QDir::tempPath() + QDir::separator();
-#endif
-
+    QFileInfo o(outputPath);
+    QString tmpPath = o.path() + QDir::separator();
+    //QString tmpPath = QDir::tempPath() + QDir::separator();
     if (disparityXPath.isEmpty()) {
-        disparityXPath = tmpPath + "tmp_disparity_map_x.tif";
+        disparityXPath = tmpPath + o.completeBaseName() + ".xmap" + ".tif";
     }
     if (disparityYPath.isEmpty()) {
-        disparityYPath = tmpPath + "tmp_disparity_map_y.tif";
+        disparityYPath = tmpPath + o.completeBaseName() + ".ymap" + ".tif";
     }
     if (disparityGridPath.isEmpty()) {
-        disparityGridPath = tmpPath + "tmp_disparity_grid.tif";
+        disparityGridPath = tmpPath + o.completeBaseName() + ".grid" + ".tif";
     }
 
     Q_ASSERT(mBands.size() > 1);
@@ -957,13 +957,13 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
     unlink(disparityGridPath.toAscii().data());
 
     // Create the disparity file using the calculated StepCount as width and height
-    GDALDataset *disparityDataset = driver->Create(disparityGridPath.toAscii().data(), xStepCount, yStepCount, mBands.size(), GDT_CFloat32, 0);
-    if (disparityDataset == NULL) {
+    GDALDataset *disparityGridDataset = driver->Create(disparityGridPath.toAscii().data(), xStepCount, yStepCount, mBands.size(), GDT_CFloat32, 0);
+    if (disparityGridDataset == NULL) {
         monitor.Log("ERROR: Unable to create the disparity dataset.");
         monitor.Cancel();
         return;
-    }   
-    Q_CHECK_PTR(disparityDataset);
+    }
+    Q_CHECK_PTR(disparityGridDataset);
            
     double workBase = monitor.GetProgress(); 
     double workUnit = (50 - workBase) / (1 + 9*(mBands.size()-1));
@@ -975,10 +975,10 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
 
         monitor.SetProgress(workBase + workUnit * k++);
 
-        GDALRasterBand *disparityBand = disparityDataset->GetRasterBand(1+i);        
+        GDALRasterBand *disparityGridBand = disparityGridDataset->GetRasterBand(1+i);        
 
         if (i == nRefBand) {
-            disparityBand->Fill(0.0, 0.0);
+            disparityGridBand->Fill(0.0, 0.0);
             continue;
         }
 
@@ -988,7 +988,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
         monitor.Log(QString("Scanning band #%1 to create disparity map ...").arg(1+i));
 
         // Calculate the disparity map
-        scanDisparityMap(monitor, mBands[nRefBand], mBands[i], disparityBand, stats);
+        scanDisparityMap(monitor, mBands[nRefBand], mBands[i], disparityGridBand, stats);
 
         if (monitor.IsCanceled())
             break;
@@ -998,11 +998,11 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
         monitor.Log(QString("Eliminating bad points from disparity map ..."));
 
         // Remove faulty points that is outside the mean/stddev area
-        eliminateDisparityMap(monitor, disparityBand, stats);
+        eliminateDisparityMap(monitor, disparityGridBand, stats);
     }
 
     if (monitor.IsCanceled()) {
-        GDALClose(disparityDataset);
+        GDALClose(disparityGridDataset);
         return;
     }
 
@@ -1023,7 +1023,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
         monitor.Log("ERROR: Unable to create the output image dataset.");
         monitor.Cancel();
         CSLDestroy(papszOptions);
-        GDALClose(disparityDataset);
+        GDALClose(disparityGridDataset);
         return;
     }
     
@@ -1076,7 +1076,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
 
     if (monitor.IsCanceled()) {
         GDALClose(outputDataSet);
-        GDALClose(disparityDataset);
+        GDALClose(disparityGridDataset);
         return;
     }
 
@@ -1145,7 +1145,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
         monitor.Log(QString("Estimating disparity X & Y map for band #%1 ...").arg(1+i));
 
         estimateDisparityMap(monitor,
-            disparityDataset->GetRasterBand(1+i),    
+            disparityGridDataset->GetRasterBand(1+i),    
             disparityXDataSet->GetRasterBand(j), 
             disparityYDataSet->GetRasterBand(j));
 
@@ -1165,7 +1165,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
     GDALClose(disparityYDataSet);
     GDALClose(disparityXDataSet);
 
-    GDALClose(disparityDataset);
+    GDALClose(disparityGridDataset);
 
     GDALClose(outputDataSet);
 
@@ -1179,9 +1179,9 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
     if (removeDisparityXFile)
         unlink(disparityXPath.toAscii().data());
     if (removeDisparityYFile)
+        unlink(disparityYPath.toAscii().data());
+    if (removeDisparityGridFile)
         unlink(disparityGridPath.toAscii().data());
-    if (removeDisparityFile)
-        {};//unlink(disparityGridPath.toAscii().data());
 }
 
 /* ************************************************************************* */
