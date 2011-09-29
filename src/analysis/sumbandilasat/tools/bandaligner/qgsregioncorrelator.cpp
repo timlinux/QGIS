@@ -281,7 +281,8 @@ QgsResult QgsRegionCorrelator::findRegion(QgsRegion &regionRef, QgsRegion &regio
     // Find the index(es) with the maximum value
 
     double maxValue = -DBL_MAX;
-    QList< std::pair <int,int> > indexes;
+    QList< std::pair<int,int> > indexes;
+    indexes.append(std::make_pair(max/2,max/2));
 
     for (int r = 0; r < (toRow - fromRow); ++r)
     {
