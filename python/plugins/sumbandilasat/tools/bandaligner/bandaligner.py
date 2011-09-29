@@ -67,13 +67,13 @@ class BandAlignerWindow(QDialog):
   def selectFiles(self):
     self.ui.referenceComboBox.clear()
     self.ui.bandLineEdit.clear()
-    self.ui.tableWidget.clearContents()
+    self.ui.listWidget.clear()
     if self.ui.singleRadioButton.isChecked():
       self.ui.addButton.hide()
-      self.ui.tableWidget.hide()
+      self.ui.listWidget.hide()
     else:
       self.ui.addButton.show()
-      self.ui.tableWidget.show()
+      self.ui.listWidget.show()
 
   def selectXOutput(self):
     mySettings = QSettings()
@@ -117,12 +117,12 @@ class BandAlignerWindow(QDialog):
     if self.ui.singleRadioButton.isChecked():
       result.append(self.ui.bandLineEdit.text())
     else:
-      for i in range(self.ui.tableWidget.rowCount()):
+      for i in range(self.ui.listWidget.count()):
         name = ""
         if entirePath:
-          name = self.ui.tableWidget.item(i, 0).text()
+          name = self.ui.listWidget.item(i).text()
         else:
-          name = self.ui.tableWidget.item(i, 0).text()
+          name = self.ui.listWidget.item(i).text()
           index = name.lastIndexOf(QDir.separator())
           name = name.right(name.length()-index-1)
         if withId:
@@ -150,16 +150,17 @@ class BandAlignerWindow(QDialog):
       self.ui.referenceComboBox.setCurrentIndex(index)
     
   def addBands(self):
-    currentRows = self.ui.tableWidget.rowCount()
-    self.ui.tableWidget.setRowCount(currentRows+len(self.tempBands))
+    currentRows = self.ui.listWidget.count()
     if len(self.tempBands) == 1:
-      itemPath = QTableWidgetItem(self.ui.bandLineEdit.text())
-      self.ui.tableWidget.setItem(currentRows, 0, itemPath)
+      self.ui.listWidget.clear()
+      itemPath = QListWidgetItem(self.ui.bandLineEdit.text())
+      self.ui.listWidget.addItem(itemPath)
     else:
       counter = 0
+      self.ui.listWidget.clear()
       for band in self.tempBands:
-        itemPath = QTableWidgetItem(self.tempBands[counter])
-        self.ui.tableWidget.setItem(currentRows+counter, 0, itemPath)
+        itemPath = QListWidgetItem(self.tempBands[counter])
+        self.ui.listWidget.addItem(itemPath)
         counter += 1
     self.tempBands = []
     self.ui.bandLineEdit.setText("")
