@@ -1,6 +1,3 @@
-#undef QT_NO_DEBUG
-#define QT_NO_EXCEPTIONS 1
-
 #include "qgscomplex.h"
 #include "qgsimagealigner.h"
 #include "qgsregioncorrelator.h"
@@ -20,6 +17,7 @@ static inline float round(float value) { return floor(value + 0.5f); }
 static inline double round(double value) { return floor(value + 0.5); }
 static inline long double round(long double value) { return floor(value + 0.5); }
 #endif
+
 /* ************************************************************************* */
 
 typedef
@@ -713,9 +711,10 @@ static double bicubic_interpolation(void *data, GDALDataType dataType, float shi
             return cubicConvolution((float *)data, shift);
         case GDT_Float64:
             return cubicConvolution((double *)data, shift);
+        default:
+            Q_ASSERT(0 && "Should not get here. Programming error!");
+            return 0.0;
     }
-    Q_ASSERT(0 && "Should not get here. Programming error!");
-    return 0.0;    
 }
 
 static inline void store_in_buffer(void *buffer, int index, GDALDataType dataType, double value)

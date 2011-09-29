@@ -23,8 +23,8 @@ class ANALYSIS_EXPORT QgsProgressMonitor : public QObject
     ~QgsProgressMonitor() {}
 
   private:
-    bool m_Finished;
     bool m_Canceled;
+    bool m_Finished;
     double m_Progress;
     double m_WorkUnit;
 

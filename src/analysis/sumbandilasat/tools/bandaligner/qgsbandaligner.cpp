@@ -2,7 +2,6 @@
 #include "qgsbandaligner.h"
 
 #include <QDir>
-#define QGISDEBUG
 #include <QDebug>
 #include <QFuture>
 #include <qgslogger.h>

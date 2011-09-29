@@ -1,10 +1,9 @@
-#undef QT_NO_DEBUG
-#define QT_NO_EXCEPTIONS 1
-
 #include "qgsregioncorrelator.h"
 
-
+#ifndef _MSC_VER
 #include <alloca.h>
+#endif
+
 #include <fftw3.h>
 #include <gsl/gsl_fft_complex.h>
 #include <gsl/gsl_complex_math.h>
@@ -23,7 +22,7 @@ using namespace QgsRegionCorrelator;
 /* Return a IEEE-compliant NAN value */
 static inline double nan() 
 {
-    unsigned long long v = 0x7FFFFFFFFFFFFFFF; 
+    unsigned long long v = 0x7FFFFFFFFFFFFFFFll; 
     return *(double *)&v;
 }
 
