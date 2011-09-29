@@ -32,6 +32,7 @@
 %Include qgswavelettransform.sip
 %Include qgsimagefilter.sip
 %Include qgssensormodel.sip
+%Include sumbandilasat/qgsprogressmonitor.sip
 %Include sumbandilasat/qgsimageprocessor.sip
 %Include sumbandilasat/qgscloudanalyzer.sip
 %Include sumbandilasat/qgscloudmask.sip
