@@ -11,12 +11,15 @@
 #include <QDir>
 #include <QTime>
 
+#include <float.h>
+
 /* ************************************************************************* */
 
+#if defined(Q_WS_WIN)
 static inline float round(float value) { return floor(value + 0.5f); }
 static inline double round(double value) { return floor(value + 0.5); }
 static inline long double round(long double value) { return floor(value + 0.5); }
-
+#endif
 /* ************************************************************************* */
 
 typedef
@@ -857,8 +860,8 @@ static void copyBand(QgsProgressMonitor &monitor,
     void *scanline = calloc(width + abs(xOffset), dataSize);
     
     // Calculate the start pointer for the read & write buffers
-    void *scanline_read = (void *)((int)scanline + dataSize * (xOffset > 0 ? xOffset : 0));
-    void *scanline_write = (void *)((int)scanline + dataSize * (xOffset >= 0 ? 0 : -xOffset));
+    void *scanline_read = (void *)((intptr_t)scanline + dataSize * (xOffset > 0 ? xOffset : 0));
+    void *scanline_write = (void *)((intptr_t)scanline + dataSize * (xOffset >= 0 ? 0 : -xOffset));
     
     for (int y = 0; y < height; ++y)
     {

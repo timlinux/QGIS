@@ -86,10 +86,10 @@ QgsApplication::QgsApplication( int & argc, char ** argv, bool GUIenabled, QStri
   // for cases where the raster dir is read only to the user
   // if the env var is already set it will be used preferentially
   QString myPamPath = qgisSettingsDirPath() + QString( "gdal_pam/" );
-  QDir myDir( myPamPath );
-  if ( !myDir.exists() )
+  QDir myPamDir( myPamPath );
+  if ( !myPamDir.exists() )
   {
-    myDir.mkpath( myPamPath ); //fail silently
+    myPamDir.mkpath( myPamPath ); //fail silently
   }
   
 #if defined(Q_WS_WIN32) || defined(WIN32)

@@ -3,6 +3,8 @@
 
 #include "qgsregioncorrelator.h"
 
+
+#include <alloca.h>
 #include <fftw3.h>
 #include <gsl/gsl_fft_complex.h>
 #include <gsl/gsl_complex_math.h>
@@ -280,7 +282,7 @@ QgsResult QgsRegionCorrelator::findRegion(QgsRegion &regionRef, QgsRegion &regio
     // Find the index(es) with the maximum value
 
     double maxValue = -DBL_MAX;
-    QList<std::pair<int,int>> indexes;
+    QList< std::pair <int,int> > indexes;
 
     for (int r = 0; r < (toRow - fromRow); ++r)
     {
