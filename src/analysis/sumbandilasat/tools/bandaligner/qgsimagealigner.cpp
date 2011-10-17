@@ -9,6 +9,7 @@
 #include <QTime>
 
 #include <float.h>
+#include <math.h>
 
 /* ************************************************************************* */
 
@@ -59,8 +60,11 @@ public:
     void FinaliseState()
     {
         Mean = Sum / Count;
-        Variance = (SumSq / Count) - Mean;
+        Variance = (Count*SumSq - Sum*Sum) / (Count*(Count-1));    
         StdDeviation = sqrt(Variance);
+        // References: 
+        //   http://www.gcpowertools.com/Help/FormulaReference/FunctionSTDEV.html
+        //   http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
     }
 
 } StatisticsState;
@@ -79,6 +83,78 @@ static int clamp(int value, int vmin, int vmax)
         result = value;
 
     return result;
+}
+
+static double clampf(double value, double vmin, double vmax)
+{
+    int result;
+
+    if (value < vmin)
+        result = vmin;
+    else if (value > vmax)
+        result = vmax;
+    else 
+        result = value;
+
+    return result;
+}
+
+/* ************************************************************************* */
+
+static CPLErr load_from_raster(GDALRasterBand *raster, int offX, int offY, void *buffer, int bufSizeX, int bufSizeY, GDALDataType dataType)
+{
+    Q_CHECK_PTR(raster);
+    Q_CHECK_PTR(buffer);
+    Q_ASSERT(bufSizeX > 0);
+    Q_ASSERT(bufSizeY > 0);
+
+    const int width = raster->GetXSize();
+    const int height = raster->GetYSize();
+    
+    if (0 <= offX && offX < (width - bufSizeX) &&
+        0 <= offY && offY < (height - bufSizeY)) 
+    {
+        // inside the raster area, call RasterIO 
+        return raster->RasterIO(GF_Read, offX, offY, bufSizeX, bufSizeY, buffer, bufSizeX, bufSizeY, dataType, 0, 0);
+    }
+
+    const int dataTypeSize = GDALGetDataTypeSize(dataType)/8;
+
+    // Initialise the buffer with zeros
+    memset(buffer, 0, bufSizeX * bufSizeY * dataTypeSize);
+
+    if (offX <= -bufSizeX || width <= offX ||
+        offY <= -bufSizeY || height <= offY)
+    {
+        // outside the raster area, return zero-filled buffer
+        return CE_None; 
+    }
+
+    // Recalculate values for a partial block
+    int x1 = offX;
+    int y1 = offY;
+    int x2 = clamp(x1, 0, width-1);
+    int y2 = clamp(y1, 0, height-1);    
+    int xoff = x2 - x1;
+    int yoff = y2 - y1;
+
+    Q_ASSERT(xoff >= 0);
+    Q_ASSERT(yoff >= 0);
+
+    int off_idx = xoff + yoff * bufSizeX;
+
+    Q_ASSERT(off_idx < bufSizeX * bufSizeY);
+
+    void *buffer_ptr = (void *)((intptr_t)buffer + off_idx * dataTypeSize);
+    int buffer_width = std::min(bufSizeX, width - x2) - xoff;
+    int buffer_height = std::min(bufSizeY, height - y2) - yoff;
+
+    Q_ASSERT(0 <= buffer_width  && buffer_width  <= bufSizeX);
+    Q_ASSERT(0 <= buffer_height && buffer_height <= bufSizeY);
+
+    // Load the partial block from the raster
+    return raster->RasterIO(GF_Read, x2, y2, buffer_width, buffer_height, 
+        buffer_ptr, buffer_width, buffer_height, dataType, 0, bufSizeX * dataTypeSize);
 }
 
 /* ************************************************************************* */
@@ -111,28 +187,40 @@ void scanDisparityMap(QgsProgressMonitor &monitor,
     Q_ASSERT(xStepCount < mWidth);
     Q_ASSERT(yStepCount < mHeight);
 
-    int srcWidth = srcRasterBand->GetXSize();
-    int srcHeight = srcRasterBand->GetYSize();
-
     double xStepSize = mWidth / double(xStepCount);
     double yStepSize = mHeight / double(yStepCount);
 
     float *scanline = (float *)VSIMalloc3(xStepCount, 2, sizeof(float));
     
-    // Fill scanline with initial disparity estimates
-    for (int i = 0; i < xStepCount; ++i)
-    {
-        scanline[2*i+0] = 0.0;
-        scanline[2*i+1] = 0.0;
-    }
-
     QgsRegionCorrelator::QgsRegion region1, region2;
-    region1.data = (unsigned int *)VSIMalloc3(1+ceil(xStepSize), 1+ceil(yStepSize), sizeof(unsigned int));
-    region2.data = (unsigned int *)VSIMalloc3(1+ceil(xStepSize), 1+ceil(yStepSize), sizeof(unsigned int));
+    region1.width = region2.width = 256;
+    region1.height = region2.height = 256;
+    region1.data = (unsigned int *)VSIMalloc3(region1.width, region1.height, sizeof(unsigned int));
+    region2.data = (unsigned int *)VSIMalloc3(region2.width, region2.height, sizeof(unsigned int));
+
+    Q_ASSERT(region1.width  >= 1+ceil(xStepSize));
+    Q_ASSERT(region1.height >= 1+ceil(yStepSize));
+    Q_ASSERT(region2.width  >= 1+ceil(xStepSize));
+    Q_ASSERT(region2.height >= 1+ceil(yStepSize));
     
     /* Initialise the statistics state variables */
     stats[0].InitialiseState();
     stats[1].InitialiseState();
+
+    /* Pick an area in the middle of the image and calculate the disparity */
+    load_from_raster(refRasterBand, (mWidth-region1.width)/2, (mHeight-region1.height)/2, region1.data, region1.width, region1.height, GDT_UInt32);
+    load_from_raster(srcRasterBand, (mWidth-region2.width)/2, (mHeight-region2.height)/2, region2.data, region2.width, region2.height, GDT_UInt32);
+    QgsRegionCorrelator::QgsResult corrData =
+            QgsRegionCorrelator::findRegion(region1, region2, mBits);
+    float estXi = corrData.wasSet ? corrData.x : 0;
+    float estYi = corrData.wasSet ? corrData.y : 0;
+
+    /* Fill scanline with initial disparity estimates */
+    for (int i = 0; i < xStepCount; ++i)
+    {
+        scanline[2*i+0] = estXi;
+        scanline[2*i+1] = estYi;
+    }
 
     double workBase = monitor.GetProgress();
     double workUnit = monitor.GetWorkUnit() / yStepCount;
@@ -143,12 +231,9 @@ void scanDisparityMap(QgsProgressMonitor &monitor,
             break;
 
         monitor.SetProgress(workBase + workUnit * yStep);
-        
-        //int y = round((yStep + 0.5) * yStepSize); // center of block
 
-        int yA = round((yStep + 0.0) * yStepSize);
-        int yB = round((yStep + 1.0) * yStepSize);
-        region1.height = region2.height = yB - yA;
+        int y = round((yStep + 0.5) * yStepSize); // center of block
+        int yA = y - region1.width/2;
 
         for (int xStep = 0; xStep < xStepCount; ++xStep)
         {
@@ -157,64 +242,38 @@ void scanDisparityMap(QgsProgressMonitor &monitor,
                 break;            
             }
 
-            //int x = round((xStep + 0.5) * xStepSize); // center of block
-
-            int xA = round((xStep + 0.0) * xStepSize);
-            int xB = round((xStep + 1.0) * xStepSize);
-            region1.width = region2.width = xB - xA;
+            int x = round((xStep + 0.5) * xStepSize); // center of block
+            int xA = x - region1.width/2;
 
             const int idx = 2 * xStep;
             /* Initial estimate of the disparity for more efficient correlation: */
-            int estX = scanline[idx+0] < FLT_MAX ? scanline[idx+0] : 0; 
-            int estY = scanline[idx+1] < FLT_MAX ? scanline[idx+1] : 0;            
+            int estX = scanline[idx+0] < FLT_MAX ? scanline[idx+0] : estXi;
+            int estY = scanline[idx+1] < FLT_MAX ? scanline[idx+1] : estYi;
             // use previous scanline's values (if valid) for a closer search ..
             estX = clamp(estX, -xStepSize/2, +xStepSize/2); 
             estY = clamp(estY, -yStepSize/2, +yStepSize/2); 
             // .. and we clamp it to half the step size to prevent runaway values
 
-            // Take into account the height and width of the source image. 
+            // Calculate the offset of the region in the source image. 
             int x1 = xA - estX;
             int y1 = yA - estY;
-            int x2 = clamp(x1, 0, srcWidth);
-            int y2 = clamp(y1, 0, srcHeight);
-            int region2_width = std::min(region2.width, srcWidth - x2);
-            int region2_height = std::min(region2.height, srcHeight - y2);
-            unsigned int *region2_data = region2.data;
-            // Our block can be over the edge of the source image.
-            if (x1 != x2 || region2_width != region2.width ||
-                y1 != y2 || region2_height != region2.height) 
-            {
-                int xoff = x2 - x1;
-                int yoff = y2 - y1;
-                int off_idx = xoff + yoff * region2.width;                
-                region2_data = &region2.data[off_idx];
-                region2_width -= xoff;
-                region2_height -= yoff;
-                memset(region2.data, 0, region2.width * region2.height * sizeof(region2.data[0]));
-            }
 
-            err = refRasterBand->RasterIO(GF_Read, xA, yA, region1.width, region1.height, region1.data, region1.width, region1.height, GDT_UInt32, 0, 0);
+            // Load the data from the reference and source images
+
+            err = load_from_raster(refRasterBand, xA, yA, region1.data, region1.width, region1.height, GDT_UInt32);
             if (err) {
                 // TODO: better error handling 
-
                 //fprintf(f, "RasterIO(%4d,%4d) error: %d - %s\n", xA,yA, err, CPLGetLastErrorMsg());
             }
-
-            err = srcRasterBand->RasterIO(GF_Read, x2, y2, region2_width, region2_height, region2_data, region2.width, region2_height, GDT_UInt32, 0, 0);
+            err = load_from_raster(srcRasterBand, x1, y1, region2.data, region2.width, region2.height, GDT_UInt32);
             if (err) {
                 // TODO: better error handling 
-
-                //fprintf(f, "RasterIO(%4d,%4d)(%3d,%3d)(%3d,%3d) error: %d - %s\n", 
-                //    x2,y2, 
-                //    region2_width, region2_height, 
-                //    region2.width, region2.height, 
-                //    err, CPLGetLastErrorMsg());
+                //fprintf(f, "RasterIO(%4d,%4d) error: %d - %s\n", x1,y1, err, CPLGetLastErrorMsg());
             }
 
             //-----------------------------------------------------------------
 
-            QgsRegionCorrelator::QgsResult corrData = 
-                QgsRegionCorrelator::findRegion(region1, region2, mBits);
+            corrData = QgsRegionCorrelator::findRegion(region1, region2, mBits);
 
             //-----------------------------------------------------------------
 
@@ -424,234 +483,67 @@ static void eliminateDisparityMap(QgsProgressMonitor &monitor,
 
 /* ************************************************************************* */
 
-static void estimateDisparityMap(QgsProgressMonitor &monitor,
-    GDALRasterBand *disparityBand, 
-    GDALRasterBand *disparityMapX, 
-    GDALRasterBand *disparityMapY)
+template <typename T>
+static void bicubic_interpolate_complex(T data[], int elementCount,  int lineStride, int start[], double frac[], double result[])
 {
-    Q_CHECK_PTR(disparityBand);
-    Q_CHECK_PTR(disparityMapX);
-    Q_CHECK_PTR(disparityMapY);
+    Q_CHECK_PTR(data);
+    Q_CHECK_PTR(start);
+    Q_CHECK_PTR(frac);
+    Q_CHECK_PTR(result);
 
-    Q_ASSERT(disparityBand->GetRasterDataType() == GDT_CFloat32);
+    // References: http://en.wikipedia.org/wiki/bicubic_interpolation
 
-    Q_ASSERT(disparityMapX->GetXSize() == disparityMapY->GetXSize());
-    Q_ASSERT(disparityMapX->GetYSize() == disparityMapY->GetYSize());
+    double xShift = frac[0];
+    double xShift2 = xShift*xShift;
+    double xShift3 = xShift*xShift2;
 
-    const int mWidth = disparityMapX->GetXSize();
-    const int mHeight = disparityMapX->GetYSize();
+    double xData[4] = {
+        -(1/2.0)* xShift3 + (2/2.0)*xShift2 - (1/2.0)*xShift,
+         (3/2.0)* xShift3 - (5/2.0)*xShift2 + (2/2.0),
+        -(3/2.0)* xShift3 + (4/2.0)*xShift2 + (1/2.0)*xShift,
+         (1/2.0)* xShift3 - (1/2.0)*xShift2,
+    };
 
-    Q_ASSERT(mWidth > 0);
-    Q_ASSERT(mHeight > 0);
+    double yShift = frac[1];
+    double yShift2 = yShift*yShift;
+    double yShift3 = yShift*yShift2;
 
-    const int xStepCount = disparityBand->GetXSize(); 
-    const int yStepCount = disparityBand->GetYSize();
+    double yData[4] = {
+        0.5 * (  -yShift3 + 2*yShift2 - yShift),
+        0.5 * ( 3*yShift3 - 5*yShift2 + 2 ),
+        0.5 * (-3*yShift3 + 4*yShift2 + yShift ),
+        0.5 * (   yShift3 -   yShift2),
+    };
 
-    const double xStepSize = mWidth / double(xStepCount);
-    const double yStepSize = mHeight / double(yStepCount);
+    double *rowContribution = (double *)alloca(elementCount * sizeof(double));        
 
-    disparityMapX->SetNoDataValue(0.0);
-    disparityMapY->SetNoDataValue(0.0);
+    for (int i = 0; i < elementCount; i++) 
+        result[i] = 0.0;
 
-    const bool constantEdgeExtend = true; // or false for zero edge-extend
-
-    const int xBlockSize = ceil(xStepSize);
-    const int yBlockSize = ceil(yStepSize);
-
-    float *disparityBufferX = (float *)malloc(xBlockSize*yBlockSize * sizeof(float)); 
-    float *disparityBufferY = (float *)malloc(xBlockSize*yBlockSize * sizeof(float)); 
-
-    float *disparityBuffer1 = (float *)malloc((1 + xStepCount + 1) * 2 * sizeof(float));
-    float *disparityBuffer2 = (float *)malloc((1 + xStepCount + 1) * 2 * sizeof(float));    
-
-    float *disparityBuffer[2];    
-
-    if (constantEdgeExtend) {
-        disparityBuffer[0] = disparityBuffer1;
-        disparityBuffer[1] = disparityBuffer1;
-    } else { // zero edge extend
-        memset(disparityBuffer2, 0, (1 + xStepCount + 1) * 2 * sizeof(float));
-        disparityBuffer[0] = disparityBuffer2;
-        disparityBuffer[1] = disparityBuffer1;
-    }
-
-    double workBase = monitor.GetProgress();
-    double workUnit = monitor.GetWorkUnit() / (yStepCount + 1);
-
-    int ySubStartNext = 0;
-
-    for (int yStep = 0; yStep <= yStepCount; ++yStep)
+    for (int y = 0; y < 4; y++)
     {
-        if (monitor.IsCanceled())
-            break;
+        for (int i = 0; i < elementCount; i++)
+            rowContribution[i] = 0.0;
 
-        monitor.SetProgress(workBase + workUnit * yStep);
-
-        int yA = round((yStep - 0.5) * yStepSize); // above
-        int yY = round((yStep + 0.0) * yStepSize); // middle
-        int yB = round((yStep + 0.5) * yStepSize); // below
-
-        int ySubSize = (0 < yStep && yStep < yStepCount) ? (yB - yA) : (yStep == 0) ? yB - yY : yY - yA;
-        int ySubStart = (yStep == 0) ? yY : yA;
-
-        Q_ASSERT(0 < ySubSize && ySubSize <= yBlockSize);
-        Q_ASSERT(0 <= ySubStart && (ySubStart + ySubSize) <= mHeight);
-
-        // Verify that the block follow one another nicely 
-        Q_ASSERT(ySubStart == ySubStartNext);
-        ySubStartNext = ySubStart + ySubSize;
-
-        // Load data from disk
-        if (yStep < yStepCount) {
-            disparityBand->RasterIO(GF_Read, 0, yStep, xStepCount, 1, &disparityBuffer[1][2], xStepCount, 1, GDT_CFloat32, 0, 0);
-
-            const int last = (1 + xStepCount) * 2;
-            if (constantEdgeExtend) {
-                disparityBuffer[1][0] = disparityBuffer[1][2];
-                disparityBuffer[1][1] = disparityBuffer[1][3];                
-                disparityBuffer[1][last+0] = disparityBuffer[1][last-2];
-                disparityBuffer[1][last+1] = disparityBuffer[1][last-1];
-            } else { // zero edge-extend
-                disparityBuffer[1][0] = 0.0f;
-                disparityBuffer[1][1] = 0.0f;
-                disparityBuffer[1][last+0] = 0.0f;
-                disparityBuffer[1][last+1] = 0.0f;
-            }        
-        } else if (constantEdgeExtend) {            
-            disparityBuffer[1] = disparityBuffer[0];
-        } else { // zero edge-extend
-            memset(disparityBuffer[1], 0, (1 + xStepCount + 1) * 2 * sizeof(float));
-        }
-        
-        int xSubStartNext = 0;
-        
-        for (int xStep = 0; xStep <= xStepCount; ++xStep)
+        for (int x = 0; x < 4; x++)
         {
-            if (monitor.IsCanceled()) {
-                monitor.SetProgress(workBase + workUnit * (yStep + xStep / (double)(xStepCount + 1)));
-                break;
-            }
+            const int idx = (x + start[0]) * elementCount + (y + start[1]) * lineStride;
 
-            int xA = round((xStep - 0.5) * xStepSize); // left
-            int xX = round((xStep + 0.0) * xStepSize); // middle
-            int xB = round((xStep + 0.5) * xStepSize); // right
-
-            int xSubSize = (0 < xStep && xStep < xStepCount) ? (xB - xA) : (xStep == 0) ? xB - xX : xX - xA;
-            int xSubStart = (xStep == 0) ? xX : xA;
-
-            Q_ASSERT(0 < xSubSize && xSubSize <= xBlockSize);
-            Q_ASSERT(0 <= xSubStart && (xSubStart + xSubSize) <= mWidth);
-
-            // Verify that the block follow one another without gaps or overlaps 
-            Q_ASSERT(xSubStart == xSubStartNext);
-            xSubStartNext = xSubStart + xSubSize;
-
-            const int idx1 = (1 + xStep - 1) * 2;
-            const int idx2 = (1 + xStep - 0) * 2;
-            
-            float *p11 = &disparityBuffer[0][idx1]; // col = 1, row = 1
-            float *p12 = &disparityBuffer[1][idx1]; // col = 1, row = 2
-            float *p21 = &disparityBuffer[0][idx2]; // col = 2, row = 1
-            float *p22 = &disparityBuffer[1][idx2]; // col = 2, row = 2
-
-            for(int ySub = 0; ySub < ySubSize; ySub++)
+            for (int i = 0; i < elementCount; i++)
             {
-                //int y = ySubStart + ySub;
-
-                for(int xSub = 0; xSub < xSubSize; xSub++)
-                {
-                    //int x = xSubStart + xSub;
-                        
-                    QgsComplex p1(p11[0], p11[1]);
-                    QgsComplex p2(p21[0], p21[1]);
-                    QgsComplex p3(p12[0], p12[1]);
-                    QgsComplex p4(p22[0], p22[1]);
-
-                    // Reference: http://en.wikipedia.org/wiki/Bilinear_interpolation
-                    QgsComplex top = (p2*double(xSub) + p1*double(xSubSize - xSub)) / double(xSubSize);
-                    QgsComplex bottom = (p4*double(xSub) + p3*double(xSubSize - xSub)) / double(xSubSize);
-                    QgsComplex middle = (top*double(ySubSize - ySub) + bottom*double(ySub)) / double(ySubSize);
-                    // FIXME: We might want to replace this with bicubic interplation
-
-                    int idx = xSub + ySub * xSubSize;
-                    
-                    disparityBufferX[idx] = middle.real();
-                    disparityBufferY[idx] = middle.imag();
-
-#if 0 // TODO: this is what we need to do to work out and apply the disparity on one step!
-
-                    int srcX1 = floor(x - disparityBufferX[idx]);
-                    int srcY1 = floor(y - disparityBufferY[idx]);
-
-                    if ((1 <= srcX1 && srcX1 < inWidth-2) && 
-                        (1 <= srcY1 && srcY1 < inHeight-2))
-                    {
-                        inputRasterData->RasterIO(GF_Read, srcX1-1, srcY1-1, 4, 4, data, 4, 4, inDataType, 0, 0);
-
-                        float shift[2] = { 
-                            x - disparityBufferX[idx] - srcX1, 
-                            y - disparityBufferY[idx] - srcY1,
-                        };
-
-                        double value = bicubic_interpolation(data, inDataType, shift);
-
-                        store_in_buffer(outputBuffer, idx, outDataType, value);
-
-                        // Keep statistical record of the valid pixels
-                        stats.UpdateState( value );
-                    }
-                    else 
-                    {
-                        store_in_buffer(outputBuffer, idx, outDataType, noDataValue);
-                    }
-#endif
-                }
+                rowContribution[i] += xData[x] * data[i + idx];
             }
-            
-            //fprintf(f, "Step: (%2d,%2d), (%4d,%4d), (%4d,%4d), (%4d,%4d) W (%4d,%4d)-(%3d,%3d)-(%4d,%4d) B 0x%08X 0x%08X P 0x%08X 0x%08X 0x%08X 0x%08X", 
-            //    xStep,yStep, xX,yY, xA,yA, xB,yB, 
-            //    xSubStart, ySubStart, xSubSize, ySubSize, xSubStart + xSubSize - 1, ySubStart + ySubSize - 1,
-            //    (int)disparityBuffer[0], (int)disparityBuffer[1],  // check that they are swopped
-            //    (int)p11, (int)p12, (int)p21, (int)p22); // verify duplicate pointers for first/last row/columns
-
-            //fprintf(f, "disparityMap->RasterIO(GF_Write, %4d, %4d, %4d, %4d, disparityBuffer, %4d, %4d, GDT_Float32, 0, 0)\n", 
-            //    xSubStart, ySubStart, xSubSize, ySubSize, xSubSize, ySubSize);
-
-            Q_ASSERT(0 <= xSubStart && xSubStart < mWidth);
-            Q_ASSERT(0 <= ySubStart && ySubStart < mHeight);
-            Q_ASSERT((xSubStart + xSubSize) <= mWidth);
-            Q_ASSERT((ySubStart + ySubSize) <= mHeight);
-
-            CPLErr err;
-            err = disparityMapX->RasterIO(GF_Write, xSubStart, ySubStart, xSubSize, ySubSize, disparityBufferX, xSubSize, ySubSize, GDT_Float32, 0, 0);             
-            err = disparityMapY->RasterIO(GF_Write, xSubStart, ySubStart, xSubSize, ySubSize, disparityBufferY, xSubSize, ySubSize, GDT_Float32, 0, 0);
-
-            //err = outputRasterData->RasterIO(GF_Write, xSubStart, ySubStart, xSubSize, ySubSize, outputBuffer, xSubSize, ySubSize, outDataType, 0, 0);
         }
 
-        if (yStep > 0) {
-            // Swap line buffers
-            float *tmp = disparityBuffer[0];
-            disparityBuffer[0] = disparityBuffer[1];
-            disparityBuffer[1] = tmp;
-        } else {
-            // Ensure the two buffers is in the correct order
-            disparityBuffer[0] = disparityBuffer1;
-            disparityBuffer[1] = disparityBuffer2;
-        }
+        for (int i = 0; i < elementCount; i++)
+            result[i] += rowContribution[i] * yData[y];
     }
-
-    free(disparityBuffer2); 
-    free(disparityBuffer1); 
-
-    free(disparityBufferY);
-    free(disparityBufferX);
 }
 
 /* ************************************************************************* */
 
 template <typename T>
-static double cubicConvolution(T data[], float shift[])
+static double cubicConvolution(T data[], double shift[])
 {
     Q_CHECK_PTR(data);
     Q_CHECK_PTR(shift);
@@ -693,7 +585,9 @@ static double cubicConvolution(T data[], float shift[])
     return result;
 }
 
-static double bicubic_interpolation(void *data, GDALDataType dataType, float shift[])
+/* ************************************************************************* */
+
+static double bicubic_interpolation(void *data, GDALDataType dataType, double shift[])
 {
     switch (dataType)
     {
@@ -717,6 +611,8 @@ static double bicubic_interpolation(void *data, GDALDataType dataType, float shi
     }
 }
 
+/* ************************************************************************* */
+
 static inline void store_in_buffer(void *buffer, int index, GDALDataType dataType, double value)
 {
     Q_CHECK_PTR(buffer);
@@ -725,13 +621,13 @@ static inline void store_in_buffer(void *buffer, int index, GDALDataType dataTyp
     switch (dataType)
     {
         case GDT_Byte:
-            ((unsigned char *)buffer)[index] = value;
+            ((unsigned char *)buffer)[index] = clampf(value, 0, 255.0);
             break;
         case GDT_UInt16:
-            ((unsigned short *)buffer)[index] = value;
+            ((unsigned short *)buffer)[index] = clampf(value, 0, 65535.0);
             break;
         case GDT_UInt32:
-            ((unsigned int *)buffer)[index] = value;
+            ((unsigned int *)buffer)[index] = clampf(value, 0, 4294967295.0);
             break;
         case GDT_Int16:
             ((signed short *)buffer)[index] = value;
@@ -751,99 +647,319 @@ static inline void store_in_buffer(void *buffer, int index, GDALDataType dataTyp
     }
 }
 
-static void applyDisparityMap(QgsProgressMonitor &monitor,
-    GDALRasterBand *inputRasterData,
+/* ************************************************************************* */
+
+static void transformDisparityMap(QgsProgressMonitor &monitor,
+    GDALRasterBand *disparityGridRaster,
     GDALRasterBand *disparityMapX,
     GDALRasterBand *disparityMapY,
-    GDALRasterBand *outputRasterData)
+    GDALRasterBand *inputDataRaster = NULL,
+    GDALRasterBand *outputDataRaster = NULL)
 {
-    Q_CHECK_PTR(inputRasterData);
+    Q_CHECK_PTR(disparityGridRaster);
     Q_CHECK_PTR(disparityMapX);
     Q_CHECK_PTR(disparityMapY);
-    Q_CHECK_PTR(outputRasterData);
 
-    int mWidth = inputRasterData->GetXSize();
-    int mHeight = inputRasterData->GetYSize();
+    Q_ASSERT(disparityGridRaster->GetRasterDataType() == GDT_CFloat32);
 
-    GDALDataType outDataType = outputRasterData->GetRasterDataType();
-    //int outDataTypeSize = GDALGetDataTypeSize(outDataType);
+    Q_ASSERT(disparityMapX->GetXSize() == disparityMapY->GetXSize());
+    Q_ASSERT(disparityMapX->GetYSize() == disparityMapY->GetYSize());
 
-    float *disparityBufferReal = (float *)malloc(mWidth * sizeof(float));
-    float *disparityBufferImag = (float *)malloc(mWidth * sizeof(float));
-    double *outputBuffer = (double *) malloc(mWidth * sizeof(double)); /* 'double' is the largest datatype */
+    const int mWidth = disparityMapX->GetXSize();
+    const int mHeight = disparityMapX->GetYSize();
 
-    //double noDataValue = inputRasterData->GetNoDataValue();
-    double noDataValue = 0.0; //outputRasterData->GetNoDataValue();
-    outputRasterData->SetNoDataValue(noDataValue);
+    Q_ASSERT(mWidth > 0);
+    Q_ASSERT(mHeight > 0);
 
-    int inWidth = inputRasterData->GetXSize();
-    int inHeight = inputRasterData->GetYSize();
+    const int xGridStepCount = disparityGridRaster->GetXSize();
+    const int yGridStepCount = disparityGridRaster->GetYSize();
 
-    GDALDataType inDataType = inputRasterData->GetRasterDataType();
-    //int inDataTypeSize = GDALGetDataTypeSize(inDataType);
-    double data[4*4]; /* 'double' is the largest datatype */
+    const double xGridStepSize = mWidth / double(xGridStepCount);
+    const double yGridStepSize = mHeight / double(yGridStepCount);
 
+    const bool constantEdgeExtend = true; // or false for zero edge-extend
+
+    if (outputDataRaster) {
+        Q_ASSERT(outputDataRaster->GetXSize() == disparityMapX->GetXSize());
+        Q_ASSERT(outputDataRaster->GetYSize() == disparityMapX->GetYSize());
+    }
+
+    GDALDataType outDataType = outputDataRaster ? outputDataRaster->GetRasterDataType() : GDT_Byte;
+    //const int outDataTypeSize = GDALGetDataTypeSize(outDataType) / 8;
+
+    CPLErr err;
     StatisticsState stats;
     stats.InitialiseState();
 
     double workBase = monitor.GetProgress();
-    double workUnit = monitor.GetWorkUnit() / (mHeight + 1);
+    double workUnit = monitor.GetWorkUnit() / (10 + mHeight);
 
-    for(int y = 0; y < mHeight; ++y)
-    {
-        monitor.SetProgress(workBase + workUnit * y);
+    // Allocate scanline buffer memory for disparity map and output data
+    float *disparityMapBufferX = (float *)calloc(mWidth, sizeof(float));
+    float *disparityMapBufferY = (float *)calloc(mWidth, sizeof(float));
+    void *outputBuffer = calloc(mWidth, sizeof(double)); /* 'double' is the largest datatype */
 
-        if (monitor.IsCanceled()) 
-            break;
+    Q_ASSERT((2+xGridStepCount+2)*(2+yGridStepCount+2)*2*sizeof(float) < 128*1024*1024);
+    float *disparityGridBuffer = (float *)calloc((2+xGridStepCount+2)*(2+yGridStepCount+2), 2*sizeof(float)); 
+    int disparityGridElementStride = 2;
+    int disparityGridLineStride = (2 + xGridStepCount + 2) * disparityGridElementStride;
+    float *disparityGrid = &disparityGridBuffer[2*disparityGridElementStride + 2*disparityGridLineStride];
 
-        disparityMapX->RasterIO(GF_Read, 0, y, mWidth, 1, disparityBufferReal, mWidth, 1, GDT_Float32, 0, 0);
-        disparityMapY->RasterIO(GF_Read, 0, y, mWidth, 1, disparityBufferImag, mWidth, 1, GDT_Float32, 0, 0);
+    // Read the whole disparity grid into memory (it is an order of magnitude smaller that the disparity map)
+    err = disparityGridRaster->RasterIO(GF_Read, 0, 0, xGridStepCount, yGridStepCount, disparityGrid, xGridStepCount, yGridStepCount, GDT_CFloat32, 0, disparityGridLineStride*sizeof(float));
 
-        for(int x = 0; x < mWidth; ++x)
+    if (constantEdgeExtend) {
+        // extend the edges with the value of the edge
+        const int yLow = 0;
+        const int yHigh = yGridStepCount-1;        
+        float *rowM2 = &disparityGrid[(yLow -2) * disparityGridLineStride];
+        float *rowM1 = &disparityGrid[(yLow -1) * disparityGridLineStride];
+        float *rowM0 = &disparityGrid[(yLow -0) * disparityGridLineStride];
+        float *rowP0 = &disparityGrid[(yHigh+0) * disparityGridLineStride];
+        float *rowP1 = &disparityGrid[(yHigh+1) * disparityGridLineStride];
+        float *rowP2 = &disparityGrid[(yHigh+2) * disparityGridLineStride];
+        for (int xGridStep = 0; xGridStep < xGridStepCount; ++xGridStep) 
         {
-            int srcX1 = floor(x - disparityBufferReal[x]);
-            int srcY1 = floor(y - disparityBufferImag[x]);
-
-            if ((1 <= srcX1 && srcX1 < inWidth-2) && 
-                (1 <= srcY1 && srcY1 < inHeight-2))
-            {
-                inputRasterData->RasterIO(GF_Read, srcX1-1, srcY1-1, 4, 4, data, 4, 4, inDataType, 0, 0);
-
-                float shift[2] = { 
-                    x - disparityBufferReal[x] - srcX1, 
-                    y - disparityBufferImag[x] - srcY1,
-                };
-
-                double value = bicubic_interpolation(data, inDataType, shift);
-
-                store_in_buffer(outputBuffer, x, outDataType, value);
-                
-                // Keep statistical record of the valid pixels
-                stats.UpdateState( value );
-            }
-            else
-            {
-                store_in_buffer(outputBuffer, x, outDataType, noDataValue);
+            int elmIdx = xGridStep * disparityGridElementStride;
+            for (int i = 0; i < disparityGridElementStride; ++i) {
+                rowM2[i+elmIdx] = rowM1[i+elmIdx] = rowM0[i+elmIdx];
+                rowP2[i+elmIdx] = rowP1[i+elmIdx] = rowP0[i+elmIdx];
+             }
+        }
+        
+        const int xLow = 0;
+        const int xHigh = xGridStepCount-1;
+        float *colM2 = &disparityGrid[(xLow -2) * disparityGridElementStride];
+        float *colM1 = &disparityGrid[(xLow -1) * disparityGridElementStride];
+        float *colM0 = &disparityGrid[(xLow -0) * disparityGridElementStride];
+        float *colP0 = &disparityGrid[(xHigh+0) * disparityGridElementStride];
+        float *colP1 = &disparityGrid[(xHigh+1) * disparityGridElementStride];
+        float *colP2 = &disparityGrid[(xHigh+2) * disparityGridElementStride];
+        for (int yGridStep = -2; yGridStep < yGridStepCount+2; ++yGridStep) 
+        {
+            int rowIdx = yGridStep * disparityGridLineStride;
+            for (int i = 0; i < disparityGridElementStride; i++) {
+                colM2[i + rowIdx] = colM1[i + rowIdx] = colM0[i + rowIdx];
+                colP2[i + rowIdx] = colP1[i + rowIdx] = colP0[i + rowIdx];
             }
         }
+    }
 
-        outputRasterData->RasterIO(GF_Write, 0, y, mWidth, 1, outputBuffer, mWidth, 1, outDataType, 0, 0);
+    // Initialise variables for input data memory structures
+    const int inWidth = inputDataRaster ? inputDataRaster->GetXSize() : 1;
+    const int inHeight = inputDataRaster ? inputDataRaster->GetYSize() : 1;
+    const GDALDataType inDataType = inputDataRaster ? inputDataRaster->GetRasterDataType() : GDT_Byte;
+    const int inDataTypeSize = GDALGetDataTypeSize(inDataType) / 8;
+    const int inDataBufferSize = inWidth * inHeight * inDataTypeSize;
+    const int inDataPixelStride = 1;
+    const int inDataLineStride = inWidth * inDataPixelStride;
+    
+    errno = 0;
+    // Allocate a buffer up to 256MiB of memory in size for input data. Anything over this use RasterIO function.
+    void *inDataBuffer = (inputDataRaster && inDataBufferSize <= 256*1024*1024) ? malloc(inDataBufferSize) : NULL;
+    intptr_t inDataBufferEnd = (intptr_t)inDataBuffer + inDataBufferSize;
+    unsigned short *inData = (unsigned short *)inDataBuffer;
+
+    if (inData != NULL) 
+    {
+        monitor.SetProgress(workBase + (3 * workUnit));
+        monitor.Log("Loading input data into memory buffer ...");
+
+        // Read all the input data into memory for quicker accessing
+        inputDataRaster->RasterIO(GF_Read, 0, 0, mWidth, mHeight, inData, mWidth, mHeight, inDataType, 0, inDataLineStride * inDataTypeSize);
+
+        monitor.Log("Transforming input data ...");
+    }
+    else if (errno == ENOMEM)
+    {
+        monitor.Log(QString("Unable to allocate memory buffer. (%1 bytes) Fallback to file access.").arg(inDataBufferSize));
+    }
+
+    workBase += 10 * workUnit;
+    monitor.SetProgress(workBase);
+
+    for (int y = 0; y < mHeight; ++y) 
+    {
+        double yGridStep = (y - yGridStepSize/2) / yGridStepSize;
+
+        if (monitor.IsCanceled())
+            break;
+
+        if (y % 8 == 0)
+            monitor.SetProgress(workBase + workUnit * y);
+
+        for (int x = 0; x < mWidth; ++x)
+        {
+            double xGridStep =  (x - xGridStepSize/2) / xGridStepSize;
+            
+            // ----------------------------------------------------------------
+
+            double n;
+            int start[2] = { floor(xGridStep), floor(yGridStep) };
+            double frac[2] = { modf(xGridStep, &n), modf(yGridStep, &n) };
+            double result[2];
+#if 0
+            {   // No interpolation
+                int col1 = start[0]*disparityGridElementStride;
+                int row1 = start[1]*disparityGridLineStride;
+                float *p = &disparityGrid[col1 + row1];
+
+                result[0] = p[0];
+                result[1] = p[1];
+            }
+#elif 0
+            {   // Bilinear interpolation
+                int col1 = (start[0]+0)*disparityGridElementStride;
+                int col2 = (start[0]+1)*disparityGridElementStride;
+                int row1 = (start[1]+0)*disparityGridLineStride;
+                int row2 = (start[1]+1)*disparityGridLineStride;
+
+                float *p11 = &disparityGrid[col1 + row1]; // col = 1, row = 1
+                float *p12 = &disparityGrid[col1 + row2]; // col = 1, row = 2
+                float *p21 = &disparityGrid[col2 + row1]; // col = 2, row = 1
+                float *p22 = &disparityGrid[col2 + row2]; // col = 2, row = 2
+
+                QgsComplex p1(p11[0], p11[1]);
+                QgsComplex p2(p21[0], p21[1]);
+                QgsComplex p3(p12[0], p12[1]);
+                QgsComplex p4(p22[0], p22[1]);
+
+                if (xGridStep < 0.0) 
+                    frac[0] = 1.0 + frac[0];
+                if (yGridStep < 0.0)
+                    frac[1] = 1.0 + frac[1];
+
+                // Reference: http://en.wikipedia.org/wiki/Bilinear_interpolation
+                QgsComplex top    = p1*(1.0 - frac[0]) + p2*frac[0];
+                QgsComplex bottom = p3*(1.0 - frac[0]) + p4*frac[0];
+                QgsComplex middle = top*(1.0 - frac[1]) + bottom*frac[1];
+                
+                result[0] = middle.real();
+                result[1] = middle.imag();
+            }
+#else
+            {   // Bicubic interpolation
+                start[0] -= 1;
+                start[1] -= 1;
+
+                if (xGridStep < 0.0) 
+                    frac[0] = 1.0 + frac[0];
+                if (yGridStep < 0.0)
+                    frac[1] = 1.0 + frac[1];
+
+                bicubic_interpolate_complex(
+                    disparityGrid, 
+                    disparityGridElementStride, 
+                    disparityGridLineStride, 
+                    start,  
+                    frac, 
+                    result);
+            }
+#endif
+            disparityMapBufferX[x] = result[0];
+            disparityMapBufferY[x] = result[1];
+
+            if (inputDataRaster == NULL)
+                continue; // no input data, skip the reset of the loop
+
+            // ----------------------------------------------------------------
+            
+            int source[2] = { floor(x - result[0]), floor(y - result[1]) };
+            double shift[2] = { fabs(modf(x - result[0], &n)), fabs(modf(y - result[1], &n)) };
+            double data[4*4]; /* 'double' is the largest datatype */
+
+            if (inData) 
+            {   // Fetch data from input data buffer
+                int col = (source[0]-1) * inDataPixelStride;
+                int row = (source[1]-1) * inDataLineStride;
+                intptr_t top = (intptr_t)inData + (col+row)*inDataTypeSize;
+                for (int j = 0; j < 4; j++) 
+                {                 
+                    row = j*inDataLineStride;
+                    for (int i = 0; i < 4; i++) 
+                    {
+                        col = i*inDataPixelStride;                            
+                        intptr_t p = top + (col+row)*inDataTypeSize;
+
+                        bool valid = (intptr_t)inDataBuffer <= p && p < inDataBufferEnd;
+                        
+                        switch (inDataType) 
+                        {
+                        case GDT_Byte:
+                            ((unsigned char *)data)[i+j*4] = valid ? *(unsigned char *)p : 0;
+                            break;
+                        case GDT_Int16:
+                        case GDT_UInt16:
+                            ((unsigned short *)data)[i+j*4] = valid ? *(unsigned short *)p : 0;
+                            break;
+                        case GDT_Int32:
+                        case GDT_UInt32:
+                            ((unsigned int *)data)[i+j*4] = valid ? *(unsigned int *)p : 0;
+                            break;                            
+                        case GDT_Float32:
+                            ((float *)data)[i+j*4] = valid ? *(float *)p : 0;
+                            break;                           
+                        case GDT_Float64:
+                            ((double *)data)[i+j*4] = valid ? *(double *)p : 0;
+                            break;
+                        default:
+                            Q_ASSERT(0 && "Proramming error");
+                            break;
+                        }
+                    }
+                }
+            }
+            else 
+            {   // Fetch directly from file (slower, used for LARGE files that don't fit in memory)                  
+                if ((1 <= source[0] && source[0] < inWidth-2) &&
+                    (1 <= source[1] && source[1] < inHeight-2))
+                {
+                    inputDataRaster->RasterIO(GF_Read, source[0]-1, source[1]-1, 4, 4, data, 4, 4, inDataType, 0, 0);
+                }
+                else
+                {
+                    load_from_raster(inputDataRaster, source[0]-1, source[1]-1, data, 4, 4, inDataType);
+                }
+            }
+
+            double value = bicubic_interpolation(data, inDataType, shift);
+
+            store_in_buffer(outputBuffer, x, outDataType, value);
+
+            // Keep statistical record of the valid pixels
+            stats.UpdateState( value );
+
+            // ----------------------------------------------------------------
+        }
+        if (disparityMapX) {
+            err = disparityMapX->RasterIO(GF_Write, 0, y, mWidth, 1, disparityMapBufferX, mWidth, 1, GDT_Float32, 0, 0);
+        }
+        if (disparityMapY) {
+            err = disparityMapY->RasterIO(GF_Write, 0, y, mWidth, 1, disparityMapBufferY, mWidth, 1, GDT_Float32, 0, 0);
+        }
+        if (outputDataRaster) {
+            err = outputDataRaster->RasterIO(GF_Write, 0, y, mWidth, 1, outputBuffer, mWidth, 1, outDataType, 0, 0);
+        }
     }
 
     stats.FinaliseState();
-    outputRasterData->SetStatistics(stats.Min, stats.Max, stats.Mean, stats.StdDeviation);
-
+    if (outputDataRaster) {
+        outputDataRaster->SetStatistics(stats.Min, stats.Max, stats.Mean, stats.StdDeviation);
+    }
+   
+    free(inDataBuffer);
+    free(disparityGridBuffer);
+    free(disparityMapBufferY);
+    free(disparityMapBufferX);
     free(outputBuffer);
-    free(disparityBufferImag);
-    free(disparityBufferReal);
 }
 
 /* ************************************************************************* */
 
 static void copyBand(QgsProgressMonitor &monitor,
-    GDALRasterBand *srcRasterBand, 
-    GDALRasterBand *dstRasterBand, 
-    int xOffset = 0, 
+    GDALRasterBand *srcRasterBand,
+    GDALRasterBand *dstRasterBand,
+    int xOffset = 0,
     int yOffset = 0)
 {
     Q_CHECK_PTR(srcRasterBand);
@@ -1000,7 +1116,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
         monitor.Log(QString("Eliminating bad points from disparity map ..."));
 
         // Remove faulty points that is outside the mean/stddev area
-        eliminateDisparityMap(monitor, disparityGridBand, stats);
+        //eliminateDisparityMap(monitor, disparityGridBand, stats);
     }
 
     if (monitor.IsCanceled()) {
@@ -1017,8 +1133,10 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
     unlink(outputPath.toAscii().data()); // Remove the old file
     char ** papszOptions = NULL;
 
-    papszOptions = CSLSetNameValue( papszOptions, "PHOTOMETRIC", "RGB" );
-    papszOptions = CSLSetNameValue( papszOptions, "ALPHA", "NO" );    
+    if (mBands.size() > 2) {
+        papszOptions = CSLSetNameValue( papszOptions, "PHOTOMETRIC", "RGB" );
+        papszOptions = CSLSetNameValue( papszOptions, "ALPHA", "NO" );    
+    }
 
     GDALDataset *outputDataSet = driver->Create(outputPath.toAscii().data(), mWidth, mHeight, mBands.size(), outputType, papszOptions);
     if (outputDataSet == NULL) {
@@ -1099,7 +1217,7 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
     Q_CHECK_PTR(disparityYDataSet);
 
     workBase = monitor.GetProgress();
-    workUnit = (98.0 - workBase) / (2*mBands.size() - 1); 
+    workUnit = (98.0 - workBase) / (2*mBands.size() + 1); 
     // Each band uses 2 workunits, except reference band which use only 1 workunit.
     monitor.SetWorkUnit(workUnit);
 
@@ -1139,29 +1257,22 @@ void QgsImageAligner::performImageAlignment(QgsProgressMonitor &monitor,
             StatisticsState stats;
             outputRaster->ComputeStatistics(false, &stats.Min, &stats.Max, &stats.Mean, &stats.StdDeviation, NULL, NULL);
             outputRaster->SetStatistics(stats.Min, stats.Max, stats.Mean, stats.StdDeviation);
-            continue;
         }
+        else 
+        {
+            monitor.Log(QString("Transforming image data for image band #%1 ...").arg(1+i));
 
-        j += 1;
+            j += 1;
 
-        monitor.Log(QString("Estimating disparity X & Y map for band #%1 ...").arg(1+i));
+            transformDisparityMap(monitor,
+                disparityGridDataset->GetRasterBand(1+i),    
+                disparityXDataSet->GetRasterBand(j), 
+                disparityYDataSet->GetRasterBand(j),
+                mBands[i],
+                outputRaster);
 
-        estimateDisparityMap(monitor,
-            disparityGridDataset->GetRasterBand(1+i),    
-            disparityXDataSet->GetRasterBand(j), 
-            disparityYDataSet->GetRasterBand(j));
-
-        if (monitor.IsCanceled())
-            break;
-
-        monitor.SetProgress(workBase + workUnit * k++);
-
-        monitor.Log(QString("Applying disparity map to band #%1 ...").arg(1+i));
-        applyDisparityMap(monitor,
-            mBands[i],
-            disparityXDataSet->GetRasterBand(j), 
-            disparityYDataSet->GetRasterBand(j), 
-            outputRaster);
+            k += 1;
+        }
     }
 
     GDALClose(disparityYDataSet);

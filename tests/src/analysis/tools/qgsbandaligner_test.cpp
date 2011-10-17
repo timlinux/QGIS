@@ -30,6 +30,7 @@ Email                : sherman at mrcc dot com
 
 #include <cpl_string.h>
 #include <qgsbandaligner.h>
+#include <qgsregioncorrelator.h>
 
 //qgis includes...
 #include <qgsapplication.h>
@@ -54,6 +55,7 @@ class TestBandAlignerTool: public QObject
 
     /** Our tests proper begin here */
     void basicBandAlignerTest();
+    void verifyDisparityValues();
 
   private:
     bool render( QString theFileName );
@@ -102,22 +104,24 @@ void TestBandAlignerTool::logProgress(QString message)
 }
 
 void TestBandAlignerTool::basicBandAlignerTest()
-{
-    const bool cleanupOutput = true;
-
+{    
+    const bool cleanupOutput = false;
+    
     QStringList inputPaths;
     QString outputPath;
 
+    QString dataDir = QString(TEST_DATA_DIR);
     QString id = "I0BDA";
-    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C01_F03_MSSK14K_0.tif");
-    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C02_F03_MSSK14K_0.tif");
-    inputPaths.append(QString(TEST_DATA_DIR) + "/" + id + "/16bit/" + id + "_P03_S02_C00_F03_MSSK14K_0.tif");
-    //outputPath = QDir::tempPath() + "test_bandaligner-result" + ".tif";
-    outputPath = "J:/tmp/test3.tif";
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C01_F03_MSSK14K_0.tif");
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C02_F03_MSSK14K_0.tif");
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C00_F03_MSSK14K_0.tif");
+
+    outputPath = QDir::tempPath() + QDir::separator() + "test_bandaligner-result" + ".tif";
+    printf("%s\n", outputPath.toAscii().data());
 
     QgsBandAligner *aligner = new QgsBandAligner(inputPaths, outputPath);
     aligner->SetReferenceBand(1);
-    aligner->SetBlockSize(125);
+    aligner->SetBlockSize(75);
 #if 1
     QFileInfo o(outputPath);
     QString dispXPath = o.path() + QDir::separator() + o.completeBaseName() + ".xmap" + ".tif";
@@ -129,7 +133,13 @@ void TestBandAlignerTool::basicBandAlignerTest()
     QgsProgressMonitor monitor;
     QObject::connect(&monitor, SIGNAL(logged(QString)), this, SLOT(logProgress(QString)));
   
+    QTime runTime;   
+    runTime.start();
+
     QgsBandAligner::execute(&monitor, aligner);
+
+    int tm = runTime.elapsed();
+    printf(" Execution time was %f seconds", tm/double(1000.0));
     
     // ----- Compare the results and generate the report -----
     QFileInfo myRasterFileInfo( outputPath );
@@ -154,6 +164,141 @@ void TestBandAlignerTool::basicBandAlignerTest()
         unlink(dispYPath.toAscii().data());
 #endif
     }
+}
+
+void copyBand(GDALRasterBand *srcRasterBand, GDALRasterBand *dstRasterBand, int xOffset = 0, int yOffset = 0)
+{
+    Q_CHECK_PTR(srcRasterBand);
+    Q_CHECK_PTR(dstRasterBand);
+
+    int width = srcRasterBand->GetXSize();
+    int height = srcRasterBand->GetYSize();
+    GDALDataType dataType = srcRasterBand->GetRasterDataType();
+    int dataSize = GDALGetDataTypeSize(dataType) / 8;
+
+    Q_ASSERT(dataSize > 0);
+    
+    void *scanline = calloc(width + abs(xOffset), dataSize);
+    
+    // Calculate the start pointer for the read & write buffers
+    void *scanline_write = (void *)((intptr_t)scanline + dataSize * (xOffset > 0 ? xOffset : 0));
+    void *scanline_read = (void *)((intptr_t)scanline + dataSize * (xOffset >= 0 ? 0 : -xOffset));
+    
+    for (int y = 0; y < height; ++y)
+    {
+        if (0 <= (y + yOffset) && (y + yOffset) < height) {
+            srcRasterBand->RasterIO(GF_Read, 0, y + yOffset, width, 1, scanline_read, width, 1, dataType, 0, 0);
+        } else {
+            memset(scanline_read, 0, width * dataSize);
+        }        
+        dstRasterBand->RasterIO(GF_Write, 0, y, width, 1, scanline_write, width, 1, dataType, 0, 0);
+    }
+
+    free(scanline);
+}
+
+void TestBandAlignerTool::verifyDisparityValues()
+{
+    QStringList inputPaths;
+    QString outputPath;
+    QString tmpBand;
+
+    if (GDALGetDriverCount() == 0)
+        GDALAllRegister();  
+
+    QString dataDir = QString(TEST_DATA_DIR);
+    QString id = "I0BDA";
+
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C01_F03_MSSK14K_0.tif");
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C02_F03_MSSK14K_0.tif");
+    inputPaths.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C00_F03_MSSK14K_0.tif");
+
+    outputPath = QDir::tempPath() + QDir::separator() + "test_bandaligner_verifier" + ".tif";
+    
+    int offsetX = +10;
+    int offsetY = +30;
+
+    tmpBand = QDir::tempPath() + QDir::separator() + "test_bandaligner_offsetband" + ".tif";
+    { 
+        /* create a copy that is shifted to test band alignment */
+
+        GDALDriver *driver = GetGDALDriverManager()->GetDriverByName("GTiff");
+        GDALDataset *dsi = (GDALDataset*) GDALOpen(inputPaths[0].toAscii().data(), GA_ReadOnly);
+        GDALDataset *dso = driver->CreateCopy(tmpBand.toAscii().data(), dsi, FALSE, NULL, NULL, NULL);
+    
+        copyBand(dsi->GetRasterBand(1), dso->GetRasterBand(1), offsetX, offsetY);
+
+        GDALClose(dso);
+        GDALClose(dsi);        
+    }
+
+    QStringList list;
+    list.append(dataDir + "/" + id + "/16bit/" + id + "_P03_S02_C01_F03_MSSK14K_0.tif");
+    list.append(tmpBand);
+
+    QgsBandAligner *aligner = new QgsBandAligner(list, outputPath);
+    aligner->SetReferenceBand(1);
+    aligner->SetBlockSize(125);
+#if 1
+    QFileInfo o(outputPath);
+    QString dispXPath = o.path() + QDir::separator() + o.completeBaseName() + ".xmap" + ".tif";
+    QString dispYPath = o.path() + QDir::separator() + o.completeBaseName() + ".ymap" + ".tif";
+    aligner->SetDisparityXPath(dispXPath);
+    aligner->SetDisparityYPath(dispYPath);
+#endif
+
+    QgsProgressMonitor monitor;
+    QObject::connect(&monitor, SIGNAL(logged(QString)), this, SLOT(logProgress(QString)));    
+
+    QTime runTime;   
+    runTime.start();
+
+    QgsBandAligner::execute(&monitor, aligner);
+
+    int tm = runTime.elapsed();
+    printf(" Execution time was %f seconds", tm/double(1000.0));
+
+    {
+        // Calculate statistics on disparity map
+        GDALDataset *ds;
+        double min, max, mean, stddev, errX, errY;
+
+        printf("\nOFFSET:\n");
+        printf("  X      = %4d\n", offsetX);
+        printf("  Y      = %4d\n", offsetY);
+            
+        ds = (GDALDataset*) GDALOpen(dispXPath.toAscii().data(), GA_ReadOnly);
+        ds->GetRasterBand(1)->ComputeStatistics(false, &min, &max, &mean, &stddev, NULL, NULL);
+        GDALClose(ds);
+
+        errX = fabs(offsetX - mean);
+
+        printf("\nDISPARITY MAP X:\n");
+        printf("  min    = %7.3f\n", min);
+        printf("  max    = %7.3f\n", max);
+        printf("  mean   = %10f\n", mean);
+        printf("  stddev = %10f\n", stddev);
+        printf("  err    = %10f\n", errX);
+
+        ds = (GDALDataset*) GDALOpen(dispYPath.toAscii().data(), GA_ReadOnly);
+        ds->GetRasterBand(1)->ComputeStatistics(false, &min, &max, &mean, &stddev, NULL, NULL);
+        GDALClose(ds);
+
+        errY = fabs(offsetY - mean);
+
+        printf("\nDISPARITY MAP Y:\n");
+        printf("  min    = %7.3f\n", min);
+        printf("  max    = %7.3f\n", max);
+        printf("  mean   = %10f\n", mean);
+        printf("  stddev = %10f\n", stddev);
+        printf("  err    = %10f\n", errY);
+
+        Q_ASSERT(errX < 0.01);
+        Q_ASSERT(errY < 0.01);
+    }    
+    
+    // Remove temporary file afterwards 
+    unlink(tmpBand.toAscii().data());
 }
 
 //
