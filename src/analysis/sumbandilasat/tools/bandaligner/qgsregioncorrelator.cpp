@@ -636,7 +636,7 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
 /* ************************************************************************* */
 #if 1 // Unit tests for find region function
 
-#ifdef _MS_VER
+#ifdef _MSC_VER
 #define API __declspec(dllexport)
 #else
 #define API
