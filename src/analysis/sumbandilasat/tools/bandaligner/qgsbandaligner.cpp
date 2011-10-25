@@ -120,7 +120,6 @@ void QgsBandAligner::executeDisparity(QgsProgressMonitor &monitor)
     Q_ASSERT(mReferenceBand < inputBands.size());    
 
     QTime stopwatch;
-    QString disparityPath;
 
     if (monitor.IsCanceled()) 
         goto exit1;
@@ -130,7 +129,7 @@ void QgsBandAligner::executeDisparity(QgsProgressMonitor &monitor)
 
     QgsImageAligner::performImageAlignment(monitor, 
         mOutputPath, mDisparityXPath, mDisparityYPath, 
-        disparityPath, inputBands, mReferenceBand, mBlockSize);
+        mDisparityGridPath, inputBands, mReferenceBand, mBlockSize);
       
     monitor.Log(QString("Band alignment completed in %1 seconds.").arg(stopwatch.elapsed()/1000));
     

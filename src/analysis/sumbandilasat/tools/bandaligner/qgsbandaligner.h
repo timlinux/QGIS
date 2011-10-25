@@ -59,6 +59,9 @@ class ANALYSIS_EXPORT QgsBandAligner : public QObject
     inline QString GetDisparityYPath() { return mDisparityYPath; }
     inline void SetDisparityYPath(QString value) { mDisparityYPath = value; }
 
+    inline QString GetDisparityGridPath() { return mDisparityGridPath; }
+    inline void SetDisparityGridPath(QString value) { mDisparityGridPath = value; }
+
     inline QStringList GetInputPaths() { return mInputPaths; }
     inline void AppendInputPath(QString value) { mInputPaths.append(value); }
     inline void ClearInputPaths() { mInputPaths.clear(); }
@@ -80,6 +83,7 @@ class ANALYSIS_EXPORT QgsBandAligner : public QObject
     QString mOutputPath;
     QString mDisparityXPath;
     QString mDisparityYPath;
+    QString mDisparityGridPath;
     QStringList mInputPaths;
     QgsBandAligner::Transformation mTransformationType; // unused
     int mMinimumGCPs; // unused

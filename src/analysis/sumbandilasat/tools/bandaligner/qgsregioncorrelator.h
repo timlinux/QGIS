@@ -1,8 +1,11 @@
 #ifndef __QGSREGIONCORRELATOR_H__
 #define __QGSREGIONCORRELATOR_H__
 
-namespace QgsRegionCorrelator 
+#include <fftw3.h>
+
+class QgsRegionCorrelator 
 { 
+public:
     struct QgsRegion
     {
         unsigned int *data;
@@ -10,30 +13,36 @@ namespace QgsRegionCorrelator
         int height;
     };
 
-    struct QgsResult
-    {
-        QgsResult(bool a, double b = -1, double c = -1, int d = -1, 
-                  double e = -1, double f = -1, double g = -1)
-        {
-            wasSet = a;
-            x = b;
-            y = c;
-            dimension = d;
-            match = e;
-            confidence = f;
-            snr = g;
-        }
-        bool wasSet;
-        double x;
-        double y;
-        int dimension;
-        double match;
-        double confidence;
-        double snr;
-    };
+public:
+    QgsRegionCorrelator(int szX, int sxY, int usfac = 10);
+    ~QgsRegionCorrelator();
 
-    QgsResult findRegion(QgsRegion &regionRef, QgsRegion &regionNew, int bits);
+    void findRegion(int bits, double &colShift, double &rowShift, double *nrmsError = NULL, double *diffPhase = NULL);
 
-} // namespace
+    inline int getRegionWidth() { return m_region_width; }
+    inline int getRegionHeight() { return m_region_height; }
+
+    inline unsigned int *getRegion1() { return m_region1_data; }
+    inline unsigned int *getRegion2() { return m_region2_data; }
+
+private:
+    int m_usfac;
+
+    int m_region_width;
+    int m_region_height;
+
+    unsigned int *m_region1_data;
+    unsigned int *m_region2_data;
+
+    fftw_complex *m_buf1ft;
+    fftw_complex *m_buf2ft;
+    fftw_complex *m_buftmp;
+    fftw_complex *m_bufcc;
+    size_t m_ccsize;
+
+    fftw_plan m_plan1;
+    fftw_plan m_plan2;
+    fftw_plan m_plan3;
+}; // class
 
 #endif /* __QGSREGIONCORRELATOR_H__ */
