@@ -220,7 +220,13 @@ void copyBand(GDALRasterBand *srcRasterBand, GDALRasterBand *dstRasterBand, int 
 
 /* ************************************************************************* */
 
-extern "C" __declspec(dllimport) int QgsRegionCorrelator_test1();
+#ifdef _MSC_VER
+#define API __declspec(dllimport)
+#else
+#define API
+#endif
+
+extern "C" API int QgsRegionCorrelator_test1();
 
 void TestBandAlignerTool::correlatorTests()
 {

@@ -28,7 +28,7 @@ static inline double fix(double value)
         return ceil(value);
     else
         return floor(value);
-}  
+}
 
 /* ************************************************************************* */
 
@@ -86,7 +86,7 @@ static gsl_complex *calculateGradient(gsl_complex *buffer, int rowStride,
             val = scale + val;
         }
         GSL_SET_REAL(&buffer[rowStride*r + 0], floor(val / dx));
-    
+
         bool neg;
         for (int c = 1; c < width-1; ++c)
         {
@@ -344,7 +344,7 @@ QgsRegionCorrelator::QgsRegionCorrelator(int szX, int szY, int usfac)
 
     m_region_width = PowerOfTwoRoundUp(szX);
     m_region_height = PowerOfTwoRoundUp(szY);
-       
+
     m_region1_data = (unsigned int *)fftw_malloc(m_region_width * m_region_height * sizeof(unsigned int));
     m_region2_data = (unsigned int *)fftw_malloc(m_region_width * m_region_height * sizeof(unsigned int));
 
@@ -355,7 +355,7 @@ QgsRegionCorrelator::QgsRegionCorrelator(int szX, int szY, int usfac)
     // CC matrix is used in two places, so take the biggest size
     m_ccsize = std::max(2*m_region_width, int(ceil(usfac*1.5))) * std::max(2*m_region_height, int(ceil(usfac*1.5)));
     m_bufcc = (fftw_complex *)fftw_malloc(m_ccsize * sizeof(gsl_complex));
-    
+
     const unsigned int flag = (1 ? FFTW_MEASURE : FFTW_ESTIMATE);
     m_plan1 = fftw_plan_dft_2d(m_region_width, m_region_height, m_buf1ft, m_buf1ft, FFTW_FORWARD, flag);
     m_plan2 = fftw_plan_dft_2d(m_region_width, m_region_height, m_buf2ft, m_buf2ft, FFTW_FORWARD, flag);
@@ -434,7 +434,7 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
     //  cloc=loc2;
     //  CCmax=CC(rloc,cloc);
     //  m1 = m; n1 = n;
-    //    
+    //
     const int usfac = m_usfac;
     const int m1 = m_region_width;
     const int n1 = m_region_height;
@@ -442,14 +442,14 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
     const int n2 = n1*2;
 
     gsl_complex *CC = (gsl_complex *)m_bufcc;    
-    Q_ASSERT((m2*n2) <= m_ccsize);
+    Q_ASSERT((m2*n2) <= (int)m_ccsize);
     memset(CC, 0, m2*n2 * sizeof(gsl_complex));
 
     for (int r = 0; r < m1; ++r) 
     {
         int rr = r + (m2 - m1)/2;
         for (int c = 0; c < n1; ++c) 
-        {           
+        {
             int cc = c + (n2 - n1)/2;
             int i = idx_fftshift(r,c, m1,n1);
             int j = idx_ifftshift(rr,cc, m2,n2);
@@ -458,8 +458,8 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
             Q_ASSERT(0 <= j && j < (m2*m2));
 
             gsl_complex val = gsl_complex_mul(buf1ft[i], gsl_complex_conjugate(buf2ft[i]));
-            
-            double mag = gsl_complex_abs(val);            
+
+            double mag = gsl_complex_abs(val);
             if (mag > DBL_EPSILON)
             {
                 CC[j] = gsl_complex_div_real(val, mag);
@@ -472,7 +472,7 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
     gsl_complex CCmax;
 
     // Inverse FFT operation
-    fftw_execute(m_plan3);    
+    fftw_execute(m_plan3);
 
     // Find the location of the maximum real value in CC matrix
     gsl_complex_find_max(CC, m2, n2, rloc, cloc, CCmax);
@@ -511,10 +511,10 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
         // MATLAB:
         //  %%% DFT computation %%%
         //  % Initial shift estimate in upsampled grid
-        //  row_shift = round(row_shift*usfac)/usfac; 
-        //  col_shift = round(col_shift*usfac)/usfac;     
+        //  row_shift = round(row_shift*usfac)/usfac;
+        //  col_shift = round(col_shift*usfac)/usfac;
         //  % Center of output array at dftshift+1
-        //  dftshift = fix(ceil(usfac*1.5)/2); 
+        //  dftshift = fix(ceil(usfac*1.5)/2);
         //
         row_shift = round(row_shift * usfac) / usfac;
         col_shift = round(col_shift * usfac) / usfac;
@@ -530,7 +530,7 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
         //  CCmax = CC(rloc,cloc);
         //
         gsl_complex *buf = (gsl_complex *)m_buftmp;
-        
+
         for (int i = 0; i < m1*n1; ++i) 
         {
             buf[i] = gsl_complex_mul(buf2ft[i], gsl_complex_conjugate(buf1ft[i]));
@@ -538,15 +538,15 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
 
         int mo = ceil(usfac*1.5);
         int no = ceil(usfac*1.5);
-        Q_ASSERT((mo*no) <= m_ccsize);
+        Q_ASSERT((mo*no) <= (int)m_ccsize);
 
         dftUpSample(buf, m1, n1, CC, mo, no, usfac, dftshift - row_shift*usfac, dftshift - col_shift*usfac);        
-        
+
         for (int i = 0; i < mo*no; ++i)
         {
             CC[i] = gsl_complex_div_real(gsl_complex_conjugate(CC[i]), (m1*usfac)*(n1*usfac));
         }
-        
+
         gsl_complex_find_max(CC, mo, no, rloc, cloc, CCmax);
 
         if (nrmsError)
@@ -563,10 +563,10 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
             for (int i = 0; i < m1*n1; ++i) 
             {
                 buf[i] = gsl_complex_mul(buf1ft[i], gsl_complex_conjugate(buf1ft[i]));
-            }    
+            }
             dftUpSample(buf, m1, n1, &tmp, 1, 1, usfac);
             rg00 = gsl_complex_div_real(tmp, (m1*usfac)*(n1*usfac));
-            
+
             for (int i = 0; i < m1*n1; ++i) 
             {
                 buf[i] = gsl_complex_mul(buf2ft[i], gsl_complex_conjugate(buf2ft[i]));
@@ -599,7 +599,7 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
         rg00 = gsl_complex_div_real(rg00_sum, m1*n1);
         rf00 = gsl_complex_div_real(rf00_sum, m1*n1);
     }
-    
+
     // MATLAB:
     //  error = 1.0 - CCmax.*conj(CCmax)/(rg00*rf00);
     //  error = sqrt(abs(error));
@@ -618,9 +618,9 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
     // Return the row shift, column shift, normalised RMS error and diff_phase values
     rowShift = row_shift;
     colShift = col_shift;
-    if (nrmsError) 
+    if (nrmsError)
     {
-        gsl_complex one; 
+        gsl_complex one;
         GSL_SET_COMPLEX(&one, 1.0, 0.0);
         gsl_complex e0 = gsl_complex_mul(CCmax, gsl_complex_conjugate(CCmax));
         gsl_complex e1 = gsl_complex_div(e0, gsl_complex_mul(rg00, rf00));
@@ -636,7 +636,11 @@ void QgsRegionCorrelator::findRegion(int bits, double &colShift, double &rowShif
 /* ************************************************************************* */
 #if 1 // Unit tests for find region function
 
-#define API __declspec(dllexport) 
+#ifdef _MS_VER
+#define API __declspec(dllexport)
+#else
+#define API
+#endif
 
 extern "C" API int QgsRegionCorrelator_test1();
 
