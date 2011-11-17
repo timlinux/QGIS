@@ -21,7 +21,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 #include <QList>
 
@@ -29,10 +28,9 @@
 #include <QDomElement>
 
 #include "qgsattributeaction.h"
+#include "qgspythonrunner.h"
 #include "qgsrunprocess.h"
 #include "qgsvectorlayer.h"
-
-static const char * const ident_ = "$Id$";
 
 void QgsAttributeAction::addAction( QgsAction::ActionType type, QString name, QString action, bool capture )
 {
@@ -67,11 +65,17 @@ void QgsAttributeAction::doAction( int index, const QgsAttributeMap &attributes,
   {
     if ( executePython )
     {
+      // deprecated
       executePython( expandedAction );
     }
     else if ( smPythonExecute )
     {
+      // deprecated
       smPythonExecute( expandedAction );
+    }
+    else
+    {
+      QgsPythonRunner::run( expandedAction );
     }
   }
   else
@@ -99,7 +103,7 @@ QString QgsAttributeAction::expandAction( QString action, const QgsAttributeMap 
   // for the actual substitutions.
 
   QString expanded_action;
-  if ( clickedOnValue >= 0 && attributes.contains( clickedOnValue ) )
+  if ( attributes.contains( clickedOnValue ) )
     expanded_action = action.replace( "%%", attributes[clickedOnValue].toString() );
   else
     expanded_action = action;

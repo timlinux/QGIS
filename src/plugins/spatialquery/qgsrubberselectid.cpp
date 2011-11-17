@@ -16,7 +16,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 #include "qgsrubberselectid.h"
 
@@ -55,7 +54,7 @@ void QgsRubberSelectId::setStyle( int colorRed, int colorGreen, int colorBlue, i
   setStyle();
 } // void QgsRubberSelectId::setColor(int colorRed, int colorGreen, int colorBlue, float alfa, width)
 
-void QgsRubberSelectId::addFeature( QgsVectorLayer* lyr, int fid )
+void QgsRubberSelectId::addFeature( QgsVectorLayer* lyr, QgsFeatureId fid )
 {
   bool isPolygon = ( lyr->geometryType() == QGis::Polygon );
   if ( mIsPolygon != isPolygon )

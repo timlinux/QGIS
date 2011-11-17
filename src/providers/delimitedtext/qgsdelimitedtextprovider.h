@@ -15,7 +15,6 @@
  *                                                                         *
  ***************************************************************************/
 
-/* $Id$ */
 
 #include "qgsvectordataprovider.h"
 #include "qgscoordinatereferencesystem.h"
@@ -223,6 +222,7 @@ class QgsDelimitedTextProvider : public QgsVectorDataProvider
     long mNumberFeatures;
     int mSkipLines;
     int mFirstDataLine; // Actual first line of data (accounting for blank lines)
+    QString mDecimalPoint;
 
     //! Storage for any lines in the file that couldn't be loaded
     QStringList mInvalidLines;

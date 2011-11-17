@@ -19,6 +19,8 @@ class GdalToolsDialog(QWidget, Ui_Widget, BasePluginWidget):
 
       gdalVersion = Utils.GdalConfig.version()
       self.useDirAsOutput = gdalVersion < "1.7.0"
+      if self.useDirAsOutput:
+	      self.label_2.setText( QApplication.translate("GdalToolsWidget", "&Output directory for contour lines (shapefile)") )
 
       self.outSelector.setType( self.outSelector.FILE )
 
@@ -52,7 +54,7 @@ class GdalToolsDialog(QWidget, Ui_Widget, BasePluginWidget):
   def fillOutputFileEdit(self):
       if not self.useDirAsOutput:
         lastUsedFilter = Utils.FileFilter.lastUsedVectorFilter()
-        outputFile, encoding = Utils.FileDialog.getOpenFileName(self, self.tr( "Select where to save the Contour output" ), Utils.FileFilter.allVectorsFilter(), lastUsedFilter, True)
+        outputFile, encoding = Utils.FileDialog.getSaveFileName(self, self.tr( "Select where to save the Contour output" ), Utils.FileFilter.allVectorsFilter(), lastUsedFilter, True)
       else:
         outputFile, encoding = Utils.FileDialog.getExistingDirectory(self, self.tr( "Select where to save the Contour output" ), True)
 

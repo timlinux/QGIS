@@ -83,10 +83,17 @@ void QgsStyleV2ManagerDialog::populateTypes()
   {
     switch ( mStyle->symbolRef( symbolNames[i] )->type() )
     {
-      case QgsSymbolV2::Marker: markerCount++; break;
-      case QgsSymbolV2::Line: lineCount++; break;
-      case QgsSymbolV2::Fill: fillCount++; break;
-      default: Q_ASSERT( 0 && "unknown symbol type" ); break;
+      case QgsSymbolV2::Marker:
+        markerCount++;
+        break;
+      case QgsSymbolV2::Line:
+        lineCount++;
+        break;
+      case QgsSymbolV2::Fill:
+        fillCount++;
+        break;
+      default: Q_ASSERT( 0 && "unknown symbol type" );
+        break;
     }
   }
 
@@ -216,14 +223,22 @@ bool QgsStyleV2ManagerDialog::addSymbol()
   QgsSymbolV2* symbol;
   switch ( currentItemType() )
   {
-    case QgsSymbolV2::Marker: symbol = new QgsMarkerSymbolV2(); break;
-    case QgsSymbolV2::Line:   symbol = new QgsLineSymbolV2(); break;
-    case QgsSymbolV2::Fill:   symbol = new QgsFillSymbolV2(); break;
-    default: Q_ASSERT( 0 && "unknown symbol type" ); return false; break;
+    case QgsSymbolV2::Marker:
+      symbol = new QgsMarkerSymbolV2();
+      break;
+    case QgsSymbolV2::Line:
+      symbol = new QgsLineSymbolV2();
+      break;
+    case QgsSymbolV2::Fill:
+      symbol = new QgsFillSymbolV2();
+      break;
+    default:
+      Q_ASSERT( 0 && "unknown symbol type" );
+      return false;
   }
 
   // get symbol design
-  QgsSymbolV2PropertiesDialog dlg( symbol, this );
+  QgsSymbolV2PropertiesDialog dlg( symbol, 0, this );
   if ( dlg.exec() == 0 )
   {
     delete symbol;
@@ -369,7 +384,7 @@ bool QgsStyleV2ManagerDialog::editSymbol()
   QgsSymbolV2* symbol = mStyle->symbol( symbolName );
 
   // let the user edit the symbol and update list when done
-  QgsSymbolV2PropertiesDialog dlg( symbol, this );
+  QgsSymbolV2PropertiesDialog dlg( symbol, 0, this );
   if ( dlg.exec() == 0 )
   {
     delete symbol;

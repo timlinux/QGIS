@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgis.h 9774 2008-12-12 05:41:24Z timlinux $ */
 
 #ifndef QGSOVERLAYANALYZERH
 #define QGSOVERLAYANALYZERH
@@ -46,8 +45,8 @@ class ANALYSIS_EXPORT QgsOverlayAnalyzer
       @param onlySelectedFeatures if true, only selected features are considered, else all the features
       @param p progress dialog (or 0 if no progress dialog is to be shown)
       @note: added in version 1.4*/
-    bool intersection( QgsVectorLayer* layerA, QgsVectorLayer* layerB, \
-                       const QString& shapefileName, bool onlySelectedFeatures = false, \
+    bool intersection( QgsVectorLayer* layerA, QgsVectorLayer* layerB,
+                       const QString& shapefileName, bool onlySelectedFeatures = false,
                        QProgressDialog* p = 0 );
 
 #if 0

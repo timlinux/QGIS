@@ -16,18 +16,31 @@
  ***************************************************************************/
 
 #include "qgsconfigcache.h"
-#include "qgsmapserverlogger.h"
+#include "qgslogger.h"
 #include "qgsmslayercache.h"
 #include "qgsprojectparser.h"
 #include "qgssldparser.h"
+#include <QCoreApplication>
+
+QgsConfigCache* QgsConfigCache::mInstance = 0;
+
+QgsConfigCache* QgsConfigCache::instance()
+{
+  if ( !mInstance )
+  {
+    mInstance = new QgsConfigCache();
+  }
+  return mInstance;
+}
 
 QgsConfigCache::QgsConfigCache()
 {
+  QObject::connect( &mFileSystemWatcher, SIGNAL( fileChanged( const QString& ) ), this, SLOT( removeChangedEntry( const QString& ) ) );
 }
 
 QgsConfigCache::~QgsConfigCache()
 {
-  QMap<QString, QgsConfigParser*>::iterator configIt = mCachedConfigurations.begin();
+  QHash<QString, QgsConfigParser*>::iterator configIt = mCachedConfigurations.begin();
   for ( ; configIt != mCachedConfigurations.end(); ++configIt )
   {
     delete configIt.value();
@@ -36,16 +49,17 @@ QgsConfigCache::~QgsConfigCache()
 
 QgsConfigParser* QgsConfigCache::searchConfiguration( const QString& filePath )
 {
+  QCoreApplication::processEvents(); //check for updates from file system watcher
   QgsConfigParser* p = 0;
-  QMap<QString, QgsConfigParser*>::const_iterator configIt = mCachedConfigurations.find( filePath );
+  QHash<QString, QgsConfigParser*>::const_iterator configIt = mCachedConfigurations.find( filePath );
   if ( configIt == mCachedConfigurations.constEnd() )
   {
-    QgsMSDebugMsg( "Create new configuration" );
+    QgsDebugMsg( "Create new configuration" );
     p = insertConfiguration( filePath );
   }
   else
   {
-    QgsMSDebugMsg( "Return configuration from cache" );
+    QgsDebugMsg( "Return configuration from cache" );
     p = configIt.value();
   }
 
@@ -61,11 +75,13 @@ QgsConfigParser* QgsConfigCache::insertConfiguration( const QString& filePath )
 {
   if ( mCachedConfigurations.size() > 40 )
   {
-    //remove 10 elements to avoid memory problems
-    QMap<QString, QgsConfigParser*>::iterator configIt = mCachedConfigurations.begin();
-    for ( int i = 0; i < 10; ++i )
+    //remove a cache entry to avoid memory problems
+    QHash<QString, QgsConfigParser*>::iterator configIt = mCachedConfigurations.begin();
+    if ( configIt != mCachedConfigurations.end() )
     {
-      configIt = mCachedConfigurations.erase( configIt );
+      mFileSystemWatcher.removePath( configIt.key() );
+      delete configIt.value();
+      mCachedConfigurations.erase( configIt );
     }
   }
 
@@ -73,14 +89,19 @@ QgsConfigParser* QgsConfigCache::insertConfiguration( const QString& filePath )
   QFile* configFile = new QFile( filePath );
   if ( !configFile->exists() || !configFile->open( QIODevice::ReadOnly ) )
   {
+    QgsDebugMsg( "File unreadable: " + filePath );
     delete configFile;
     return 0;
   }
 
   //then create xml document
   QDomDocument* configDoc = new QDomDocument();
-  if ( !configDoc->setContent( configFile, true ) )
+  QString errorMsg;
+  int line, column;
+  if ( !configDoc->setContent( configFile, true, &errorMsg, &line, &column ) )
   {
+    QgsDebugMsg( QString( "Parse error %1 at row %2, column %3 in %4 " )
+                 .arg( errorMsg ).arg( line ).arg( column ).arg( filePath ) );
     delete configFile;
     delete configDoc;
     return 0;
@@ -99,11 +120,25 @@ QgsConfigParser* QgsConfigCache::insertConfiguration( const QString& filePath )
   }
   else
   {
+    QgsDebugMsg( "SLD or qgis expected in " + filePath );
     delete configDoc;
     return 0;
   }
 
   mCachedConfigurations.insert( filePath, configParser );
+  mFileSystemWatcher.addPath( filePath );
   delete configFile;
   return configParser;
+}
+
+void QgsConfigCache::removeChangedEntry( const QString& path )
+{
+  QgsDebugMsg( "Remove config cache entry because file changed" );
+  QHash<QString, QgsConfigParser*>::iterator configIt = mCachedConfigurations.find( path );
+  if ( configIt != mCachedConfigurations.end() )
+  {
+    delete configIt.value();
+    mCachedConfigurations.erase( configIt );
+  }
+  mFileSystemWatcher.removePath( path );
 }

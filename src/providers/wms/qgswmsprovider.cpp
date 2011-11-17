@@ -19,16 +19,18 @@
  *                                                                         *
  ***************************************************************************/
 
-/* $Id$ */
+#include <typeinfo>
 
 #define WMS_THRESHOLD 200  // time to wait for an answer without emitting dataChanged() 
 
 #include "qgslogger.h"
 #include "qgswmsprovider.h"
+#include "qgswmsconnection.h"
 
 #include <cmath>
 
 #include "qgscoordinatetransform.h"
+#include "qgsrasterlayer.h"
 #include "qgsrectangle.h"
 #include "qgscoordinatereferencesystem.h"
 #include "qgsnetworkaccessmanager.h"
@@ -43,8 +45,11 @@
 #endif
 
 #include <QUrl>
+#include <QIcon>
 #include <QImage>
+#include <QImageReader>
 #include <QPainter>
+#include <QPixmap>
 #include <QSet>
 #include <QSettings>
 #include <QEventLoop>
@@ -370,6 +375,12 @@ void QgsWmsProvider::setImageCrs( QString const & crs )
   }
 }
 
+void QgsWmsProvider::setQueryItem( QUrl &url, QString item, QString value )
+{
+  url.removeQueryItem( item );
+  url.addQueryItem( item, value );
+}
+
 QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, int pixelHeight )
 {
   QgsDebugMsg( "Entering." );
@@ -420,8 +431,6 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
     crsKey = "CRS";
   }
 
-  QString url = mIgnoreGetMapUrl ? mBaseUrl : getMapUrl();
-
   cachedImage = new QImage( pixelWidth, pixelHeight, QImage::Format_ARGB32 );
   cachedImage->fill( 0 );
   cachedViewExtent = viewExtent;
@@ -468,59 +477,52 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
            .arg( viewExtent.xMaximum(), 0, 'f' )
            .arg( viewExtent.yMaximum(), 0, 'f' );
 
-    // Width in WMS format
-    QString width;
-    width = width.setNum( pixelWidth );
-
-    // Height in WMS format
-    QString height;
-    height = height.setNum( pixelHeight );
-
-    url += "SERVICE=WMS";
-    url += "&VERSION=" + mCapabilities.version;
-    url += "&REQUEST=GetMap";
-    url += "&BBOX=" + bbox;
-    url += "&" + crsKey + "=" + imageCrs;
-    url += "&WIDTH=" + width;
-    url += "&HEIGHT=" + height;
-    url += "&LAYERS=" + layers;
-    url += "&STYLES=" + styles;
-    url += "&FORMAT=" + imageMimeType;
+    QUrl url( mIgnoreGetMapUrl ? mBaseUrl : getMapUrl() );
+    setQueryItem( url, "SERVICE", "WMS" );
+    setQueryItem( url, "VERSION", mCapabilities.version );
+    setQueryItem( url, "REQUEST", "GetMap" );
+    setQueryItem( url, "BBOX", bbox );
+    setQueryItem( url, crsKey, imageCrs );
+    setQueryItem( url, "WIDTH", QString::number( pixelWidth ) );
+    setQueryItem( url, "HEIGHT", QString::number( pixelHeight ) );
+    setQueryItem( url, "LAYERS", layers );
+    setQueryItem( url, "STYLES", styles );
+    setQueryItem( url, "FORMAT", imageMimeType );
 
     //DPI parameter is accepted by QGIS mapserver (and ignored by the other WMS servers)
     if ( mDpi != -1 )
     {
-      url += "&DPI=" + QString::number( mDpi );
+      setQueryItem( url, "DPI", QString::number( mDpi ) );
     }
 
     //MH: jpeg does not support transparency and some servers complain if jpg and transparent=true
     if ( !imageMimeType.contains( "jpeg", Qt::CaseInsensitive ) && !imageMimeType.contains( "jpg", Qt::CaseInsensitive ) )
     {
-      // some servers giving error for 'true' (lowercase)
-      //url += "&TRANSPARENT=true";
-      url += "&TRANSPARENT=TRUE";
+      setQueryItem( url, "TRANSPARENT", "TRUE" );  // some servers giving error for 'true' (lowercase)
     }
 
-    mGetFeatureInfoUrlBase = mIgnoreGetFeatureInfoUrl ? mBaseUrl : getFeatureInfoUrl();
+    QgsDebugMsg( QString( "getmap: %1" ).arg( url.toString() ) );
 
     // cache some details for if the user wants to do an identifyAsHtml() later
-    mGetFeatureInfoUrlBase += "SERVICE=WMS";
-    mGetFeatureInfoUrlBase += "&VERSION=" + mCapabilities.version;
-    mGetFeatureInfoUrlBase += "&REQUEST=GetFeatureInfo";
-    mGetFeatureInfoUrlBase += "&BBOX=" + bbox;
-    mGetFeatureInfoUrlBase += "&" + crsKey + "=" + imageCrs;
-    mGetFeatureInfoUrlBase += "&WIDTH=" + width;
-    mGetFeatureInfoUrlBase += "&HEIGHT=" + height;
-    mGetFeatureInfoUrlBase += "&LAYERS=" + layers;
-    mGetFeatureInfoUrlBase += "&STYLES=" + styles;
-    mGetFeatureInfoUrlBase += "&FORMAT=" + imageMimeType;
+    QUrl fiUrl( mIgnoreGetFeatureInfoUrl ? mBaseUrl : getFeatureInfoUrl() );
+    setQueryItem( fiUrl, "SERVICE", "WMS" );
+    setQueryItem( fiUrl, "VERSION", mCapabilities.version );
+    setQueryItem( fiUrl, "REQUEST", "GetFeatureInfo" );
+    setQueryItem( fiUrl, "BBOX", bbox );
+    setQueryItem( fiUrl, crsKey, imageCrs );
+    setQueryItem( fiUrl, "WIDTH", QString::number( pixelWidth ) );
+    setQueryItem( fiUrl, "HEIGHT", QString::number( pixelHeight ) );
+    setQueryItem( fiUrl, "LAYERS", layers );
+    setQueryItem( fiUrl, "STYLES", styles );
+    setQueryItem( fiUrl, "FORMAT", imageMimeType );
 
     if ( !imageMimeType.contains( "jpeg", Qt::CaseInsensitive ) && !imageMimeType.contains( "jpg", Qt::CaseInsensitive ) )
     {
-      mGetFeatureInfoUrlBase += "&TRANSPARENT=true";
+      setQueryItem( fiUrl, "TRANSPARENT", "true" );
     }
 
-    QgsDebugMsg( QString( "getmap: %1" ).arg( url ) );
+    mGetFeatureInfoUrlBase = fiUrl.toString();
+
     QNetworkRequest request( url );
     setAuthorization( request );
     request.setAttribute( QNetworkRequest::CacheSaveControlAttribute, true );
@@ -545,21 +547,27 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
   else
   {
     mTileReqNo++;
+
     double vres = viewExtent.width() / pixelWidth;
 
-    // find nearest resolution
+    double tres = vres;
     int i;
-    for ( i = 0; i < mResolutions.size() && mResolutions[i] < vres; i++ )
-      QgsDebugMsg( QString( "skipped res: %1:%2" ).arg( i ).arg( mResolutions[i] ) );
-
-    if ( i == mResolutions.size() ||
-         ( i > 0 && vres - mResolutions[i-1] < mResolutions[i] - vres ) )
+    if ( mResolutions.size() > 0 )
     {
-      QgsDebugMsg( "back to previous res" );
-      i--;
-    }
 
-    double tres = mResolutions[i];
+      // find nearest resolution
+      for ( i = 0; i < mResolutions.size() && mResolutions[i] < vres; i++ )
+        QgsDebugMsg( QString( "skipped res: %1:%2" ).arg( i ).arg( mResolutions[i] ) );
+
+      if ( i == mResolutions.size() ||
+           ( i > 0 && vres - mResolutions[i-1] < mResolutions[i] - vres ) )
+      {
+        QgsDebugMsg( "back to previous res" );
+        i--;
+      }
+
+      tres = mResolutions[i];
+    }
 
     // clip view extent to layer extent
     double xmin = qMax( viewExtent.xMinimum(), layerExtent.xMinimum() );
@@ -610,7 +618,19 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
 #endif
 
     // add WMS request
-    url += QString( "SERVICE=WMS&VERSION=%1&REQUEST=GetMap" ).arg( mCapabilities.version );
+    QUrl url( mIgnoreGetMapUrl ? mBaseUrl : getMapUrl() );
+    setQueryItem( url, "SERVICE", "WMS" );
+    setQueryItem( url, "VERSION", mCapabilities.version );
+    setQueryItem( url, "REQUEST", "GetMap" );
+
+    url.removeQueryItem( crsKey );
+    url.removeQueryItem( "WIDTH" );
+    url.removeQueryItem( "HEIGHT" );
+    url.removeQueryItem( "LAYERS" );
+    url.removeQueryItem( "STYLES" );
+    url.removeQueryItem( "FORMAT" );
+    url.removeQueryItem( "TILED" );
+
 
     // compose static request arguments.
     QString urlargs;
@@ -632,7 +652,7 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
       while ( x < xmax )
       {
         QString turl;
-        turl += url;
+        turl += url.toString();
         turl += QString( changeXY ? "&BBOX=%2,%1,%4,%3" : "&BBOX=%1,%2,%3,%4" )
                 .arg( x, 0, 'f' )
                 .arg( y, 0, 'f' )
@@ -690,6 +710,7 @@ QImage *QgsWmsProvider::draw( QgsRectangle  const &viewExtent, int pixelWidth, i
 //void QgsWmsProvider::readBlock( int bandNo, QgsRectangle  const & viewExtent, int pixelWidth, int pixelHeight, QgsCoordinateReferenceSystem theSrcCRS, QgsCoordinateReferenceSystem theDestCRS, void *block )
 void QgsWmsProvider::readBlock( int bandNo, QgsRectangle  const & viewExtent, int pixelWidth, int pixelHeight, void *block )
 {
+  Q_UNUSED( bandNo );
   QgsDebugMsg( "Entered" );
   // TODO: optimize to avoid writing to QImage
   QImage* image = draw( viewExtent, pixelWidth, pixelHeight );
@@ -1051,8 +1072,10 @@ int QgsWmsProvider::dataType( int bandNo ) const
 {
   return srcDataType( bandNo );
 }
+
 int QgsWmsProvider::srcDataType( int bandNo ) const
 {
+  Q_UNUSED( bandNo );
   return QgsRasterDataProvider::ARGBDataType;
 }
 
@@ -1176,44 +1199,47 @@ void QgsWmsProvider::parseService( QDomElement const & e, QgsWmsServiceProperty&
     if ( !e1.isNull() )
     {
       // QgsDebugMsg( "  "  + e1.tagName() ); // the node really is an element.
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
 
-      if ( e1.tagName() == "Title" )
+      if ( tagName == "Title" )
       {
         serviceProperty.title = e1.text();
       }
-      else if ( e1.tagName() == "Abstract" )
+      else if ( tagName == "Abstract" )
       {
         serviceProperty.abstract = e1.text();
       }
-      else if ( e1.tagName() == "KeywordList" )
+      else if ( tagName == "KeywordList" )
       {
         parseKeywordList( e1, serviceProperty.keywordList );
       }
-      else if ( e1.tagName() == "OnlineResource" )
+      else if ( tagName == "OnlineResource" )
       {
         parseOnlineResource( e1, serviceProperty.onlineResource );
       }
-      else if ( e1.tagName() == "ContactInformation" )
+      else if ( tagName == "ContactInformation" )
       {
         parseContactInformation( e1, serviceProperty.contactInformation );
       }
-      else if ( e1.tagName() == "Fees" )
+      else if ( tagName == "Fees" )
       {
         serviceProperty.fees = e1.text();
       }
-      else if ( e1.tagName() == "AccessConstraints" )
+      else if ( tagName == "AccessConstraints" )
       {
         serviceProperty.accessConstraints = e1.text();
       }
-      else if ( e1.tagName() == "LayerLimit" )
+      else if ( tagName == "LayerLimit" )
       {
         serviceProperty.layerLimit = e1.text().toUInt();
       }
-      else if ( e1.tagName() == "MaxWidth" )
+      else if ( tagName == "MaxWidth" )
       {
         serviceProperty.maxWidth = e1.text().toUInt();
       }
-      else if ( e1.tagName() == "MaxHeight" )
+      else if ( tagName == "MaxHeight" )
       {
         serviceProperty.maxHeight = e1.text().toUInt();
       }
@@ -1235,23 +1261,32 @@ void QgsWmsProvider::parseCapability( QDomElement const & e, QgsWmsCapabilityPro
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
       QgsDebugMsg( "  "  + e1.tagName() ); // the node really is an element.
 
-      if ( e1.tagName() == "Request" )
+      if ( tagName == "Request" )
       {
         parseRequest( e1, capabilityProperty.request );
       }
-      else if ( e1.tagName() == "Layer" )
+      else if ( tagName == "Layer" )
       {
         parseLayer( e1, capabilityProperty.layer );
       }
-      else if ( e1.tagName() == "VendorSpecificCapabilities" )
+      else if ( tagName == "VendorSpecificCapabilities" )
       {
         for ( int i = 0; i < e1.childNodes().size(); i++ )
         {
           QDomNode n2 = e1.childNodes().item( i );
           QDomElement e2 = n2.toElement();
-          if ( e2.tagName() == "TileSet" )
+
+          QString tagName = e2.tagName();
+          if ( tagName.startsWith( "wms:" ) )
+            tagName = tagName.mid( 4 );
+
+          if ( tagName == "TileSet" )
           {
             parseTileSetProfile( e2, capabilityProperty.tileSetProfiles );
           }
@@ -1275,11 +1310,15 @@ void QgsWmsProvider::parseContactPersonPrimary( QDomElement const & e, QgsWmsCon
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "ContactPerson" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "ContactPerson" )
       {
         contactPersonPrimaryProperty.contactPerson = e1.text();
       }
-      else if ( e1.tagName() == "ContactOrganization" )
+      else if ( tagName == "ContactOrganization" )
       {
         contactPersonPrimaryProperty.contactOrganization = e1.text();
       }
@@ -1301,27 +1340,31 @@ void QgsWmsProvider::parseContactAddress( QDomElement const & e, QgsWmsContactAd
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "AddressType" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "AddressType" )
       {
         contactAddressProperty.addressType = e1.text();
       }
-      else if ( e1.tagName() == "Address" )
+      else if ( tagName == "Address" )
       {
         contactAddressProperty.address = e1.text();
       }
-      else if ( e1.tagName() == "City" )
+      else if ( tagName == "City" )
       {
         contactAddressProperty.city = e1.text();
       }
-      else if ( e1.tagName() == "StateOrProvince" )
+      else if ( tagName == "StateOrProvince" )
       {
         contactAddressProperty.stateOrProvince = e1.text();
       }
-      else if ( e1.tagName() == "PostCode" )
+      else if ( tagName == "PostCode" )
       {
         contactAddressProperty.postCode = e1.text();
       }
-      else if ( e1.tagName() == "Country" )
+      else if ( tagName == "Country" )
       {
         contactAddressProperty.country = e1.text();
       }
@@ -1343,27 +1386,31 @@ void QgsWmsProvider::parseContactInformation( QDomElement const & e, QgsWmsConta
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "ContactPersonPrimary" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "ContactPersonPrimary" )
       {
         parseContactPersonPrimary( e1, contactInformationProperty.contactPersonPrimary );
       }
-      else if ( e1.tagName() == "ContactPosition" )
+      else if ( tagName == "ContactPosition" )
       {
         contactInformationProperty.contactPosition = e1.text();
       }
-      else if ( e1.tagName() == "ContactAddress" )
+      else if ( tagName == "ContactAddress" )
       {
         parseContactAddress( e1, contactInformationProperty.contactAddress );
       }
-      else if ( e1.tagName() == "ContactVoiceTelephone" )
+      else if ( tagName == "ContactVoiceTelephone" )
       {
         contactInformationProperty.contactVoiceTelephone = e1.text();
       }
-      else if ( e1.tagName() == "ContactFacsimileTelephone" )
+      else if ( tagName == "ContactFacsimileTelephone" )
       {
         contactInformationProperty.contactFacsimileTelephone = e1.text();
       }
-      else if ( e1.tagName() == "ContactElectronicMailAddress" )
+      else if ( tagName == "ContactElectronicMailAddress" )
       {
         contactInformationProperty.contactElectronicMailAddress = e1.text();
       }
@@ -1395,7 +1442,11 @@ void QgsWmsProvider::parseKeywordList( QDomElement  const & e, QStringList& keyw
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "Keyword" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Keyword" )
       {
         QgsDebugMsg( "      Keyword." );
         keywordListProperty += e1.text();
@@ -1418,7 +1469,11 @@ void QgsWmsProvider::parseGet( QDomElement const & e, QgsWmsGetProperty& getProp
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "OnlineResource" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "OnlineResource" )
       {
         QgsDebugMsg( "      OnlineResource." );
         parseOnlineResource( e1, getProperty.onlineResource );
@@ -1441,7 +1496,11 @@ void QgsWmsProvider::parsePost( QDomElement const & e, QgsWmsPostProperty& postP
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "OnlineResource" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "OnlineResource" )
       {
         QgsDebugMsg( "      OnlineResource." );
         parseOnlineResource( e1, postProperty.onlineResource );
@@ -1515,12 +1574,16 @@ void QgsWmsProvider::parseOperationType( QDomElement const & e, QgsWmsOperationT
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "Format" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Format" )
       {
         QgsDebugMsg( "      Format." );
         operationType.format += e1.text();
       }
-      else if ( e1.tagName() == "DCPType" )
+      else if ( tagName == "DCPType" )
       {
         QgsDebugMsg( "      DCPType." );
         QgsWmsDcpTypeProperty dcp;
@@ -1576,11 +1639,15 @@ void QgsWmsProvider::parseLegendUrl( QDomElement const & e, QgsWmsLegendUrlPrope
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "Format" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Format" )
       {
         legendUrlProperty.format = e1.text();
       }
-      else if ( e1.tagName() == "OnlineResource" )
+      else if ( tagName == "OnlineResource" )
       {
         parseOnlineResource( e1, legendUrlProperty.onlineResource );
       }
@@ -1602,27 +1669,31 @@ void QgsWmsProvider::parseStyle( QDomElement const & e, QgsWmsStyleProperty& sty
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      if ( e1.tagName() == "Name" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Name" )
       {
         styleProperty.name = e1.text();
       }
-      else if ( e1.tagName() == "Title" )
+      else if ( tagName == "Title" )
       {
         styleProperty.title = e1.text();
       }
-      else if ( e1.tagName() == "Abstract" )
+      else if ( tagName == "Abstract" )
       {
         styleProperty.abstract = e1.text();
       }
-      else if ( e1.tagName() == "LegendURL" )
+      else if ( tagName == "LegendURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "StyleSheetURL" )
+      else if ( tagName == "StyleSheetURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "StyleURL" )
+      else if ( tagName == "StyleURL" )
       {
         // TODO
       }
@@ -1659,9 +1730,13 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
     QDomElement e1 = n1.toElement(); // try to convert the node to an element.
     if ( !e1.isNull() )
     {
-      QgsDebugMsg( "    "  + e1.tagName() ); // the node really is an element.
+      //QgsDebugMsg( "    "  + e1.tagName() ); // the node really is an element.
 
-      if ( e1.tagName() == "Layer" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Layer" )
       {
         QgsDebugMsg( "      Nested layer." );
 
@@ -1679,23 +1754,23 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
 
         layerProperty.layer.push_back( subLayerProperty );
       }
-      else if ( e1.tagName() == "Name" )
+      else if ( tagName == "Name" )
       {
         layerProperty.name = e1.text();
       }
-      else if ( e1.tagName() == "Title" )
+      else if ( tagName == "Title" )
       {
         layerProperty.title = e1.text();
       }
-      else if ( e1.tagName() == "Abstract" )
+      else if ( tagName == "Abstract" )
       {
         layerProperty.abstract = e1.text();
       }
-      else if ( e1.tagName() == "KeywordList" )
+      else if ( tagName == "KeywordList" )
       {
         parseKeywordList( e1, layerProperty.keywordList );
       }
-      else if ( e1.tagName() == "SRS" || e1.tagName() == "CRS" )
+      else if ( tagName == "SRS" || tagName == "CRS" )
       {
         // CRS can contain several definitions separated by whitespace
         // though this was deprecated in WMS 1.1.1
@@ -1704,7 +1779,7 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
           layerProperty.crs.push_back( srs );
         }
       }
-      else if ( e1.tagName() == "LatLonBoundingBox" )      // legacy from earlier versions of WMS
+      else if ( tagName == "LatLonBoundingBox" )      // legacy from earlier versions of WMS
       {
         layerProperty.ex_GeographicBoundingBox = QgsRectangle(
               e1.attribute( "minx" ).toDouble(),
@@ -1712,13 +1787,45 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
               e1.attribute( "maxx" ).toDouble(),
               e1.attribute( "maxy" ).toDouble()
             );
+
+        if ( e1.hasAttribute( "SRS" ) && e1.attribute( "SRS" ) != DEFAULT_LATLON_CRS )
+        {
+          try
+          {
+            QgsCoordinateReferenceSystem src;
+            src.createFromOgcWmsCrs( e1.attribute( "SRS" ) );
+
+            QgsCoordinateReferenceSystem dst;
+            dst.createFromOgcWmsCrs( DEFAULT_LATLON_CRS );
+
+            QgsCoordinateTransform ct( src, dst );
+            layerProperty.ex_GeographicBoundingBox = ct.transformBoundingBox( layerProperty.ex_GeographicBoundingBox );
+          }
+          catch ( QgsCsException &cse )
+          {
+            Q_UNUSED( cse );
+          }
+        }
       }
-      else if ( e1.tagName() == "EX_GeographicBoundingBox" ) //for WMS 1.3
+      else if ( tagName == "EX_GeographicBoundingBox" ) //for WMS 1.3
       {
-        QDomElement wBoundLongitudeElem = n1.namedItem( "westBoundLongitude" ).toElement();
-        QDomElement eBoundLongitudeElem = n1.namedItem( "eastBoundLongitude" ).toElement();
-        QDomElement sBoundLatitudeElem = n1.namedItem( "southBoundLatitude" ).toElement();
-        QDomElement nBoundLatitudeElem = n1.namedItem( "northBoundLatitude" ).toElement();
+        QDomElement wBoundLongitudeElem, eBoundLongitudeElem, sBoundLatitudeElem, nBoundLatitudeElem;
+
+        if ( e1.tagName() == "wms:EX_GeographicBoundingBox" )
+        {
+          wBoundLongitudeElem = n1.namedItem( "wms:westBoundLongitude" ).toElement();
+          eBoundLongitudeElem = n1.namedItem( "wms:eastBoundLongitude" ).toElement();
+          sBoundLatitudeElem = n1.namedItem( "wms:southBoundLatitude" ).toElement();
+          nBoundLatitudeElem = n1.namedItem( "wms:northBoundLatitude" ).toElement();
+        }
+        else
+        {
+          wBoundLongitudeElem = n1.namedItem( "westBoundLongitude" ).toElement();
+          eBoundLongitudeElem = n1.namedItem( "eastBoundLongitude" ).toElement();
+          sBoundLatitudeElem = n1.namedItem( "southBoundLatitude" ).toElement();
+          nBoundLatitudeElem = n1.namedItem( "northBoundLatitude" ).toElement();
+        }
+
         double wBLong, eBLong, sBLat, nBLat;
         bool wBOk, eBOk, sBOk, nBOk;
         wBLong = wBoundLongitudeElem.text().toDouble( &wBOk );
@@ -1730,7 +1837,7 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
           layerProperty.ex_GeographicBoundingBox = QgsRectangle( wBLong, sBLat, eBLong, nBLat );
         }
       }
-      else if ( e1.tagName() == "BoundingBox" )
+      else if ( tagName == "BoundingBox" )
       {
         // TODO: overwrite inherited
         QgsWmsBoundingBoxProperty bbox;
@@ -1739,38 +1846,49 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
                                  e1.attribute( "maxx" ).toDouble(),
                                  e1.attribute( "maxy" ).toDouble()
                                );
-        bbox.crs = e1.attribute( "CRS" );
-        layerProperty.boundingBox.push_back( bbox );
+        if ( e1.hasAttribute( "CRS" ) || e1.hasAttribute( "SRS" ) )
+        {
+          if ( e1.hasAttribute( "CRS" ) )
+            bbox.crs = e1.attribute( "CRS" );
+          else if ( e1.hasAttribute( "SRS" ) )
+            bbox.crs = e1.attribute( "SRS" );
+
+          layerProperty.boundingBox.push_back( bbox );
+        }
+        else
+        {
+          QgsDebugMsg( "CRS/SRS attribute note found in BoundingBox" );
+        }
       }
-      else if ( e1.tagName() == "Dimension" )
+      else if ( tagName == "Dimension" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "Attribution" )
+      else if ( tagName == "Attribution" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "AuthorityURL" )
+      else if ( tagName == "AuthorityURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "Identifier" )
+      else if ( tagName == "Identifier" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "MetadataURL" )
+      else if ( tagName == "MetadataURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "DataURL" )
+      else if ( tagName == "DataURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "FeatureListURL" )
+      else if ( tagName == "FeatureListURL" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "Style" )
+      else if ( tagName == "Style" )
       {
         QgsWmsStyleProperty styleProperty;
 
@@ -1778,11 +1896,11 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
 
         layerProperty.style.push_back( styleProperty );
       }
-      else if ( e1.tagName() == "MinScaleDenominator" )
+      else if ( tagName == "MinScaleDenominator" )
       {
         // TODO
       }
-      else if ( e1.tagName() == "MaxScaleDenominator" )
+      else if ( tagName == "MaxScaleDenominator" )
       {
         // TODO
       }
@@ -1848,7 +1966,8 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
 
   if ( !parentProperty )
   {
-    layerProperty.layer.clear();
+    // Why clear()? I need top level access. Seems to work in standard select dialog without clear.
+    //layerProperty.layer.clear();
     layerProperty.crs.clear();
   }
 
@@ -1857,6 +1976,7 @@ void QgsWmsProvider::parseLayer( QDomElement const & e, QgsWmsLayerProperty& lay
 
 void QgsWmsProvider::parseTileSetProfile( QDomElement const &e, QVector<QgsWmsTileSetProfile> &tileSet )
 {
+  Q_UNUSED( tileSet );
   QgsWmsTileSetProfile tsp;
 
   QDomNode n1 = e.firstChild();
@@ -1867,31 +1987,35 @@ void QgsWmsProvider::parseTileSetProfile( QDomElement const &e, QVector<QgsWmsTi
     {
       QgsDebugMsg( "    "  + e1.tagName() ); // the node really is an element.
 
-      if ( e1.tagName() == "Layers" )
+      QString tagName = e1.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "Layers" )
       {
         tsp.layers << e1.text();
       }
-      else if ( e1.tagName() == "Styles" )
+      else if ( tagName == "Styles" )
       {
         tsp.styles << e1.text();
       }
-      else if ( e1.tagName() == "Width" )
+      else if ( tagName == "Width" )
       {
         tsp.tileWidth = e1.text().toInt();
       }
-      else if ( e1.tagName() == "Height" )
+      else if ( tagName == "Height" )
       {
         tsp.tileHeight = e1.text().toInt();
       }
-      else if ( e1.tagName() == "SRS" )
+      else if ( tagName == "SRS" )
       {
         tsp.crs = e1.text();
       }
-      else if ( e1.tagName() == "Format" )
+      else if ( tagName == "Format" )
       {
         tsp.format = e1.text();
       }
-      else if ( e1.tagName() == "BoundingBox" )
+      else if ( tagName == "BoundingBox" )
       {
         tsp.boundingBox.box = QgsRectangle(
                                 e1.attribute( "minx" ).toDouble(),
@@ -1909,7 +2033,7 @@ void QgsWmsProvider::parseTileSetProfile( QDomElement const &e, QVector<QgsWmsTi
           tsp.boundingBox.crs = e1.attribute( "crs" );
 
       }
-      else if ( e1.tagName() == "Resolutions" )
+      else if ( tagName == "Resolutions" )
       {
         tsp.resolutions = e1.text().trimmed().split( " ", QString::SkipEmptyParts );
       }
@@ -1984,7 +2108,11 @@ bool QgsWmsProvider::parseServiceExceptionReportDom( QByteArray const & xml )
     {
       //QgsDebugMsg(e.tagName() ); // the node really is an element.
 
-      if ( e.tagName() == "ServiceException" )
+      QString tagName = e.tagName();
+      if ( tagName.startsWith( "wms:" ) )
+        tagName = tagName.mid( 4 );
+
+      if ( tagName == "ServiceException" )
       {
         QgsDebugMsg( "  ServiceException." );
         parseServiceException( e );
@@ -2136,7 +2264,7 @@ bool QgsWmsProvider::calculateExtent()
     return false;
   }
 
-  if ( mTiled )
+  if ( mTiled && mResolutions.size() > 0 )
   {
     QString layers = activeSubLayers.join( "," );
     QString styles = activeSubStyles.join( "," );
@@ -2947,6 +3075,47 @@ void QgsWmsProvider::setAuthorization( QNetworkRequest &request ) const
   }
 }
 
+QVector<QgsWmsSupportedFormat> QgsWmsProvider::supportedFormats()
+{
+  QVector<QgsWmsSupportedFormat> formats;
+  QStringList mFormats, mLabels;
+
+
+  QList<QByteArray> supportedFormats = QImageReader::supportedImageFormats();
+
+  if ( supportedFormats.contains( "png" ) )
+  {
+    QgsWmsSupportedFormat p1 = { "image/png", "PNG" };
+    QgsWmsSupportedFormat p2 = { "image/png; mode=24bit", "PNG24" }; // UMN mapserver
+    QgsWmsSupportedFormat p3 = { "image/png8", "PNG8" }; // used by geoserver
+    QgsWmsSupportedFormat p4 = { "png", "PNG" }; // used by french IGN geoportail
+    QgsWmsSupportedFormat p5 = { "pngt", "PNGT" }; // used by french IGN geoportail
+
+    formats << p1 << p2 << p3 << p4 << p5;
+  }
+
+  if ( supportedFormats.contains( "jpg" ) )
+  {
+    QgsWmsSupportedFormat j1 = { "image/jpeg", "JPEG" };
+    QgsWmsSupportedFormat j2 = { "jpeg", "JPEG" }; // used by french IGN geoportail
+    formats << j1 << j2;
+  }
+
+  if ( supportedFormats.contains( "gif" ) )
+  {
+    QgsWmsSupportedFormat g1 = { "image/gif", "GIF" };
+    formats << g1;
+  }
+
+  if ( supportedFormats.contains( "tiff" ) )
+  {
+    QgsWmsSupportedFormat t1 = { "image/tiff", "TIFF" };
+    formats << t1;
+  }
+
+  return formats;
+}
+
 void QgsWmsProvider::showMessageBox( const QString& title, const QString& text )
 {
   QgsMessageOutput *message = QgsMessageOutput::createMessageOutput();
@@ -2984,3 +3153,4 @@ QGISEXTERN bool isProvider()
 {
   return true;
 }
+

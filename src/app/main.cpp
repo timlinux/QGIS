@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 //qt includes
 #include <QBitmap>
@@ -34,6 +33,7 @@
 #include <QTranslator>
 #include <QImageReader>
 
+#include "qgscustomization.h"
 #include "qgspluginregistry.h"
 
 #include <cstdio>
@@ -67,7 +67,8 @@ typedef SInt32 SRefCon;
 #include "qgsmapcanvas.h"
 #include "qgsapplication.h"
 #include <qgsconfig.h>
-#include <qgssvnversion.h>
+#include <qgscustomization.h>
+#include <qgsversion.h>
 #include "qgsexception.h"
 #include "qgsproject.h"
 #include "qgsrectangle.h"
@@ -79,14 +80,12 @@ typedef SInt32 SRefCon;
 #include <QIcon>
 #endif
 
-static const char * const ident_ = "$Id$";
-
 /** print usage text
  */
 void usage( std::string const & appName )
 {
   std::cerr << "Quantum GIS - " << VERSION << " '" << RELEASE_NAME << "' ("
-            << QGSSVNVERSION << ")\n"
+            << QGSVERSION << ")\n"
             << "Quantum GIS (QGIS) is a viewer for spatial data sets, including\n"
             << "raster and vector data.\n"
             << "Usage: " << appName <<  " [options] [FILES]\n"
@@ -99,6 +98,7 @@ void usage( std::string const & appName )
             << "\t[--extent xmin,ymin,xmax,ymax]\tset initial map extent\n"
             << "\t[--nologo]\thide splash screen\n"
             << "\t[--noplugins]\tdon't restore plugins on startup\n"
+            << "\t[--nocustomization]\tdon't apply GUI customization\n"
             << "\t[--optionspath path]\tuse the given QSettings path\n"
             << "\t[--configpath path]\tuse the given path for all user configuration\n"
             << "\t[--help]\t\tthis text\n\n"
@@ -212,6 +212,7 @@ int main( int argc, char *argv[] )
 
   bool myHideSplash = false;
   bool myRestorePlugins = true;
+  bool myCustomization = true;
 
   // This behaviour will set initial extent of map canvas, but only if
   // there are no command line arguments. This gives a usable map
@@ -246,6 +247,7 @@ int main( int argc, char *argv[] )
         {"help", no_argument, 0, '?'},
         {"nologo", no_argument, 0, 'n'},
         {"noplugins", no_argument, 0, 'P'},
+        {"nocustomization", no_argument, 0, 'C'},
         /* These options don't set a flag.
          *  We distinguish them by their indices. */
         {"snapshot", required_argument, 0, 's'},
@@ -309,6 +311,10 @@ int main( int argc, char *argv[] )
           myRestorePlugins = false;
           break;
 
+        case 'C':
+          myCustomization = false;
+          break;
+
         case 'e':
           myInitialExtent = optarg;
           break;
@@ -364,6 +370,10 @@ int main( int argc, char *argv[] )
     else if ( arg == "--noplugins" || arg == "-P" )
     {
       myRestorePlugins = false;
+    }
+    else if ( arg == "--nocustomization" || arg == "-C" )
+    {
+      myCustomization = false;
     }
     else if ( i + 1 < argc && ( arg == "--snapshot" || arg == "-s" ) )
     {
@@ -434,6 +444,9 @@ int main( int argc, char *argv[] )
     QSettings::setPath( QSettings::IniFormat, QSettings::UserScope, configpath );
   }
 
+  // GUI customization is enabled by default unless --nocustomization argument is used
+  QgsCustomization::instance()->setEnabled( myCustomization );
+
   QgsApplication myApp( argc, argv, myUseGuiFlag, configpath );
 
 // (if Windows/Mac, use icon from resource)
@@ -447,6 +460,10 @@ int main( int argc, char *argv[] )
   QCoreApplication::setOrganizationDomain( "qgis.org" );
   QCoreApplication::setApplicationName( "QGIS" );
   QCoreApplication::setAttribute( Qt::AA_DontShowIconsInMenus, false );
+
+  // Load and set possible default customization, must be done afterQgsApplication init and QSettings ( QCoreApplication ) init
+  QgsCustomization::instance()->loadDefault();
+
 #ifdef Q_OS_MACX
   // If the GDAL plugins are bundled with the application and GDAL_DRIVER_PATH
   // is not already defined, use the GDAL plugins in the application bundle.
@@ -462,26 +479,12 @@ int main( int argc, char *argv[] )
   QApplication::setStyle( new QPlastiqueStyle );
 #endif
 
-  // Check to see if qgis was started from the source directory.
-  // This is done by checking whether qgis binary is in 'src/app'
-  // directory. If running from there, exit gracefully.
-  // (QGIS might work incorrectly when run from the sources)
-  QString appDir = qApp->applicationDirPath();
+  QSettings mySettings;
 
-  if ( appDir.endsWith( "/src/app" ) )
-  {
-    QMessageBox::critical( 0, "QGIS Not Installed",
-                           "You appear to be running QGIS from the source directory.\n"
-                           "You must install QGIS using make install and run it from the "
-                           "installed directory." );
-    exit( 1 );
-  }
-
-  QString i18nPath = QgsApplication::i18nPath();
 
   /* Translation file for QGIS.
    */
-  QSettings mySettings;
+  QString i18nPath = QgsApplication::i18nPath();
   QString myUserLocale = mySettings.value( "locale/userLocale", "" ).toString();
   bool myLocaleOverrideFlag = mySettings.value( "locale/overrideFlag", false ).toBool();
   QString myLocale;
@@ -603,6 +606,12 @@ int main( int argc, char *argv[] )
 
   QgisApp *qgis = new QgisApp( mypSplash, myRestorePlugins ); // "QgisApp" used to find canonical instance
   qgis->setObjectName( "QgisApp" );
+
+  myApp.connect(
+    &myApp, SIGNAL( preNotify( QObject *, QEvent *, bool * ) ),
+    //qgis, SLOT( preNotify( QObject *, QEvent *))
+    QgsCustomization::instance(), SLOT( preNotify( QObject *, QEvent *, bool * ) )
+  );
 
   /////////////////////////////////////////////////////////////////////
   // If no --project was specified, parse the args to look for a     //

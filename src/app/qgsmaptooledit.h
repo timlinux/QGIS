@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QGSMAPTOOLEDIT_H
 #define QGSMAPTOOLEDIT_H
@@ -63,6 +62,7 @@ class QgsMapToolEdit: public QgsMapTool
        @param geom list of points (in layer coordinate system)
        @return 0 in case of success*/
     int addTopologicalPoints( const QList<QgsPoint>& geom );
+
 };
 
 #endif

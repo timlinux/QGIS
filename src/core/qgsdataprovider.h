@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QQGSDATAPROVIDER_H
 #define QQGSDATAPROVIDER_H
@@ -21,6 +20,8 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+
+//#include "qgsdataitem.h"
 
 class QgsRectangle;
 class QgsCoordinateReferenceSystem;
@@ -44,6 +45,17 @@ class CORE_EXPORT QgsDataProvider : public QObject
     Q_OBJECT
 
   public:
+
+    Q_ENUMS( DataCapability )
+
+    enum DataCapability
+    {
+      NoDataCapabilities  = 0,
+      File                = 1,
+      Dir                 = 1 << 1,
+      Database            = 1 << 2,
+      Net                 = 1 << 3  // Internet source
+    };
 
     QgsDataProvider( QString const & uri = "" )
         : mDataSourceURI( uri )
@@ -117,6 +129,7 @@ class CORE_EXPORT QgsDataProvider : public QObject
     {
       // NOP by default
       Q_UNUSED( subset );
+      Q_UNUSED( updateFeatureCount );
       return false;
     }
 

@@ -93,6 +93,13 @@ class QgsGrassModule: public QDialog, private  Ui::QgsGrassModuleBase
     // Returns empty list if not found.
     static QStringList execArguments( QString module );
 
+  signals:
+    // ! emitted when the module started
+    void moduleStarted();
+
+    // ! emitted when the module finished
+    void moduleFinished();
+
   public slots:
     //! Run the module with current options
     void on_mRunButton_clicked() { run(); }
@@ -180,20 +187,22 @@ class QgsGrassModuleOptions
     virtual QStringList checkOutput() { return QStringList() ; }
 
     //! Freeze output vector maps used in QGIS on Windows
-    virtual void freezeOutput() { return; }
+    virtual void freezeOutput() {}
 
     //! Thaw output vector maps used in QGIS on Windows
-    virtual void thawOutput() { return; }
+    virtual void thawOutput() { }
 
     //! Check if option is ready
     //  Returns empty string or error message
     virtual QStringList ready() { return QStringList() ; }
 
     //! Get list of current output maps
-    virtual QStringList output( int type ) { return QStringList() ; }
+    virtual QStringList output( int type )
+    { Q_UNUSED( type ); return QStringList(); }
 
     //! Has any output
-    virtual bool hasOutput( int type ) { return true; }
+    virtual bool hasOutput( int type )
+    { Q_UNUSED( type ); return true; }
 
     //! Has raster input or output
     virtual bool usesRegion() { return false; }
@@ -209,7 +218,8 @@ class QgsGrassModuleOptions
     //! Get region covering all input maps
     // \param all true all input maps
     // \param all false only the mas which were switched on
-    virtual bool inputRegion( struct Cell_head *window, bool all ) { return false; }
+    virtual bool inputRegion( struct Cell_head *window, bool all )
+    { Q_UNUSED( window ); Q_UNUSED( all ); return false; }
 
     // ! Flag names
     virtual QStringList flagNames() { return QStringList() ; }
@@ -480,6 +490,9 @@ class QgsGrassModuleOption: public QgsGrassModuleGroupBoxItem
     //  Raster input/output uses region by default
     //  Use of region can be forced by 'region' attribute in qgm
     bool usesRegion() { return mUsesRegion; }
+
+    //! Check min/max version
+    static bool checkVersion( QString version_min, QString version_max );
 
   public slots:
     // Add new line edit for multiple options

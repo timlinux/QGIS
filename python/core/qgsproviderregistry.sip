@@ -26,7 +26,7 @@ class QgsProviderRegistry
 
     void setLibraryDirectory(const QDir & path);
  
-    QgsDataProvider * getProvider( const QString & providerKey, 
+    QgsDataProvider *provider( const QString & providerKey,
                                    const QString & dataSource );
 
     /** Return list of available providers by their keys */
@@ -60,8 +60,6 @@ class QgsProviderRegistry
      * @note this method was added in QGIS 1.1
      */
     virtual QString protocolDrivers() const;
-    
-
 
   private:
 

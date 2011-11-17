@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsmaptooledit.h"
 #include "qgsproject.h"
@@ -22,7 +21,8 @@
 #include <QKeyEvent>
 #include <QSettings>
 
-QgsMapToolEdit::QgsMapToolEdit( QgsMapCanvas* canvas ): QgsMapTool( canvas )
+QgsMapToolEdit::QgsMapToolEdit( QgsMapCanvas* canvas )
+    : QgsMapTool( canvas )
 {
   mSnapper.setMapCanvas( canvas );
 }

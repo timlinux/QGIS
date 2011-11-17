@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsmaptoolmovefeature.h"
 #include "qgsgeometry.h"
@@ -155,7 +154,7 @@ void QgsMapToolMoveFeature::canvasReleaseEvent( QMouseEvent * e )
   double dx = stopPointLayerCoords.x() - startPointLayerCoords.x();
   double dy = stopPointLayerCoords.y() - startPointLayerCoords.y();
   vlayer->beginEditCommand( tr( "Feature moved" ) );
-  foreach( int id, mMovedFeatures )
+  foreach( QgsFeatureId id, mMovedFeatures )
   {
     vlayer->translateFeature( id, dx, dy );
   }

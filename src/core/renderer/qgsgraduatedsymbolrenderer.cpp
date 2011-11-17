@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgsgraduatedsymbolrenderer.cpp 5371 2006-04-25 01:52:13Z wonder $ */
 
 #include "qgis.h"
 #include "qgslogger.h"
@@ -34,6 +33,8 @@
 
 QgsGraduatedSymbolRenderer::QgsGraduatedSymbolRenderer( QGis::GeometryType type, Mode mode )
 {
+  Q_UNUSED( mode );
+
   mGeometryType = type;
 }
 

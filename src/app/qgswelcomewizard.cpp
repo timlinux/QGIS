@@ -66,7 +66,7 @@ int QgsWelcomeWizard::nextId() const
     case ChooseToRegisterPage:
       if ( mChooseToRegisterPage->mCbxRegister->isChecked() )
       {
-        mRegisterPage->webView->setUrl( "http://users.qgis.org/community-map/create_user_form.html" );
+        mRegisterPage->webView->setUrl( QUrl( "http://users.qgis.org/community-map/create_user_form.html" ) );
         return RegisterPage;
       }
       else

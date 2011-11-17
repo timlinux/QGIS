@@ -24,18 +24,21 @@
 
 #include "qgspallabeling.h"
 #include "qgslabelengineconfigdialog.h"
+#include "qgsexpressionbuilderdialog.h"
+#include "qgsexpression.h"
 
 #include <QColorDialog>
 #include <QFontDialog>
-
+#include <QTextEdit>
 #include <iostream>
 #include <QApplication>
-
-
+#include <QMessageBox>
 
 QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsMapCanvas* mapCanvas, QWidget* parent )
     : QDialog( parent ), mLBL( lbl ), mLayer( layer ), mMapCanvas( mapCanvas )
 {
+  if ( !layer ) return;
+
   setupUi( this );
 
   connect( btnTextColor, SIGNAL( clicked() ), this, SLOT( changeTextColor() ) );
@@ -44,6 +47,7 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
   connect( btnBufferColor, SIGNAL( clicked() ), this, SLOT( changeBufferColor() ) );
   connect( spinBufferSize, SIGNAL( valueChanged( double ) ), this, SLOT( updatePreview() ) );
   connect( btnEngineSettings, SIGNAL( clicked() ), this, SLOT( showEngineConfigDialog() ) );
+  connect( btnExpression, SIGNAL( clicked() ), this, SLOT( showExpressionDialog() ) );
 
   // set placement methods page based on geometry type
   switch ( layer->geometryType() )
@@ -61,17 +65,26 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
       Q_ASSERT( 0 && "NOOOO!" );
   }
 
+  //mTabWidget->setEnabled( chkEnableLabeling->isChecked() );
   chkMergeLines->setEnabled( layer->geometryType() == QGis::Line );
+  chkAddDirectionSymbol->setEnabled( layer->geometryType() == QGis::Line );
   label_19->setEnabled( layer->geometryType() != QGis::Point );
   mMinSizeSpinBox->setEnabled( layer->geometryType() != QGis::Point );
-
-  populateFieldNames();
 
   // load labeling settings from layer
   QgsPalLayerSettings lyr;
   lyr.readFromLayer( layer );
-
+  populateFieldNames();
   populateDataDefinedCombos( lyr );
+
+  chkEnableLabeling->setChecked( lyr.enabled );
+  mTabWidget->setEnabled( lyr.enabled );
+  cboFieldName->setEnabled( lyr.enabled );
+  btnExpression->setEnabled( lyr.enabled );
+
+  //Add the current expression to the bottom of the list.
+  if ( lyr.isExpression && !lyr.fieldName.isEmpty() )
+    cboFieldName->addItem( lyr.fieldName );
 
   // placement
   int distUnitIndex = lyr.distInMapUnits ? 1 : 0;
@@ -113,10 +126,8 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
     chkLineAbove->setChecked( lyr.placementFlags & QgsPalLayerSettings::AboveLine );
     chkLineBelow->setChecked( lyr.placementFlags & QgsPalLayerSettings::BelowLine );
     chkLineOn->setChecked( lyr.placementFlags & QgsPalLayerSettings::OnLine );
-    if ( lyr.placementFlags & QgsPalLayerSettings::MapOrientation )
-      radOrientationMap->setChecked( true );
-    else
-      radOrientationLine->setChecked( true );
+    if ( ! ( lyr.placementFlags & QgsPalLayerSettings::MapOrientation ) )
+      chkLineOrientationDependent->setChecked( true );
   }
 
   cboFieldName->setCurrentIndex( cboFieldName->findText( lyr.fieldName ) );
@@ -125,7 +136,6 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
   chkNoObstacle->setChecked( !lyr.obstacle );
   chkLabelPerFeaturePart->setChecked( lyr.labelPerPart );
   chkMergeLines->setChecked( lyr.mergeLines );
-  chkMultiLine->setChecked( lyr.multiLineLabels );
   mMinSizeSpinBox->setValue( lyr.minFeatureSize );
   chkAddDirectionSymbol->setChecked( lyr.addDirectionSymbol );
 
@@ -145,6 +155,20 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
   btnTextColor->setColor( lyr.textColor );
   btnBufferColor->setColor( lyr.bufferColor );
 
+  bool formattedNumbers = lyr.formatNumbers;
+  bool plusSign = lyr.plusSign;
+
+  chkFormattedNumbers->setChecked( formattedNumbers );
+  if ( formattedNumbers )
+  {
+    spinDecimals->setValue( lyr.decimals );
+  }
+  if ( plusSign )
+  {
+    chkPlusSign->setChecked( plusSign );
+  }
+
+
   if ( lyr.fontSizeInMapUnits )
   {
     mFontSizeUnitComboBox->setCurrentIndex( 1 );
@@ -163,6 +187,9 @@ QgsLabelingGui::QgsLabelingGui( QgsPalLabeling* lbl, QgsVectorLayer* layer, QgsM
 
   connect( chkBuffer, SIGNAL( toggled( bool ) ), this, SLOT( updateUi() ) );
   connect( chkScaleBasedVisibility, SIGNAL( toggled( bool ) ), this, SLOT( updateUi() ) );
+  connect( chkFormattedNumbers, SIGNAL( toggled( bool ) ), this, SLOT( updateUi() ) );
+  connect( chkLineAbove, SIGNAL( toggled( bool ) ), this, SLOT( updateUi() ) );
+  connect( chkLineBelow, SIGNAL( toggled( bool ) ), this, SLOT( updateUi() ) );
 
   // setup connection to changes in the placement
   QRadioButton* placementRadios[] =
@@ -184,7 +211,8 @@ QgsLabelingGui::~QgsLabelingGui()
 
 void QgsLabelingGui::apply()
 {
-  layerSettings().writeToLayer( mLayer );
+  QgsPalLayerSettings settings = layerSettings();
+  settings.writeToLayer( mLayer );
   // trigger refresh
   if ( mMapCanvas )
   {
@@ -196,6 +224,9 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
 {
   QgsPalLayerSettings lyr;
   lyr.fieldName = cboFieldName->currentText();
+  // Check if we are an expression. Also treats expressions with just a column name as non expressions,
+  // this saves time later so we don't have to parse the expression tree.
+  lyr.isExpression = mLayer->fieldNameIndex( lyr.fieldName ) == -1 && !lyr.fieldName.isEmpty();
 
   lyr.dist = 0;
   lyr.placementFlags = 0;
@@ -227,7 +258,7 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
     if ( chkLineOn->isChecked() )
       lyr.placementFlags |= QgsPalLayerSettings::OnLine;
 
-    if ( radOrientationMap->isChecked() )
+    if ( ! chkLineOrientationDependent->isChecked() )
       lyr.placementFlags |= QgsPalLayerSettings::MapOrientation;
   }
   else if (( stackedPlacement->currentWidget() == pageLine && radLineHorizontal->isChecked() )
@@ -250,7 +281,6 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
   lyr.obstacle = !chkNoObstacle->isChecked();
   lyr.labelPerPart = chkLabelPerFeaturePart->isChecked();
   lyr.mergeLines = chkMergeLines->isChecked();
-  lyr.multiLineLabels = chkMultiLine->isChecked();
   if ( chkScaleBasedVisibility->isChecked() )
   {
     lyr.scaleMin = spinScaleMin->value();
@@ -268,6 +298,18 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
   else
   {
     lyr.bufferSize = 0;
+  }
+  if ( chkFormattedNumbers->isChecked() )
+  {
+    lyr.formatNumbers = true;
+    lyr.decimals = spinDecimals->value();
+    lyr.plusSign = chkPlusSign->isChecked();
+  }
+  else
+  {
+    lyr.formatNumbers = false;
+    lyr.decimals = spinDecimals->value();
+    lyr.plusSign = true;
   }
   if ( chkAddDirectionSymbol->isChecked() )
   {
@@ -299,7 +341,6 @@ QgsPalLayerSettings QgsLabelingGui::layerSettings()
 
   return lyr;
 }
-
 
 void QgsLabelingGui::populateFieldNames()
 {
@@ -449,9 +490,25 @@ void QgsLabelingGui::showEngineConfigDialog()
   dlg.exec();
 }
 
+void QgsLabelingGui::showExpressionDialog()
+{
+  QgsExpressionBuilderDialog dlg( mLayer, cboFieldName->currentText() , this );
+  dlg.setWindowTitle( tr( "Expression based label" ) );
+  if ( dlg.exec() == QDialog::Accepted )
+  {
+    QString expression =  dlg.expressionBuilder()->getExpressionString();
+    //Only add the expression if the user has entered some text.
+    if ( !expression.isEmpty() )
+    {
+      cboFieldName->addItem( expression );
+      cboFieldName->setCurrentIndex( cboFieldName->count() - 1 );
+    }
+  }
+}
+
 void QgsLabelingGui::updateUi()
 {
-  // enable/disable scale-based, buffer
+  // enable/disable scale-based, buffer, decimals
   bool buf = chkBuffer->isChecked();
   spinBufferSize->setEnabled( buf );
   btnBufferColor->setEnabled( buf );
@@ -459,6 +516,11 @@ void QgsLabelingGui::updateUi()
   bool scale = chkScaleBasedVisibility->isChecked();
   spinScaleMin->setEnabled( scale );
   spinScaleMax->setEnabled( scale );
+
+  spinDecimals->setEnabled( chkFormattedNumbers->isChecked() );
+
+  bool offline = chkLineAbove->isChecked() || chkLineBelow->isChecked();
+  offlineOptions->setEnabled ( offline );
 }
 
 void QgsLabelingGui::changeBufferColor()
@@ -500,6 +562,7 @@ void QgsLabelingGui::on_mFontSizeSpinBox_valueChanged( double d )
 
 void QgsLabelingGui::on_mFontSizeUnitComboBox_currentIndexChanged( int index )
 {
+  Q_UNUSED( index );
   updateFont( lblFontPreview->font() );
 }
 

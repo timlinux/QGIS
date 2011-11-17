@@ -13,7 +13,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 #include "qgsgrassplugin.h"
 #include "qgis.h"
@@ -69,8 +68,10 @@ QgsGrassPlugin::QgsGrassPlugin( QgisInterface * theQgisInterFace ):
 
 QgsGrassPlugin::~QgsGrassPlugin()
 {
-  if ( mTools ) mTools->closeTools();
-  if ( mEdit ) mEdit->closeEdit();
+  if ( mTools )
+    mTools->closeTools();
+  if ( mEdit )
+    mEdit->closeEdit();
   QString err = QgsGrass::closeMapset();
 }
 
@@ -254,6 +255,7 @@ void QgsGrassPlugin::mapsetChanged()
     }
     catch ( QgsGrass::Exception &e )
     {
+      Q_UNUSED( e );
       QgsDebugMsg( "Cannot read GRASS CRS : " + QString( e.what() ) );
       mCrs = QgsCoordinateReferenceSystem();
     }
@@ -452,6 +454,7 @@ void QgsGrassPlugin::edit()
     mCanvas->refresh();
     connect( mEdit, SIGNAL( finished() ), this, SLOT( setEditAction() ) );
     connect( mEdit, SIGNAL( finished() ), this, SLOT( cleanUp() ) );
+    connect( mEdit, SIGNAL( destroyed() ), this, SLOT( editClosed() ) );
     connect( QgsMapLayerRegistry::instance(), SIGNAL( layerWillBeRemoved( QString ) ), this, SLOT( closeEdit( QString ) ) );
   }
   else
@@ -486,6 +489,12 @@ void QgsGrassPlugin::closeEdit( QString layerId )
   }
 }
 
+void QgsGrassPlugin::editClosed()
+{
+  if ( mEdit == sender() )
+    mEdit = 0;
+}
+
 void QgsGrassPlugin::cleanUp()
 {
   disconnect( QgsMapLayerRegistry::instance(), SIGNAL( layerWillBeRemoved( QString ) ), this, SLOT( closeEdit( QString ) ) );
@@ -509,7 +518,8 @@ void QgsGrassPlugin::newVector()
   name = dialog.getItem( "vector", tr( "New vector name" ),
                          tr( "New vector name" ), "", "", &ok );
 
-  if ( !ok ) return;
+  if ( !ok )
+    return;
 
   // Create new map
   QgsGrass::setMapset( QgsGrass::getDefaultGisdbase(),
@@ -579,6 +589,7 @@ void QgsGrassPlugin::newVector()
 
 void QgsGrassPlugin::postRender( QPainter *painter )
 {
+  Q_UNUSED( painter );
   // We have to redraw rectangle, because canvas->mapRenderer()->destinationCrs is set after GRASS plugin constructor! This way it is redrawn also if canvas CRS has changed.
   displayRegion();
 // QgsDebugMsg("entered.");
@@ -589,10 +600,12 @@ void QgsGrassPlugin::displayRegion()
 // QgsDebugMsg("entered.");
 
   mRegionBand->reset();
-  if ( !mRegionAction->isChecked() ) { return; }
+  if ( !mRegionAction->isChecked() )
+    return;
 
   // Display region of current mapset if in active mode
-  if ( !QgsGrass::activeMode() ) return;
+  if ( !QgsGrass::activeMode() )
+    return;
 
   QString gisdbase = QgsGrass::getDefaultGisdbase();
   QString location = QgsGrass::getDefaultLocation();
@@ -693,7 +706,8 @@ void QgsGrassPlugin::openMapset()
 
   QgsGrassSelect *sel = new QgsGrassSelect( QgsGrassSelect::MAPSET );
 
-  if ( !sel->exec() ) return;
+  if ( !sel->exec() )
+    return;
 
   QString err = QgsGrass::openMapset( sel->gisdbase,
                                       sel->location, sel->mapset );
@@ -836,6 +850,8 @@ void QgsGrassPlugin::unload()
 // Set icons to the current theme
 void QgsGrassPlugin::setCurrentTheme( QString theThemeName )
 {
+  Q_UNUSED( theThemeName );
+
   mOpenMapsetAction->setIcon( getThemeIcon( "grass_open_mapset.png" ) );
   mNewMapsetAction->setIcon( getThemeIcon( "grass_new_mapset.png" ) );
   mCloseMapsetAction->setIcon( getThemeIcon( "grass_close_mapset.png" ) );

@@ -18,7 +18,6 @@ Functions:
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 // includes
 
@@ -151,6 +150,7 @@ void QgsDelimitedTextPlugin::unload()
 //! Set icons to the current theme
 void QgsDelimitedTextPlugin::setCurrentTheme( QString theThemeName )
 {
+  Q_UNUSED( theThemeName );
   QString myCurThemePath = QgsApplication::activeThemePath() + "/plugins/delimited_text.png";
   QString myDefThemePath = QgsApplication::defaultThemePath() + "/plugins/delimited_text.png";
   QString myQrcPath = ":/delimited_text.png";

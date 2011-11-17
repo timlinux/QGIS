@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id:$ */
 #ifndef QGSABOUT_H
 #define QGSABOUT_H
 
@@ -27,10 +26,10 @@ class QgsAbout : public QDialog, private Ui::QgsAbout
     QgsAbout();
     ~QgsAbout();
     void setVersion( QString v );
-    void setWhatsNew( QString txt );
     static QString fileSystemSafe( QString string );
 
   private:
+    void setWhatsNew( );
     void setPluginInfo();
     void init();
     void openUrl( QString url );

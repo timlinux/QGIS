@@ -16,7 +16,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 
 //
@@ -100,6 +99,8 @@ void QgsSpatialQueryPlugin::unload()
 
   delete mSpatialQueryAction;
 
+  delete mDialog;
+  mDialog = NULL;
 }
 
 void QgsSpatialQueryPlugin::run()

@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "coordinatecapturemaptool.h"
 #include "qgscursors.h"
@@ -54,6 +53,7 @@ void CoordinateCaptureMapTool::canvasMoveEvent( QMouseEvent * thepEvent )
 
 void CoordinateCaptureMapTool::canvasPressEvent( QMouseEvent * thepEvent )
 {
+  Q_UNUSED( thepEvent );
 }
 
 void CoordinateCaptureMapTool::canvasReleaseEvent( QMouseEvent * thepEvent )

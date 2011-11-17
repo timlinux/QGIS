@@ -44,9 +44,6 @@
 #define M_PI 4*atan(1.0)
 #endif
 
-static const char * const ident_ =
-  "$Id$";
-
 QgsLabel::QgsLabel( const QgsFieldMap & fields )
     : mMinScale( 0 ),
     mMaxScale( 100000000 ),
@@ -90,6 +87,8 @@ void QgsLabel::renderLabel( QgsRenderContext &renderContext,
                             QgsFeature &feature, bool selected,
                             QgsLabelAttributes *classAttributes )
 {
+  Q_UNUSED( classAttributes );
+
   if ( mLabelAttributes->selectedOnly() && !selected )
     return;
 

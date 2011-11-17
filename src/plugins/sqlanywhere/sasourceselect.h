@@ -23,7 +23,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 #ifndef SASOURCESELECT_H
 #define SASOURCESELECT_H
@@ -64,6 +63,7 @@ class SaSourceSelectDelegate : public QItemDelegate
       const QStyleOptionViewItem &option,
       const QModelIndex &index ) const
     {
+      Q_UNUSED( option );
       if ( index.column() == SaDbTableModel::dbtmSql )
       {
         QLineEdit *le = new QLineEdit( parent );

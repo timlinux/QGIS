@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #include "qgsattributedialog.h"
 #include "qgsfield.h"
 #include "qgslogger.h"
@@ -25,8 +24,8 @@
 #include "qgssymbol.h"
 #include "qgsattributeeditor.h"
 #include "qgshighlight.h"
-#include "qgssearchstring.h"
-#include "qgssearchtreenode.h"
+#include "qgsexpression.h"
+#include "qgspythonrunner.h"
 
 #include "qgisapp.h"
 
@@ -94,12 +93,12 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
     mDialog->resize( 447, 343 );
     gridLayout = new QGridLayout( mDialog );
     gridLayout->setSpacing( 6 );
-    gridLayout->setMargin( 11 );
+    gridLayout->setMargin( 2 );
     gridLayout->setObjectName( QString::fromUtf8( "gridLayout" ) );
     mFrame = new QFrame( mDialog );
     mFrame->setObjectName( QString::fromUtf8( "mFrame" ) );
-    mFrame->setFrameShape( QFrame::StyledPanel );
-    mFrame->setFrameShadow( QFrame::Raised );
+    mFrame->setFrameShape( QFrame::NoFrame );
+    mFrame->setFrameShadow( QFrame::Plain );
 
     gridLayout->addWidget( mFrame, 0, 0, 1, 1 );
 
@@ -116,6 +115,8 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
 
     mFrame->setLayout( mypOuterLayout );
     QScrollArea *mypScrollArea = new QScrollArea();
+    mypScrollArea->setFrameShape( QFrame::NoFrame );
+    mypScrollArea->setFrameShadow( QFrame::Plain );
     //transfers scroll area ownership so no need to call delete
     mypOuterLayout->addWidget( mypScrollArea );
     QFrame *mypInnerFrame = new QFrame();
@@ -169,6 +170,7 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
       mpWidgets << myWidget;
       ++index;
     }
+
     // Set focus to first widget in list, to help entering data without moving the mouse.
     if ( mpWidgets.size() > 0 )
     {
@@ -205,15 +207,12 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
       QString expr = le->text();
       le->setText( tr( "Error" ) );
 
-      QgsSearchString ss;
-      if ( !ss.setString( expr ) )
+      QgsExpression exp( expr );
+      if ( exp.hasParserError() )
         continue;
 
-      QgsSearchTreeNode *st = ss.tree();
-      if ( !st )
-        continue;
 
-      if ( !mFeature->geometry() && st->needsGeometry() )
+      if ( !mFeature->geometry() && exp.needsGeometry() )
       {
         QgsFeature f;
         if ( vl->featureAtId( mFeature->id(), f, true, false ) && f.geometry() )
@@ -222,19 +221,24 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
         }
       }
 
-      QgsSearchTreeValue value;
-      st->getValue( value, st, vl->pendingFields(), *mFeature );
+      QVariant value = exp.evaluate( mFeature, vl->pendingFields() );
 
-      if ( !value.isError() )
+      if ( !exp.hasEvalError() )
       {
-        if ( value.isNumeric() )
-          le->setText( QString::number( value.number() ) );
-        else
-          le->setText( value.string() );
+        QString text;
+        switch ( value.type() )
+        {
+          case QVariant::Invalid: text = "NULL"; break;
+          case QVariant::Int: text = QString::number( value.toInt() ); break;
+          case QVariant::Double: text = QString::number( value.toDouble() ); break;
+          case QVariant::String:
+          default: text = value.toString();
+        }
+        le->setText( text );
       }
       else
       {
-        le->setText( tr( "Error: %1" ).arg( st->errorMsg() ) );
+        le->setText( tr( "Error: %1" ).arg( exp.evalErrorString() ) );
       }
     }
   }
@@ -282,15 +286,15 @@ QgsAttributeDialog::QgsAttributeDialog( QgsVectorLayer *vl, QgsFeature *thepFeat
     int pos = module.lastIndexOf( "." );
     if ( pos >= 0 )
     {
-      QgisApp::instance()->runPythonString( QString( "import %1" ).arg( module.left( pos ) ) );
+      QgsPythonRunner::run( QString( "import %1" ).arg( module.left( pos ) ) );
     }
 
     mFormNr = smFormCounter++;
-    QgisApp::instance()->runPythonString( QString( "_qgis_featureform_%1 = wrapinstance( %2, QtGui.QDialog )" ).arg( mFormNr ).arg(( unsigned long ) mDialog ) );
+    QgsPythonRunner::run( QString( "_qgis_featureform_%1 = wrapinstance( %2, QtGui.QDialog )" ).arg( mFormNr ).arg(( unsigned long ) mDialog ) );
 
     QString expr = QString( "%1(_qgis_featureform_%2,'%3',%4)" ).arg( vl->editFormInit() ).arg( mFormNr ).arg( vl->id() ).arg( mFeature->id() );
     QgsDebugMsg( QString( "running featureForm init: %1" ).arg( expr ) );
-    QgisApp::instance()->runPythonString( expr );
+    QgsPythonRunner::run( expr );
   }
 
   restoreGeometry();
@@ -401,7 +405,7 @@ void QgsAttributeDialog::dialogDestroyed()
   if ( -1 < mFormNr )
   {
     QString expr = QString( "if locals().has_key('_qgis_featureform_%1'): del _qgis_featureform_%1\n" ).arg( mFormNr );
-    QgisApp::instance()->runPythonString( expr );
+    QgsPythonRunner::run( expr );
   }
 
   mDialog = NULL;

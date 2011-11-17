@@ -48,7 +48,7 @@ QgsGrassTools::QgsGrassTools( QgisInterface *iface,
                               QWidget * parent, const char * name, Qt::WFlags f )
     : QDialog( parent, f ), QgsGrassToolsBase()
 {
-
+  Q_UNUSED( name );
   setupUi( this );
   QgsDebugMsg( "QgsGrassTools()" );
   qRegisterMetaType<QgsDetailedItemData>();
@@ -119,8 +119,10 @@ QgsGrassTools::QgsGrassTools( QgisInterface *iface,
 
 void QgsGrassTools::moduleClicked( QTreeWidgetItem * item, int column )
 {
+  Q_UNUSED( column );
   QgsDebugMsg( "entered." );
-  if ( !item ) return;
+  if ( !item )
+    return;
 
   QString name = item->text( 1 );
   QgsDebugMsg( QString( "name = %1" ).arg( name ) );
@@ -129,7 +131,8 @@ void QgsGrassTools::moduleClicked( QTreeWidgetItem * item, int column )
 
 void QgsGrassTools::runModule( QString name )
 {
-  if ( name.length() == 0 ) return;  // Section
+  if ( name.length() == 0 )
+    return;  // Section
 
 #ifndef WIN32
   QgsGrassShell* sh = 0;
@@ -141,7 +144,7 @@ void QgsGrassTools::runModule( QString name )
   if ( name == "shell" )
   {
 #ifdef WIN32
-    QgsGrass::putEnv( "GRASS_HTML_BROWSER", QgsApplication::prefixPath() + "/" QGIS_LIBEXEC_SUBDIR "/grass/bin/qgis.g.browser" );
+    QgsGrass::putEnv( "GRASS_HTML_BROWSER", QgsApplication::libexecPath() + "grass/bin/qgis.g.browser" );
     if ( !QProcess::startDetached( getenv( "COMSPEC" ) ) )
     {
       QMessageBox::warning( 0, "Warning", tr( "Cannot start command shell (%1)" ).arg( getenv( "COMSPEC" ) ) );
@@ -160,8 +163,11 @@ void QgsGrassTools::runModule( QString name )
   }
   else
   {
-    m = qobject_cast<QWidget *>( new QgsGrassModule( this, name,
-                                 mIface, path, mTabWidget ) );
+    QgsGrassModule *gmod = new QgsGrassModule( this, name, mIface, path, mTabWidget );
+    connect( gmod, SIGNAL( moduleStarted() ), mBrowser, SLOT( moduleStarted() ) );
+    connect( gmod, SIGNAL( moduleFinished() ), mBrowser, SLOT( moduleFinished() ) );
+
+    m = qobject_cast<QWidget *>( gmod );
   }
 
   int height = mTabWidget->iconSize().height();
@@ -184,12 +190,15 @@ void QgsGrassTools::runModule( QString name )
   // We must call resize to reset COLUMNS environment variable
   // used by bash !!!
 
+#if 0
   /* TODO: Implement something that resizes the terminal without
    *       crashes.
-  #ifndef WIN32
-    if ( sh ) sh->resizeTerminal();
-  #endif
-  */
+   */
+#ifndef WIN32
+  if ( sh )
+    sh->resizeTerminal();
+#endif
+#endif
 }
 
 bool QgsGrassTools::loadConfig( QString filePath )
@@ -258,9 +267,19 @@ void QgsGrassTools::addModules( QTreeWidgetItem *parent, QDomElement &element )
     {
 // QgsDebugMsg(QString("tag = %1").arg(e.tagName()));
 
-      if ( e.tagName() == "section" && e.tagName() == "grass" )
+      if ( e.tagName() != "section" && e.tagName() != "grass" )
       {
         QgsDebugMsg( QString( "Unknown tag: %1" ).arg( e.tagName() ) );
+        continue;
+      }
+
+      // Check GRASS version
+      QString version_min = e.attribute( "version_min" );
+      QString version_max = e.attribute( "version_max" );
+
+      if ( !QgsGrassModuleOption::checkVersion( e.attribute( "version_min" ), e.attribute( "version_max" ) ) )
+      {
+        n = n.nextSibling();
         continue;
       }
 

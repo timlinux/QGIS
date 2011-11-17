@@ -16,7 +16,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include <algorithm>
 #include <iostream>
@@ -416,6 +415,7 @@ void QgsGPXProvider::select( QgsAttributeList fetchAttributes,
                              bool fetchGeometry,
                              bool useIntersect )
 {
+  Q_UNUSED( useIntersect );
   delete mSelectionRectangle;
   mSelectionRectangle = 0;
 
@@ -716,7 +716,7 @@ bool QgsGPXProvider::deleteFeatures( const QgsFeatureIds & id )
 }
 
 
-bool QgsGPXProvider::changeAttributeValues( const QgsChangedAttributesMap & attr_map )
+bool QgsGPXProvider::changeAttributeValues( const QgsChangedAttributesMap &attr_map )
 {
   QgsChangedAttributesMap::const_iterator aIter = attr_map.begin();
   if ( mFeatureType == WaypointType )

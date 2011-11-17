@@ -18,7 +18,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 /***************************************************************************
  *   QGIS Programming conventions:
@@ -61,7 +60,6 @@
 //
 #include "qgsgeorefplugingui.h"
 
-static const char * const sIdent = "$Id$";
 static const QString sName = QObject::tr( "Georeferencer GDAL" );
 static const QString sDescription = QObject::tr( "Georeferencing rasters using GDAL" );
 static const QString sPluginVersion = QObject::tr( "Version 3.1.9" );
@@ -82,7 +80,8 @@ static const QString sPluginIcon = ":/icons/mGeorefRun.png";
  */
 QgsGeorefPlugin::QgsGeorefPlugin( QgisInterface * theQgisInterface ):
     QgisPlugin( sName, sDescription, sPluginVersion, sPluginType ),
-    mQGisIface( theQgisInterface )
+    mQGisIface( theQgisInterface ),
+    mPluginGui( NULL )
 {
 }
 
@@ -117,8 +116,8 @@ void QgsGeorefPlugin::initGui()
 // Slot called when the buffer menu item is triggered
 void QgsGeorefPlugin::run()
 {
-  mPluginGui = new QgsGeorefPluginGui( mQGisIface, mQGisIface->mainWindow() );
-  mPluginGui->setAttribute( Qt::WA_DeleteOnClose );
+  if ( !mPluginGui )
+    mPluginGui = new QgsGeorefPluginGui( mQGisIface, mQGisIface->mainWindow() );
   mPluginGui->show();
   mPluginGui->setFocus();
 }
@@ -133,6 +132,9 @@ void QgsGeorefPlugin::unload()
 
   delete mActionRunGeoref;
   delete mActionAbout;
+
+  delete mPluginGui;
+  mPluginGui = NULL;
 }
 
 //! Set icons to the current theme

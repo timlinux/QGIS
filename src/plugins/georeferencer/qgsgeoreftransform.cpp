@@ -13,7 +13,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id */
 
 #include "qgsgeoreftransform.h"
 
@@ -180,8 +179,8 @@ void QgsGeorefTransform::selectTransformParametrisation( TransformParametrisatio
 
 bool QgsGeorefTransform::providesAccurateInverseTransformation() const
 {
-  return ( mTransformParametrisation == Linear \
-           || mTransformParametrisation == Helmert \
+  return ( mTransformParametrisation == Linear
+           || mTransformParametrisation == Helmert
            || mTransformParametrisation == PolynomialOrder1 );
 }
 
@@ -246,7 +245,6 @@ QgsGeorefTransformInterface *QgsGeorefTransform::createImplementation( Transform
     case ThinPlateSpline:  return new QgsGDALGeorefTransform( true, 0 );
     case Projective:       return new QgsProjectiveGeorefTransform;
     default:               return NULL;
-      break;
   }
 }
 
@@ -310,7 +308,8 @@ bool QgsGeorefTransform::gdal_transform( const QgsPoint &src, QgsPoint &dst, int
 {
   GDALTransformerFunc t = GDALTransformer();
   // Fail if no transformer function was returned
-  if ( !t ) return false;
+  if ( !t )
+    return false;
 
   // Copy the source coordinate for inplace transform
   double x = src.x();
@@ -353,6 +352,7 @@ uint QgsLinearGeorefTransform::getMinimumGCPCount() const
 int QgsLinearGeorefTransform::linear_transform( void *pTransformerArg, int bDstToSrc, int nPointCount,
     double *x, double *y, double *z, int *panSuccess )
 {
+  Q_UNUSED( z );
   LinearParameters* t = static_cast<LinearParameters*>( pTransformerArg );
   if ( t == NULL )
   {
@@ -427,6 +427,7 @@ bool QgsHelmertGeorefTransform::getOriginScaleRotation( QgsPoint &origin, double
 int QgsHelmertGeorefTransform::helmert_transform( void *pTransformerArg, int bDstToSrc, int nPointCount,
     double *x, double *y, double *z, int *panSuccess )
 {
+  Q_UNUSED( z );
   HelmertParameters* t = static_cast<HelmertParameters*>( pTransformerArg );
   if ( t == NULL )
   {
@@ -492,7 +493,8 @@ QgsGDALGeorefTransform::~QgsGDALGeorefTransform()
 bool QgsGDALGeorefTransform::updateParametersFromGCPs( const std::vector<QgsPoint> &mapCoords, const std::vector<QgsPoint> &pixelCoords )
 {
   assert( mapCoords.size() == pixelCoords.size() );
-  if ( mapCoords.size() != pixelCoords.size() ) return false;
+  if ( mapCoords.size() != pixelCoords.size() )
+    return false;
   int n = mapCoords.size();
 
   GDAL_GCP *GCPList = new GDAL_GCP[n];
@@ -533,7 +535,8 @@ uint QgsGDALGeorefTransform::getMinimumGCPCount() const
 GDALTransformerFunc QgsGDALGeorefTransform::GDALTransformer() const
 {
   // Fail if no arguments were calculated through updateParametersFromGCP
-  if ( !mGDALTransformerArgs ) return NULL;
+  if ( !mGDALTransformerArgs )
+    return NULL;
 
   if ( mIsTPSTransform )
     return GDALTPSTransform;
@@ -614,6 +617,7 @@ uint QgsProjectiveGeorefTransform::getMinimumGCPCount() const
 int QgsProjectiveGeorefTransform::projective_transform( void *pTransformerArg, int bDstToSrc, int nPointCount,
     double *x, double *y, double *z, int *panSuccess )
 {
+  Q_UNUSED( z );
   ProjectiveParameters* t = static_cast<ProjectiveParameters*>( pTransformerArg );
   if ( t == NULL )
   {

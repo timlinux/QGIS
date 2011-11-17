@@ -1,22 +1,9 @@
 ADD_DEFINITIONS(-DGRASS_BASE=\\\"${GRASS_PREFIX}\\\")
 
 ########################################################
-# Files
-
-SET(GRASS_PROVIDER_SRCS provider.cpp)
-
-SET(GRASS_RASTER_PROVIDER_SRCS qgsgrassrasterprovider.cpp)
-
-SET(GRASS_LIB_SRCS qgsgrassprovider.cpp qgsgrass.cpp)
-
-SET(QGIS_D_RAST_SRCS qgis.d.rast.c)
-
-SET(QGIS_G_INFO_SRCS qgis.g.info.c)
-
-########################################################
 # Build
 
-INCLUDE_DIRECTORIES (
+INCLUDE_DIRECTORIES(
   ../../core
   ../../core/raster
   ${GRASS_INCLUDE_DIR}
@@ -25,18 +12,24 @@ INCLUDE_DIRECTORIES (
   ${GEOS_INCLUDE_DIR}
 )
 
-QT4_WRAP_CPP(GRASS_MOC_SRCS qgsgrassprovider.h)
-ADD_LIBRARY (qgisgrass SHARED ${GRASS_LIB_SRCS} ${GRASS_MOC_SRCS})
+#
+# GRASS library
+#
 
-SET_TARGET_PROPERTIES(qgisgrass PROPERTIES VERSION ${COMPLETE_VERSION} SOVERSION ${COMPLETE_VERSION})
+ADD_LIBRARY(qgisgrass SHARED qgsgrass.cpp)
 
-IF (WIN32)
-  SET_TARGET_PROPERTIES(qgisgrass PROPERTIES COMPILE_FLAGS "\"-DGRASS_EXPORT=__declspec(dllexport)\"" )
-ELSE (WIN32)
-  SET_TARGET_PROPERTIES(qgisgrass PROPERTIES COMPILE_FLAGS "-DGRASS_EXPORT=" )
-ENDIF (WIN32)
+SET_TARGET_PROPERTIES(qgisgrass PROPERTIES
+  VERSION ${COMPLETE_VERSION}
+  SOVERSION ${COMPLETE_VERSION}
+  CLEAN_DIRECT_OUTPUT 1
+  FRAMEWORK 1
+  FRAMEWORK_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}"
+  MACOSX_FRAMEWORK_INFO_PLIST "${CMAKE_SOURCE_DIR}/mac/framework.info.plist.in"
+  MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${COMPLETE_VERSION}
+  MACOSX_FRAMEWORK_IDENTIFIER org.qgis.qgisgrass
+  COMPILE_FLAGS "\"-DGRASS_LIB_EXPORT=${DLLEXPORT}\" \"-DGRASS_EXPORT=${DLLIMPORT}\"" )
 
-TARGET_LINK_LIBRARIES (qgisgrass
+TARGET_LINK_LIBRARIES(qgisgrass
   qgis_core
   ${GRASS_LIBRARY_gis}
   ${GRASS_LIBRARY_vect}
@@ -49,43 +42,51 @@ IF (APPLE)
   SET_TARGET_PROPERTIES(qgisgrass PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE )
 ENDIF (APPLE)
 
-ADD_LIBRARY (grassprovider MODULE ${GRASS_PROVIDER_SRCS} ${GRASS_MOC_SRCS})
+#
+# GRASS vector provider
+#
 
-IF (WIN32)
-  SET_TARGET_PROPERTIES(grassprovider PROPERTIES COMPILE_FLAGS "\"-DGRASS_EXPORT=__declspec(dllexport)\"" )
-ELSE (WIN32)
-  SET_TARGET_PROPERTIES(grassprovider PROPERTIES COMPILE_FLAGS "-DGRASS_EXPORT=" )
-ENDIF (WIN32)
+QT4_WRAP_CPP(GRASS_PROVIDER_MOC_SRCS qgsgrassprovider.h)
+# provider must be built as module on OS X so it gets loaded,
+# other modules that need provider symbols must dynamically lookup them
+IF (APPLE)
+    ADD_LIBRARY(grassprovider MODULE qgsgrassprovider.cpp ${GRASS_PROVIDER_MOC_SRCS})
+ELSE (APPLE)
+    ADD_LIBRARY(grassprovider SHARED qgsgrassprovider.cpp ${GRASS_PROVIDER_MOC_SRCS})
+ENDIF (APPLE)
+SET_TARGET_PROPERTIES(grassprovider PROPERTIES COMPILE_FLAGS "\"-DGRASS_EXPORT=${DLLEXPORT}\" \"-DGRASS_LIB_EXPORT=${DLLIMPORT}\"" )
+TARGET_LINK_LIBRARIES(grassprovider qgisgrass)
 
-TARGET_LINK_LIBRARIES (grassprovider
-  qgisgrass
-)
+#
+# grass raster provider
+#
 
-QT4_WRAP_CPP(GRASS_MOC_RASTERSRCS qgsgrassrasterprovider.h)
-ADD_LIBRARY (grassrasterprovider MODULE ${GRASS_RASTER_PROVIDER_SRCS} ${GRASS_MOC_RASTERSRCS})
+QT4_WRAP_CPP(GRASS_RASTERPROVIDER_MOC_SRCS qgsgrassrasterprovider.h)
+ADD_LIBRARY(grassrasterprovider MODULE qgsgrassrasterprovider.cpp ${GRASS_RASTERPROVIDER_MOC_SRCS})
+SET_TARGET_PROPERTIES(grassrasterprovider PROPERTIES COMPILE_FLAGS "\"-DGRASS_EXPORT=${DLLEXPORT}\" \"-DGRASS_LIB_EXPORT=${DLLIMPORT}\"" )
+TARGET_LINK_LIBRARIES(grassrasterprovider qgisgrass qgis_core)
 
-IF (WIN32)
-  SET_TARGET_PROPERTIES(grassrasterprovider PROPERTIES COMPILE_FLAGS "\"-DGRASS_EXPORT=__declspec(dllexport)\"" )
-ELSE (WIN32)
-  SET_TARGET_PROPERTIES(grassrasterprovider PROPERTIES COMPILE_FLAGS "-DGRASS_EXPORT=" )
-ENDIF (WIN32)
+# override default path where built files are put to allow running qgis without installing
+# the modules go under libexec subdir
+SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${QGIS_OUTPUT_DIRECTORY}/${QGIS_LIBEXEC_SUBDIR}/grass/modules)
 
-TARGET_LINK_LIBRARIES (grassrasterprovider
-  qgisgrass
-  qgis_core
-)
+#
+# grass raster display module
+#
 
-ADD_EXECUTABLE(qgis.d.rast ${QGIS_D_RAST_SRCS})
-
-TARGET_LINK_LIBRARIES (qgis.d.rast
+ADD_EXECUTABLE(qgis.d.rast qgis.d.rast.c)
+TARGET_LINK_LIBRARIES(qgis.d.rast
   ${GRASS_LIBRARY_gis}
   ${GRASS_LIBRARY_datetime}
   ${GDAL_LIBRARY}
 )
 
-ADD_EXECUTABLE(qgis.g.info ${QGIS_G_INFO_SRCS})
+#
+# grass info module
+#
 
-TARGET_LINK_LIBRARIES (qgis.g.info
+ADD_EXECUTABLE(qgis.g.info qgis.g.info.c)
+TARGET_LINK_LIBRARIES(qgis.g.info
   ${GRASS_LIBRARY_gis}
   ${GRASS_LIBRARY_datetime}
   ${GRASS_LIBRARY_gproj}
@@ -97,7 +98,8 @@ TARGET_LINK_LIBRARIES (qgis.g.info
 
 INSTALL(TARGETS qgisgrass
   RUNTIME DESTINATION ${QGIS_BIN_DIR}
-  LIBRARY DESTINATION ${QGIS_LIB_DIR})
+  LIBRARY DESTINATION ${QGIS_LIB_DIR}
+  FRAMEWORK DESTINATION ${QGIS_FW_SUBDIR})
        
 INSTALL(TARGETS grassprovider
   RUNTIME DESTINATION ${QGIS_PLUGIN_DIR}

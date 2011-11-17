@@ -13,7 +13,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgsmaptoolselectrangle.cpp 13380 2010-04-25 12:51:49Z jef $ */
 
 #include "qgsmaptoolselectrectangle.h"
 #include "qgsmaptoolselectutils.h"
@@ -39,14 +38,15 @@ QgsMapToolSelectRectangle::QgsMapToolSelectRectangle( QgsMapCanvas* canvas )
 }
 
 
-void QgsMapToolSelectRectangle::canvasPressEvent( QMouseEvent * e )
+void QgsMapToolSelectRectangle::canvasPressEvent( QMouseEvent *e )
 {
+  Q_UNUSED( e );
   mSelectRect.setRect( 0, 0, 0, 0 );
   mRubberBand = new QgsRubberBand( mCanvas, true );
 }
 
 
-void QgsMapToolSelectRectangle::canvasMoveEvent( QMouseEvent * e )
+void QgsMapToolSelectRectangle::canvasMoveEvent( QMouseEvent *e )
 {
   if ( e->buttons() != Qt::LeftButton )
     return;
@@ -61,7 +61,7 @@ void QgsMapToolSelectRectangle::canvasMoveEvent( QMouseEvent * e )
 }
 
 
-void QgsMapToolSelectRectangle::canvasReleaseEvent( QMouseEvent * e )
+void QgsMapToolSelectRectangle::canvasReleaseEvent( QMouseEvent *e )
 {
   QgsVectorLayer* vlayer = QgsMapToolSelectUtils::getCurrentVectorLayer( mCanvas );
   if ( vlayer == NULL )

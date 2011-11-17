@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef _QGSVECTORFILEWRITER_H_
 #define _QGSVECTORFILEWRITER_H_
@@ -54,6 +53,7 @@ class CORE_EXPORT QgsVectorFileWriter
       ErrAttributeCreationFailed,
       ErrProjection,  // added in 1.5
       ErrFeatureWriteFailed, // added in 1.6
+      ErrInvalidLayer, // added in 2.0
     };
 
     /** Write contents of vector layer to a shapefile
@@ -115,6 +115,8 @@ class CORE_EXPORT QgsVectorFileWriter
 
     /** add feature to the currently opened shapefile */
     bool addFeature( QgsFeature& feature );
+
+    QMap<int, int> attrIdxToOgrIdx() { return mAttrIdxToOgrIdx; }
 
     /** close opened shapefile for writing */
     ~QgsVectorFileWriter();

@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #include "qgscoordinatetransform.h"
 #include "qgsmessageoutput.h"
 #include "qgslogger.h"
@@ -222,7 +221,8 @@ void QgsCoordinateTransform::initialise()
 
 QgsPoint QgsCoordinateTransform::transform( const QgsPoint thePoint, TransformDirection direction ) const
 {
-  if ( mShortCircuit || !mInitialisedFlag ) return thePoint;
+  if ( mShortCircuit || !mInitialisedFlag )
+    return thePoint;
   // transform x
   double x = thePoint.x();
   double y = thePoint.y();
@@ -258,7 +258,8 @@ QgsPoint QgsCoordinateTransform::transform( const double theX, const double theY
 
 QgsRectangle QgsCoordinateTransform::transform( const QgsRectangle theRect, TransformDirection direction ) const
 {
-  if ( mShortCircuit || !mInitialisedFlag ) return theRect;
+  if ( mShortCircuit || !mInitialisedFlag )
+    return theRect;
   // transform x
   double x1 = theRect.xMinimum();
   double y1 = theRect.yMinimum();
@@ -350,8 +351,14 @@ QgsRectangle QgsCoordinateTransform::transformBoundingBox( const QgsRectangle re
   // This is done by looking at a number of points spread evenly
   // across the rectangle
 
-  if ( mShortCircuit || !mInitialisedFlag || rect.isEmpty() )
+  if ( mShortCircuit || !mInitialisedFlag )
     return rect;
+
+  if ( rect.isEmpty() )
+  {
+    QgsPoint p = transform( rect.xMinimum(), rect.yMinimum(), direction );
+    return QgsRectangle( p, p );
+  }
 
   static const int numP = 8;
 
@@ -562,6 +569,8 @@ const char *finder( const char *name )
 #ifdef WIN32
   proj = QApplication::applicationDirPath()
          + "/share/proj/" + QString( name );
+#else
+  Q_UNUSED( name );
 #endif
   return proj.toUtf8();
 }

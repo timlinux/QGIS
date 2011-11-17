@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgis.h 9774 2008-12-12 05:41:24Z timlinux $ */
 
 #include "qgsoverlayanalyzer.h"
 
@@ -151,9 +150,9 @@ void QgsOverlayAnalyzer::intersectFeature( QgsFeature& f, QgsVectorFileWriter* v
     return;
   }
 
-  QList<int> intersects;
+  QList<QgsFeatureId> intersects;
   intersects = index->intersects( featureGeometry->boundingBox() );
-  QList<int>::const_iterator it = intersects.constBegin();
+  QList<QgsFeatureId>::const_iterator it = intersects.constBegin();
   QgsFeature outFeature;
   for ( ; it != intersects.constEnd(); ++it )
   {

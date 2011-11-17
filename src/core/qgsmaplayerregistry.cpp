@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include <iostream>
 
@@ -150,5 +149,6 @@ QMap<QString, QgsMapLayer*> & QgsMapLayerRegistry::mapLayers()
 
 void QgsMapLayerRegistry::connectNotify( const char * signal )
 {
+  Q_UNUSED( signal );
   //QgsDebugMsg("QgsMapLayerRegistry connected to " + QString(signal));
 } //  QgsMapLayerRegistry::connectNotify

@@ -32,8 +32,8 @@
 #include <QUiLoader>
 #include <QWidget>
 
-QgsFormAnnotationItem::QgsFormAnnotationItem( QgsMapCanvas* canvas, QgsVectorLayer* vlayer, bool hasFeature, int feature ): \
-    QgsAnnotationItem( canvas ), mWidgetContainer( 0 ), mDesignerWidget( 0 ), mVectorLayer( vlayer ), \
+QgsFormAnnotationItem::QgsFormAnnotationItem( QgsMapCanvas* canvas, QgsVectorLayer* vlayer, bool hasFeature, int feature )
+    : QgsAnnotationItem( canvas ), mWidgetContainer( 0 ), mDesignerWidget( 0 ), mVectorLayer( vlayer ),
     mHasAssociatedFeature( hasFeature ), mFeature( feature )
 {
   mWidgetContainer = new QGraphicsProxyWidget( this );
@@ -115,11 +115,13 @@ void QgsFormAnnotationItem::setMapPosition( const QgsPoint& pos )
 
 void QgsFormAnnotationItem::paint( QPainter * painter )
 {
-
+  Q_UNUSED( painter );
 }
 
 void QgsFormAnnotationItem::paint( QPainter * painter, const QStyleOptionGraphicsItem * option, QWidget * widget )
 {
+  Q_UNUSED( option );
+  Q_UNUSED( widget );
   if ( !painter || !mWidgetContainer )
   {
     return;
@@ -131,8 +133,8 @@ void QgsFormAnnotationItem::paint( QPainter * painter, const QStyleOptionGraphic
     drawMarkerSymbol( painter );
   }
 
-  mWidgetContainer->setGeometry( QRectF( mOffsetFromReferencePoint.x() + mFrameBorderWidth / 2.0, mOffsetFromReferencePoint.y() \
-                                         + mFrameBorderWidth / 2.0, mFrameSize.width() - mFrameBorderWidth, mFrameSize.height() \
+  mWidgetContainer->setGeometry( QRectF( mOffsetFromReferencePoint.x() + mFrameBorderWidth / 2.0, mOffsetFromReferencePoint.y()
+                                         + mFrameBorderWidth / 2.0, mFrameSize.width() - mFrameBorderWidth, mFrameSize.height()
                                          - mFrameBorderWidth ) );
 
   if ( isSelected() )
@@ -228,12 +230,12 @@ void QgsFormAnnotationItem::setFeatureForMapPosition()
   QSettings settings;
   double identifyValue = settings.value( "/Map/identifyRadius", QGis::DEFAULT_IDENTIFY_RADIUS ).toDouble();
   double halfIdentifyWidth = mMapCanvas->extent().width() / 100 / 2 * identifyValue;
-  QgsRectangle searchRect( mMapPosition.x() - halfIdentifyWidth, mMapPosition.y() - halfIdentifyWidth, \
+  QgsRectangle searchRect( mMapPosition.x() - halfIdentifyWidth, mMapPosition.y() - halfIdentifyWidth,
                            mMapPosition.x() + halfIdentifyWidth, mMapPosition.y() + halfIdentifyWidth );
   mVectorLayer->select( noAttributes, searchRect, false, true );
 
   QgsFeature currentFeature;
-  int currentFeatureId = 0;
+  QgsFeatureId currentFeatureId = 0;
   bool featureFound = false;
 
   while ( mVectorLayer->nextFeature( currentFeature ) )

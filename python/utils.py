@@ -11,7 +11,7 @@ import traceback
 import glob
 import os.path
 import re
-
+import ConfigParser
 
 #######################
 # ERROR HANDLING
@@ -24,7 +24,7 @@ def showException(type, value, tb, msg):
   for s in lst:
     txt += s.decode('utf-8', 'replace')
   txt += '<br>%s<br>%s<br><br>' % (QCoreApplication.translate('Python','Python version:'), sys.version)
-  txt += '<br>%s<br>%s %s, %s<br><br>' % (QCoreApplication.translate('Python','QGIS version:'), QGis.QGIS_VERSION, QGis.QGIS_RELEASE_NAME, QGis.QGIS_SVN_VERSION)
+  txt += '<br>%s<br>%s %s, %s<br><br>' % (QCoreApplication.translate('Python','QGIS version:'), QGis.QGIS_VERSION, QGis.QGIS_RELEASE_NAME, QGis.QGIS_DEV_VERSION)
   txt += '%s %s' % (QCoreApplication.translate('Python','Python path:'), str(sys.path))
   txt = txt.replace('\n', '<br>')
   txt = txt.replace('  ', '&nbsp; ') # preserve whitespaces for nicer output
@@ -72,29 +72,55 @@ active_plugins = []
 # list of plugins in plugin directory and home plugin directory
 available_plugins = []
 
+# dictionary of plugins providing metadata in a text file (metadata.txt)
+# key = plugin package name, value = config parser instance
+plugins_metadata_parser = {}
+
 def findPlugins(path):
+  """ for internal use: return list of plugins in given path """
   plugins = []
   for plugin in glob.glob(path + "/*"):
     if os.path.isdir(plugin) and os.path.exists(os.path.join(plugin, '__init__.py')):
       plugins.append( os.path.basename(plugin) )
   return plugins
 
+def _checkMetadataFile(pluginpath, plugin):
+  """ Check whether there exists a metadata.txt file.
+      That is now a preferred way to store plugin's metadata """
+  metadataFile = os.path.join(pluginpath, plugin, 'metadata.txt')
+  if not os.path.exists(metadataFile):
+    return None
+  cp = ConfigParser.ConfigParser()
+  res = cp.read(metadataFile)
+  if len(res) == 0:
+    return None # reading of metadata file failed
+  return cp
+
 def updateAvailablePlugins():
   """ go thrgouh the plugin_paths list and find out what plugins are available """
   # merge the lists
   plugins = []
+  metadata_parser = {}
   for pluginpath in plugin_paths:
     for p in findPlugins(pluginpath):
       if p not in plugins:
         plugins.append(p)
+        cp = _checkMetadataFile(pluginpath, p)
+        if cp: metadata_parser[p] = cp
 
   global available_plugins
   available_plugins = plugins
+  global plugins_metadata_parser
+  plugins_metadata_parser = metadata_parser
 
 
 def pluginMetadata(packageName, fct):
   """ fetch metadata from a plugin """
   try:
+    # try to use values from metadata.txt if available
+    if plugins_metadata_parser.has_key(packageName):
+      return plugins_metadata_parser[packageName].get('general', fct)
+    # otherwise fall back to old method, using __init__.py
     package = sys.modules[packageName]
     return getattr(package, fct)()
   except:

@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsgcpcanvasitem.h"
 #include "qgsgeorefdatapoint.h"
@@ -86,13 +85,13 @@ void QgsGCPCanvasItem::paint( QPainter* p )
     textFont.setPixelSize( fontSizePainterUnits( 12, context ) );
     p->setFont( textFont );
     QRectF textBounds = p->boundingRect( 3 * context.scaleFactor(), 3 * context.scaleFactor(), 5 * context.scaleFactor(), 5 * context.scaleFactor(), Qt::AlignLeft, msg );
-    mTextBoxRect = QRectF( textBounds.x() - context.scaleFactor() * 1, textBounds.y() - context.scaleFactor() * 1, \
+    mTextBoxRect = QRectF( textBounds.x() - context.scaleFactor() * 1, textBounds.y() - context.scaleFactor() * 1,
                            textBounds.width() + 2 * context.scaleFactor(), textBounds.height() + 2 * context.scaleFactor() );
     p->drawRect( mTextBoxRect );
     p->drawText( textBounds, Qt::AlignLeft, msg );
   }
 
-  if ( data( 0 ) != "composer" ) //draw residuals only on screen
+  if ( data( 1 ) != "composer" ) //draw residuals only on screen
   {
     drawResidualArrow( p, context );
   }
@@ -163,6 +162,7 @@ void QgsGCPCanvasItem::updatePosition()
 
 void QgsGCPCanvasItem::drawResidualArrow( QPainter* p, const QgsRenderContext& context )
 {
+  Q_UNUSED( context );
   if ( !mDataPoint || !mIsGCPSource || !mMapCanvas )
   {
     return;

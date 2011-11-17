@@ -21,6 +21,16 @@ symbology-ng/qgsvectorrandomcolorrampv2dialog.cpp
 symbology-ng/qgsvectorcolorbrewercolorrampv2dialog.cpp
 symbology-ng/characterwidget.cpp
 symbology-ng/qgsstylev2exportimportdialog.cpp
+symbology-ng/qgsellipsesymbollayerv2widget.cpp
+symbology-ng/qgspointdisplacementrendererwidget.cpp
+symbology-ng/qgsvectorfieldsymbollayerwidget.cpp
+
+attributetable/qgsattributetablemodel.cpp
+attributetable/qgsattributetablememorymodel.cpp
+attributetable/qgsattributetableview.cpp
+attributetable/qgsattributetablefiltermodel.cpp
+attributetable/qgsattributetableidcolumnpair.cpp
+attributetable/qgsattributetabledelegate.cpp
 
 qgisgui.cpp
 qgisinterface.cpp
@@ -38,6 +48,7 @@ qgsfiledropedit.cpp
 qgsfieldvalidator.cpp
 qgsformannotationitem.cpp
 qgsgenericprojectionselector.cpp
+qgsmanageconnectionsdialog.cpp
 qgsmapcanvas.cpp
 qgsmapcanvasitem.cpp
 qgsmapcanvasmap.cpp
@@ -49,6 +60,9 @@ qgsmaptoolemitpoint.cpp
 qgsmaptoolpan.cpp
 qgsmaptoolzoom.cpp
 qgsmessageviewer.cpp
+qgsnewhttpconnection.cpp
+qgsnewvectorlayerdialog.cpp
+qgsnumericsortlistviewitem.cpp
 qgscredentialdialog.cpp
 qgsprojectbadlayerguihandler.cpp
 qgsprojectionselector.cpp
@@ -58,6 +72,9 @@ qgstextannotationitem.cpp
 qgsvertexmarker.cpp
 qgsludialog.cpp
 qgssearchquerybuilder.cpp
+qgsexpressionbuilderwidget.cpp
+qgsexpressionbuilderdialog.cpp
+qgsquerybuilder.cpp
 )
 
 SET(QGIS_GUI_MOC_HDRS
@@ -82,6 +99,14 @@ symbology-ng/characterwidget.h
 symbology-ng/qgspenstylecombobox.h
 symbology-ng/qgsbrushstylecombobox.h
 symbology-ng/qgsstylev2exportimportdialog.h
+symbology-ng/qgsellipsesymbollayerv2widget.h
+symbology-ng/qgspointdisplacementrendererwidget.h
+symbology-ng/qgsvectorfieldsymbollayerwidget.h
+
+attributetable/qgsattributetableview.h
+attributetable/qgsattributetablemodel.h
+attributetable/qgsattributetablememorymodel.h
+attributetable/qgsattributetabledelegate.h
 
 qgsattributeeditor.h
 qgscomposerview.h
@@ -93,10 +118,13 @@ qgsencodingfiledialog.h
 qgsfieldvalidator.h
 qgsformannotationitem.h
 qgsgenericprojectionselector.h
+qgsmanageconnectionsdialog.h
 qgsmapcanvas.h
 qgsmapoverviewcanvas.h
 qgsmaptoolemitpoint.h
 qgsmessageviewer.h
+qgsnewhttpconnection.h
+qgsnewvectorlayerdialog.h
 qgscredentialdialog.h
 qgsprojectionselector.h
 qgsquickprint.h
@@ -104,10 +132,61 @@ qgsludialog.h
 qgsprojectbadlayerguihandler.h
 qgslonglongvalidator.h
 qgssearchquerybuilder.h
+qgsexpressionbuilderwidget.h
+qgsquerybuilder.h
 )
 
 QT4_WRAP_CPP(QGIS_GUI_MOC_SRCS ${QGIS_GUI_MOC_HDRS})
 
+# for installing headers
+
+SET(QGIS_GUI_HDRS
+qgisgui.h
+qgisinterface.h
+qgscolorbutton.h
+qgscursors.h
+qgsencodingfiledialog.h
+qgsfiledropedit.h
+qgsgenericprojectionselector.h
+qgsmapcanvas.h
+qgsmapcanvasitem.h
+qgsmapcanvasmap.h
+qgsmapcanvassnapper.h
+qgsmapoverviewcanvas.h
+qgsmaptool.h
+qgsmaptoolemitpoint.h
+qgsmaptoolpan.h
+qgsmaptoolzoom.h
+qgsmessageviewer.h
+qgscredentialdialog.h
+qgsprojectionselector.h
+qgsrubberband.h
+qgsvertexmarker.h
+qgsmaptip.h
+qgssearchquerybuilder.h
+qgsattributeeditor.h
+qgsfieldvalidator.h
+qgsexpressionbuilderwidget.h
+qgsexpressionbuilderdialog.h
+
+attributetable/qgsattributetablemodel.h
+attributetable/qgsattributetablememorymodel.h
+attributetable/qgsattributetableview.h
+attributetable/qgsattributetablefiltermodel.h
+attributetable/qgsattributetableidcolumnpair.h
+attributetable/qgsattributetabledelegate.h
+)
+
+SET(QGIS_GUI_UI_HDRS
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsdetaileditemwidgetbase.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsgenericprojectionselectorbase.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsmessageviewer.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgscredentialdialog.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsprojectionselectorbase.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsquerybuilderbase.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsexpressionbuilder.h
+${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsexpressionbuilderdialogbase.h
+)
 
 INCLUDE_DIRECTORIES(
   ${QT_QTUITOOLS_INCLUDE_DIR}
@@ -157,9 +236,18 @@ ENDIF(MSVC)
 #############################################################
 # qgis_gui library
 
-ADD_LIBRARY(qgis_gui SHARED ${QGIS_GUI_SRCS} ${QGIS_GUI_MOC_SRCS})
+ADD_LIBRARY(qgis_gui SHARED ${QGIS_GUI_SRCS} ${QGIS_GUI_MOC_SRCS} ${QGIS_GUI_HDRS} ${QGIS_GUI_MOC_HDRS})
 
-SET_TARGET_PROPERTIES(qgis_gui PROPERTIES VERSION ${COMPLETE_VERSION} SOVERSION ${COMPLETE_VERSION})
+SET_TARGET_PROPERTIES(qgis_gui PROPERTIES
+  VERSION ${COMPLETE_VERSION}
+  SOVERSION ${COMPLETE_VERSION}
+  PUBLIC_HEADER "${QGIS_GUI_HDRS};${QGIS_GUI_MOC_HDRS}"
+  CLEAN_DIRECT_OUTPUT 1
+  FRAMEWORK 1
+  FRAMEWORK_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}"
+  MACOSX_FRAMEWORK_INFO_PLIST "${CMAKE_SOURCE_DIR}/mac/framework.info.plist.in"
+  MACOSX_FRAMEWORK_SHORT_VERSION_STRING ${COMPLETE_VERSION}
+  MACOSX_FRAMEWORK_IDENTIFIER org.qgis.qgis_gui)
 
 # make sure that UI files will be processed first
 ADD_DEPENDENCIES(qgis_gui ui)
@@ -177,49 +265,27 @@ IF (APPLE)
   SET_TARGET_PROPERTIES(qgis_gui PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE )
 ENDIF (APPLE)
 
+# install
+
 INSTALL(TARGETS qgis_gui
   RUNTIME DESTINATION ${QGIS_BIN_DIR}
   LIBRARY DESTINATION ${QGIS_LIB_DIR}
-  ARCHIVE DESTINATION ${QGIS_LIB_DIR})
+  ARCHIVE DESTINATION ${QGIS_LIB_DIR}
+  FRAMEWORK DESTINATION ${QGIS_FW_SUBDIR}
+  PUBLIC_HEADER DESTINATION ${QGIS_INCLUDE_DIR})
 
-# for installing headers
+# ui headers to install, don't exist at target definition time, install manually
+IF (APPLE)
+  INSTALL(FILES ${QGIS_GUI_UI_HDRS} DESTINATION ${QGIS_FW_SUBDIR}/qgis_gui.framework/Headers)
+ELSE (APPLE)
+  INSTALL(FILES ${QGIS_GUI_UI_HDRS} DESTINATION ${QGIS_INCLUDE_DIR})
+ENDIF (APPLE)
 
-SET(QGIS_GUI_HDRS
-qgisgui.h
-qgisinterface.h
-qgscolorbutton.h
-qgscursors.h
-qgsencodingfiledialog.h
-qgsfiledropedit.h
-qgsgenericprojectionselector.h
-qgsmapcanvas.h
-qgsmapcanvasitem.h
-qgsmapcanvasmap.h
-qgsmapcanvassnapper.h
-qgsmapoverviewcanvas.h
-qgsmaptool.h
-qgsmaptoolemitpoint.h
-qgsmaptoolpan.h
-qgsmaptoolzoom.h
-qgsmessageviewer.h
-qgscredentialdialog.h
-qgsprojectionselector.h
-qgsrubberband.h
-qgsvertexmarker.h
-qgsmaptip.h
-qgssearchquerybuilder.h
-qgsattributeeditor.h
-qgsfieldvalidator.h
+# Mac dev frameworks
 
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsdetaileditemwidgetbase.h
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsgenericprojectionselectorbase.h
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsmessageviewer.h
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgscredentialdialog.h
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsprojectionselectorbase.h
-${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsquerybuilderbase.h
-)
-
-
-INSTALL(CODE "MESSAGE(\"Installing GUI headers...\")")
-INSTALL(FILES ${QGIS_GUI_HDRS} ${QGIS_GUI_MOC_HDRS} DESTINATION ${QGIS_INCLUDE_DIR})
-
+IF (APPLE AND QGIS_MACAPP_INSTALL_DEV)
+  INSTALL(TARGETS qgis_gui FRAMEWORK DESTINATION ${QGIS_MACAPP_DEV_PREFIX})
+  INSTALL(FILES ${QGIS_GUI_UI_HDRS} DESTINATION ${QGIS_MACAPP_DEV_PREFIX}/qgis_gui.framework/Headers)
+  INSTALL(CODE "EXECUTE_PROCESS(COMMAND install_name_tool -id \"${QGIS_MACAPP_DEV_PREFIX}/qgis_gui.framework/Versions/${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}/qgis_gui\" \"$ENV{DESTDIR}${QGIS_MACAPP_DEV_PREFIX}/qgis_gui.framework/qgis_gui\")")
+  INSTALL(CODE "EXECUTE_PROCESS(COMMAND install_name_tool -change \"${CMAKE_INSTALL_NAME_DIR}/qgis_core.framework/Versions/${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}/qgis_core\" \"${QGIS_MACAPP_DEV_PREFIX}/qgis_core.framework/Versions/${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}/qgis_core\" \"$ENV{DESTDIR}${QGIS_MACAPP_DEV_PREFIX}/qgis_gui.framework/qgis_gui\")")
+ENDIF (APPLE AND QGIS_MACAPP_INSTALL_DEV)

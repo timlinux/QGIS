@@ -86,23 +86,18 @@ set OSGEO4W_ROOT=C:\OSGeo4W
 call "%OSGEO4W_ROOT%\bin\o4w_env.bat"
 
 @set GRASS_PREFIX=c:/OSGeo4W/apps/grass/grass-6.4.0
-@set INCLUDE=%INCLUDE%;%OSGEO4W_ROOT%\apps\gdal-17\include;%OSGEO4W_ROOT%\include
-@set LIB=%LIB%;%OSGEO4W_ROOT%\apps\gdal-17\lib;%OSGEO4W_ROOT%\lib
+@set INCLUDE=%INCLUDE%;%OSGEO4W_ROOT%\include
+@set LIB=%LIB%;%OSGEO4W_ROOT%\lib;%OSGEO4W_ROOT%\lib
 
 @cmd
 ```
 
 Start the batch file and on the command prompt checkout the QGIS source from
-svn to the source directory ``qgis-trunk``:
+git to the source directory ``Quantum-GIS``:
+
 
 ```
-svn co https://svn.osgeo.org/qgis/trunk/qgis qgis-trunk
-```
-
-or using git-svn (from the git shell):
-
-```
-git svn clone --username $USER --revision 15611:HEAD https://svn.osgeo.org/qgis/trunk/qgis
+git clone git://github.com/qgis/Quantum-GIS.git
 ```
 
 Create a 'build' directory somewhere. This will be where all the build output

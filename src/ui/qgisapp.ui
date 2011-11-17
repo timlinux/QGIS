@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1054</width>
-    <height>491</height>
+    <width>1052</width>
+    <height>489</height>
    </rect>
   </property>
   <widget class="QWidget" name="centralwidget"/>
@@ -16,8 +16,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1054</width>
-     <height>27</height>
+     <width>1052</width>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="mEditMenu">
@@ -31,15 +31,13 @@
     <addaction name="mActionCopyFeatures"/>
     <addaction name="mActionPasteFeatures"/>
     <addaction name="separator"/>
-    <addaction name="mActionCapturePoint"/>
-    <addaction name="mActionCaptureLine"/>
-    <addaction name="mActionCapturePolygon"/>
+    <addaction name="mActionAddFeature"/>
     <addaction name="mActionMoveFeature"/>
     <addaction name="mActionDeleteSelected"/>
     <addaction name="separator"/>
     <addaction name="mActionSimplifyFeature"/>
     <addaction name="mActionAddRing"/>
-    <addaction name="mActionAddIsland"/>
+    <addaction name="mActionAddPart"/>
     <addaction name="mActionDeleteRing"/>
     <addaction name="mActionDeletePart"/>
     <addaction name="mActionReshapeFeatures"/>
@@ -100,6 +98,14 @@
      <addaction name="mActionMeasureArea"/>
      <addaction name="mActionMeasureAngle"/>
     </widget>
+    <widget class="QMenu" name="menuDecorations">
+     <property name="title">
+      <string>&amp;Decorations</string>
+     </property>
+     <addaction name="mActionDecorationCopyright"/>
+     <addaction name="mActionDecorationNorthArrow"/>
+     <addaction name="mActionDecorationScaleBar"/>
+    </widget>
     <addaction name="mActionPan"/>
     <addaction name="mActionZoomIn"/>
     <addaction name="mActionZoomOut"/>
@@ -115,12 +121,12 @@
     <addaction name="mActionZoomNext"/>
     <addaction name="mActionZoomActualSize"/>
     <addaction name="separator"/>
+    <addaction name="menuDecorations"/>
     <addaction name="mActionMapTips"/>
     <addaction name="mActionNewBookmark"/>
     <addaction name="mActionShowBookmarks"/>
     <addaction name="mActionDraw"/>
     <addaction name="mActionTileScale"/>
-    <addaction name="mActionGpsTool"/>
    </widget>
    <widget class="QMenu" name="mLayerMenu">
     <property name="title">
@@ -134,12 +140,14 @@
      <addaction name="mActionNewSpatialiteLayer"/>
     </widget>
     <addaction name="menuNew"/>
+    <addaction name="mActionEmbedLayers"/>
     <addaction name="mActionAddOgrLayer"/>
     <addaction name="mActionAddRasterLayer"/>
     <addaction name="mActionAddPgLayer"/>
     <addaction name="mActionAddSpatiaLiteLayer"/>
     <addaction name="mActionAddWmsLayer"/>
     <addaction name="mActionAddLayerSeparator"/>
+    <addaction name="mActionAddWfsLayer"/>
     <addaction name="separator"/>
     <addaction name="mActionOpenTable"/>
     <addaction name="mActionSaveEdits"/>
@@ -159,17 +167,6 @@
     <addaction name="separator"/>
     <addaction name="mActionShowAllLayers"/>
     <addaction name="mActionHideAllLayers"/>
-   </widget>
-   <widget class="QMenu" name="mSettingsMenu">
-    <property name="title">
-     <string>&amp;Settings</string>
-    </property>
-    <addaction name="mActionProjectProperties"/>
-    <addaction name="mActionCustomProjection"/>
-    <addaction name="mActionStyleManagerV2"/>
-    <addaction name="mActionConfigureShortcuts"/>
-    <addaction name="mActionOptions"/>
-    <addaction name="mActionSnappingOptions"/>
    </widget>
    <widget class="QMenu" name="mPluginMenu">
     <property name="title">
@@ -197,6 +194,18 @@
     <addaction name="separator"/>
     <addaction name="mActionAbout"/>
     <addaction name="mActionSponsors"/>
+   </widget>
+   <widget class="QMenu" name="mSettingsMenu">
+    <property name="title">
+     <string>&amp;Settings</string>
+    </property>
+    <addaction name="mActionProjectProperties"/>
+    <addaction name="mActionCustomProjection"/>
+    <addaction name="mActionStyleManagerV2"/>
+    <addaction name="mActionConfigureShortcuts"/>
+    <addaction name="mActionCustomization"/>
+    <addaction name="mActionOptions"/>
+    <addaction name="mActionSnappingOptions"/>
    </widget>
    <addaction name="mFileMenu"/>
    <addaction name="mEditMenu"/>
@@ -240,6 +249,7 @@
    <addaction name="mActionAddPgLayer"/>
    <addaction name="mActionAddSpatiaLiteLayer"/>
    <addaction name="mActionAddWmsLayer"/>
+   <addaction name="mActionAddWfsLayer"/>
    <addaction name="mActionNewVectorLayer"/>
    <addaction name="mActionRemoveLayer"/>
   </widget>
@@ -255,9 +265,7 @@
    </attribute>
    <addaction name="mActionToggleEditing"/>
    <addaction name="mActionSaveEdits"/>
-   <addaction name="mActionCapturePoint"/>
-   <addaction name="mActionCaptureLine"/>
-   <addaction name="mActionCapturePolygon"/>
+   <addaction name="mActionAddFeature"/>
    <addaction name="mActionMoveFeature"/>
    <addaction name="mActionNodeTool"/>
    <addaction name="mActionDeleteSelected"/>
@@ -279,7 +287,7 @@
    <addaction name="mActionRedo"/>
    <addaction name="mActionSimplifyFeature"/>
    <addaction name="mActionAddRing"/>
-   <addaction name="mActionAddIsland"/>
+   <addaction name="mActionAddPart"/>
    <addaction name="mActionDeleteRing"/>
    <addaction name="mActionDeletePart"/>
    <addaction name="mActionReshapeFeatures"/>
@@ -530,49 +538,19 @@
     <string>Ctrl+V</string>
    </property>
   </action>
-  <action name="mActionCapturePoint">
+  <action name="mActionAddFeature">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="../../images/images.qrc">
-     <normaloff>:/images/themes/default/mActionCapturePoint.png</normaloff>:/images/themes/default/mActionCapturePoint.png</iconset>
+    <iconset>
+     <normaloff>:/images/themes/default/mActionAddFeature.png</normaloff>:/images/themes/default/mActionAddFeature.png</iconset>
    </property>
    <property name="text">
-    <string>Capture Point</string>
+    <string>Add feature</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+.</string>
-   </property>
-  </action>
-  <action name="mActionCaptureLine">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../../images/images.qrc">
-     <normaloff>:/images/themes/default/mActionCaptureLine.png</normaloff>:/images/themes/default/mActionCaptureLine.png</iconset>
-   </property>
-   <property name="text">
-    <string>Capture Line</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+/</string>
-   </property>
-  </action>
-  <action name="mActionCapturePolygon">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../../images/images.qrc">
-     <normaloff>:/images/themes/default/mActionCapturePolygon.png</normaloff>:/images/themes/default/mActionCapturePolygon.png</iconset>
-   </property>
-   <property name="text">
-    <string>Capture Polygon</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+?</string>
    </property>
   </action>
   <action name="mActionMoveFeature">
@@ -632,13 +610,13 @@
     <string>Add Ring</string>
    </property>
   </action>
-  <action name="mActionAddIsland">
+  <action name="mActionAddPart">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="icon">
     <iconset resource="../../images/images.qrc">
-     <normaloff>:/images/themes/default/mActionAddIsland.png</normaloff>:/images/themes/default/mActionAddIsland.png</iconset>
+     <normaloff>:/images/themes/default/mActionAddPart.png</normaloff>:/images/themes/default/mActionAddPart.png</iconset>
    </property>
    <property name="text">
     <string>Add Part</string>
@@ -1219,11 +1197,6 @@
     <string>Tile scale slider</string>
    </property>
   </action>
-  <action name="mActionGpsTool">
-   <property name="text">
-    <string>Live GPS tracking</string>
-   </property>
-  </action>
   <action name="mActionLayerProperties">
    <property name="text">
     <string>Properties...</string>
@@ -1491,6 +1464,82 @@
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="mActionCustomization">
+   <property name="icon">
+    <iconset resource="../../images/images.qrc">
+     <normaloff>:/images/themes/default/mActionOptions.png</normaloff>:/images/themes/default/mActionOptions.png</iconset>
+   </property>
+   <property name="text">
+    <string>Customization...</string>
+   </property>
+  </action>
+  <action name="actionActionCatchForCustomization">
+   <property name="text">
+    <string>mActionCatchForCustomization</string>
+   </property>
+   <property name="toolTip">
+    <string>This is here just to avoid shortcut conflicts, the shortcut is caught in QgsCustomization</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
+  </action>
+  <action name="mActionEmbedLayers">
+   <property name="text">
+    <string>Embed layers and groups...</string>
+   </property>
+   <property name="toolTip">
+    <string>Embed layers and groups from other project files</string>
+   </property>
+  </action>
+  <action name="mActionDecorationCopyright">
+   <property name="icon">
+    <iconset resource="../../images/images.qrc">
+     <normaloff>:/images/themes/default/plugins/copyright_label.png</normaloff>:/images/themes/default/plugins/copyright_label.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Copyright Label</string>
+   </property>
+   <property name="whatsThis">
+    <string>Creates a copyright label that is displayed on the map canvas.</string>
+   </property>
+  </action>
+  <action name="mActionDecorationNorthArrow">
+   <property name="icon">
+    <iconset resource="../../images/images.qrc">
+     <normaloff>:/images/themes/default/plugins/north_arrow.png</normaloff>:/images/themes/default/plugins/north_arrow.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;North Arrow</string>
+   </property>
+   <property name="whatsThis">
+    <string>&quot;Creates a north arrow that is displayed on the map canvas&quot;</string>
+   </property>
+  </action>
+  <action name="mActionDecorationScaleBar">
+   <property name="icon">
+    <iconset resource="../../images/images.qrc">
+     <normaloff>:/images/themes/default/plugins/scale_bar.png</normaloff>:/images/themes/default/plugins/scale_bar.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Scale Bar</string>
+   </property>
+   <property name="whatsThis">
+    <string>Creates a scale bar that is displayed on the map canvas</string>
+   </property>
+  </action>
+  <action name="mActionAddWfsLayer">
+   <property name="icon">
+    <iconset resource="../../images/images.qrc">
+     <normaloff>:/images/themes/default/mActionAddWfsLayer.png</normaloff>:/images/themes/default/mActionAddWfsLayer.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add WFS Layer...</string>
+   </property>
+   <property name="toolTip">
+    <string>Add WFS Layer</string>
    </property>
   </action>
  </widget>

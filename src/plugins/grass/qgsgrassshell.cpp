@@ -33,6 +33,7 @@ extern "C"
 QgsGrassShell::QgsGrassShell( QgsGrassTools *tools, QTabWidget *parent, const char *name )
     : QFrame( parent ), mTools( tools ), mTabWidget( parent )
 {
+  Q_UNUSED( name );
   QVBoxLayout *mainLayout = new QVBoxLayout( this );
   QTermWidget *mTerminal = new QTermWidget( 0, this );
   initTerminal( mTerminal );
@@ -46,16 +47,16 @@ QgsGrassShell::QgsGrassShell( QgsGrassTools *tools, QTabWidget *parent, const ch
   connect( pasteShortcut, SIGNAL( activated() ), mTerminal, SLOT( pasteClipboard() ) );
   connect( copyShortcut, SIGNAL( activated() ), mTerminal, SLOT( copyClipboard() ) );
 
+#if 0
   // TODO: find a better way to manage the lockfile.
   // Locking should not be done here, a mapset is either locked by GRASS if QGIS is started from GRASS or it is created by QgsGrass::openMapset
-  /*
   mLockFilename = QgsGrass::lockFilePath();
   QFile::remove( mLockFilename + ".qgis" );
   if ( !QFile::rename( mLockFilename, mLockFilename + ".qgis" ) )
   {
     QMessageBox::warning( this, tr( "Warning" ), tr( "Cannot rename the lock file %1" ).arg( mLockFilename ) );
   }
-  */
+#endif
 
   mTerminal->setSize( 80, 25 );
   mTerminal->setColorScheme( COLOR_SCHEME_BLACK_ON_LIGHT_YELLOW );
@@ -72,15 +73,16 @@ void QgsGrassShell::closeShell()
   int index = mTabWidget->indexOf( this );
   mTabWidget->removeTab( index );
 
+#if 0
   // TODO: find a better way to manage the lockfile.
   // No locking should be done here, see above
-  /*
+
   if ( !QFile::rename( mLockFilename + ".qgis", mLockFilename ) )
   {
     QMessageBox::warning( this, tr( "Warning" ), tr( "Cannot rename the lock file %1" ).arg( mLockFilename ) );
   }
-  */
-  this->deleteLater();
+#endif
+  deleteLater();
 }
 
 void QgsGrassShell::initTerminal( QTermWidget *terminal )
@@ -95,7 +97,7 @@ void QgsGrassShell::initTerminal( QTermWidget *terminal )
   env << "TERM=vt100";
   env << "GISRC_MODE_MEMORY";
   // TODO: we should check if these environment variable were set by user before QGIS was started
-  env << "GRASS_HTML_BROWSER=" + QgsApplication::prefixPath() + "/" QGIS_LIBEXEC_SUBDIR "/grass/bin/qgis.g.browser";
+  env << "GRASS_HTML_BROWSER=" + QgsApplication::libexecPath() + "grass/bin/qgis.g.browser";
   env << "GRASS_WISH=wish";
   env << "GRASS_TCLSH=tclsh";
   env << "GRASS_PYTHON=python";

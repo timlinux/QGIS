@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsuniquevaluedialog.h"
 #include "qgsfeature.h"
@@ -286,7 +285,7 @@ void QgsUniqueValueDialog::changeClassificationAttribute()
                               tr( "The classification field was changed from '%1' to '%2'.\n"
                                   "Should the existing classes be deleted before classification?" )
                               .arg( mOldClassificationAttribute ).arg( attributeName ),
-                              QMessageBox::Ok | QMessageBox::Cancel ) == QMessageBox::Ok )
+                              QMessageBox::Yes | QMessageBox::No ) == QMessageBox::Yes )
   {
     mClassListWidget->clearSelection();
     deleteSelectedClasses();

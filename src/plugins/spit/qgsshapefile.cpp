@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include <QApplication>
 #include <ogr_api.h>
@@ -257,6 +256,7 @@ bool QgsShapeFile::insertLayer( QString dbname, QString schema, QString primary_
                                 QString srid, PGconn * conn, QProgressDialog& pro, bool &fin,
                                 QString& errorText )
 {
+  Q_UNUSED( dbname );
   connect( &pro, SIGNAL( canceled() ), this, SLOT( cancelImport() ) );
   import_canceled = false;
   bool result = true;

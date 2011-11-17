@@ -16,7 +16,6 @@
  *                                                                         *
  ***************************************************************************/
 
-/* $Id$ */
 
 #ifndef QGSWMSPROVIDER_H
 #define QGSWMSPROVIDER_H
@@ -29,6 +28,7 @@
 #include <QDomElement>
 #include <QMap>
 #include <QVector>
+#include <QUrl>
 
 class QgsCoordinateTransform;
 class QNetworkAccessManager;
@@ -335,6 +335,12 @@ struct QgsWmsCapabilitiesProperty
   QString                       version;
 };
 
+/** Formats supported by QImageReader */
+struct QgsWmsSupportedFormat
+{
+  QString format;
+  QString label;
+};
 
 /**
 
@@ -361,6 +367,8 @@ class QgsWmsProvider : public QgsRasterDataProvider
 
     //! Destructor
     virtual ~QgsWmsProvider();
+
+    virtual QgsWmsCapabilitiesProperty capabilitiesProperty() { return mCapabilities; }
 
     /**
      * \brief   Returns a list of the supported layers of the WMS server
@@ -630,6 +638,7 @@ class QgsWmsProvider : public QgsRasterDataProvider
       synchronize with changes in the data source*/
     virtual void reloadData();
 
+    static QVector<QgsWmsSupportedFormat> supportedFormats();
 
   signals:
 
@@ -762,6 +771,9 @@ class QgsWmsProvider : public QgsRasterDataProvider
     QStringList identifyAs( const QgsPoint &point, QString format );
 
     QString layerMetadata( QgsWmsLayerProperty &layer );
+
+    //! remove query item and replace it with a new value
+    void setQueryItem( QUrl &url, QString key, QString value );
 
     //! set authorization header
     void setAuthorization( QNetworkRequest &request ) const;
@@ -955,6 +967,7 @@ class QgsWmsProvider : public QgsRasterDataProvider
     //! supported formats for GetFeatureInfo in order of preference
     QStringList mSupportedGetFeatureFormats;
 };
+
 
 #endif
 

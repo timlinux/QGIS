@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsmessageviewer.h"
 #include <QSettings>
@@ -36,23 +35,23 @@ QgsMessageViewer::~QgsMessageViewer()
 {
 }
 
-void QgsMessageViewer::setMessageAsHtml( const QString& msg )
+void QgsMessageViewer::setMessageAsHtml( const QString &msg )
 {
   txtMessage->setHtml( msg );
 }
 
-void QgsMessageViewer::setMessageAsPlainText( const QString& msg )
+void QgsMessageViewer::setMessageAsPlainText( const QString &msg )
 {
   txtMessage->setPlainText( msg );
 }
 
-void QgsMessageViewer::appendMessage( const QString& msg )
+void QgsMessageViewer::appendMessage( const QString &msg )
 {
   txtMessage->append( msg );
 }
 
 
-void QgsMessageViewer::setMessage( const QString& message, MessageType msgType )
+void QgsMessageViewer::setMessage( const QString &message, MessageType msgType )
 {
   if ( msgType == MessageHtml )
     setMessageAsHtml( message );
@@ -107,6 +106,7 @@ void QgsMessageViewer::setCheckBoxQSettingsLabel( QString label )
 
 void QgsMessageViewer::on_checkBox_toggled( bool toggled )
 {
+  Q_UNUSED( toggled );
   if ( !mCheckBoxQSettingsLabel.isEmpty() )
   {
     QSettings settings;

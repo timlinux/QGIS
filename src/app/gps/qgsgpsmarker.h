@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QGSGPSMARKER_H
 #define QGSGPSMARKER_H
@@ -20,6 +19,7 @@
 #include "qgsmapcanvasitem.h"
 #include "qgscoordinatereferencesystem.h"
 #include "qgspoint.h"
+#include <QSvgRenderer>
 
 class QPainter;
 
@@ -51,6 +51,7 @@ class QgsGpsMarker : public QgsMapCanvasItem
 
   private:
     QgsCoordinateReferenceSystem mWgs84CRS;
+    QSvgRenderer mSvg;
 
 };
 

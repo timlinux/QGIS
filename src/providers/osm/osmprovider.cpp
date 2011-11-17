@@ -84,13 +84,21 @@ QgsOSMDataProvider::QgsOSMDataProvider( QString uri )
     if ( propName == "type" )
     {
       if ( propValue == "line" )
+      {
         mFeatureType = LineType;
+      }
       else if ( propValue == "point" )
+      {
         mFeatureType = PointType;
+      }
       else if ( propValue == "polygon" )
+      {
         mFeatureType = PolygonType;
+      }
       else
+      {
         QgsDebugMsg( "Unknown feature type: " + propValue );
+      }
     }
     if ( propName == "observer" )
     {
@@ -541,18 +549,24 @@ bool QgsOSMDataProvider::nextFeature( QgsFeature& feature )
 
     default:
       if ( mFeatureType == PointType )
+      {
         QgsDebugMsg( "Getting next feature of type <point> failed." );
+      }
       else if ( mFeatureType == LineType )
+      {
         QgsDebugMsg( "Getting next feature of type <line> failed." );
+      }
       else if ( mFeatureType == PolygonType )
+      {
         QgsDebugMsg( "Getting next feature of type <polygon> failed." );
+      }
       feature.setValid( false );
       return false;
   }
 }
 
 
-bool QgsOSMDataProvider::featureAtId( int featureId,
+bool QgsOSMDataProvider::featureAtId( QgsFeatureId featureId,
                                       QgsFeature& feature,
                                       bool fetchGeometry,
                                       QgsAttributeList fetchAttributes )
@@ -560,7 +574,7 @@ bool QgsOSMDataProvider::featureAtId( int featureId,
   // load exact feature from sqlite3 database
   if ( mFeatureType == PointType )
   {
-    sqlite3_bind_int( mNodeStmt, 1, featureId );
+    sqlite3_bind_int64( mNodeStmt, 1, featureId );
 
     if ( sqlite3_step( mNodeStmt ) != SQLITE_ROW )
     {
@@ -576,7 +590,7 @@ bool QgsOSMDataProvider::featureAtId( int featureId,
   }
   else if (( mFeatureType == LineType ) || ( mFeatureType == PolygonType ) )
   {
-    sqlite3_bind_int( mWayStmt, 1, featureId );
+    sqlite3_bind_int64( mWayStmt, 1, featureId );
 
     if ( sqlite3_step( mWayStmt ) != SQLITE_ROW )
     {

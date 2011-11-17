@@ -14,8 +14,10 @@ class QPointF;
 class QPolygonF;
 //class
 
+class QgsFeature;
 class QgsSymbolLayerV2;
 class QgsRenderContext;
+class QgsVectorLayer;
 
 typedef QMap<QString, QString> QgsStringMap;
 typedef QList<QgsSymbolLayerV2*> QgsSymbolLayerV2List;
@@ -73,7 +75,7 @@ class CORE_EXPORT QgsSymbolV2
     bool changeSymbolLayer( int index, QgsSymbolLayerV2* layer );
 
 
-    void startRender( QgsRenderContext& context );
+    void startRender( QgsRenderContext& context, const QgsVectorLayer* layer = 0 );
     void stopRender( QgsRenderContext& context );
 
     void setColor( const QColor& color );
@@ -97,6 +99,8 @@ class CORE_EXPORT QgsSymbolV2
     void setRenderHints( int hints ) { mRenderHints = hints; }
     //! @note added in 1.5
     int renderHints() { return mRenderHints; }
+
+    QSet<QString> usedAttributes() const;
 
   protected:
     QgsSymbolV2( SymbolType type, QgsSymbolLayerV2List layers ); // can't be instantiated
@@ -124,7 +128,7 @@ class CORE_EXPORT QgsSymbolV2
 class CORE_EXPORT QgsSymbolV2RenderContext
 {
   public:
-    QgsSymbolV2RenderContext( QgsRenderContext& c, QgsSymbolV2::OutputUnit u , qreal alpha = 1.0, bool selected = false, int renderHints = 0 );
+    QgsSymbolV2RenderContext( QgsRenderContext& c, QgsSymbolV2::OutputUnit u , qreal alpha = 1.0, bool selected = false, int renderHints = 0, const QgsFeature* f = 0 );
     ~QgsSymbolV2RenderContext();
 
     QgsRenderContext& renderContext() { return mRenderContext; }
@@ -144,6 +148,12 @@ class CORE_EXPORT QgsSymbolV2RenderContext
     //! @note added in 1.5
     void setRenderHints( int hints ) { mRenderHints = hints; }
 
+    void setFeature( const QgsFeature* f ) { mFeature = f; }
+    const QgsFeature* feature() const { return mFeature; }
+
+    void setLayer( const QgsVectorLayer* layer ) { mLayer = layer; }
+    const QgsVectorLayer* layer() const { return mLayer; }
+
     // Color used for selections
     static QColor selectionColor();
 
@@ -159,6 +169,8 @@ class CORE_EXPORT QgsSymbolV2RenderContext
     qreal mAlpha;
     bool mSelected;
     int mRenderHints;
+    const QgsFeature* mFeature; //current feature
+    const QgsVectorLayer* mLayer; //current vectorlayer
 };
 
 
@@ -184,7 +196,7 @@ class CORE_EXPORT QgsMarkerSymbolV2 : public QgsSymbolV2
     void setSize( double size );
     double size();
 
-    void renderPoint( const QPointF& point, QgsRenderContext& context, int layer = -1, bool selected = false );
+    void renderPoint( const QPointF& point, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
     virtual QgsSymbolV2* clone() const;
 };
@@ -205,7 +217,7 @@ class CORE_EXPORT QgsLineSymbolV2 : public QgsSymbolV2
     void setWidth( double width );
     double width();
 
-    void renderPolyline( const QPolygonF& points, QgsRenderContext& context, int layer = -1, bool selected = false );
+    void renderPolyline( const QPolygonF& points, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
     virtual QgsSymbolV2* clone() const;
 };
@@ -223,7 +235,7 @@ class CORE_EXPORT QgsFillSymbolV2 : public QgsSymbolV2
 
     QgsFillSymbolV2( QgsSymbolLayerV2List layers = QgsSymbolLayerV2List() );
     void setAngle( double angle );
-    void renderPolygon( const QPolygonF& points, QList<QPolygonF>* rings, QgsRenderContext& context, int layer = -1, bool selected = false );
+    void renderPolygon( const QPolygonF& points, QList<QPolygonF>* rings, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
     virtual QgsSymbolV2* clone() const;
 };

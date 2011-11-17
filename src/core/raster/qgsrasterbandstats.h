@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgsrasterlayer.h 4380 2005-12-26 23:37:50Z timlinux $ */
 
 #ifndef QGSRASTERBANDSTATS
 #define QGSRASTERBANDSTATS
@@ -46,6 +45,7 @@ class CORE_EXPORT QgsRasterBandStats
       stdDev = 0.0;
       sum = 0.0;
       elementCount = 0;
+      histogramVector = new HistogramVector();
       isHistogramEstimated = false;
       isHistogramOutOfRange = false;
     }

@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgsabout.h"
 #include "qgsapplication.h"
@@ -71,7 +70,8 @@ void QgsAbout::init()
     {
       line = stream.readLine(); // line of text excluding '\n'
       //ignore the line if it starts with a hash....
-      if ( line.left( 1 ) == "#" ) continue;
+      if ( line.left( 1 ) == "#" )
+        continue;
       QStringList myTokens = line.split( "\t", QString::SkipEmptyParts );
       lines << myTokens[0];
     }
@@ -102,7 +102,8 @@ void QgsAbout::init()
     {
       line = stream.readLine(); // line of text excluding '\n'
       //ignore the line if it starts with a hash....
-      if ( line.left( 1 ) == "#" ) continue;
+      if ( line.left( 1 ) == "#" )
+        continue;
       lines += line;
     }
     file2.close();
@@ -129,7 +130,8 @@ void QgsAbout::init()
                                "money to fund QGIS development and other project costs see "
                                "<a href=\"http://qgis.org/en/sponsorship/donors.html\">"
                                "http://qgis.org/en/sponsorship/donors.html</a></p>" );
-    /*QString website;
+#if 0
+    QString website;
     QTextStream donorsStream( &donorsFile );
     // Always use UTF-8
     donorsStream.setCodec( "UTF-8" );
@@ -138,7 +140,8 @@ void QgsAbout::init()
     {
       sline = donorsStream.readLine(); // line of text excluding '\n'
       //ignore the line if it starts with a hash....
-      if ( sline.left( 1 ) == "#" ) continue;
+      if ( sline.left( 1 ) == "#" )
+        continue;
       QStringList myTokens = sline.split( "|", QString::SkipEmptyParts );
       if ( myTokens.size() > 1 )
       {
@@ -153,7 +156,8 @@ void QgsAbout::init()
       // close the row
       donorsHTML += "</tr>";
     }
-    donorsHTML += "</table>";*/
+    donorsHTML += "</table>";
+#endif
 
     QString myStyle = QgsApplication::reportStyleSheet();
     txtDonors->clear();
@@ -187,7 +191,8 @@ void QgsAbout::init()
     {
       sline = translatorStream.readLine(); // line of text excluding '\n'
       //ignore the line if it starts with a hash....
-      if ( sline.left( 1 ) == "#" ) continue;
+      if ( sline.left( 1 ) == "#" )
+        continue;
       QStringList myTokens = sline.split( "|", QString::SkipEmptyParts );
       if ( myTokens.size() > 1 )
       {
@@ -211,19 +216,22 @@ void QgsAbout::init()
     QgsDebugMsg( QString( "translatorHTML:%1" ).arg( translatorHTML.toAscii().constData() ) );
     QgsDebugMsg( QString( "txtTranslators:%1" ).arg( txtTranslators->toHtml().toAscii().constData() ) );
   }
+  setWhatsNew();
 }
 
 void QgsAbout::setVersion( QString v )
 {
-  lblVersion->setText( v );
+  txtVersion->setBackgroundRole( QPalette::NoRole );
+  txtVersion->setAutoFillBackground( true );
+  txtVersion->setHtml( v );
 }
 
-void QgsAbout::setWhatsNew( QString txt )
+void QgsAbout::setWhatsNew( )
 {
   QString myStyle = QgsApplication::reportStyleSheet();
   txtWhatsNew->clear();
   txtWhatsNew->document()->setDefaultStyleSheet( myStyle );
-  txtWhatsNew->setHtml( txt );
+  txtWhatsNew->setSource( "file:///" + QgsApplication::pkgDataPath() + "/doc/changelog.html" );
 }
 
 void QgsAbout::setPluginInfo()

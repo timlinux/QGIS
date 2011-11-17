@@ -14,6 +14,9 @@
    <string>Attribute Table</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item row="0" column="0">
     <widget class="QgsAttributeTableView" name="mView">
      <property name="alternatingRowColors">
@@ -23,6 +26,12 @@
    </item>
    <item row="2" column="0">
     <layout class="QHBoxLayout">
+     <property name="leftMargin">
+      <number>3</number>
+     </property>
+     <property name="rightMargin">
+      <number>3</number>
+     </property>
      <item>
       <widget class="QCheckBox" name="cbxShowSelectedOnly">
        <property name="text">
@@ -93,6 +102,12 @@
    </item>
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="leftMargin">
+      <number>3</number>
+     </property>
+     <property name="rightMargin">
+      <number>3</number>
+     </property>
      <item>
       <widget class="QToolButton" name="mRemoveSelectionButton">
        <property name="toolTip">
@@ -142,7 +157,7 @@
      <item>
       <widget class="QToolButton" name="mInvertSelectionButton">
        <property name="toolTip">
-        <string>Invert selection (Ctrl+S)</string>
+        <string>Invert selection (Ctrl+R)</string>
        </property>
        <property name="text">
         <string/>
@@ -228,6 +243,35 @@
        <property name="icon">
         <iconset>
          <normaloff>../../images/themes/default/mActionToggleEditing.png</normaloff>../../images/themes/default/mActionToggleEditing.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>18</width>
+         <height>18</height>
+        </size>
+       </property>
+       <property name="shortcut">
+        <string>Ctrl+E</string>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="mSaveEditsButton">
+       <property name="toolTip">
+        <string>Save Edits (Ctrl+S)</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>../../images/themes/default/mActionSaveEdits.png</normaloff>../../images/themes/default/mActionSaveEdits.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -410,5 +454,22 @@
   <tabstop>mOpenFieldCalculator</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>mToggleEditingButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mSaveEditsButton</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>192</x>
+     <y>504</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>214</x>
+     <y>501</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

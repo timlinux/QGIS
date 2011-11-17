@@ -23,7 +23,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id$ */
 
 #include "sasourceselect.h"
 #include "sanewconnection.h"
@@ -238,6 +237,7 @@ void SaSourceSelect::on_mSearchColumnComboBox_currentIndexChanged( const QString
 
 void SaSourceSelect::on_mSearchModeComboBox_currentIndexChanged( const QString & text )
 {
+  Q_UNUSED( text );
   on_mSearchTableEdit_textChanged( mSearchTableEdit->text() );
 }
 
@@ -404,7 +404,8 @@ void SaSourceSelect::on_btnConnect_clicked()
       SaDebugMsg( "Unable to get list of spatially enabled tables "
                   "from the database" );
     }
-    if ( cmbConnections->count() > 0 ) mAddButton->setEnabled( true );
+    if ( cmbConnections->count() > 0 )
+      mAddButton->setEnabled( true );
 
     conn->release();
 
@@ -618,6 +619,7 @@ void SaSourceSelect::setConnectionListPosition()
 
 void SaSourceSelect::setSearchExpression( const QString& regexp )
 {
+  Q_UNUSED( regexp );
 }
 
 void SaGeomColTypeThread::setConnInfo( QString conninfo, bool estMeta, bool otherSchemas )

@@ -18,7 +18,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #ifndef QGSRASTERLAYER_H
 #define QGSRASTERLAYER_H
 
@@ -31,6 +30,7 @@
 #include <QVector>
 #include <QList>
 #include <QMap>
+#include <QPair>
 
 #include "qgis.h"
 #include "qgspoint.h"
@@ -42,15 +42,6 @@
 #include "qgscolorrampshader.h"
 #include "qgsrastershaderfunction.h"
 #include "qgsrasterdataprovider.h"
-
-#define CPL_SUPRESS_CPLUSPLUS
-#include <gdal.h>
-/** \ingroup core
- * A call back function for showing progress of gdal operations.
- */
-int CPL_STDCALL progressCallback( double dfComplete,
-                                  const char *pszMessage,
-                                  void * pProgressArg );
 
 //
 // Forward declarations
@@ -406,8 +397,10 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief  Accessor for transparent band name mapping */
     QString transparentBandName() const { return mTransparencyBandName; }
 
-    /**  \brief [ data provider interface ] Does this layer use a provider for setting/retrieving data? */
-    bool usesProvider();
+    /**  \brief [ data provider interface ] Does this layer use a provider for setting/retrieving data? 
+     * @deprecated in 2.0
+     */
+    Q_DECL_DEPRECATED bool usesProvider();
 
     /** \brief Accessor that returns the width of the (unclipped) raster  */
     int width() { return mWidth; }
@@ -416,7 +409,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     // Non Static methods
     //
     /** \brief Get the number of bands in this layer  */
-    unsigned int bandCount();
+    unsigned int bandCount() const;
 
     /** \brief Get the name of a band given its number  */
     const  QString bandName( int theBandNoInt );
@@ -424,7 +417,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief Get the number of a band given its name. The name is the rewritten name set
     *   up in the constructor, and will not necessarily be the same as the name retrieved directly from gdal!
     *   If no matching band is found zero will be returned! */
-    int bandNumber( const QString & theBandName );
+    int bandNumber( const QString & theBandName ) const;
 
     /** \brief Get RasterBandStats for a band given its number (read only)  */
     const  QgsRasterBandStats bandStatistics( int );
@@ -464,6 +457,8 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
 
     /** \brief Get a pointer to the contrast enhancement for the selected band */
     QgsContrastEnhancement* contrastEnhancement( unsigned int theBand );
+
+    const QgsContrastEnhancement* constContrastEnhancement( unsigned int theBand ) const;
 
     /**Copies the symbology settings from another layer. Returns true in case of success*/
     bool copySymbologySettings( const QgsMapLayer& theOther );
@@ -522,6 +517,10 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief [ data provider interface ] If an operation returns 0 (e.g. draw()), this function returns the text of the error associated with the failure */
     QString lastErrorTitle();
 
+    /**Returns a list with classification items (Text and color)
+      @note this method was added in version 1.8*/
+    QList< QPair< QString, QColor > > legendSymbologyItems() const;
+
     /** \brief Get a legend image for this layer */
     QPixmap legendAsPixmap();
 
@@ -547,10 +546,17 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     double minimumValue( QString theBand );
 
     /** \brief Get an 100x100 pixmap of the color palette. If the layer has no palette a white pixmap will be returned */
-    QPixmap paletteAsPixmap( int theBand = 1 );
+    QPixmap paletteAsPixmap( int theBandNumber = 1 );
 
-    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer? */
-    QString providerKey() const;
+    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer? 
+     * @note added in 2.0
+     */
+    QString providerType() const;
+
+    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer? 
+     * @deprecated use providerType()
+     */
+    Q_DECL_DEPRECATED QString providerKey() const { return providerType(); }
 
     /** \brief Returns the number of raster units per each raster pixel. In a world file, this is normally the first row (without the sign) */
     double rasterUnitsPerPixel();
@@ -677,7 +683,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief Propagate progress updates from GDAL up to the parent app */
     void updateProgress( int, int );
 
-    /** \brief recieve progress signal from provider */
+    /** \brief receive progress signal from provider */
     void onProgress( int, double, QString );
 
   signals:
@@ -696,7 +702,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     bool readSymbology( const QDomNode& node, QString& errorMessage );
 
     /** \brief Reads layer specific state from project file Dom node */
-    bool readXml( QDomNode & layer_node );
+    bool readXml( const QDomNode& layer_node );
 
     /** \brief Write the symbology for the layer into the docment provided */
     bool writeSymbology( QDomNode&, QDomDocument& doc, QString& errorMessage ) const;

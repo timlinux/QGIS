@@ -1,25 +1,14 @@
-IF (GRASS_NUM_VERSION LESS 60300)
-  SET (GRASS_MODULES_DIR "modules-6.3")
-ELSE (GRASS_NUM_VERSION LESS 60300)
-  SET (GRASS_MODULES_DIR "modules-${GRASS_MAJOR_VERSION}.${GRASS_MINOR_VERSION}")
-ENDIF (GRASS_NUM_VERSION LESS 60300)
-
-IF (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR}")
-  MESSAGE (SEND_ERROR "Your GRASS version is not supported (${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR} is not found).")
-ENDIF (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR}")
-IF (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR}")
-  MESSAGE (SEND_ERROR "Your GRASS version is not supported (${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR} is not a Directory).")
-ENDIF (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${GRASS_MODULES_DIR}")
-
-SUBDIRS(modules-common ${GRASS_MODULES_DIR} scripts themes)
+ADD_SUBDIRECTORY(modules)
+ADD_SUBDIRECTORY(scripts)
 
 ADD_DEFINITIONS(-DGRASS_BASE=\\\"${GRASS_PREFIX}\\\")
 ADD_DEFINITIONS(-DHAVE_OPENPTY=${HAVE_OPENPTY})
+ADD_DEFINITIONS("-DGRASS_EXPORT=${DLLIMPORT} -DGRASS_LIB_EXPORT=${DLLIMPORT}")
 
 IF (WIN32)
-  ADD_DEFINITIONS(-DHAVE_GETPT "-DGRASS_EXPORT=__declspec(dllimport)")
+  ADD_DEFINITIONS(-DHAVE_GETPT)
 ELSE (WIN32)
-  ADD_DEFINITIONS(-DHAVE_POSIX_OPENPT -DGRASS_EXPORT=)
+  ADD_DEFINITIONS(-DHAVE_POSIX_OPENPT)
 ENDIF (WIN32)
 
 ########################################################
@@ -154,6 +143,21 @@ TARGET_LINK_LIBRARIES(grassplugin
   ${OPENPTY_LIBRARY}
 )
 
+# provider must be built as module on OS X so it gets loaded,
+# lookup symbols dynamically instead of linking at compile time
+IF (APPLE)
+    SET_TARGET_PROPERTIES(grassplugin PROPERTIES
+        LINK_FLAGS "-undefined dynamic_lookup")
+ELSE (APPLE)
+    TARGET_LINK_LIBRARIES(grassplugin
+        grassprovider
+    )
+ENDIF (APPLE)
+
+# override default path where built files are put to allow running qgis without installing
+# the binary goes under libexec subdir
+SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${QGIS_OUTPUT_DIRECTORY}/${QGIS_LIBEXEC_SUBDIR}/grass/bin)
+
 ADD_EXECUTABLE(qgis.g.browser ${GRASS_BROWSER_SRCS})
 
 TARGET_LINK_LIBRARIES (qgis.g.browser
@@ -170,7 +174,7 @@ INSTALL(TARGETS grassplugin
 
 
 FILE (GLOB GMLS *.gml)
-INSTALL (FILES ${GMLS} images/world.png
+INSTALL (FILES ${GMLS}
          DESTINATION ${QGIS_DATA_DIR}/grass)
 
 INSTALL (FILES themes/gis/grass_arrow.svg themes/gis/grass_plus.svg themes/gis/grass_arrow.png themes/gis/grass_plus.png

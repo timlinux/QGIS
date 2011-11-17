@@ -407,7 +407,7 @@ class QgsRuleBasedRendererV2 : QgsFeatureRendererV2
         ~Rule();
         QString dump() const;
         QStringList needsFields() const;
-        bool isFilterOK( const QgsFieldMap& fields, QgsFeature& f ) const;
+        bool isFilterOK( QgsFeature& f ) const;
         bool isScaleOK( double scale ) const;
 
         QgsSymbolV2* symbol();
@@ -415,6 +415,7 @@ class QgsRuleBasedRendererV2 : QgsFeatureRendererV2
         int scaleMinDenom() const;
         int scaleMaxDenom() const;
         QString filterExpression() const;
+        QgsExpression* filter() const;
 
         void setScaleMinDenom( int scaleMinDenom );
         void setScaleMaxDenom( int scaleMaxDenom );
@@ -489,7 +490,16 @@ class QgsSymbolLayerV2
 %ConvertToSubClassCode
   switch (sipCpp->type())
   {
-    case QgsSymbolV2::Marker: sipClass = sipClass_QgsMarkerSymbolLayerV2; break;
+    case QgsSymbolV2::Marker:
+      if( sipCpp->layerType() == "VectorField" )
+      {
+        sipClass = sipClass_QgsVectorFieldSymbolLayer;
+      }
+      else
+      {
+        sipClass = sipClass_QgsMarkerSymbolLayerV2;
+      }
+      break;
     case QgsSymbolV2::Line: sipClass = sipClass_QgsLineSymbolLayerV2; break;
     case QgsSymbolV2::Fill: sipClass = sipClass_QgsFillSymbolLayerV2; break;
     default: sipClass = 0; break;
@@ -626,6 +636,12 @@ class QgsSymbolV2RenderContext
     //! @note added in 1.5
     void setRenderHints( int hints );
 
+    void setFeature( const QgsFeature* f );
+    const QgsFeature* feature() const;
+
+    void setLayer( const QgsVectorLayer* layer );
+    const QgsVectorLayer* layer() const;
+
     // Color used for selections
     static QColor selectionColor();
 
@@ -704,8 +720,7 @@ public:
   //! delete layer at specified index and set a new one
   bool changeSymbolLayer(int index, QgsSymbolLayerV2* layer /Transfer/);
 
-
-  void startRender(QgsRenderContext& context);
+  void startRender( QgsRenderContext& context, const QgsVectorLayer* layer = 0 );
   void stopRender(QgsRenderContext& context);
 
   void setColor(const QColor& color);
@@ -759,7 +774,7 @@ public:
   void setSize(double size);
   double size();
 
-  void renderPoint(const QPointF& point, QgsRenderContext& context, int layer = -1, bool selected = false );
+  void renderPoint(const QPointF& point, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
   virtual QgsSymbolV2* clone() const /Factory/;
 };
@@ -784,7 +799,7 @@ public:
   void setWidth(double width);
   double width();
 
-  void renderPolyline(const QPolygonF& points, QgsRenderContext& context, int layer = -1, bool selected = false );
+  void renderPolyline(const QPolygonF& points, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
   virtual QgsSymbolV2* clone() const /Factory/;
 };
@@ -807,7 +822,7 @@ public:
   QgsFillSymbolV2(QgsSymbolLayerV2List layers /Transfer/ = QgsSymbolLayerV2List());
 
   void setAngle( double angle );
-  void renderPolygon(const QPolygonF& points, QList<QPolygonF>* rings, QgsRenderContext& context, int layer = -1, bool selected = false );
+  void renderPolygon(const QPolygonF& points, QList<QPolygonF>* rings, const QgsFeature* f, QgsRenderContext& context, int layer = -1, bool selected = false );
 
   virtual QgsSymbolV2* clone() const /Factory/;
 };
@@ -839,7 +854,7 @@ class QgsSymbolLayerV2AbstractMetadata
     /** create a symbol layer of this type given the map of properties. */
     virtual QgsSymbolLayerV2* createSymbolLayer( const QgsStringMap& map ) = 0 /Factory/;
     /** create widget for symbol layer of this type. Can return NULL if there's no GUI */
-    virtual QgsSymbolLayerV2Widget* createSymbolLayerWidget() /Factory/;
+    virtual QgsSymbolLayerV2Widget* createSymbolLayerWidget( const QgsVectorLayer* vl ) /Factory/;
 };
 
 //////////

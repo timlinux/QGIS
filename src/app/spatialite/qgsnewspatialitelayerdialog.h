@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #ifndef QGSNEWSPATIALITELAYERDIALOG_H
 #define QGSNEWSPATIALITELAYERDIALOG_H
 
@@ -58,9 +57,6 @@ class QgsNewSpatialiteLayerDialog: public QDialog, private Ui::QgsNewSpatialiteL
 
     /** Create a new database */
     bool createDb();
-
-    /** Initializes SpatialMetadata db-tables */
-    void initializeSpatialMetadata( sqlite3 *sqlite_handle );
 
     static QString quotedIdentifier( QString id );
     static QString quotedValue( QString value );

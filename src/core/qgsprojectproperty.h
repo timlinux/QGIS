@@ -18,18 +18,17 @@
  *                                                                         *
  ***************************************************************************/
 
-/* $Id$ */
 
 #ifndef QGSPROJECTPROPERTY_H
 #define QGSPROJECTPROPERTY_H
 
 #include <QHash>
 #include <QVariant>
+#include <QStringList>
 
 class QDomNode;
 class QDomElement;
 class QDomDocument;
-class QStringList;
 
 
 /** \ingroup core
@@ -166,7 +165,7 @@ class CORE_EXPORT QgsPropertyValue : public QgsProperty
     Since QgsPropertyValue isn't a key, don't do anything.
     */
     void entryList( QStringList & keyName, QStringList & entries ) const
-    { /* NOP */ }
+    { Q_UNUSED( keyName ); Q_UNUSED( entries ); /* NOP */ }
 
   private:
 

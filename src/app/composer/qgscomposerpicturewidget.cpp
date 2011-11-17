@@ -30,7 +30,7 @@
 #include <QSettings>
 #include <QSvgRenderer>
 
-QgsComposerPictureWidget::QgsComposerPictureWidget( QgsComposerPicture* picture ): QWidget(), mPicture( picture )
+QgsComposerPictureWidget::QgsComposerPictureWidget( QgsComposerPicture* picture ): QWidget(), mPicture( picture ), mPreviewInitialized( false )
 {
   setupUi( this );
 
@@ -44,8 +44,8 @@ QgsComposerPictureWidget::QgsComposerPictureWidget( QgsComposerPicture* picture 
 
   mPreviewListWidget->setIconSize( QSize( 30, 30 ) );
 
-  //add preview icons
-  addStandardDirectoriesToPreview();
+  //add preview icons on demand in showEvent()
+
   connect( mPicture, SIGNAL( itemChanged() ), this, SLOT( setGuiElementValues() ) );
   connect( mPicture, SIGNAL( rotationChanged( double ) ), this, SLOT( setGuiElementValues() ) );
 }
@@ -166,6 +166,7 @@ void QgsComposerPictureWidget::on_mRotationSpinBox_valueChanged( double d )
 
 void QgsComposerPictureWidget::on_mPreviewListWidget_currentItemChanged( QListWidgetItem* current, QListWidgetItem* previous )
 {
+  Q_UNUSED( previous );
   if ( !mPicture || !current )
   {
     return;
@@ -263,6 +264,11 @@ void QgsComposerPictureWidget::on_mRotationFromComposerMapCheckBox_stateChanged(
 void QgsComposerPictureWidget::showEvent( QShowEvent * event )
 {
   refreshMapComboBox();
+  if ( !mPreviewInitialized )
+  {
+    addStandardDirectoriesToPreview();
+    mPreviewInitialized = true;
+  }
   QWidget::showEvent( event );
 }
 

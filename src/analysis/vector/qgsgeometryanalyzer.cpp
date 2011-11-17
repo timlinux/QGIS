@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgis.h 9774 2008-12-12 05:41:24Z timlinux $ */
 
 #include "qgsgeometryanalyzer.h"
 
@@ -28,8 +27,11 @@
 #include "qgsdistancearea.h"
 #include <QProgressDialog>
 
-bool QgsGeometryAnalyzer::simplify( QgsVectorLayer* layer, const QString& shapefileName,
-                                    double tolerance, bool onlySelectedFeatures, QProgressDialog* p )
+bool QgsGeometryAnalyzer::simplify( QgsVectorLayer* layer,
+                                    const QString& shapefileName,
+                                    double tolerance,
+                                    bool onlySelectedFeatures,
+                                    QProgressDialog *p )
 {
   if ( !layer )
   {
@@ -147,12 +149,14 @@ bool QgsGeometryAnalyzer::centroids( QgsVectorLayer* layer, const QString& shape
 {
   if ( !layer )
   {
+    QgsDebugMsg( "No layer passed to centroids" );
     return false;
   }
 
   QgsVectorDataProvider* dp = layer->dataProvider();
   if ( !dp )
   {
+    QgsDebugMsg( "No data provider for layer passed to centroids" );
     return false;
   }
 
@@ -256,8 +260,10 @@ void QgsGeometryAnalyzer::centroidFeature( QgsFeature& f, QgsVectorFileWriter* v
   }
 }
 
-bool QgsGeometryAnalyzer::extent( QgsVectorLayer* layer, const QString& shapefileName,
-                                  bool onlySelectedFeatures, QProgressDialog* p )
+bool QgsGeometryAnalyzer::extent( QgsVectorLayer* layer,
+                                  const QString& shapefileName,
+                                  bool onlySelectedFeatures,
+                                  QProgressDialog * )
 {
   if ( !layer )
   {
@@ -409,7 +415,7 @@ bool QgsGeometryAnalyzer::convexHull( QgsVectorLayer* layer, const QString& shap
   QgsVectorFileWriter vWriter( shapefileName, dp->encoding(), fields, outputType, &crs );
   QgsFeature currentFeature;
   QgsGeometry* dissolveGeometry = 0; //dissolve geometry
-  QMultiMap<QString, int> map;
+  QMultiMap<QString, QgsFeatureId> map;
 
   if ( onlySelectedFeatures )
   {
@@ -456,7 +462,7 @@ bool QgsGeometryAnalyzer::convexHull( QgsVectorLayer* layer, const QString& shap
     }
   }
 
-  QMultiMap<QString, int>::const_iterator jt = map.constBegin();
+  QMultiMap<QString, QgsFeatureId>::const_iterator jt = map.constBegin();
   while ( jt != map.constEnd() )
   {
     QString currentKey = jt.key();
@@ -614,7 +620,7 @@ bool QgsGeometryAnalyzer::dissolve( QgsVectorLayer* layer, const QString& shapef
 
   QgsVectorFileWriter vWriter( shapefileName, dp->encoding(), dp->fields(), outputType, &crs );
   QgsFeature currentFeature;
-  QMultiMap<QString, int> map;
+  QMultiMap<QString, QgsFeatureId> map;
 
   if ( onlySelectedFeatures )
   {
@@ -640,7 +646,7 @@ bool QgsGeometryAnalyzer::dissolve( QgsVectorLayer* layer, const QString& shapef
   }
 
   QgsGeometry *dissolveGeometry = 0; //dissolve geometry
-  QMultiMap<QString, int>::const_iterator jt = map.constBegin();
+  QMultiMap<QString, QgsFeatureId>::const_iterator jt = map.constBegin();
   QgsFeature outputFeature;
   while ( jt != map.constEnd() )
   {

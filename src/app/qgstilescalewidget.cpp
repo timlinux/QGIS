@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgstilescalewidget.h"
 #include "qgsmapcanvas.h"
@@ -39,7 +38,7 @@ void QgsTileScaleWidget::layerChanged( QgsMapLayer *layer )
   mResolutions.clear();
   mSlider->setDisabled( true );
 
-  if ( !rl || rl->providerKey() != "wms" )
+  if ( !rl || rl->providerType() != "wms" )
     return;
 
   QString uri = rl->source();
@@ -84,6 +83,8 @@ void QgsTileScaleWidget::layerChanged( QgsMapLayer *layer )
 
 void QgsTileScaleWidget::scaleChanged( double scale )
 {
+  Q_UNUSED( scale );
+
   if ( mResolutions.size() == 0 )
     return;
 
@@ -107,6 +108,7 @@ void QgsTileScaleWidget::scaleChanged( double scale )
 
 void QgsTileScaleWidget::on_mSlider_valueChanged( int value )
 {
+  Q_UNUSED( value );
   QgsDebugMsg( QString( "slider released at %1: %2" ).arg( mSlider->value() ).arg( mResolutions[mSlider->value()] ) );
   mMapCanvas->zoomByFactor( mResolutions[mSlider->value()] / mMapCanvas->mapUnitsPerPixel() );
 }

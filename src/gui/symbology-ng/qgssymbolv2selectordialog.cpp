@@ -18,8 +18,8 @@
 #include <QKeyEvent>
 #include <QMenu>
 
-QgsSymbolV2SelectorDialog::QgsSymbolV2SelectorDialog( QgsSymbolV2* symbol, QgsStyleV2* style, QWidget* parent, bool embedded )
-    : QDialog( parent ), mAdvancedMenu( NULL )
+QgsSymbolV2SelectorDialog::QgsSymbolV2SelectorDialog( QgsSymbolV2* symbol, QgsStyleV2* style, const QgsVectorLayer* vl, QWidget* parent, bool embedded )
+    : QDialog( parent ), mAdvancedMenu( NULL ), mVectorLayer( vl )
 {
   mStyle = style;
   mSymbol = symbol;
@@ -162,7 +162,7 @@ void QgsSymbolV2SelectorDialog::updateSymbolInfo()
 
 void QgsSymbolV2SelectorDialog::changeSymbolProperties()
 {
-  QgsSymbolV2PropertiesDialog dlg( mSymbol, this );
+  QgsSymbolV2PropertiesDialog dlg( mSymbol, mVectorLayer, this );
   if ( !dlg.exec() )
     return;
 
@@ -176,6 +176,8 @@ void QgsSymbolV2SelectorDialog::setSymbolColor()
 {
 #if defined(Q_WS_MAC) && QT_VERSION >= 0x040500 && defined(QT_MAC_USE_COCOA)
   // Native Mac dialog works only for Qt Carbon
+  // Qt bug: http://bugreports.qt.nokia.com/browse/QTBUG-14889
+  // FIXME need to also check max QT_VERSION when Qt bug fixed
   QColor color = QColorDialog::getColor( mSymbol->color(), this, "", QColorDialog::DontUseNativeDialog );
 #else
   QColor color = QColorDialog::getColor( mSymbol->color(), this );
@@ -264,6 +266,7 @@ void QgsSymbolV2SelectorDialog::keyPressEvent( QKeyEvent * e )
 
 void QgsSymbolV2SelectorDialog::on_mSymbolUnitComboBox_currentIndexChanged( const QString & text )
 {
+  Q_UNUSED( text );
   if ( mSymbol )
   {
     mSymbol->setOutputUnit(( QgsSymbolV2::OutputUnit ) mSymbolUnitComboBox->currentIndex() );

@@ -13,6 +13,8 @@
         <file>themes/default/geographic.png</file>
         <file>themes/default/gpsicons/barchart.svg</file>
         <file>themes/default/gpsicons/polarchart.svg</file>
+        <file>themes/default/grass_location.png</file>
+        <file>themes/default/grass_mapset.png</file>
         <file>themes/default/join_bevel.png</file>
         <file>themes/default/join_miter.png</file>
         <file>themes/default/join_round.png</file>
@@ -21,7 +23,7 @@
         <file>themes/default/mActionAddArrow.png</file>
         <file>themes/default/mActionAddBasicShape.png</file>
         <file>themes/default/mActionAddImage.png</file>
-        <file>themes/default/mActionAddIsland.png</file>
+        <file>themes/default/mActionAddPart.png</file>
         <file>themes/default/mActionAddLayer.png</file>
         <file>themes/default/mActionAddLegend.png</file>
         <file>themes/default/mActionAddMap.png</file>
@@ -178,6 +180,8 @@
         <file>themes/default/mIconTableLayer.png</file>
         <file>themes/default/mIconUnknownLayerType.png</file>
         <file>themes/default/mIconWaitingForLayerType.png</file>
+        <file>themes/default/mIconWms.png</file>
+        <file>themes/default/mIconWmsLayer.png</file>
         <file>themes/default/mMapserverExport.png</file>
         <file>themes/default/plugin.png</file>
         <file>themes/default/propertyicons/action.png</file>
@@ -219,7 +223,7 @@
         <file>themes/gis/mActionAddBasicShape.png</file>
         <file>themes/gis/mActionAddGPSLayer.png</file>
         <file>themes/gis/mActionAddImage.png</file>
-        <file>themes/gis/mActionAddIsland.png</file>
+        <file>themes/gis/mActionAddPart.png</file>
         <file>themes/gis/mActionAddLayer.png</file>
         <file>themes/gis/mActionAddLegend.png</file>
         <file>themes/gis/mActionAddMap.png</file>
@@ -341,7 +345,21 @@
         <file>themes/gis/plugins/quick_print.png</file>
         <file>themes/gis/plugins/scale_bar.png</file>
         <file>themes/gis/plugins/spit.png</file>
-        <file>themes/gis/plugins/wfs.png</file>
+        <file>splash/splash.png</file>
+        <file>north_arrows/default.png</file>
+        <file>themes/default/locked.png</file>
+        <file>themes/default/unlocked.png</file>
+        <file>themes/default/plugins/copyright_label.png</file>
+        <file>themes/default/plugins/north_arrow.png</file>
+        <file>themes/default/plugins/scale_bar.png</file>
+        <file>themes/default/mActionAddWfsLayer.png</file>
+        <file>themes/gis/mIconWms.png</file>
+        <file>themes/gis/mIconWfs.png</file>
+        <file>themes/gis/mIconSpatialite.png</file>
+        <file>themes/gis/mIconRaster.png</file>
+        <file>themes/gis/mIconPostgis.png</file>
+        <file>themes/gis/mIconConnect.png</file>
+        <file>themes/gis/mIconDbSchema.png</file>
     </qresource>
     <qresource prefix="/images/tips">
         <file alias="symbol_levels.png">qgis_tips/symbol_levels.png</file>

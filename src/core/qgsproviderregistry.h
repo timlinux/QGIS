@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QGSPROVIDERREGISTRY_H
 #define QGSPROVIDERREGISTRY_H
@@ -23,12 +22,14 @@
 #include <map>
 
 #include <QDir>
+#include <QLibrary>
 #include <QString>
 
 
 class QgsDataProvider;
 class QgsProviderMetadata;
-
+class QgsVectorLayer;
+class QgsCoordinateReferenceSystem;
 
 
 /** \ingroup core
@@ -64,8 +65,21 @@ class CORE_EXPORT QgsProviderRegistry
         @param dataSource  string containing data source for the provider
         @return instance of provider or NULL on error
      */
-    QgsDataProvider * getProvider( const QString & providerKey,
-                                   const QString & dataSource );
+    QgsDataProvider *provider( const QString & providerKey,
+                               const QString & dataSource );
+
+    QWidget *selectWidget( const QString & providerKey,
+                           QWidget * parent = 0, Qt::WFlags fl = 0 );
+
+    /** Get pointer to provider function
+        @param providerKey identificator of the provider
+        @param functionName name of function
+        @return pointer to function or NULL on error
+     */
+    void *function( const QString & providerKey,
+                    const QString & functionName );
+
+    QLibrary *providerLibrary( const QString & providerKey ) const;
 
     /** Return list of available providers by their keys */
     QStringList providerList() const;

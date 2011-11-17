@@ -12,6 +12,8 @@
 #include "qgslogger.h"
 
 #include "qgssymbollayerv2widget.h"
+#include "qgsellipsesymbollayerv2widget.h"
+#include "qgsvectorfieldsymbollayerwidget.h"
 #include "qgssymbolv2.h" //for the unit
 
 
@@ -90,10 +92,14 @@ static void _initWidgetFunctions()
   _initWidgetFunction( "SimpleMarker", QgsSimpleMarkerSymbolLayerV2Widget::create );
   _initWidgetFunction( "SvgMarker", QgsSvgMarkerSymbolLayerV2Widget::create );
   _initWidgetFunction( "FontMarker", QgsFontMarkerSymbolLayerV2Widget::create );
+  _initWidgetFunction( "EllipseMarker", QgsEllipseSymbolLayerV2Widget::create );
+  _initWidgetFunction( "VectorField", QgsVectorFieldSymbolLayerWidget::create );
 
   _initWidgetFunction( "SimpleFill", QgsSimpleFillSymbolLayerV2Widget::create );
   _initWidgetFunction( "SVGFill", QgsSVGFillSymbolLayerWidget::create );
   _initWidgetFunction( "CentroidFill", QgsCentroidFillSymbolLayerV2Widget::create );
+  _initWidgetFunction( "LinePatternFill", QgsLinePatternFillSymbolLayerWidget::create );
+  _initWidgetFunction( "PointPatternFill", QgsPointPatternFillSymbolLayerWidget::create );
 
   initialized = true;
 }
@@ -101,8 +107,8 @@ static void _initWidgetFunctions()
 
 //////////
 
-QgsSymbolV2PropertiesDialog::QgsSymbolV2PropertiesDialog( QgsSymbolV2* symbol, QWidget* parent )
-    : QDialog( parent ), mSymbol( symbol )
+QgsSymbolV2PropertiesDialog::QgsSymbolV2PropertiesDialog( QgsSymbolV2* symbol, const QgsVectorLayer* vl, QWidget* parent )
+    : QDialog( parent ), mSymbol( symbol ), mVectorLayer( vl )
 {
   setupUi( this );
 
@@ -247,7 +253,7 @@ void QgsSymbolV2PropertiesDialog::loadPropertyWidgets()
     if ( am == NULL ) // check whether the metadata is assigned
       continue;
 
-    QgsSymbolLayerV2Widget* w = am->createSymbolLayerWidget();
+    QgsSymbolLayerV2Widget* w = am->createSymbolLayerWidget( mVectorLayer );
     if ( w == NULL ) // check whether the function returns correct widget
       continue;
 
@@ -300,7 +306,7 @@ void QgsSymbolV2PropertiesDialog::layerChanged()
 
   // get layer info
   QgsSymbolLayerV2* layer = currentLayer();
-  if ( layer == NULL )
+  if ( !layer )
     return;
 
   // update layer type combo box
@@ -316,8 +322,8 @@ void QgsSymbolV2PropertiesDialog::layerChanged()
 void QgsSymbolV2PropertiesDialog::updateLockButton()
 {
   QgsSymbolLayerV2* layer = currentLayer();
-  if ( layer == NULL ) return;
-
+  if ( !layer )
+    return;
   btnLock->setChecked( layer->isLocked() );
 }
 
@@ -325,8 +331,8 @@ void QgsSymbolV2PropertiesDialog::updateLockButton()
 void QgsSymbolV2PropertiesDialog::layerTypeChanged()
 {
   QgsSymbolLayerV2* layer = currentLayer();
-  if ( layer == NULL ) return;
-
+  if ( !layer )
+    return;
   QString newLayerType = cboLayerType->itemData( cboLayerType->currentIndex() ).toString();
   if ( layer->layerType() == newLayerType )
     return;
@@ -372,7 +378,8 @@ void QgsSymbolV2PropertiesDialog::addLayer()
 void QgsSymbolV2PropertiesDialog::removeLayer()
 {
   int idx = currentLayerIndex();
-  if ( idx < 0 ) return;
+  if ( idx < 0 )
+    return;
   int row = currentRowIndex();
   mSymbol->deleteSymbolLayer( idx );
 
@@ -417,8 +424,8 @@ void QgsSymbolV2PropertiesDialog::moveLayerByOffset( int offset )
 void QgsSymbolV2PropertiesDialog::lockLayer()
 {
   QgsSymbolLayerV2* layer = currentLayer();
-  if ( layer == NULL ) return;
-
+  if ( !layer )
+    return;
   layer->setLocked( btnLock->isChecked() );
 }
 

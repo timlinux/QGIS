@@ -1,6 +1,5 @@
 @echo off
-set GRASS_VERSION=6.4.1
-set SVNVERSION=c:/cygwin/bin/svnversion
+set GRASS_VERSION=6.4.2RC1
 
 set BUILDDIR=%CD%\build
 REM set BUILDDIR=%TEMP%\qgis_unstable
@@ -19,6 +18,7 @@ if "%PACKAGENAME%"=="" set PACKAGENAME=qgis-dev
 path %SYSTEMROOT%\system32;%SYSTEMROOT%;%SYSTEMROOT%\System32\Wbem;%PROGRAMFILES%\CMake 2.8\bin
 set PYTHONPATH=
 
+if "%PROGRAMFILES%"=="" set PROGRAMFILES=C:\Programme
 set VS90COMNTOOLS=%PROGRAMFILES%\Microsoft Visual Studio 9.0\Common7\Tools\
 call "%PROGRAMFILES%\Microsoft Visual Studio 9.0\VC\vcvarsall.bat" x86
 
@@ -90,7 +90,10 @@ cmake -G "Visual Studio 9 2008" ^
 	-D PEDANTIC=TRUE ^
 	-D WITH_SPATIALITE=TRUE ^
 	-D WITH_MAPSERVER=TRUE ^
+	-D WITH_ASTYLE=TRUE ^
+	-D WITH_GLOBE=TRUE ^
 	-D WITH_INTERNAL_SPATIALITE=TRUE ^
+	-D WITH_INTERNAL_SPATIALINDEX=FALSE ^
 	-D CMAKE_BUILD_TYPE=%BUILDCONF% ^
 	-D CMAKE_CONFIGURATION_TYPES=%BUILDCONF% ^
 	-D GEOS_LIBRARY=%OSGEO4W_ROOT%/lib/geos_c_i.lib ^
@@ -110,7 +113,6 @@ cmake -G "Visual Studio 9 2008" ^
 	-D CMAKE_CXX_FLAGS_RELWITHDEBINFO="/MD /ZI /Od /D NDEBUG" ^
 	-D FCGI_INCLUDE_DIR=%O4W_ROOT%/include ^
 	-D FCGI_LIBRARY=%O4W_ROOT%/lib/libfcgi.lib ^
-	-D SVNVERSION="%SVNVERSION%" ^
 	%SRCDIR%>>%LOG% 2>&1
 if errorlevel 1 goto error
 
@@ -128,6 +130,10 @@ echo ALL_BUILD: %DATE% %TIME%>>%LOG% 2>&1
 %DEVENV% qgis%VERSION%.sln /Project ALL_BUILD /Build %BUILDCONF% /Out %LOG%>>%LOG% 2>&1
 if errorlevel 1 goto error 
 
+echo RUN_TESTS: %DATE% %TIME%>>%LOG% 2>&1
+%DEVENV% qgis%VERSION%.sln /Project RUN_TESTS /Build %BUILDCONF% /Out %LOG%>>%LOG% 2>&1
+if errorlevel 1 echo "TESTS WERE NOT SUCCESSFUL."
+
 echo INSTALL: %DATE% %TIME%>>%LOG% 2>&1
 %DEVENV% qgis%VERSION%.sln /Project INSTALL /Build %BUILDCONF% /Out %LOG%>>%LOG% 2>&1
 if errorlevel 1 goto error
@@ -138,6 +144,7 @@ cd ..
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' postinstall.bat >%OSGEO4W_ROOT%\etc\postinstall\%PACKAGENAME%.bat
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' preremove.bat >%OSGEO4W_ROOT%\etc\preremove\%PACKAGENAME%.bat
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' qgis.bat.tmpl >%OSGEO4W_ROOT%\bin\%PACKAGENAME%.bat.tmpl
+sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' browser.bat.tmpl >%OSGEO4W_ROOT%\bin\%PACKAGENAME%-browser.bat.tmpl
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' qgis.reg.tmpl >%OSGEO4W_ROOT%\apps\%PACKAGENAME%\bin\qgis.reg.tmpl
 
 REM sed -e 's/%OSGEO4W_ROOT:\=\\\\\\\\%/@osgeo4w@/' %OSGEO4W_ROOT%\apps\%PACKAGENAME%\python\qgis\qgisconfig.py >%OSGEO4W_ROOT%\apps\%PACKAGENAME%\python\qgis\qgisconfig.py.tmpl
@@ -151,23 +158,11 @@ tar -C %OSGEO4W_ROOT% -cjf %PACKAGENAME%-%VERSION%-%PACKAGE%.tar.bz2 ^
 	--exclude-from exclude ^
 	apps/%PACKAGENAME% ^
 	bin/%PACKAGENAME%.bat.tmpl ^
+	bin/%PACKAGENAME%-browser.bat.tmpl ^
 	etc/postinstall/%PACKAGENAME%.bat ^
 	etc/preremove/%PACKAGENAME%.bat ^
 	>>%LOG% 2>&1
 if errorlevel 1 goto error
-
-REM tar -C %OSGEO4W_ROOT% -cjf %PACKAGENAME%-grass-%VERSION%-%PACKAGE%.tar.bz2 ^
-REM 	--exclude-from exclude ^
-REM 	"apps/%PACKAGENAME%/themes/classic/grass" ^
-REM 	"apps/%PACKAGENAME%/themes/default/grass" ^
-REM 	"apps/%PACKAGENAME%/themes/gis/grass" ^
-REM 	"apps/%PACKAGENAME%/grass" ^
-REM 	"apps/%PACKAGENAME%/bin/qgisgrass.dll" ^
-REM 	"apps/%PACKAGENAME%/plugins/grassrasterprovider.dll" ^
-REM 	"apps/%PACKAGENAME%/plugins/grassplugin.dll" ^
-REM 	"apps/%PACKAGENAME%/plugins/grassprovider.dll" ^
-REM 	>>%LOG% 2>&1
-REM if errorlevel 1 goto error
 
 goto end
 
@@ -175,7 +170,6 @@ goto end
 echo BUILD ERROR %ERRORLEVEL%: %DATE% %TIME%
 echo BUILD ERROR %ERRORLEVEL%: %DATE% %TIME%>>%LOG% 2>&1
 if exist %PACKAGENAME%-%VERSION%-%PACKAGE%.tar.bz2 del %PACKAGENAME%-%VERSION%-%PACKAGE%.tar.bz2
-REM if exist %PACKAGENAME%-grass-plugin-%VERSION%-%PACKAGE%.tar.bz2 del %PACKAGENAME%-grass-plugin-%VERSION%-%PACKAGE%.tar.bz2
 
 :end
 echo FINISHED: %DATE% %TIME% >>%LOG% 2>&1

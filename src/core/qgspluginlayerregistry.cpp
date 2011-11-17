@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgspluginlayerregistry.h"
 #include "qgslogger.h"
@@ -41,8 +40,9 @@ QgsPluginLayer* QgsPluginLayerType::createLayer()
   return NULL;
 }
 
-bool QgsPluginLayerType::showLayerProperties( QgsPluginLayer* layer )
+bool QgsPluginLayerType::showLayerProperties( QgsPluginLayer *layer )
 {
+  Q_UNUSED( layer );
   return false;
 }
 

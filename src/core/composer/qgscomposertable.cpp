@@ -19,9 +19,13 @@
 #include "qgslogger.h"
 #include <QPainter>
 
-QgsComposerTable::QgsComposerTable( QgsComposition* composition ): QgsComposerItem( composition ), mLineTextDistance( 1.0 ), mShowGrid( true ), mGridStrokeWidth( 0.5 ), mGridColor( QColor( 0, 0, 0 ) )
+QgsComposerTable::QgsComposerTable( QgsComposition* composition )
+    : QgsComposerItem( composition )
+    , mLineTextDistance( 1.0 )
+    , mShowGrid( true )
+    , mGridStrokeWidth( 0.5 )
+    , mGridColor( QColor( 0, 0, 0 ) )
 {
-
 }
 
 QgsComposerTable::~QgsComposerTable()
@@ -31,6 +35,8 @@ QgsComposerTable::~QgsComposerTable()
 
 void QgsComposerTable::paint( QPainter* painter, const QStyleOptionGraphicsItem* itemStyle, QWidget* pWidget )
 {
+  Q_UNUSED( itemStyle );
+  Q_UNUSED( pWidget );
   if ( !painter )
   {
     return;
@@ -207,7 +213,7 @@ bool QgsComposerTable::calculateMaxColumnWidths( QMap<int, double>& maxWidthMap,
 void QgsComposerTable::adaptItemFrame( const QMap<int, double>& maxWidthMap, const QList<QgsAttributeMap>& attributeList )
 {
   //calculate height
-  double totalHeight = fontAscentMillimeters( mHeaderFont ) + attributeList.size() * fontAscentMillimeters( mContentFont ) \
+  double totalHeight = fontAscentMillimeters( mHeaderFont ) + attributeList.size() * fontAscentMillimeters( mContentFont )
                        + ( attributeList.size() + 1 ) * mLineTextDistance * 2 + ( attributeList.size() + 2 ) * mGridStrokeWidth;
 
   //adapt frame to total width

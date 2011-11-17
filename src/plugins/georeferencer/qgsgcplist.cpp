@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgspoint.h"
 #include "qgsgeorefdatapoint.h"
@@ -25,6 +24,7 @@ QgsGCPList::QgsGCPList()
 }
 
 QgsGCPList::QgsGCPList( const QgsGCPList &list )
+    : QList<QgsGeorefDataPoint *>()
 {
   clear();
   QgsGCPList::const_iterator it = list.constBegin();
@@ -61,7 +61,8 @@ int QgsGCPList::size() const
   const_iterator it = begin();
   while ( it != end() )
   {
-    if (( *it )->isEnabled() ) s++;
+    if (( *it )->isEnabled() )
+      s++;
     it++;
   }
   return s;

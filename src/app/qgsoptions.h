@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #ifndef QGSOPTIONS_H
 #define QGSOPTIONS_H
 
@@ -120,6 +119,16 @@ class QgsOptions : public QDialog, private Ui::QgsOptionsBase
 
     void on_mBrowseCacheDirectory_clicked();
     void on_mClearCache_clicked();
+
+    /* Load the list of drivers available in GDAL
+     * @note added in 2.0
+     */
+    void loadGdalDriverList();
+
+    /* Save the list of which gdal drivers should be used.
+     * @note added in 2.0
+     */
+    void saveGdalDriverList();
 
   protected:
     //! Populates combo box with ellipsoids

@@ -33,8 +33,8 @@ const QString GML_NAMESPACE = "http://www.opengis.net/gml";
 QgsWFSData::QgsWFSData(
   const QString& uri,
   QgsRectangle* extent,
-  QMap<int, QgsFeature*> &features,
-  QMap<int, QString > &idMap,
+  QMap<QgsFeatureId, QgsFeature*> &features,
+  QMap<QgsFeatureId, QString > &idMap,
   const QString& geometryAttribute,
   const QMap<QString, QPair<int, QgsField> >& thematicAttributes,
   QGis::WkbType* wkbType )
@@ -690,6 +690,7 @@ int QgsWFSData::createMultiPointFromFragments()
   mCurrentWKBSize = 0;
   mCurrentWKBSize += 1 + 2 * sizeof( int );
   mCurrentWKBSize += totalWKBFragmentSize();
+  mCurrentWKB = new unsigned char[mCurrentWKBSize];
 
   int pos = 0;
   QGis::WkbType type = QGis::WKBMultiPoint;

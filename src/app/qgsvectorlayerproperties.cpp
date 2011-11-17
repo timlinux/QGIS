@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include <memory>
 #include <limits>
@@ -127,6 +126,24 @@ QgsVectorLayerProperties::QgsVectorLayerProperties(
     {
       pbnIndex->setEnabled( false );
     }
+
+    if ( capabilities & QgsVectorDataProvider::SetEncoding )
+    {
+      cboProviderEncoding->addItems( QgsVectorDataProvider::availableEncodings() );
+      QString enc = layer->dataProvider()->encoding();
+      int encindex = cboProviderEncoding->findText( enc );
+      if ( encindex < 0 )
+      {
+        cboProviderEncoding->insertItem( 0, enc );
+        encindex = 0;
+      }
+      cboProviderEncoding->setCurrentIndex( encindex );
+    }
+    else
+    {
+      // currently only encoding can be set in this group, so hide it completely
+      grpProviderOptions->hide();
+    }
   }
 
   updateButtons();
@@ -215,7 +232,7 @@ void QgsVectorLayerProperties::setRow( int row, int idx, const QgsField &field )
 
   QPushButton *pb = new QPushButton( editTypeButtonText( layer->editType( idx ) ) );
   tblAttributes->setCellWidget( row, attrEditTypeCol, pb );
-  connect( pb, SIGNAL( clicked() ), this, SLOT( attributeTypeDialog() ) );
+  connect( pb, SIGNAL( pressed() ), this, SLOT( attributeTypeDialog( ) ) );
   mButtonMap.insert( idx, pb );
 
   //set the alias for the attribute
@@ -231,7 +248,7 @@ QgsVectorLayerProperties::~QgsVectorLayerProperties()
   settings.setValue( "/Windows/VectorLayerProperties/row", tabWidget->currentIndex() );
 }
 
-void QgsVectorLayerProperties::attributeTypeDialog()
+void QgsVectorLayerProperties::attributeTypeDialog( )
 {
   QPushButton *pb = qobject_cast<QPushButton *>( sender() );
   if ( !pb )
@@ -245,6 +262,7 @@ void QgsVectorLayerProperties::attributeTypeDialog()
 
   attributeTypeDialog.setValueMap( mValueMaps.value( index, layer->valueMap( index ) ) );
   attributeTypeDialog.setRange( mRanges.value( index, layer->range( index ) ) );
+  attributeTypeDialog.setValueRelation( mValueRelationData.value( index, layer->valueRelation( index ) ) );
 
   QPair<QString, QString> checkStates = mCheckedStates.value( index, layer->checkedState( index ) );
   attributeTypeDialog.setCheckedState( checkStates.first, checkStates.second );
@@ -272,6 +290,9 @@ void QgsVectorLayerProperties::attributeTypeDialog()
     case QgsVectorLayer::CheckBox:
       mCheckedStates.insert( index, attributeTypeDialog.checkedState() );
       break;
+    case QgsVectorLayer::ValueRelation:
+      mValueRelationData.insert( index, attributeTypeDialog.valueRelationData() );
+      break;
     case QgsVectorLayer::LineEdit:
     case QgsVectorLayer::TextEdit:
     case QgsVectorLayer::UniqueValues:
@@ -293,7 +314,8 @@ void QgsVectorLayerProperties::toggleEditing()
 {
   emit toggleEditing( layer );
 
-  pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() && !layer->isEditable() );
+  pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() &&
+                               !layer->isEditable() && layer->vectorJoins().size() < 1 );
   if ( layer->isEditable() )
   {
     pbnQueryBuilder->setToolTip( tr( "Stop editing mode to enable this." ) );
@@ -384,22 +406,20 @@ void QgsVectorLayerProperties::editingToggled()
 
 void QgsVectorLayerProperties::updateButtons()
 {
-  int cap = layer->dataProvider()->capabilities();
-
-  mToggleEditingButton->setEnabled(( cap & QgsVectorDataProvider::EditingCapabilities ) && !layer->isReadOnly() );
-  mToggleEditingButton->setChecked( layer->isEditable() );
-
   if ( layer->isEditable() )
   {
+    int cap = layer->dataProvider()->capabilities();
     mAddAttributeButton->setEnabled( cap & QgsVectorDataProvider::AddAttributes );
     mDeleteAttributeButton->setEnabled( cap & QgsVectorDataProvider::DeleteAttributes );
     mCalculateFieldButton->setEnabled( cap & QgsVectorDataProvider::ChangeAttributeValues );
+    mToggleEditingButton->setChecked( true );
   }
   else
   {
-    mAddAttributeButton->setDisabled( true );
-    mDeleteAttributeButton->setDisabled( true );
-    mCalculateFieldButton->setDisabled( true );
+    mAddAttributeButton->setEnabled( false );
+    mDeleteAttributeButton->setEnabled( false );
+    mToggleEditingButton->setChecked( false );
+    mCalculateFieldButton->setEnabled( false );
   }
 }
 
@@ -473,7 +493,8 @@ void QgsVectorLayerProperties::reset( void )
   // on the builder. If the ability to enter a query directly into the box is required,
   // a mechanism to check it must be implemented.
   txtSubsetSQL->setEnabled( false );
-  pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() && !layer->isEditable() );
+  pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() &&
+                               !layer->isEditable() && layer->vectorJoins().size() < 1 );
   if ( layer->isEditable() )
   {
     pbnQueryBuilder->setToolTip( tr( "Stop editing mode to enable this." ) );
@@ -554,6 +575,7 @@ void QgsVectorLayerProperties::setupEditTypes()
   editTypeMap.insert( QgsVectorLayer::CheckBox, tr( "Checkbox" ) );
   editTypeMap.insert( QgsVectorLayer::TextEdit, tr( "Text edit" ) );
   editTypeMap.insert( QgsVectorLayer::Calendar, tr( "Calendar" ) );
+  editTypeMap.insert( QgsVectorLayer::ValueRelation, tr( "Value relation" ) );
 }
 
 QString QgsVectorLayerProperties::editTypeButtonText( QgsVectorLayer::EditType type )
@@ -584,6 +606,15 @@ void QgsVectorLayerProperties::apply()
   layer->toggleScaleBasedVisibility( chkUseScaleDependentRendering->isChecked() );
   layer->setMinimumScale( leMinimumScale->text().toFloat() );
   layer->setMaximumScale( leMaximumScale->text().toFloat() );
+
+  // provider-specific options
+  if ( layer->dataProvider() )
+  {
+    if ( layer->dataProvider()->capabilities() & QgsVectorDataProvider::SetEncoding )
+    {
+      layer->dataProvider()->setEncoding( cboProviderEncoding->currentText() );
+    }
+  }
 
   // update the display field
   layer->setDisplayField( displayFieldComboBox->currentText() );
@@ -632,6 +663,13 @@ void QgsVectorLayerProperties::apply()
         if ( mCheckedStates.contains( idx ) )
         {
           layer->setCheckedState( idx, mCheckedStates[idx].first, mCheckedStates[idx].second );
+        }
+        break;
+
+      case QgsVectorLayer::ValueRelation:
+        if ( mValueRelationData.contains( idx ) )
+        {
+          layer->valueRelation( idx ) = mValueRelationData[idx];
         }
         break;
 
@@ -834,241 +872,7 @@ void QgsVectorLayerProperties::on_pbnIndex_clicked()
 
 QString QgsVectorLayerProperties::metadata()
 {
-  QString myMetadata = "<html><body>";
-  myMetadata += "<table width=\"100%\">";
-
-  //-------------
-
-  myMetadata += "<tr class=\"glossy\"><td>";
-  myMetadata += tr( "General:" );
-  myMetadata += "</td></tr>";
-
-  // data comment
-  if ( !( layer->dataComment().isEmpty() ) )
-  {
-    myMetadata += "<tr><td>";
-    myMetadata += tr( "Layer comment: %1" ).arg( layer->dataComment() );
-    myMetadata += "</td></tr>";
-  }
-
-  //storage type
-  myMetadata += "<tr><td>";
-  myMetadata += tr( "Storage type of this layer: %1" ).arg( layer->storageType() );
-  myMetadata += "</td></tr>";
-
-  // data source
-  myMetadata += "<tr><td>";
-  myMetadata += tr( "Source for this layer: %1" ).arg( layer->publicSource() );
-  myMetadata += "</td></tr>";
-
-  //geom type
-
-  QGis::GeometryType type = layer->geometryType();
-
-  if ( type < 0 || type > QGis::NoGeometry )
-  {
-    QgsDebugMsg( "Invalid vector type" );
-  }
-  else
-  {
-    QString typeString( QGis::qgisVectorGeometryType[layer->geometryType()] );
-
-    myMetadata += "<tr><td>";
-    myMetadata += tr( "Geometry type of the features in this layer: %1" ).arg( typeString );
-    myMetadata += "</td></tr>";
-  }
-
-
-  //feature count
-  myMetadata += "<tr><td>";
-  myMetadata += tr( "The number of features in this layer: %1" ).arg( layer->featureCount() );
-  myMetadata += "</td></tr>";
-  //capabilities
-  myMetadata += "<tr><td>";
-  myMetadata += tr( "Editing capabilities of this layer: %1" ).arg( layer->capabilitiesString() );
-  myMetadata += "</td></tr>";
-
-  //-------------
-
-  QgsRectangle myExtent = layer->extent();
-  myMetadata += "<tr class=\"glossy\"><td>";
-  myMetadata += tr( "Extents:" );
-  myMetadata += "</td></tr>";
-  //extents in layer cs  TODO...maybe make a little nested table to improve layout...
-  myMetadata += "<tr><td>";
-
-  // Try to be a bit clever over what number format we use for the
-  // extents. Some people don't like it using scientific notation when the
-  // numbers get large, but for small numbers this is the more practical
-  // option (so we can't force the format to 'f' for all values).
-  // The scheme:
-  // - for all numbers with more than 5 digits, force non-scientific notation
-  // and 2 digits after the decimal point.
-  // - for all smaller numbers let the OS decide which format to use (it will
-  // generally use non-scientific unless the number gets much less than 1).
-
-  if ( !myExtent.isEmpty() )
-  {
-    QString xMin, yMin, xMax, yMax;
-    double changeoverValue = 99999; // The 'largest' 5 digit number
-    if ( qAbs( myExtent.xMinimum() ) > changeoverValue )
-    {
-      xMin = QString( "%1" ).arg( myExtent.xMinimum(), 0, 'f', 2 );
-    }
-    else
-    {
-      xMin = QString( "%1" ).arg( myExtent.xMinimum() );
-    }
-    if ( qAbs( myExtent.yMinimum() ) > changeoverValue )
-    {
-      yMin = QString( "%1" ).arg( myExtent.yMinimum(), 0, 'f', 2 );
-    }
-    else
-    {
-      yMin = QString( "%1" ).arg( myExtent.yMinimum() );
-    }
-    if ( qAbs( myExtent.xMaximum() ) > changeoverValue )
-    {
-      xMax = QString( "%1" ).arg( myExtent.xMaximum(), 0, 'f', 2 );
-    }
-    else
-    {
-      xMax = QString( "%1" ).arg( myExtent.xMaximum() );
-    }
-    if ( qAbs( myExtent.yMaximum() ) > changeoverValue )
-    {
-      yMax = QString( "%1" ).arg( myExtent.yMaximum(), 0, 'f', 2 );
-    }
-    else
-    {
-      yMax = QString( "%1" ).arg( myExtent.yMaximum() );
-    }
-
-    myMetadata += tr( "In layer spatial reference system units : " )
-      + tr( "xMin,yMin %1,%2 : xMax,yMax %3,%4" )
-      .arg( xMin ).arg( yMin ).arg( xMax ).arg( yMax );
-  }
-  else
-  {
-    myMetadata += tr( "In layer spatial reference system units : " ) + tr( "Empty" );
-  }
-  myMetadata += "</td></tr>";
-
-  //extents in project cs
-
-  try
-  {
-#if 0
-    // TODO: currently disabled, will revisit later [MD]
-    QgsRectangle myProjectedExtent = coordinateTransform->transformBoundingBox( layer->extent() );
-    myMetadata += "<tr><td>";
-    myMetadata += tr( "In project spatial reference system units : " )
-                  + tr( "xMin,yMin %1,%2 : xMax,yMax %3,%4" )
-                  .arg( myProjectedExtent.xMinimum() )
-                  .arg( myProjectedExtent.yMinimum() )
-                  .arg( myProjectedExtent.xMaximum() )
-                  .arg( myProjectedExtent.yMaximum() );
-    myMetadata += "</td></tr>";
-#endif
-
-    //
-    // Display layer spatial ref system
-    //
-    myMetadata += "<tr class=\"glossy\"><td>";
-    myMetadata += tr( "Layer Spatial Reference System:" );
-    myMetadata += "</td></tr>";
-    myMetadata += "<tr><td>";
-    myMetadata += layer->crs().toProj4().replace( QRegExp( "\"" ), " \"" );
-    myMetadata += "</td></tr>";
-
-    //
-    // Display project (output) spatial ref system
-    //
-#if 0
-    // TODO: disabled for now, will revisit later [MD]
-    myMetadata += "<tr><td bgcolor=\"gray\">";
-    myMetadata += tr( "Project (Output) Spatial Reference System:" );
-    myMetadata += "</td></tr>";
-    myMetadata += "<tr><td>";
-    myMetadata += coordinateTransform->destCRS().toProj4().replace( QRegExp( "\"" ), " \"" );
-    myMetadata += "</td></tr>";
-#endif
-  }
-  catch ( QgsCsException &cse )
-  {
-    Q_UNUSED( cse );
-    QgsDebugMsg( cse.what() );
-
-    myMetadata += "<tr><td>";
-    myMetadata += tr( "In project spatial reference system units : " )
-                  + tr( "(Invalid transformation of layer extents)" );
-    myMetadata += "</td></tr>";
-
-  }
-
-#if 0
-  //
-  // Add the info about each field in the attribute table
-  //
-  myMetadata += "<tr class=\"glossy\"><td>";
-  myMetadata += tr( "Attribute field info:" );
-  myMetadata += "</td></tr>";
-  myMetadata += "<tr><td>";
-
-  // Start a nested table in this trow
-  myMetadata += "<table width=\"100%\">";
-  myMetadata += "<tr><th>";
-  myMetadata += tr( "Field" );
-  myMetadata += "</th>";
-  myMetadata += "<th>";
-  myMetadata += tr( "Type" );
-  myMetadata += "</th>";
-  myMetadata += "<th>";
-  myMetadata += tr( "Length" );
-  myMetadata += "</th>";
-  myMetadata += "<th>";
-  myMetadata += tr( "Precision" );
-  myMetadata += "</th>";
-  myMetadata += "<th>";
-  myMetadata += tr( "Comment" );
-  myMetadata += "</th>";
-
-  //get info for each field by looping through them
-  const QgsFieldMap& myFields = layer->pendingFields();
-  for ( QgsFieldMap::const_iterator it = myFields.begin(); it != myFields.end(); ++it )
-  {
-    const QgsField& myField = *it;
-
-    myMetadata += "<tr><td>";
-    myMetadata += myField.name();
-    myMetadata += "</td>";
-    myMetadata += "<td>";
-    myMetadata += myField.typeName();
-    myMetadata += "</td>";
-    myMetadata += "<td>";
-    myMetadata += QString( "%1" ).arg( myField.length() );
-    myMetadata += "</td>";
-    myMetadata += "<td>";
-    myMetadata += QString( "%1" ).arg( myField.precision() );
-    myMetadata += "</td>";
-    myMetadata += "<td>";
-    myMetadata += QString( "%1" ).arg( myField.comment() );
-    myMetadata += "</td></tr>";
-  }
-
-  //close field list
-  myMetadata += "</table>"; //end of nested table
-#endif
-
-  myMetadata += "</td></tr>"; //end of stats container table row
-  //
-  // Close the table
-  //
-
-  myMetadata += "</table>";
-
-  myMetadata += "</body></html>";
-  return myMetadata;
+  return layer->metadata();
 }
 
 
@@ -1291,7 +1095,7 @@ void QgsVectorLayerProperties::on_mButtonAddJoin_clicked()
     info.memoryCache = d.cacheInMemory();
     if ( layer )
     {
-      //create attribute index if possible. Todo: ask user if this should be done (e.g. in QgsAddJoinDialog)
+      //create attribute index if possible
       if ( d.createAttributeIndex() )
       {
         QgsVectorLayer* joinLayer = qobject_cast<QgsVectorLayer*>( QgsMapLayerRegistry::instance()->mapLayer( info.joinLayerId ) );
@@ -1304,6 +1108,8 @@ void QgsVectorLayerProperties::on_mButtonAddJoin_clicked()
       layer->addJoin( info );
       loadRows(); //update attribute tab
       addJoinToTreeWidget( info );
+      pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() &&
+                                   !layer->isEditable() && layer->vectorJoins().size() < 1 );
     }
   }
 }
@@ -1341,6 +1147,8 @@ void QgsVectorLayerProperties::on_mButtonRemoveJoin_clicked()
   layer->removeJoin( currentJoinItem->data( 0, Qt::UserRole ).toString() );
   loadRows();
   mJoinTreeWidget->takeTopLevelItem( mJoinTreeWidget->indexOfTopLevelItem( currentJoinItem ) );
+  pbnQueryBuilder->setEnabled( layer && layer->dataProvider() && layer->dataProvider()->supportsSubsetString() &&
+                               !layer->isEditable() && layer->vectorJoins().size() < 1 );
 }
 
 void QgsVectorLayerProperties::handleDiagramItemDoubleClick( QTreeWidgetItem * item, int column )

@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 
 #include "qgsmaptoolemitpoint.h"
@@ -27,6 +26,7 @@ QgsMapToolEmitPoint::QgsMapToolEmitPoint( QgsMapCanvas* canvas )
 
 void QgsMapToolEmitPoint::canvasMoveEvent( QMouseEvent * e )
 {
+  Q_UNUSED( e );
 }
 
 void QgsMapToolEmitPoint::canvasPressEvent( QMouseEvent * e )
@@ -37,4 +37,5 @@ void QgsMapToolEmitPoint::canvasPressEvent( QMouseEvent * e )
 
 void QgsMapToolEmitPoint::canvasReleaseEvent( QMouseEvent * e )
 {
+  Q_UNUSED( e );
 }

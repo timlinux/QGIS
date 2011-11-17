@@ -125,8 +125,8 @@ class CORE_EXPORT QgsComposerMap : public QgsComposerItem
     /**Sets new Extent and changes width, height (and implicitely also scale)*/
     void setNewExtent( const QgsRectangle& extent );
 
-    PreviewMode previewMode() {return mPreviewMode;}
-    void setPreviewMode( PreviewMode m ) {mPreviewMode = m;}
+    PreviewMode previewMode() const {return mPreviewMode;}
+    void setPreviewMode( PreviewMode m );
 
     /**Getter for flag that determines if the stored layer set should be used or the current layer set of the qgis mapcanvas
     @note this function was added in version 1.2*/
@@ -254,11 +254,16 @@ class CORE_EXPORT QgsComposerMap : public QgsComposerItem
 
     void setMapRotation( double r );
 
+    void updateItem();
+
     /**Sets canvas pointer (necessary to query and draw map canvas items)*/
     void setMapCanvas( QGraphicsView* canvas ) { mMapCanvas = canvas; }
 
     void setDrawCanvasItems( bool b ) { mDrawCanvasItems = b; }
     bool drawCanvasItems() const { return mDrawCanvasItems; }
+
+    /**Returns the conversion factor map units -> mm*/
+    double mapUnitsToMM() const;
 
   signals:
     void extentChanged();
@@ -390,8 +395,6 @@ class CORE_EXPORT QgsComposerMap : public QgsComposerItem
     void mapPolygon( QPolygonF& poly ) const;
     /**Calculates the extent to request and the yShift of the top-left point in case of rotation.*/
     void requestedExtent( QgsRectangle& extent ) const;
-    /**Returns the conversion factor map units -> mm*/
-    double mapUnitsToMM() const;
     /**Scales a composer map shift (in MM) and rotates it by mRotation
         @param xShift in: shift in x direction (in item units), out: xShift in map units
         @param yShift in: shift in y direction (in item units), out: yShift in map units*/

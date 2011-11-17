@@ -50,17 +50,15 @@
 #include <QList>
 #include <QSettings>
 #include <QMouseEvent>
+#include <QVector>
 
 // QWT Charting widget
+#include <qwt_global.h>
 #include <qwt_plot_canvas.h>
-#include <qwt_array.h>
 #include <qwt_legend.h>
 #include <qwt_plot.h>
 #include <qwt_plot_curve.h>
 #include <qwt_plot_grid.h>
-
-const char * const ident =
-  "$Id$";
 
 QgsRasterLayerProperties::QgsRasterLayerProperties( QgsMapLayer* lyr, QgsMapCanvas* theCanvas, QWidget *parent, Qt::WFlags fl )
     : QDialog( parent, fl ),
@@ -178,6 +176,8 @@ QgsRasterLayerProperties::QgsRasterLayerProperties( QgsMapLayer* lyr, QgsMapCanv
     cboGreen->addItem( myRasterBandName );
     cboBlue->addItem( myRasterBandName );
     cboxColorMapBand->addItem( myRasterBandName );
+    cboxTransparencyBand->addItem( myRasterBandName );
+    cboxTransparencyBand->setEnabled( true );
   }
 
   cboRed->addItem( TRSTRING_NOT_SET );
@@ -756,7 +756,7 @@ void QgsRasterLayerProperties::sync()
     {
       labelDefaultContrastEnhancementAlgorithm->setText( tr( "No Stretch" ) );
     }
-    mDefaultStandardDeviation = myQSettings.value( "/Raster/defaultStandardDeviation", 1.0 ).toDouble();
+    mDefaultStandardDeviation = myQSettings.value( "/Raster/defaultStandardDeviation", 2.0 ).toDouble();
     sboxThreeBandStdDev->setValue( mDefaultStandardDeviation );
   }
 
@@ -1557,7 +1557,7 @@ void QgsRasterLayerProperties::on_buttonBuildPyramids_clicked()
     else if ( res == "ERROR_WRITE_FORMAT" )
     {
       QMessageBox::warning( this, tr( "Building pyramids failed." ),
-                            tr( "The file was not writeable. Some formats do not "
+                            tr( "The file was not writable. Some formats do not "
                                 "support pyramid overviews. Consult the GDAL documentation if in doubt." ) );
     }
     else if ( res == "FAILED_NOT_SUPPORTED" )
@@ -1858,7 +1858,9 @@ void QgsRasterLayerProperties::on_tabBar_currentChanged( int theTab )
 
 void QgsRasterLayerProperties::refreshHistogram()
 {
+#if !defined(QWT_VERSION) || QWT_VERSION<0x060000
   mpPlot->clear();
+#endif
   mHistogramProgress->show();
   connect( mRasterLayer, SIGNAL( progressUpdate( int ) ), mHistogramProgress, SLOT( setValue( int ) ) );
   QApplication::setOverrideCursor( Qt::WaitCursor );
@@ -1885,7 +1887,7 @@ void QgsRasterLayerProperties::refreshHistogram()
   // bin in all selected layers, and the min. It then draws a scaled line between min
   // and max - scaled to image height. 1 line drawn per selected band
   //
-  const int BINCOUNT = 255;
+  const int BINCOUNT = 256;
   bool myIgnoreOutOfRangeFlag = true;
   bool myThoroughBandScanFlag = false;
   int myBandCountInt = mRasterLayer->bandCount();
@@ -1920,17 +1922,30 @@ void QgsRasterLayerProperties::refreshHistogram()
     QgsRasterBandStats myRasterBandStats = mRasterLayer->bandStatistics( myIteratorInt );
     mRasterLayer->populateHistogram( myIteratorInt, BINCOUNT, myIgnoreOutOfRangeFlag, myThoroughBandScanFlag );
     QwtPlotCurve * mypCurve = new QwtPlotCurve( tr( "Band %1" ).arg( myIteratorInt ) );
+    mypCurve->setCurveAttribute( QwtPlotCurve::Fitted );
     mypCurve->setRenderHint( QwtPlotItem::RenderAntialiased );
     mypCurve->setPen( QPen( myColors.at( myIteratorInt ) ) );
-    QwtArray<double> myX2Data;//qwtarray is just a wrapped qvector
-    QwtArray<double> myY2Data;//qwtarray is just a wrapped qvector
+#if defined(QWT_VERSION) && QWT_VERSION>=0x060000
+    QVector<QPointF> data;
+#else
+    QVector<double> myX2Data;
+    QVector<double> myY2Data;
+#endif
     for ( int myBin = 0; myBin < BINCOUNT; myBin++ )
     {
       int myBinValue = myRasterBandStats.histogramVector->at( myBin );
+#if defined(QWT_VERSION) && QWT_VERSION>=0x060000
+      data << QPointF( myBin, myBinValue );
+#else
       myX2Data.append( double( myBin ) );
       myY2Data.append( double( myBinValue ) );
+#endif
     }
+#if defined(QWT_VERSION) && QWT_VERSION>=0x060000
+    mypCurve->setSamples( data );
+#else
     mypCurve->setData( myX2Data, myY2Data );
+#endif
     mypCurve->attach( mpPlot );
     if ( myFirstIteration || myGlobalMin < myRasterBandStats.minimumValue )
     {
@@ -1965,6 +1980,7 @@ void QgsRasterLayerProperties::on_mSaveAsImageButton_clicked()
   QPixmap myPixmap( 600, 600 );
   myPixmap.fill( Qt::white ); // Qt::transparent ?
 
+#if (QWT_VERSION<0x060000)
   QwtPlotPrintFilter myFilter;
   int myOptions = QwtPlotPrintFilter::PrintAll;
   myOptions &= ~QwtPlotPrintFilter::PrintBackground;
@@ -1972,6 +1988,12 @@ void QgsRasterLayerProperties::on_mSaveAsImageButton_clicked()
   myFilter.setOptions( myOptions );
 
   mpPlot->print( myPixmap, myFilter );
+#else
+  QPainter painter;
+  painter.begin( &myPixmap );
+  mpPlot->drawCanvas( &painter );
+  painter.end();
+#endif
   QPair< QString, QString> myFileNameAndFilter = QgisGui::getSaveAsImageName( this, tr( "Choose a file name to save the map image as" ) );
   if ( myFileNameAndFilter.first != "" )
   {
@@ -2291,6 +2313,8 @@ void QgsRasterLayerProperties::pixelSelected( const QgsPoint& canvasPoint )
 
 void QgsRasterLayerProperties::sboxSingleBandStdDev_valueChanged( double theValue )
 {
+  Q_UNUSED( theValue );
+
   if ( !ignoreSpinBoxEvent )
   {
     leGrayMin->setText( "" );
@@ -2302,6 +2326,7 @@ void QgsRasterLayerProperties::sboxSingleBandStdDev_valueChanged( double theValu
 
 void QgsRasterLayerProperties::sboxThreeBandStdDev_valueChanged( double theValue )
 {
+  Q_UNUSED( theValue );
   if ( !ignoreSpinBoxEvent )
   {
     leRedMin->setText( "" );
@@ -2324,6 +2349,7 @@ void QgsRasterLayerProperties::sliderTransparency_valueChanged( int theValue )
 
 void QgsRasterLayerProperties::userDefinedMinMax_textEdited( QString theString )
 {
+  Q_UNUSED( theString );
   /*
    * If all min max values are set and valid, then reset stdDev to 0.0
    */
@@ -2409,6 +2435,7 @@ void QgsRasterLayerProperties::on_mClassifyButton_clicked()
     QTreeWidgetItem* newItem = new QTreeWidgetItem( mColormapTreeWidget );
     newItem->setText( 0, QString::number( *value_it, 'f' ) );
     newItem->setBackground( 1, QBrush( *color_it ) );
+    newItem->setText( 2, QString::number( *value_it, 'f' ) );
     newItem->setFlags( Qt::ItemIsEnabled | Qt::ItemIsEditable | Qt::ItemIsSelectable );
   }
 }

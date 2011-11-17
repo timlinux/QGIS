@@ -1,6 +1,5 @@
 @echo off
-set GRASS_VERSION=6.4.1
-set SVNVERSION=c:/cygwin/bin/svnversion
+set GRASS_VERSION=6.4.2RC2
 
 set BUILDDIR=%CD%\build
 REM set BUILDDIR=%TEMP%\qgis_unstable
@@ -90,7 +89,9 @@ cmake -G "Visual Studio 9 2008" ^
 	-D PEDANTIC=TRUE ^
 	-D WITH_SPATIALITE=TRUE ^
 	-D WITH_MAPSERVER=TRUE ^
+	-D WITH_GLOBE=TRUE ^
 	-D WITH_INTERNAL_SPATIALITE=TRUE ^
+	-D WITH_INTERNAL_SPATIALINDEX=FALSE ^
 	-D CMAKE_BUILD_TYPE=%BUILDCONF% ^
 	-D CMAKE_CONFIGURATION_TYPES=%BUILDCONF% ^
 	-D GEOS_LIBRARY=%OSGEO4W_ROOT%/lib/geos_c_i.lib ^
@@ -110,7 +111,6 @@ cmake -G "Visual Studio 9 2008" ^
 	-D CMAKE_CXX_FLAGS_RELWITHDEBINFO="/MD /ZI /Od /D NDEBUG" ^
 	-D FCGI_INCLUDE_DIR=%O4W_ROOT%/include ^
 	-D FCGI_LIBRARY=%O4W_ROOT%/lib/libfcgi.lib ^
-	-D SVNVERSION="%SVNVERSION%" ^
 	%SRCDIR%>>%LOG% 2>&1
 if errorlevel 1 goto error
 
@@ -138,6 +138,7 @@ cd ..
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' postinstall.bat >%OSGEO4W_ROOT%\etc\postinstall\%PACKAGENAME%.bat
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' preremove.bat >%OSGEO4W_ROOT%\etc\preremove\%PACKAGENAME%.bat
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' qgis.bat.tmpl >%OSGEO4W_ROOT%\bin\%PACKAGENAME%.bat.tmpl
+sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' browser.bat.tmpl >%OSGEO4W_ROOT%\bin\%PACKAGENAME%-browser.bat.tmpl
 sed -e 's/@package@/%PACKAGENAME%/g' -e 's/@version@/%VERSION%/g' -e 's/@grassversion@/%GRASS_VERSION%/g' qgis.reg.tmpl >%OSGEO4W_ROOT%\apps\%PACKAGENAME%\bin\qgis.reg.tmpl
 
 REM sed -e 's/%OSGEO4W_ROOT:\=\\\\\\\\%/@osgeo4w@/' %OSGEO4W_ROOT%\apps\%PACKAGENAME%\python\qgis\qgisconfig.py >%OSGEO4W_ROOT%\apps\%PACKAGENAME%\python\qgis\qgisconfig.py.tmpl
@@ -158,8 +159,10 @@ tar -C %OSGEO4W_ROOT% -cjf %PACKAGENAME%-%VERSION%-%PACKAGE%.tar.bz2 ^
 	--exclude "apps/%PACKAGENAME%/plugins/grassrasterprovider.dll" ^
 	--exclude "apps/%PACKAGENAME%/plugins/grassplugin.dll" ^
 	--exclude "apps/%PACKAGENAME%/plugins/grassprovider.dll" ^
+	--exclude "apps/%PACKAGENAME%/plugins/globeplugin.dll" ^
 	apps/%PACKAGENAME% ^
 	bin/%PACKAGENAME%.bat.tmpl ^
+	bin/%PACKAGENAME%-browser.bat.tmpl ^
 	etc/postinstall/%PACKAGENAME%.bat ^
 	etc/preremove/%PACKAGENAME%.bat ^
 	>>%LOG% 2>&1
@@ -176,6 +179,12 @@ tar -C %OSGEO4W_ROOT% -cjf %PACKAGENAME%-grass-plugin-%VERSION%-%PACKAGE%.tar.bz
 	"apps/%PACKAGENAME%/plugins/grassrasterprovider.dll" ^
 	"apps/%PACKAGENAME%/plugins/grassplugin.dll" ^
 	"apps/%PACKAGENAME%/plugins/grassprovider.dll" ^
+	>>%LOG% 2>&1
+if errorlevel 1 goto error
+
+tar -C %OSGEO4W_ROOT% -cjf %PACKAGENAME%-globe-plugin-%VERSION%-%PACKAGE%.tar.bz2 ^
+	"apps/%PACKAGENAME%/globe" ^
+	"apps/%PACKAGENAME%/plugins/globeplugin.dll" ^
 	>>%LOG% 2>&1
 if errorlevel 1 goto error
 

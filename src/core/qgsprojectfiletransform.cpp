@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 
 #include "qgsprojectfiletransform.h"
@@ -52,6 +51,7 @@ QgsProjectFileTransform::transform QgsProjectFileTransform::transformers[] =
 
 bool QgsProjectFileTransform::updateRevision( QgsProjectVersion newVersion )
 {
+  Q_UNUSED( newVersion );
   bool returnValue = false;
 
   if ( ! mDom.isNull() )

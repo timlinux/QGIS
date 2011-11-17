@@ -1,8 +1,8 @@
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
-SET(CPACK_PACKAGE_VERSION_MINOR "7")
-SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_VERSION_MINOR "9")
+SET(CPACK_PACKAGE_VERSION_PATCH "90")
 SET(COMPLETE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
-SET(RELEASE_NAME "Wroclaw")
+SET(RELEASE_NAME "Alpha")
 SET(PROJECT_VERSION ${COMPLETE_VERSION})
 PROJECT(qgis${PROJECT_VERSION})
 IF (APPLE)
@@ -15,20 +15,11 @@ ENDIF (APPLE)
 MATH(EXPR QGIS_VERSION_INT "${CPACK_PACKAGE_VERSION_MAJOR}*10000+${CPACK_PACKAGE_VERSION_MINOR}*100+${CPACK_PACKAGE_VERSION_PATCH}")
 MESSAGE(STATUS "Quantum GIS version: ${COMPLETE_VERSION} ${RELEASE_NAME} (${QGIS_VERSION_INT})")
 
-# TODO:
-# - install includes for libs
-# - nice output when configured
-# - rename *.ui files to have the same filename as their implementation
-#   e.g. instead of blahblahbase.ui use blahblah.ui
-#   because it's more common in Qt4 
-# Note on last point above by Tim Sutton - I prefer to have the base suffix
-# as it indicates the ui generated class will be a base class for the widget.
-
 #############################################################
 # CMake settings
 
-# 2.6 required for QtWebkit
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+# 2.6.2 required for VERSION_LESS
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6.2)
 
 SET(CMAKE_COLOR_MAKEFILE ON)
 
@@ -37,15 +28,9 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 # in generated makefiles use relative paths so the project dir is moveable
 # Note commented out since it cause problems but it would be nice to resolve these and enable
-# 
-# issue is caused by INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) near the end of this file generating incorrect path 
+#
+# issue is caused by INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}) near the end of this file generating incorrect path
 #SET (CMAKE_USE_RELATIVE_PATHS ON)
-
-# it's possible to set PLUGINS_ALSO_BINARIES to TRUE
-# then some plugins that can run as standalone apps will be built
-# also as standalone apps
-SET (PLUGINS_ALSO_BINARIES FALSE)
-
 
 # try to configure and build GRASS plugin by default
 SET (WITH_GRASS TRUE CACHE BOOL "Determines whether GRASS plugin should be built")
@@ -57,8 +42,8 @@ ENDIF (WITH_GRASS)
 # mapserver by us disabled default because it needs FastCGI (which is optional dependency)
 SET (WITH_MAPSERVER FALSE CACHE BOOL "Determines whether QGIS mapserver should be built")
 
-# include doxygen documentation
-SET (WITH_APIDOC FALSE CACHE BOOL "Determines whether the QGIS API doxygen documentation should be built")
+# build our version of astyle
+SET (WITH_ASTYLE FALSE CACHE BOOL "If you plan to contribute you should reindent with scripts/prepare-commit.sh (using 'our' astyle)")
 
 # try to configure and build POSTGRESQL support
 SET (WITH_POSTGRESQL TRUE CACHE BOOL "Determines whether POSTGRESQL support should be built")
@@ -66,7 +51,9 @@ IF (WITH_POSTGRESQL)
   SET (POSTGRESQL_PREFIX "" CACHE PATH "Path to POSTGRESQL base directory")
 ENDIF (WITH_POSTGRESQL)
 
-SET (WITH_INTERNAL_QWTPOLAR TRUE CACHE BOOL "Use internal built of QwtPolar")
+SET (WITH_INTERNAL_QWTPOLAR TRUE CACHE BOOL "Use internal build of QwtPolar")
+
+SET (WITH_INTERNAL_SPATIALINDEX TRUE CACHE BOOL "Use internal build of Spatialindex")
 
 SET (WITH_SPATIALITE TRUE CACHE BOOL "Determines whether SPATIALITE support should be built")
 
@@ -91,11 +78,17 @@ IF (WITH_BINDINGS)
   SET (BINDINGS_GLOBAL_INSTALL FALSE CACHE BOOL "Install bindings to global python directory? (might need root)")
 ENDIF (WITH_BINDINGS)
 
+SET (WITH_GLOBE FALSE CACHE BOOL "Determines whether Globe plugin should be built")
+IF (WITH_GLOBE)
+  SET(QT_USE_QTOPENGL 1)
+  FIND_PACKAGE(OSGEARTH REQUIRED)
+ENDIF (WITH_GLOBE)
+
 # Compile flag. Make it possible to turn it off.
 SET (PEDANTIC TRUE CACHE BOOL "Determines if we should compile in pedantic mode.")
 
 # whether unit tests should be build
-SET (ENABLE_TESTS FALSE CACHE BOOL "Build unit tests?")
+SET (ENABLE_TESTS TRUE CACHE BOOL "Build unit tests?")
 
 # hide this variable because building of python bindings might fail
 # if set to other directory than expected
@@ -145,6 +138,11 @@ FIND_PACKAGE(Expat)    # GPS importer plugin
 FIND_PACKAGE(GSL)      # Georeferencer
 FIND_PACKAGE(GEOS)
 FIND_PACKAGE(GDAL)
+
+IF (NOT WITH_INTERNAL_SPATIALINDEX)
+  FIND_PACKAGE(Spatialindex REQUIRED)
+ENDIF(NOT WITH_INTERNAL_SPATIALINDEX)
+
 FIND_PACKAGE(Qwt REQUIRED)
 IF (NOT WITH_INTERNAL_QWTPOLAR)
   FIND_PACKAGE(QwtPolar REQUIRED)
@@ -197,6 +195,8 @@ ENDIF ()
 IF (ENABLE_TESTS)
   SET( QT_USE_QTTEST  TRUE )
   ENABLE_TESTING()
+  # Define "make check" as alias for "make test" - thanks geos :-)
+  add_custom_target(check COMMAND ctest)
 ENDIF (ENABLE_TESTS)
 
 
@@ -228,9 +228,10 @@ IF (PEDANTIC)
     ADD_DEFINITIONS( /wd4610 )  # user defined constructor required (sqlite3_index_info)
     ADD_DEFINITIONS( /wd4706 )  # assignment within conditional expression (pal)
   ELSE (MSVC)
-    ADD_DEFINITIONS( -Wall -Wno-long-long -Wformat-security -Wno-strict-aliasing )
+    ADD_DEFINITIONS( -Wall -Wextra  -Wno-long-long -Wformat-security -Wno-strict-aliasing )
     # Qt produces lots of warnings with strict aliasing (as of Qt 4.4.0 & GCC 4.3)
-    # ADD_DEFINITIONS( -fstrict-aliasing -Wstrict-aliasing=1 )
+    # There are redundant declarations in Qt and GDAL
+    # ADD_DEFINITIONS( -fstrict-aliasing -Wstrict-aliasing=1 -Wredundant-decls )
   ENDIF (MSVC)
 ENDIF (PEDANTIC)
 
@@ -253,23 +254,21 @@ IF (WIN32)
   SET (DEFAULT_DATA_SUBDIR    .)
   SET (DEFAULT_PLUGIN_SUBDIR  plugins)
   SET (DEFAULT_INCLUDE_SUBDIR include)
-  
+
   IF (MSVC)
     SET (DEFAULT_BIN_SUBDIR bin)
     SET (DEFAULT_CGIBIN_SUBDIR bin)
     # put all the build products into a single directory
     # under build (doesnt affect install target) to make for
     # easier debugging.
-    #tell msvc compiler to use main instead of winmain as the
-    #application entry point
-    #SET(QT_USE_QTMAIN TRUE) 
+
     # Turn on defines for non standard maths stuff
     ADD_DEFINITIONS(-D_USE_MATH_DEFINES)
 
     # Turn off deprecation warnings
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_WARNINGS)
-    
+
     IF (CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
       MESSAGE (STATUS "Generating browse files")
       ADD_DEFINITIONS( /FR )
@@ -286,16 +285,20 @@ ELSE (WIN32)
 
   IF (APPLE)
     # for Mac OS X, everything is put inside an application bundle
+    # save the root install prefix for the app later
+    SET (QGIS_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
     SET (QGIS_MACAPP_PREFIX ${CMAKE_INSTALL_PREFIX}/${QGIS_APP_NAME}.app/Contents)
+    # common prefix for components, let cmake handle it
     SET (CMAKE_INSTALL_PREFIX ${QGIS_MACAPP_PREFIX}/MacOS)
-    # path for library references
-    SET (CMAKE_INSTALL_NAME_DIR @executable_path/lib)
     # 4 bundling levels, each includes previous
     #   0  nothing
     #   1  Qt frameworks
     #   2  non-system libraries, "standard"
     #   3  non-system frameworks, "standalone"
-    SET (QGIS_MACAPP_BUNDLE 0 CACHE STRING "What to bundle into app package")
+    SET (QGIS_MACAPP_BUNDLE 1 CACHE STRING "What to bundle into app package")
+    SET (QGIS_MACAPP_BUNDLE_USER "" CACHE STRING "Path to user bundling script")
+    SET (QGIS_MACAPP_INSTALL_DEV FALSE CACHE BOOL "Install developer frameworks")
+    SET (QGIS_MACAPP_DEV_PREFIX "/Library/Frameworks" CACHE STRING "Path to install developer frameworks")
     # if we have @loader_path, >=OSX 10.5 (darwin 9+)
     IF (CMAKE_SYSTEM_VERSION VERSION_GREATER 9.0.0 OR CMAKE_SYSTEM_VERSION VERSION_EQUAL 9.0.0)
         SET (OSX_HAVE_LOADERPATH 1)
@@ -320,6 +323,8 @@ ELSE (WIN32)
     SET (DEFAULT_PLUGIN_SUBDIR   ../PlugIns/qgis)
     SET (QGIS_PLUGIN_SUBDIR_REV  ../../MacOS)
     SET (DEFAULT_INCLUDE_SUBDIR  include/qgis)
+    # path for framework references
+    SET (CMAKE_INSTALL_NAME_DIR @executable_path/${QGIS_FW_SUBDIR})
 
   ELSE (APPLE)
     # UNIX
@@ -337,7 +342,7 @@ ENDIF (WIN32)
 
 #assume we have escaped compiler directives
 #eventually we want to change this to new
-#since we don't need to jump through so many 
+#since we don't need to jump through so many
 #hoops to escape compiler directives then
 IF(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
@@ -345,27 +350,17 @@ IF(COMMAND cmake_policy)
 ENDIF(COMMAND cmake_policy)
 
 IF (WIN32)
-  # expect that classes are being imported
-  # Note: MSVC doesn't like when the macros are quotes
-  # and MSYS doesn't like them unqouted (bacause of braces)
-  IF (MSVC)
-    ADD_DEFINITIONS("-DCORE_EXPORT=__declspec(dllimport)")
-    ADD_DEFINITIONS("-DGUI_EXPORT=__declspec(dllimport)")
-    ADD_DEFINITIONS("-DPYTHON_EXPORT=__declspec(dllimport)")
-    ADD_DEFINITIONS("-DANALYSIS_EXPORT=__declspec(dllimport)")
-  ELSE (MSVC)
-    ADD_DEFINITIONS("\"-DCORE_EXPORT=__declspec(dllimport)\"")
-    ADD_DEFINITIONS("\"-DGUI_EXPORT=__declspec(dllimport)\"")
-    ADD_DEFINITIONS("\"-DPYTHON_EXPORT=__declspec(dllimport)\"")
-    ADD_DEFINITIONS("\"-DANALYSIS_EXPORT=__declspec(dllimport)\"")
-  ENDIF (MSVC)
+  SET(DLLIMPORT "__declspec(dllimport)")
+  SET(DLLEXPORT "__declspec(dllexport)")
 ELSE (WIN32)
-  # other compilers don't use that MSVC construct
-  ADD_DEFINITIONS(-DCORE_EXPORT=)
-  ADD_DEFINITIONS(-DGUI_EXPORT=)
-  ADD_DEFINITIONS(-DPYTHON_EXPORT=)
-  ADD_DEFINITIONS(-DANALYSIS_EXPORT=)
-ENDIF (WIN32)
+  SET(DLLIMPORT "")
+  SET(DLLEXPORT "")
+ENDIF(WIN32)
+
+ADD_DEFINITIONS("-DCORE_EXPORT=${DLLIMPORT}")
+ADD_DEFINITIONS("-DGUI_EXPORT=${DLLIMPORT}")
+ADD_DEFINITIONS("-DPYTHON_EXPORT=${DLLIMPORT}")
+ADD_DEFINITIONS("-DANALYSIS_EXPORT=${DLLIMPORT}")
 
 #############################################################
 # user-changeable settings which can be used to customize
@@ -393,13 +388,23 @@ SET (QGIS_DATA_DIR    ${QGIS_DATA_SUBDIR})
 SET (QGIS_PLUGIN_DIR  ${QGIS_PLUGIN_SUBDIR})
 SET (QGIS_INCLUDE_DIR ${QGIS_INCLUDE_SUBDIR})
 
+# set the default locations where the targets (executables, libraries) will land when compiled
+# this is to allow running qgis from the source tree without having to actually do a "make install"
+SET (QGIS_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output)
+SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${QGIS_OUTPUT_DIRECTORY}/${QGIS_BIN_SUBDIR})
+SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${QGIS_OUTPUT_DIRECTORY}/${QGIS_LIB_SUBDIR})
+
+# write a marker with source directory path into the output's bin directory
+# if run from the build directory QGIS will detect it and alter the paths
+FILE(WRITE ${QGIS_OUTPUT_DIRECTORY}/${QGIS_BIN_SUBDIR}/source_path.txt "${CMAKE_SOURCE_DIR}")
+
 # manual page - makes sense only on unix systems
-IF (UNIX)
+IF (UNIX AND NOT APPLE)
   SET (DEFAULT_MANUAL_SUBDIR  man)
   SET (QGIS_MANUAL_SUBDIR  ${DEFAULT_MANUAL_SUBDIR}  CACHE STRING "Subdirectory where manual files will be installed")
   MARK_AS_ADVANCED (QGIS_MANUAL_SUBDIR)
   SET (QGIS_MANUAL_DIR  ${CMAKE_INSTALL_PREFIX}/${QGIS_MANUAL_SUBDIR})
-ENDIF (UNIX)
+ENDIF (UNIX AND NOT APPLE)
 
 #############################################################
 # Python bindings
@@ -429,9 +434,9 @@ ENDIF (WITH_BINDINGS)
 
 #############################################################
 # create qgsconfig.h
+# installed with app target
 
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake_templates/qgsconfig.h.in ${CMAKE_BINARY_DIR}/qgsconfig.h)
-INSTALL(FILES ${CMAKE_BINARY_DIR}/qgsconfig.h DESTINATION ${QGIS_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 
 # Added by Jef to prevent python core and gui libs linking to other qgisCore and qgisGui libs
@@ -439,63 +444,56 @@ INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR})
 LINK_DIRECTORIES(${CMAKE_BINARY_DIR}/src/core ${CMAKE_BINARY_DIR}/src/gui)
 
 #############################################################
-# create qgssvnversion.h
+# create qgsversion.h
 
-FIND_FILE(SVN_MARKER entries PATHS ${CMAKE_SOURCE_DIR}/.svn)
 FIND_FILE(GIT_MARKER index PATHS ${CMAKE_SOURCE_DIR}/.git)
 
-IF (SVN_MARKER)
-  # See if we have svn installed
-  FIND_PROGRAM(SVNVERSION svnversion PATHS c:/cygwin/bin)
-
-  IF(SVNVERSION)
+IF (GIT_MARKER)
+  FIND_PROGRAM(GIT git PATHS c:/cygwin/bin)
+  IF(GIT)
     IF(MSVC)
       ADD_CUSTOM_COMMAND(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
-        COMMAND for /f usebackq %%a in "(`\"${SVNVERSION}\"`)" do echo \#define QGSSVNVERSION \"%%a\" >${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
-        MAIN_DEPENDENCY ${SVN_MARKER}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      )
-    ELSE(MSVC)
-      ADD_CUSTOM_COMMAND(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
-        COMMAND echo \\\#define QGSSVNVERSION \\\"`${SVNVERSION}`\\\" >${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
-        MAIN_DEPENDENCY ${SVN_MARKER}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-      )
-    ENDIF(MSVC)
-  ELSE(SVNVERSION)
-    MESSAGE(STATUS "svnversion not found - version will be unknown")
-    FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h "#define QGSSVNVERSION \"unknown\"")
-  ENDIF (SVNVERSION)
-ELSE (SVN_MARKER)
-  IF (GIT_MARKER)
-    FIND_PROGRAM(GIT git PATHS c:/cygwin/bin)
-    IF(GIT)
-      ADD_CUSTOM_COMMAND(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
-        COMMAND echo \\\#define QGSSVNVERSION \\\"$$\( ${GIT} log -n1 --grep='git-svn-id' | sed -ne 's/^  *git-svn-id:.*@\\\([0-9]*\\\).*$$/\\1/p' \)$$\( ${GIT} log --oneline $$\( ${GIT} log -n1 --grep='git-svn-id' --pretty=%H \).. | wc -l | sed -e 's/^/+/' -e 's/+0$$//' \)\\\" >${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h
+        COMMAND for /f \"usebackq tokens=1\" %%a in "(`\"${GIT}\" log -n1 --oneline`)" do echo \#define QGSVERSION \"%%a\" >${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h
         MAIN_DEPENDENCY ${GIT_MARKER}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       )
-    ELSE(GIT)
-      MESSAGE(STATUS "git marker, but no git found - version will be unknown")
-      FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h "#define QGSSVNVERSION \"unknown\"")
-    ENDIF(GIT)
-  ELSE (GIT_MARKER)
-    FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h "#define QGSSVNVERSION \"exported\"")
-  ENDIF (GIT_MARKER)
-ENDIF (SVN_MARKER)
+    ELSE(MSVC)
+      EXECUTE_PROCESS(
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMAND ${GIT} log -n1 --pretty=%h OUTPUT_VARIABLE REVISION
+      )
+      STRING(STRIP "${REVISION}" REVISION)
+      ADD_CUSTOM_COMMAND(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h
+        COMMAND echo \\\#define QGSVERSION \\\"${REVISION}\\\" >${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h
+        MAIN_DEPENDENCY ${GIT_MARKER}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      )
+    ENDIF(MSVC)
+  ELSE(GIT)
+    MESSAGE(STATUS "git marker, but no git found - version will be unknown")
+    SET(REVISION "unknown")
+    FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h "#define QGSVERSION \"unknown\"")
+  ENDIF(GIT)
+ELSE (GIT_MARKER)
+  SET(REVISION "exported")
+  FILE(WRITE ${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h "#define QGSVERSION \"exported\"")
+ENDIF (GIT_MARKER)
 
-ADD_CUSTOM_TARGET(svnversion ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/qgssvnversion.h)
+ADD_CUSTOM_TARGET(version ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/qgsversion.h)
 
 #############################################################
 # process subdirs
 
-SUBDIRS(src doc images resources i18n)
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(doc)
+ADD_SUBDIRECTORY(images)
+ADD_SUBDIRECTORY(resources)
+ADD_SUBDIRECTORY(i18n)
 
 IF (WITH_BINDINGS)
-  SUBDIRS (python)
+  ADD_SUBDIRECTORY(python)
 ENDIF (WITH_BINDINGS)
 
 IF (ENABLE_TESTS)
@@ -503,12 +501,14 @@ IF (ENABLE_TESTS)
   #so that unit tests can use TEST_DATA_DIR to locate
   #the test data. See CMakeLists in test dirs for more info
   SET (TEST_DATA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/testdata")
-  SUBDIRS(tests)
+  ADD_SUBDIRECTORY(tests)
+  SET (CTEST_BINARY_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/output/bin" )
+  MESSAGE (STATUS "Ctest Binary Directory  set to: ${CTEST_BINARY_DIRECTORY}")
 ENDIF (ENABLE_TESTS)
 
 IF (APPLE)
   # must be last for install, so install_name_tool can do its work
-  SUBDIRS (mac)
+  ADD_SUBDIRECTORY(mac)
 ENDIF (APPLE)
 
 # manual page - makes sense only on unix systems

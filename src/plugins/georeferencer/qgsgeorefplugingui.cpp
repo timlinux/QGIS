@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include <QDesktopWidget>
 #include <QDialogButtonBox>
@@ -536,6 +535,7 @@ void QgsGeorefPluginGui::movePoint( const QPoint &p )
 
 void QgsGeorefPluginGui::releasePoint( const QPoint &p )
 {
+  Q_UNUSED( p );
   // Get Map Sender
   if ( sender() == mToolMovePoint )
   {
@@ -751,7 +751,8 @@ void QgsGeorefPluginGui::updateMouseCoordinatePrecision()
     dp = QgsProject::instance()->readNumEntry( "PositionPrecision", "/DecimalPlaces" );
 
   // Keep dp sensible
-  if ( dp < 0 ) dp = 0;
+  if ( dp < 0 )
+    dp = 0;
 
   mMousePrecisionDecimalPlaces = dp;
 }
@@ -979,8 +980,10 @@ void QgsGeorefPluginGui::createDockWidgets()
   dockWidgetGCPpoints->setWidget( mGCPListWidget );
 
   connect( mGCPListWidget, SIGNAL( jumpToGCP( uint ) ), this, SLOT( jumpToGCP( uint ) ) );
-  /*connect( mGCPListWidget, SIGNAL( replaceDataPoint( QgsGeorefDataPoint*, int ) ),
-           this, SLOT( replaceDataPoint( QgsGeorefDataPoint*, int ) ) );*/
+#if 0
+  connect( mGCPListWidget, SIGNAL( replaceDataPoint( QgsGeorefDataPoint*, int ) ),
+           this, SLOT( replaceDataPoint( QgsGeorefDataPoint*, int ) ) );
+#endif
   connect( mGCPListWidget, SIGNAL( deleteDataPoint( int ) ),
            this, SLOT( deleteDataPoint( int ) ) );
   connect( mGCPListWidget, SIGNAL( pointEnabled( QgsGeorefDataPoint*, int ) ), this, SLOT( updateGeorefTransform() ) );
@@ -1181,7 +1184,7 @@ bool QgsGeorefPluginGui::georeference()
   if ( !checkReadyGeoref() )
     return false;
 
-  if ( mModifiedRasterFileName.isEmpty() && ( QgsGeorefTransform::Linear == mGeorefTransform.transformParametrisation() || \
+  if ( mModifiedRasterFileName.isEmpty() && ( QgsGeorefTransform::Linear == mGeorefTransform.transformParametrisation() ||
        QgsGeorefTransform::Helmert == mGeorefTransform.transformParametrisation() ) )
   {
     QgsPoint origin;
@@ -1342,6 +1345,7 @@ bool QgsGeorefPluginGui::calculateMeanError( double& error ) const
 
 bool QgsGeorefPluginGui::writePDFMapFile( const QString& fileName, const QgsGeorefTransform& transform )
 {
+  Q_UNUSED( transform );
   if ( !mCanvas )
   {
     return false;
@@ -1872,10 +1876,18 @@ QgsRectangle QgsGeorefPluginGui::transformViewportBoundingBox( const QgsRectangl
       QgsPoint src, raster;
       switch ( edge )
       {
-        case 0: src = QgsPoint( oX + ( double )s*stepX, oY ); break;
-        case 1: src = QgsPoint( oX + ( double )s*stepX, dY ); break;
-        case 2: src = QgsPoint( oX, oY + ( double )s*stepY ); break;
-        case 3: src = QgsPoint( dX, oY + ( double )s*stepY ); break;
+        case 0:
+          src = QgsPoint( oX + ( double )s * stepX, oY );
+          break;
+        case 1:
+          src = QgsPoint( oX + ( double )s * stepX, dY );
+          break;
+        case 2:
+          src = QgsPoint( oX, oY + ( double )s * stepY );
+          break;
+        case 3:
+          src = QgsPoint( dX, oY + ( double )s * stepY );
+          break;
       }
       t.transform( src, raster, rasterToWorld );
       minX = qMin( raster.x(), minX );

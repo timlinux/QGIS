@@ -14,7 +14,6 @@ email                : sherman at mrcc.com
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgsmapcanvas.cpp 5400 2006-04-30 20:14:08Z wonder $ */
 
 
 #include <QtGlobal>
@@ -82,9 +81,11 @@ QgsMapCanvas::QgsMapCanvas( QWidget * parent, const char *name )
     , mCanvasProperties( new CanvasProperties )
     , mNewSize( QSize() )
     , mPainting( false )
+    , mAntiAliasing( false )
 {
+  Q_UNUSED( name );
   //disable the update that leads to the resize crash
-  if( viewport() )
+  if ( viewport() )
   {
     viewport()->setAttribute( Qt::WA_PaintOnScreen, true );
   }
@@ -163,6 +164,7 @@ QgsMapCanvas::~QgsMapCanvas()
 
 void QgsMapCanvas::enableAntiAliasing( bool theFlag )
 {
+  mAntiAliasing = theFlag;
   mMap->enableAntiAliasing( theFlag );
   if ( mMapOverview )
     mMapOverview->enableAntiAliasing( theFlag );
@@ -516,7 +518,8 @@ void QgsMapCanvas::setExtent( QgsRectangle const & r )
   updateScale();
   if ( mMapOverview )
     mMapOverview->drawExtentRect();
-  if ( mLastExtent.size() > 20 ) mLastExtent.removeAt( 0 );
+  if ( mLastExtent.size() > 20 )
+    mLastExtent.removeAt( 0 );
 
   //clear all extent items after current index
   for ( int i = mLastExtent.size() - 1; i > mLastExtentIndex; i-- )
@@ -1306,6 +1309,7 @@ void QgsMapCanvas::setRenderFlag( bool theFlag )
 
 void QgsMapCanvas::connectNotify( const char * signal )
 {
+  Q_UNUSED( signal );
   QgsDebugMsg( "QgsMapCanvas connected to " + QString( signal ) );
 } //connectNotify
 
@@ -1366,6 +1370,8 @@ void QgsMapCanvas::panActionEnd( QPoint releasePoint )
 
 void QgsMapCanvas::panAction( QMouseEvent * e )
 {
+  Q_UNUSED( e );
+
   if ( mDrawing )
   {
     return;
@@ -1492,4 +1498,12 @@ void QgsMapCanvas::selectionChangedSlot()
   QgsMapLayer *layer = qobject_cast<QgsMapLayer *>( sender() );
   emit selectionChanged( layer );
   refresh();
+}
+
+void QgsMapCanvas::dragEnterEvent( QDragEnterEvent * e )
+{
+  // By default graphics view delegates the drag events to graphics items.
+  // But we do not want that and by ignoring the drag enter we let the
+  // parent (e.g. QgisApp) to handle drops of map layers etc.
+  e->ignore();
 }

@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #include "qgscomposerpicture.h"
 #include "qgscomposermap.h"
@@ -27,8 +26,8 @@
 #include <QSvgRenderer>
 
 
-QgsComposerPicture::QgsComposerPicture( QgsComposition *composition ): QgsComposerItem( composition ), mMode( Unknown ), \
-    mRotationMap( 0 )
+QgsComposerPicture::QgsComposerPicture( QgsComposition *composition )
+    : QgsComposerItem( composition ), mMode( Unknown ), mRotationMap( 0 )
 {
   mPictureWidth = rect().width();
 }
@@ -46,6 +45,8 @@ QgsComposerPicture::~QgsComposerPicture()
 
 void QgsComposerPicture::paint( QPainter* painter, const QStyleOptionGraphicsItem* itemStyle, QWidget* pWidget )
 {
+  Q_UNUSED( itemStyle );
+  Q_UNUSED( pWidget );
   if ( !painter )
   {
     return;

@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id: qgsspatialquery.cpp 15302 2011-03-01 08:00:54Z timlinux $ */
 
 #include <QMessageBox>
 
@@ -49,7 +48,9 @@ void QgsSpatialQuery::setSelectedFeaturesReference( bool useSelected )
 
 } // void QgsSpatialQuery::setSelectedFeaturesReference(bool useSelected)
 
-void QgsSpatialQuery::runQuery( QSet<int> & qsetIndexResult, QSet<int> & qsetIndexInvalidTarget, QSet<int> & qsetIndexInvalidReference,
+void QgsSpatialQuery::runQuery( QgsFeatureIds &qsetIndexResult,
+                                QgsFeatureIds &qsetIndexInvalidTarget,
+                                QgsFeatureIds &qsetIndexInvalidReference,
                                 int relation, QgsVectorLayer* lyrTarget, QgsVectorLayer* lyrReference )
 {
   setQuery( lyrTarget, lyrReference );
@@ -190,7 +191,7 @@ bool QgsSpatialQuery::hasValidGeometry( QgsFeature &feature )
 
 } // bool QgsSpatialQuery::hasValidGeometry(QgsFeature &feature)
 
-void QgsSpatialQuery::setSpatialIndexReference( QSet<int> & qsetIndexInvalidReference )
+void QgsSpatialQuery::setSpatialIndexReference( QgsFeatureIds &qsetIndexInvalidReference )
 {
   QgsReaderFeatures * readerFeaturesReference = new QgsReaderFeatures( mLayerReference, mUseReferenceSelection );
   QgsFeature feature;
@@ -211,7 +212,7 @@ void QgsSpatialQuery::setSpatialIndexReference( QSet<int> & qsetIndexInvalidRefe
 
 } // void QgsSpatialQuery::setSpatialIndexReference()
 
-void QgsSpatialQuery::execQuery( QSet<int> & qsetIndexResult, QSet<int> & qsetIndexInvalidTarget, int relation )
+void QgsSpatialQuery::execQuery( QgsFeatureIds &qsetIndexResult, QgsFeatureIds &qsetIndexInvalidTarget, int relation )
 {
   bool ( QgsGeometry::* operation )( QgsGeometry * );
   switch ( relation )
@@ -250,7 +251,7 @@ void QgsSpatialQuery::execQuery( QSet<int> & qsetIndexResult, QSet<int> & qsetIn
   coordinateTransform->setCoordinateTransform( mLayerTarget, mLayerReference );
 
   // Set function for populate result
-  void ( QgsSpatialQuery::* funcPopulateIndexResult )( QSet<int> &, int, QgsGeometry *, bool ( QgsGeometry::* )( QgsGeometry * ) );
+  void ( QgsSpatialQuery::* funcPopulateIndexResult )( QgsFeatureIds&, QgsFeatureId, QgsGeometry *, bool ( QgsGeometry::* )( QgsGeometry * ) );
   funcPopulateIndexResult = ( relation == Disjoint )
                             ? &QgsSpatialQuery::populateIndexResultDisjoint
                             : &QgsSpatialQuery::populateIndexResult;
@@ -278,10 +279,10 @@ void QgsSpatialQuery::execQuery( QSet<int> & qsetIndexResult, QSet<int> & qsetIn
 } // QSet<int> QgsSpatialQuery::execQuery( QSet<int> & qsetIndexResult, int relation)
 
 void QgsSpatialQuery::populateIndexResult(
-  QSet<int> &qsetIndexResult, int idTarget, QgsGeometry * geomTarget,
+  QgsFeatureIds &qsetIndexResult, QgsFeatureId idTarget, QgsGeometry * geomTarget,
   bool ( QgsGeometry::* op )( QgsGeometry * ) )
 {
-  QList<int> listIdReference;
+  QList<QgsFeatureId> listIdReference;
   listIdReference = mIndexReference.intersects( geomTarget->boundingBox() );
   if ( listIdReference.count() == 0 )
   {
@@ -289,7 +290,7 @@ void QgsSpatialQuery::populateIndexResult(
   }
   QgsFeature featureReference;
   QgsGeometry * geomReference;
-  QList<int>::iterator iterIdReference = listIdReference.begin();
+  QList<QgsFeatureId>::iterator iterIdReference = listIdReference.begin();
   for ( ; iterIdReference != listIdReference.end(); iterIdReference++ )
   {
     mLayerReference->featureAtId( *iterIdReference, featureReference );
@@ -304,10 +305,10 @@ void QgsSpatialQuery::populateIndexResult(
 } // void QgsSpatialQuery::populateIndexResult(...
 
 void QgsSpatialQuery::populateIndexResultDisjoint(
-  QSet<int> &qsetIndexResult, int idTarget, QgsGeometry * geomTarget,
+  QgsFeatureIds &qsetIndexResult, QgsFeatureId idTarget, QgsGeometry * geomTarget,
   bool ( QgsGeometry::* op )( QgsGeometry * ) )
 {
-  QList<int> listIdReference;
+  QList<QgsFeatureId> listIdReference;
   listIdReference = mIndexReference.intersects( geomTarget->boundingBox() );
   if ( listIdReference.count() == 0 )
   {
@@ -316,7 +317,7 @@ void QgsSpatialQuery::populateIndexResultDisjoint(
   }
   QgsFeature featureReference;
   QgsGeometry * geomReference;
-  QList<int>::iterator iterIdReference = listIdReference.begin();
+  QList<QgsFeatureId>::iterator iterIdReference = listIdReference.begin();
   bool addIndex = true;
   for ( ; iterIdReference != listIdReference.end(); iterIdReference++ )
   {

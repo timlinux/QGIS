@@ -19,6 +19,10 @@
 #include "qgsgrass.h"
 
 #include "qgisinterface.h"
+#include "qgslegendinterface.h"
+#include "qgsvectorlayer.h"
+#include "qgsvectordataprovider.h"
+//#include "qgsgrassprovider.h"
 #include "qgsapplication.h"
 #include "qgslogger.h"
 
@@ -36,8 +40,9 @@
 
 QgsGrassBrowser::QgsGrassBrowser( QgisInterface *iface,
                                   QWidget * parent, Qt::WFlags f )
-    : QMainWindow( parent, Qt::Dialog ), mIface( iface )
+    : QMainWindow( parent, Qt::Dialog ), mIface( iface ), mRunningMods( 0 )
 {
+  Q_UNUSED( f );
   QgsDebugMsg( "QgsGrassBrowser()" );
 
   QActionGroup *ag = new QActionGroup( this );
@@ -106,7 +111,7 @@ QgsGrassBrowser::QgsGrassBrowser( QgisInterface *iface,
   mSplitter->addWidget( mTree );
   mSplitter->addWidget( mTextBrowser );
 
-  this->setCentralWidget( mSplitter );
+  setCentralWidget( mSplitter );
 
   connect( mTree, SIGNAL( customContextMenuRequested( const QPoint& ) ),
            this,  SLOT( showContextMenu( const QPoint& ) ) );
@@ -162,10 +167,10 @@ void QgsGrassBrowser::addMap()
     else if ( type == QgsGrassModel::VectorLayer )
     {
 
-      QStringList list = QgsGrassSelect::vectorLayers(
+      QStringList list = QgsGrass::vectorLayers(
                            QgsGrass::getDefaultGisdbase(),
                            QgsGrass::getDefaultLocation(),
-                           mModel->itemMapset( *it ), map );
+                           mapset, map );
 
       // TODO: common method for vector names
       QStringList split = uri.split( '/',  QString::SkipEmptyParts );
@@ -179,7 +184,8 @@ void QgsGrassBrowser::addMap()
     else if ( type == QgsGrassModel::Region )
     {
       struct Cell_head window;
-      if ( !getItemRegion( *it, &window ) ) continue;
+      if ( !getItemRegion( *it, &window ) )
+        continue;
       writeRegion( &window );
     }
   }
@@ -187,6 +193,7 @@ void QgsGrassBrowser::addMap()
 
 void QgsGrassBrowser::doubleClicked( const QModelIndex & index )
 {
+  Q_UNUSED( index );
   QgsDebugMsg( "entered." );
 
   addMap();
@@ -267,7 +274,8 @@ void QgsGrassBrowser::copyMap()
     QString newName = ed.getItem( element, tr( "New name" ),
                                   tr( "New name for layer \"%1\"" ).arg( map ), suggest, source, &ok );
 
-    if ( !ok ) return;
+    if ( !ok )
+      return;
 
     QString module = "g.copy";
 #ifdef WIN32
@@ -315,7 +323,8 @@ void QgsGrassBrowser::renameMap()
     QString mapset = mModel->itemMapset( *it );
     QString map = mModel->itemMap( *it );
 
-    if ( mapset != QgsGrass::getDefaultMapset() ) continue; // should not happen
+    if ( mapset != QgsGrass::getDefaultMapset() )
+      continue; // should not happen
 
     QString typeName;
     QString element;
@@ -340,7 +349,8 @@ void QgsGrassBrowser::renameMap()
     QString newName = ed.getItem( element, tr( "New name" ),
                                   tr( "New name for layer \"%1\"" ).arg( map ), "", map, &ok );
 
-    if ( !ok ) return;
+    if ( !ok )
+      return;
 
     QString module = "g.rename";
 #ifdef WIN32
@@ -370,11 +380,54 @@ void QgsGrassBrowser::deleteMap()
 {
   QgsDebugMsg( "entered." );
 
+  QString gisbase = QgsGrass::getDefaultGisdbase();
+  QString location = QgsGrass::getDefaultLocation();
+
   // Filter VectorLayer type from selection
   QModelIndexList indexes;
   foreach( QModelIndex index, mTree->selectionModel()->selectedIndexes() )
   {
     int type = mModel->itemType( index );
+    QString mapset = mModel->itemMapset( index );
+    QString map = mModel->itemMap( index );
+
+    // check whether the layer is loaded in QGis canvas
+    if ( type == QgsGrassModel::Vector )
+    {
+      QStringList layers = QgsGrass::vectorLayers( gisbase, location, mapset, map );
+      for ( int i = 0; i < layers.count(); i++ )
+      {
+        QString uri = gisbase + "/" + location + "/"
+                      + mapset + "/" + map + "/" + layers[i];
+
+        foreach( QgsMapLayer *layer, mIface->legendInterface()->layers() )
+        {
+          QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( layer );
+          if ( vl && vl->dataProvider()->name() == "grass" && vl->source() == uri )
+          {
+#if 0
+            /* The following lines allow to delete a grass vector layer
+              even if it's loaded in canvas, but it needs to compile
+              the grass plugin against the grass provider.
+              This causes a known problem on OSX
+              (see at http://hub.qgis.org/issues/3999) */
+
+            // the layer is loaded in canvas,
+            // freeze it! (this allow to delete it from the mapset)
+            QgsGrassProvider * grassProvider =
+              qobject_cast<QgsGrassProvider *>( vl->dataProvider() );
+            if ( grassProvider )
+              grassProvider->freeze();
+#else
+            QMessageBox::information( this, tr( "Information" ),
+                                      tr( "Remove the selected layer(s) from QGis canvas before continue." ) );
+            return;
+#endif
+          }
+        }
+      }
+    }
+
     if ( type != QgsGrassModel::VectorLayer )
     {
       indexes << index;
@@ -396,9 +449,12 @@ void QgsGrassBrowser::deleteMap()
     QString map = mModel->itemMap( *it );
 
     QString typeName;
-    if ( type == QgsGrassModel::Raster ) typeName = "rast";
-    else if ( type == QgsGrassModel::Vector ) typeName = "vect";
-    else if ( type == QgsGrassModel::Region ) typeName = "region";
+    if ( type == QgsGrassModel::Raster )
+      typeName = "rast";
+    else if ( type == QgsGrassModel::Vector )
+      typeName = "vect";
+    else if ( type == QgsGrassModel::Region )
+      typeName = "region";
 
     if ( mapset != QgsGrass::getDefaultMapset() )
     {
@@ -442,7 +498,8 @@ void QgsGrassBrowser::setRegion()
   QList<QModelIndex>::const_iterator it = indexes.begin();
   for ( ; it != indexes.end(); ++it )
   {
-    if ( !getItemRegion( *it, &window ) ) return;
+    if ( !getItemRegion( *it, &window ) )
+      return;
   }
   writeRegion( &window );
 }
@@ -494,6 +551,7 @@ bool QgsGrassBrowser::getItemRegion( const QModelIndex & index, struct Cell_head
 
 void QgsGrassBrowser::selectionChanged( const QItemSelection & selected, const QItemSelection & deselected )
 {
+  Q_UNUSED( deselected );
   QgsDebugMsg( "entered." );
 
   mActionAddMap->setEnabled( false );
@@ -537,10 +595,22 @@ void QgsGrassBrowser::selectionChanged( const QItemSelection & selected, const Q
 
 void QgsGrassBrowser::currentChanged( const QModelIndex & current, const QModelIndex & previous )
 {
+  Q_UNUSED( current );
+  Q_UNUSED( previous );
   QgsDebugMsg( "entered." );
 }
 
 void QgsGrassBrowser::setLocation( const QString &gisbase, const QString &location )
 {
   mModel->setLocation( gisbase, location );
+}
+
+void QgsGrassBrowser::moduleStarted()
+{
+  mActionRefresh->setDisabled( ++mRunningMods > 0 );
+}
+
+void QgsGrassBrowser::moduleFinished()
+{
+  mActionRefresh->setDisabled( --mRunningMods > 0 );
 }

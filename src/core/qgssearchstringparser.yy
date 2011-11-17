@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
- /* $Id$ */
  
 %{
 #include <qglobal.h>
@@ -113,7 +112,7 @@ void addToTmpNodes(QgsSearchTreeNode* node);
 %left IN
 
 %left '+' '-'
-%left '*' '/'
+%left '*' '/' '%'
 %left '^'
 %left UMINUS  // fictitious symbol (for unary minus)
 
@@ -171,12 +170,26 @@ scalar_exp:
       }
     | scalar_exp '^' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opPOW,  $1, $3); joinTmpNodes($$,$1,$3); }
     | scalar_exp '*' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opMUL,  $1, $3); joinTmpNodes($$,$1,$3); }
+    | scalar_exp '%' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opMOD,  $1, $3); joinTmpNodes($$,$1,$3); }
     | scalar_exp '/' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opDIV,  $1, $3); joinTmpNodes($$,$1,$3); }
     | scalar_exp '+' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opPLUS, $1, $3); joinTmpNodes($$,$1,$3); }
     | scalar_exp '-' scalar_exp   { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opMINUS,$1, $3); joinTmpNodes($$,$1,$3); }
     | '(' scalar_exp ')'          { $$ = $2; }
     | '+' scalar_exp %prec UMINUS { $$ = $2; }
-    | '-' scalar_exp %prec UMINUS { $$ = $2; if ($$->type() == QgsSearchTreeNode::tNumber) $$->setNumber(- $$->number()); }
+    | '-' scalar_exp %prec UMINUS
+      {
+        if ( $2->type() == QgsSearchTreeNode::tNumber )
+        {
+          $$ = $2;
+          $$->setNumber(- $$->number());
+        }
+        else
+        {
+          QgsSearchTreeNode *null = new QgsSearchTreeNode( 0.0 );
+	  $$ = new QgsSearchTreeNode( QgsSearchTreeNode::opMINUS, null, $2);
+	  joinTmpNodes($$, $2, 0);
+        }
+      }
     | scalar_exp CONCAT scalar_exp { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opCONCAT, $1, $3); joinTmpNodes($$, $1, $3); }
     | ROWNUM                      { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opROWNUM, 0, 0); addToTmpNodes($$); }
     | AREA                        { $$ = new QgsSearchTreeNode(QgsSearchTreeNode::opAREA, 0, 0); addToTmpNodes($$); }

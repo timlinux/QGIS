@@ -22,10 +22,14 @@ email                : a.furieri@lqt.it
 #include <qgsmessageoutput.h>
 #include <qgsrectangle.h>
 #include <qgscoordinatereferencesystem.h>
+#include "qgsvectorlayerimport.h"
 
 #include "qgsspatialiteprovider.h"
 
 #include "qgslogger.h"
+
+#include <QFileInfo>
+#include <QDir>
 
 #ifdef _MSC_VER
 #define strcasecmp(a,b) stricmp(a,b)
@@ -35,6 +39,367 @@ const QString SPATIALITE_KEY = "spatialite";
 const QString SPATIALITE_DESCRIPTION = "SpatiaLite data provider";
 
 QMap < QString, QgsSpatiaLiteProvider::SqliteHandles * >QgsSpatiaLiteProvider::SqliteHandles::handles;
+
+
+
+bool QgsSpatiaLiteProvider::convertField( QgsField &field )
+{
+  QString fieldType = "TEXT"; //default to string
+  int fieldSize = field.length();
+  int fieldPrec = field.precision();
+
+  switch ( field.type() )
+  {
+    case QVariant::LongLong:
+      fieldType = "BIGINT";
+      fieldSize = -1;
+      fieldPrec = 0;
+      break;
+
+    case QVariant::String:
+      fieldType = "TEXT";
+      fieldPrec = -1;
+      break;
+
+    case QVariant::Int:
+      fieldType = "INTEGER";
+      fieldSize = -1;
+      fieldPrec = 0;
+      break;
+
+    case QVariant::Double:
+      if ( fieldSize <= 0 || fieldPrec <= 0 )
+      {
+        fieldType = "REAL";
+        fieldSize = -1;
+        fieldPrec = -1;
+      }
+      else
+      {
+        fieldType = "NUMERIC";
+      }
+      break;
+
+    default:
+      return false;
+  }
+
+  field.setTypeName( fieldType );
+  field.setLength( fieldSize );
+  field.setPrecision( fieldPrec );
+  return true;
+}
+
+QgsVectorLayerImport::ImportError
+QgsSpatiaLiteProvider::createEmptyLayer(
+  const QString& uri,
+  const QgsFieldMap &fields,
+  QGis::WkbType wkbType,
+  const QgsCoordinateReferenceSystem *srs,
+  bool overwrite,
+  QMap<int, int> *oldToNewAttrIdxMap,
+  QString *errorMessage,
+  const QMap<QString, QVariant> *options )
+{
+  Q_UNUSED( options );
+
+  // populate members from the uri structure
+  QgsDataSourceURI dsUri( uri );
+  QString sqlitePath = dsUri.database();
+  QString tableName = dsUri.table();
+
+  QString geometryColumn = dsUri.geometryColumn();
+  QString geometryType;
+
+  QString primaryKey = dsUri.keyColumn();
+  QString primaryKeyType;
+
+  QgsDebugMsg( "Database is: " + sqlitePath );
+  QgsDebugMsg( "Table name is: " + tableName );
+  QgsDebugMsg( "Geometry column is: " + geometryColumn );
+
+  // create the table
+  {
+    SqliteHandles *handle;
+    sqlite3 *sqliteHandle = NULL;
+    char *errMsg = NULL;
+    int toCommit = false;
+    QString sql;
+
+    // trying to open the SQLite DB
+    spatialite_init( 0 );
+    handle = SqliteHandles::openDb( sqlitePath );
+    if ( handle == NULL )
+    {
+      QgsDebugMsg( "Connection to database failed. Import of layer aborted." );
+      if ( errorMessage )
+        *errorMessage = QObject::tr( "Connection to database failed" );
+      return QgsVectorLayerImport::ErrConnectionFailed;
+    }
+
+    sqliteHandle = handle->handle();
+
+    // get the pk's name and type
+    if ( primaryKey.isEmpty() )
+    {
+      // if no pk name was passed, define the new pk field name
+      int index = 0;
+      QString pk = primaryKey = "pk";
+      for ( QgsFieldMap::const_iterator fldIt = fields.begin(); fldIt != fields.end(); ++fldIt )
+      {
+        if ( fldIt.value().name() == pk )
+        {
+          // it already exists, try again with a new name
+          primaryKey = QString( "%1_%2" ).arg( pk ).arg( index++ );
+          fldIt = fields.begin();
+        }
+      }
+    }
+    else
+    {
+      // search for the passed field
+      for ( QgsFieldMap::const_iterator fldIt = fields.begin(); fldIt != fields.end(); ++fldIt )
+      {
+        if ( fldIt.value().name() == primaryKey )
+        {
+          // found, get the field type
+          QgsField fld = fldIt.value();
+          if ( convertField( fld ) )
+          {
+            primaryKeyType = fld.typeName();
+          }
+        }
+      }
+    }
+
+    // if the field doesn't not exist yet, create it as a int field
+    if ( primaryKeyType.isEmpty() )
+    {
+      primaryKeyType = "INTEGER";
+      /* TODO
+      // check the feature count to choose if create a bigint pk field
+      if ( layer->featureCount() > 0xFFFFFF )
+      {
+        primaryKeyType = "BIGINT";
+      }*/
+    }
+
+    try
+    {
+      int ret = sqlite3_exec( sqliteHandle, "BEGIN", NULL, NULL, &errMsg );
+      if ( ret != SQLITE_OK )
+        throw SLException( errMsg );
+
+      toCommit = true;
+
+      if ( overwrite )
+      {
+        // delete the table if exists and the related entry in geometry_columns, then re-create it
+        sql = QString( "DROP TABLE IF EXISTS %1" )
+              .arg( quotedIdentifier( tableName ) );
+
+        ret = sqlite3_exec( sqliteHandle, sql.toUtf8().constData(), NULL, NULL, &errMsg );
+        if ( ret != SQLITE_OK )
+          throw SLException( errMsg );
+
+        sql = QString( "DELETE FROM geometry_columns WHERE f_table_name = %1" )
+              .arg( quotedValue( tableName ) );
+
+        ret = sqlite3_exec( sqliteHandle, sql.toUtf8().constData(), NULL, NULL, &errMsg );
+        if ( ret != SQLITE_OK )
+          throw SLException( errMsg );
+      }
+
+      sql = QString( "CREATE TABLE %1 (%2 %3 PRIMARY KEY)" )
+            .arg( quotedIdentifier( tableName ) )
+            .arg( quotedIdentifier( primaryKey ) )
+            .arg( primaryKeyType );
+
+      ret = sqlite3_exec( sqliteHandle, sql.toUtf8().constData(), NULL, NULL, &errMsg );
+      if ( ret != SQLITE_OK )
+        throw SLException( errMsg );
+
+      // get geometry type, dim and srid
+      int dim = 2;
+      long srid = srs->postgisSrid();
+
+      switch ( wkbType )
+      {
+        case QGis::WKBPoint25D:
+          dim = 3;
+        case QGis::WKBPoint:
+          geometryType = "POINT";
+          break;
+
+        case QGis::WKBLineString25D:
+          dim = 3;
+        case QGis::WKBLineString:
+          geometryType = "LINESTRING";
+          break;
+
+        case QGis::WKBPolygon25D:
+          dim = 3;
+        case QGis::WKBPolygon:
+          geometryType = "POLYGON";
+          break;
+
+        case QGis::WKBMultiPoint25D:
+          dim = 3;
+        case QGis::WKBMultiPoint:
+          geometryType = "MULTIPOINT";
+          break;
+
+        case QGis::WKBMultiLineString25D:
+          dim = 3;
+        case QGis::WKBMultiLineString:
+          geometryType = "MULTILINESTRING";
+          break;
+
+        case QGis::WKBMultiPolygon25D:
+          dim = 3;
+        case QGis::WKBMultiPolygon:
+          geometryType = "MULTIPOLYGON";
+          break;
+
+        case QGis::WKBUnknown:
+          geometryType = "GEOMETRY";
+          break;
+
+        case QGis::WKBNoGeometry:
+        default:
+          dim = 0;
+          break;
+      }
+
+      // create geometry column
+      if ( !geometryType.isEmpty() )
+      {
+        sql = QString( "SELECT AddGeometryColumn(%1, %2, %3, %4, %5)" )
+              .arg( QgsSpatiaLiteProvider::quotedValue( tableName ) )
+              .arg( QgsSpatiaLiteProvider::quotedValue( geometryColumn ) )
+              .arg( srid )
+              .arg( QgsSpatiaLiteProvider::quotedValue( geometryType ) )
+              .arg( dim );
+
+        ret = sqlite3_exec( sqliteHandle, sql.toUtf8().constData(), NULL, NULL, &errMsg );
+        if ( ret != SQLITE_OK )
+          throw SLException( errMsg );
+      }
+      else
+      {
+        geometryColumn = QString();
+      }
+
+      ret = sqlite3_exec( sqliteHandle, "COMMIT", NULL, NULL, &errMsg );
+      if ( ret != SQLITE_OK )
+        throw SLException( errMsg );
+
+    }
+    catch ( SLException &e )
+    {
+      QgsDebugMsg( QString( "creation of data source %1 failed. %2" )
+                   .arg( tableName )
+                   .arg( e.errorMessage() )
+                 );
+
+      if ( errorMessage )
+        *errorMessage = QObject::tr( "creation of data source %1 failed. %2" )
+                        .arg( tableName )
+                        .arg( e.errorMessage() );
+
+
+      if ( toCommit )
+      {
+        // ROLLBACK after some previous error
+        sqlite3_exec( sqliteHandle, "ROLLBACK", NULL, NULL, NULL );
+      }
+
+      SqliteHandles::closeDb( handle );
+      return QgsVectorLayerImport::ErrCreateLayer;
+    }
+
+    SqliteHandles::closeDb( handle );
+    QgsDebugMsg( "layer " + tableName  + " created." );
+  }
+
+  // use the provider to edit the table
+  dsUri.setDataSource( "", tableName, geometryColumn, QString(), primaryKey );
+  QgsSpatiaLiteProvider *provider = new QgsSpatiaLiteProvider( dsUri.uri() );
+  if ( !provider->isValid() )
+  {
+    QgsDebugMsg( "The layer " + tableName + " just created is not valid or not supported by the provider." );
+    if ( errorMessage )
+      *errorMessage = QObject::tr( "loading of the layer %1 failed" )
+                      .arg( tableName );
+
+    delete provider;
+    return QgsVectorLayerImport::ErrInvalidLayer;
+  }
+
+  QgsDebugMsg( "layer loaded" );
+
+  // add fields to the layer
+  if ( oldToNewAttrIdxMap )
+    oldToNewAttrIdxMap->clear();
+
+  if ( fields.size() > 0 )
+  {
+    int offset = 1;
+
+    // get the list of fields
+    QList<QgsField> flist;
+    for ( QgsFieldMap::const_iterator fldIt = fields.begin(); fldIt != fields.end(); ++fldIt )
+    {
+      QgsField fld = fldIt.value();
+      if ( fld.name() == primaryKey )
+        continue;
+
+      if ( fld.name() == geometryColumn )
+      {
+        QgsDebugMsg( "Found a field with the same name of the geometry column. Skip it!" );
+        continue;
+      }
+
+      if ( !convertField( fld ) )
+      {
+        QgsDebugMsg( "error creating field " + fld.name() + ": unsupported type" );
+        if ( errorMessage )
+          *errorMessage = QObject::tr( "unsupported type for field %1" )
+                          .arg( fld.name() );
+
+        delete provider;
+        return QgsVectorLayerImport::ErrAttributeTypeUnsupported;
+      }
+
+      QgsDebugMsg( "creating field #" + QString::number( fldIt.key() ) +
+                   " -> #" + QString::number( offset ) +
+                   " name " + fld.name() +
+                   " type " + QString( QVariant::typeToName( fld.type() ) ) +
+                   " typename " + fld.typeName() +
+                   " width " + QString::number( fld.length() ) +
+                   " precision " + QString::number( fld.precision() ) );
+
+      flist.append( fld );
+      if ( oldToNewAttrIdxMap )
+        oldToNewAttrIdxMap->insert( fldIt.key(), offset++ );
+    }
+
+    if ( !provider->addAttributes( flist ) )
+    {
+      QgsDebugMsg( "error creating fields " );
+      if ( errorMessage )
+        *errorMessage = QObject::tr( "creation of fields failed" );
+
+      delete provider;
+      return QgsVectorLayerImport::ErrAttributeCreationFailed;
+    }
+
+    QgsDebugMsg( "Done creating fields" );
+  }
+  return QgsVectorLayerImport::NoError;
+}
+
+
 
 QgsSpatiaLiteProvider::QgsSpatiaLiteProvider( QString const &uri )
     : QgsVectorDataProvider( uri )
@@ -292,50 +657,81 @@ QString QgsSpatiaLiteProvider::storageType() const
 }
 
 
-bool QgsSpatiaLiteProvider::featureAtId( int featureId, QgsFeature & feature, bool fetchGeometry, QgsAttributeList fetchAttributes )
+bool QgsSpatiaLiteProvider::featureAtId( QgsFeatureId featureId, QgsFeature & feature, bool fetchGeometry, QgsAttributeList fetchAttributes )
 {
   sqlite3_stmt *stmt = NULL;
 
   feature.setValid( false );
 
   QString primaryKey = !isQuery ? "ROWID" : quotedIdentifier( mPrimaryKey );
+  QString whereClause = QString( "%1=%2" ).arg( primaryKey ).arg( featureId );
 
-  QString sql = QString( "SELECT %1" ).arg( primaryKey );
-  for ( QgsAttributeList::const_iterator it = fetchAttributes.constBegin(); it != fetchAttributes.constEnd(); ++it )
+  if ( !mSubsetString.isEmpty() )
   {
-    const QgsField & fld = field( *it );
-    const QString & fieldname = fld.name();
-    sql += "," + quotedIdentifier( fieldname );
-  }
-  if ( fetchGeometry )
-  {
-    sql += QString( ", AsBinary(%1)" ).arg( quotedIdentifier( mGeometryColumn ) );
-  }
-  sql += QString( " FROM %1 WHERE %2 = %3" )
-         .arg( mQuery )
-         .arg( primaryKey )
-         .arg( featureId );
+    if ( !whereClause.isEmpty() )
+      whereClause += " and ";
 
-  if ( sqlite3_prepare_v2( sqliteHandle, sql.toUtf8().constData(), -1, &stmt, NULL ) != SQLITE_OK )
+    whereClause += "(" + mSubsetString + ")";
+  }
+
+  if ( !prepareStatement( stmt, fetchAttributes, fetchGeometry, whereClause ) )
   {
     // some error occurred
-    QgsDebugMsg( QString( "SQLite error: %1\n\nSQL: %2" )
-                 .arg( sql )
-                 .arg( QString::fromUtf8( sqlite3_errmsg( sqliteHandle ) ) ) );
     return false;
   }
 
+  if ( !getFeature( stmt, fetchGeometry, feature, fetchAttributes ) )
+  {
+    sqlite3_finalize( stmt );
+    return false;
+  }
+
+  sqlite3_finalize( stmt );
+
+  feature.setValid( true );
+  return true;
+}
+
+bool QgsSpatiaLiteProvider::nextFeature( QgsFeature & feature )
+{
+  feature.setValid( false );
+  if ( !valid )
+  {
+    QgsDebugMsg( "Read attempt on an invalid SpatiaLite data source" );
+    return false;
+  }
+
+  if ( sqliteStatement == NULL )
+  {
+    QgsDebugMsg( "Invalid current SQLite statement" );
+    return false;
+  }
+
+  if ( !getFeature( sqliteStatement, mFetchGeom, feature, mAttributesToFetch ) )
+  {
+    sqlite3_finalize( sqliteStatement );
+    sqliteStatement = NULL;
+    return false;
+  }
+
+  feature.setValid( true );
+  return true;
+}
+
+bool QgsSpatiaLiteProvider::getFeature( sqlite3_stmt *stmt, bool fetchGeometry,
+                                        QgsFeature &feature,
+                                        const QgsAttributeList &fetchAttributes )
+{
   int ret = sqlite3_step( stmt );
   if ( ret == SQLITE_DONE )
   {
-    // there are no more rows to fetch - we can stop looping destroying the SQLite statement
-    sqlite3_finalize( stmt );
+    // there are no more rows to fetch
     return false;
   }
   if ( ret == SQLITE_ROW )
   {
     // one valid row has been fetched from the result set
-    if ( !mFetchGeom )
+    if ( !fetchGeometry )
     {
       // no geometry was required
       feature.setGeometryAndOwnership( 0, 0 );
@@ -350,7 +746,9 @@ bool QgsSpatiaLiteProvider::featureAtId( int featureId, QgsFeature & feature, bo
       if ( ic == 0 )
       {
         // first column always contains the ROWID (or the primary key)
-        feature.setFeatureId( sqlite3_column_int( stmt, ic ) );
+        QgsFeatureId fid = sqlite3_column_int64( stmt, ic );
+        QgsDebugMsgLevel( QString( "fid=%1" ).arg( fid ), 3 );
+        feature.setFeatureId( fid );
       }
       else
       {
@@ -395,7 +793,7 @@ bool QgsSpatiaLiteProvider::featureAtId( int featureId, QgsFeature & feature, bo
         {
           continue;
         }
-        if ( mFetchGeom )
+        if ( fetchGeometry )
         {
           QString geoCol = QString( "AsBinary(%1)" ).arg( quotedIdentifier( mGeometryColumn ) );
           if ( strcasecmp( geoCol.toUtf8().constData(), sqlite3_column_name( stmt, ic ) ) == 0 )
@@ -406,12 +804,12 @@ bool QgsSpatiaLiteProvider::featureAtId( int featureId, QgsFeature & feature, bo
               size_t geom_size = 0;
               const void *blob = sqlite3_column_blob( stmt, ic );
               size_t blob_size = sqlite3_column_bytes( stmt, ic );
-              convertToGeosWKB ( (const unsigned char *)blob, blob_size, 
-                                 &featureGeom, &geom_size );
+              convertToGeosWKB(( const unsigned char * )blob, blob_size,
+                               &featureGeom, &geom_size );
               if ( featureGeom )
-                   feature.setGeometryAndOwnership( featureGeom, geom_size );
+                feature.setGeometryAndOwnership( featureGeom, geom_size );
               else
-                   feature.setGeometryAndOwnership( 0, 0 );
+                feature.setGeometryAndOwnership( 0, 0 );
             }
             else
             {
@@ -427,2404 +825,2279 @@ bool QgsSpatiaLiteProvider::featureAtId( int featureId, QgsFeature & feature, bo
   {
     // some unexpected error occurred
     QgsDebugMsg( QString( "sqlite3_step() error: %1" ).arg( QString::fromUtf8( sqlite3_errmsg( sqliteHandle ) ) ) );
-    sqlite3_finalize( stmt );
-    return false;
-  }
-  sqlite3_finalize( stmt );
-
-  feature.setValid( true );
-
-  return true;
-}
-
-bool QgsSpatiaLiteProvider::nextFeature( QgsFeature & feature )
-{
-  feature.setValid( false );
-  if ( !valid )
-  {
-    QgsDebugMsg( "Read attempt on an invalid SpatiaLite data source" );
     return false;
   }
 
-  if ( sqliteStatement == NULL )
-  {
-    QgsDebugMsg( "Invalid current SQLite statement" );
-    return false;
-  }
-
-  int ret = sqlite3_step( sqliteStatement );
-  if ( ret == SQLITE_DONE )
-  {
-    // there are no more rows to fetch - we can stop looping destroying the SQLite statement
-    sqlite3_finalize( sqliteStatement );
-    sqliteStatement = NULL;
-    return false;
-  }
-  if ( ret == SQLITE_ROW )
-  {
-    // one valid row has been fetched from the result set
-    if ( !mFetchGeom )
-    {
-      // no geometry was required
-      feature.setGeometryAndOwnership( 0, 0 );
-    }
-
-    feature.clearAttributeMap();
-
-    int ic;
-    int n_columns = sqlite3_column_count( sqliteStatement );
-    for ( ic = 0; ic < n_columns; ic++ )
-    {
-      if ( ic == 0 )
-      {
-        // first column always contains the ROWID (or the primary key)
-        feature.setFeatureId( sqlite3_column_int( sqliteStatement, ic ) );
-      }
-      else
-      {
-        // iterate attributes
-        bool fetched = false;
-        int nAttr = 1;
-        for ( QgsAttributeList::const_iterator it = mAttributesToFetch.constBegin(); it != mAttributesToFetch.constEnd(); it++ )
-        {
-          if ( nAttr == ic )
-          {
-            // ok, this one is the corresponding attribure
-            if ( sqlite3_column_type( sqliteStatement, ic ) == SQLITE_INTEGER )
-            {
-              // INTEGER value
-              feature.addAttribute( *it, sqlite3_column_int( sqliteStatement, ic ) );
-              fetched = true;
-            }
-            else if ( sqlite3_column_type( sqliteStatement, ic ) == SQLITE_FLOAT )
-            {
-              // DOUBLE value
-              feature.addAttribute( *it, sqlite3_column_double( sqliteStatement, ic ) );
-              fetched = true;
-            }
-            else if ( sqlite3_column_type( sqliteStatement, ic ) == SQLITE_TEXT )
-            {
-              // TEXT value
-              const char *txt = ( const char * ) sqlite3_column_text( sqliteStatement, ic );
-              QString str = QString::fromUtf8( txt );
-              feature.addAttribute( *it, str );
-              fetched = true;
-            }
-            else
-            {
-              // assuming NULL
-              feature.addAttribute( *it, QVariant( QString::null ) );
-              fetched = true;
-            }
-          }
-          nAttr++;
-        }
-        if ( fetched )
-        {
-          continue;
-        }
-        if ( mFetchGeom )
-        {
-          QString geoCol = QString( "AsBinary(%1)" ).arg( quotedIdentifier( mGeometryColumn ) );
-          if ( strcasecmp( geoCol.toUtf8().constData(), sqlite3_column_name( sqliteStatement, ic ) ) == 0 )
-          {
-            if ( sqlite3_column_type( sqliteStatement, ic ) == SQLITE_BLOB )
-            {
-              unsigned char *featureGeom = NULL;
-              size_t geom_size = 0;
-              const void *blob = sqlite3_column_blob( sqliteStatement, ic );
-              size_t blob_size = sqlite3_column_bytes( sqliteStatement, ic );
-              convertToGeosWKB ( (const unsigned char *)blob, blob_size, 
-                                  &featureGeom, &geom_size );
-              if ( featureGeom )
-                   feature.setGeometryAndOwnership( featureGeom, geom_size );
-              else
-                   feature.setGeometryAndOwnership( 0, 0 );
-            }
-            else
-            {
-              // NULL geometry
-              feature.setGeometryAndOwnership( 0, 0 );
-            }
-          }
-        }
-      }
-    }
-  }
-  else
-  {
-    // some unexpected error occurred
-    QgsDebugMsg( QString( "sqlite3_step() error: %1" ).arg( QString::fromUtf8( sqlite3_errmsg( sqliteHandle ) ) ) );
-    sqlite3_finalize( sqliteStatement );
-    sqliteStatement = NULL;
-    return false;
-  }
-
-  feature.setValid( true );
   return true;
 }
 
 int QgsSpatiaLiteProvider::computeSizeFromGeosWKB2D( const unsigned char *blob,
-                                  size_t size, int type, int nDims, 
-                                  int little_endian, int endian_arch )
+    size_t size, int type, int nDims,
+    int little_endian, int endian_arch )
 {
-// calculating the size required to store this WKB 
-    int rings;
-    int points;
-    int ib;
-    const unsigned char *p_in = blob;
-    int gsize = 5;
+  Q_UNUSED( size );
+// calculating the size required to store this WKB
+  int rings;
+  int points;
+  int ib;
+  const unsigned char *p_in = blob;
+  int gsize = 5;
 
-    p_in = blob + 5;
-    switch ( type )
-    {
-    // compunting the required size
-        case GAIA_POINT:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gsize += 4 * sizeof(double);
-                    break;
-                case GAIA_XY_M:
-                case GAIA_XY_Z:
-                    gsize += 3 * sizeof(double);
-                    break;
-                default:
-                    gsize += 2 * sizeof(double);
-                    break;
-            }
-            break;
-        case GAIA_LINESTRING:
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-            gsize += 4;
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gsize += points * ( 4 * sizeof(double) );
-                    break;
-                case GAIA_XY_M:
-                case GAIA_XY_Z:
-                    gsize += points * ( 3 * sizeof(double) );
-                    break;
-                default:
-                    gsize += points * ( 2 * sizeof(double) );
-                    break;
-            }
-            break;
-        case GAIA_POLYGON:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gsize += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gsize += 4;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gsize += points * ( 4 * sizeof(double) );
-                        break;
-                    case GAIA_XY_M:
-                    case GAIA_XY_Z:
-                        gsize += points * ( 3 * sizeof(double) );
-                        break;
-                    default:
-                        gsize += points * ( 2 * sizeof(double) );
-                        break;
-                }
-                p_in += points * ( 2 * sizeof(double) );
-            }
-            break;
+  p_in = blob + 5;
+  switch ( type )
+  {
+      // compunting the required size
+    case GAIA_POINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gsize += 4 * sizeof( double );
+          break;
+        case GAIA_XY_M:
+        case GAIA_XY_Z:
+          gsize += 3 * sizeof( double );
+          break;
         default:
-            gsize += computeSizeFromMultiWKB2D( p_in, nDims, little_endian, 
-                                                endian_arch );
+          gsize += 2 * sizeof( double );
+          break;
+      }
+      break;
+    case GAIA_LINESTRING:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      gsize += 4;
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gsize += points * ( 4 * sizeof( double ) );
+          break;
+        case GAIA_XY_M:
+        case GAIA_XY_Z:
+          gsize += points * ( 3 * sizeof( double ) );
+          break;
+        default:
+          gsize += points * ( 2 * sizeof( double ) );
+          break;
+      }
+      break;
+    case GAIA_POLYGON:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gsize += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gsize += 4;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gsize += points * ( 4 * sizeof( double ) );
             break;
-    }
-	
-    return gsize;
+          case GAIA_XY_M:
+          case GAIA_XY_Z:
+            gsize += points * ( 3 * sizeof( double ) );
+            break;
+          default:
+            gsize += points * ( 2 * sizeof( double ) );
+            break;
+        }
+        p_in += points * ( 2 * sizeof( double ) );
+      }
+      break;
+    default:
+      gsize += computeSizeFromMultiWKB2D( p_in, nDims, little_endian,
+                                          endian_arch );
+      break;
+  }
+
+  return gsize;
 }
 
 int QgsSpatiaLiteProvider::computeSizeFromMultiWKB2D( const unsigned char *p_in,
-                                                      int nDims, 
-                                                      int little_endian, 
-                                                      int endian_arch )
+    int nDims,
+    int little_endian,
+    int endian_arch )
 {
 // calculating the size required to store this WKB
-    int entities;
-    int type;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int size = 0;
-    	
-    entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-    p_in += 4;
-    size += 4;
-    for ( ie = 0; ie < entities; ie++ )
-    {
-        type = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-        p_in += 5;
-        size += 5;
-        switch ( type )
-        {
-        // compunting the required size
-            case GAIA_POINT:
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        size += 4 * sizeof(double);
-                        break;
-                    case GAIA_XY_Z:
-                    case GAIA_XY_M:
-                        size += 3 * sizeof(double);
-                        break;
-                    default:
-                        size += 2 * sizeof(double);
-                        break;
-                }
-                p_in += 2 * sizeof(double);
-                break;
-            case GAIA_LINESTRING:
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        size += points * ( 4 * sizeof(double) );
-                        break;
-                    case GAIA_XY_Z:
-                    case GAIA_XY_M:
-                        size += points * ( 3 * sizeof(double) );
-                        break;
-                    default:
-                        size += points * ( 2 * sizeof(double) );
-                        break;
-                }
-                p_in += points * ( 2 * sizeof(double) );
-                break;
-            case GAIA_POLYGON:
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    size += 4;
-                    switch ( nDims )
-                    {
-                        case GAIA_XY_Z_M:
-                            size += points * ( 4 * sizeof(double) );
-                            break;
-                        case GAIA_XY_Z:
-                        case GAIA_XY_M:
-                            size += points * ( 3 * sizeof(double) );
-                            break;
-                        default:
-                            size += points * ( 2 * sizeof(double) );
-                            break;
-                    }
-                    p_in += points * ( 2 * sizeof(double) );
-                }
-                break;
-        }
-    }
+  int entities;
+  int type;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int size = 0;
 
-    return size;
+  entities = gaiaImport32( p_in, little_endian, endian_arch );
+  p_in += 4;
+  size += 4;
+  for ( ie = 0; ie < entities; ie++ )
+  {
+    type = gaiaImport32( p_in + 1, little_endian, endian_arch );
+    p_in += 5;
+    size += 5;
+    switch ( type )
+    {
+        // compunting the required size
+      case GAIA_POINT:
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            size += 4 * sizeof( double );
+            break;
+          case GAIA_XY_Z:
+          case GAIA_XY_M:
+            size += 3 * sizeof( double );
+            break;
+          default:
+            size += 2 * sizeof( double );
+            break;
+        }
+        p_in += 2 * sizeof( double );
+        break;
+      case GAIA_LINESTRING:
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            size += points * ( 4 * sizeof( double ) );
+            break;
+          case GAIA_XY_Z:
+          case GAIA_XY_M:
+            size += points * ( 3 * sizeof( double ) );
+            break;
+          default:
+            size += points * ( 2 * sizeof( double ) );
+            break;
+        }
+        p_in += points * ( 2 * sizeof( double ) );
+        break;
+      case GAIA_POLYGON:
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          size += 4;
+          switch ( nDims )
+          {
+            case GAIA_XY_Z_M:
+              size += points * ( 4 * sizeof( double ) );
+              break;
+            case GAIA_XY_Z:
+            case GAIA_XY_M:
+              size += points * ( 3 * sizeof( double ) );
+              break;
+            default:
+              size += points * ( 2 * sizeof( double ) );
+              break;
+          }
+          p_in += points * ( 2 * sizeof( double ) );
+        }
+        break;
+    }
+  }
+
+  return size;
 }
 
 int QgsSpatiaLiteProvider::computeSizeFromGeosWKB3D( const unsigned char *blob,
-                                  size_t size, int type, int nDims, 
-                                  int little_endian, int endian_arch )
+    size_t size, int type, int nDims,
+    int little_endian, int endian_arch )
 {
-// calculating the size required to store this WKB 
-    int rings;
-    int points;
-    int ib;
-    const unsigned char *p_in = blob;
-    int gsize = 5;
+  Q_UNUSED( size );
+// calculating the size required to store this WKB
+  int rings;
+  int points;
+  int ib;
+  const unsigned char *p_in = blob;
+  int gsize = 5;
 
-    p_in = blob + 5;
-    switch ( type )
-    {
-    // compunting the required size
-        case GEOS_3D_POINT:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gsize += 4 * sizeof(double);
-                    break;
-                case GAIA_XY_M:
-                case GAIA_XY_Z:
-                    gsize += 3 * sizeof(double);
-                    break;
-                default:
-                    gsize += 2 * sizeof(double);
-                    break;
-            }
-            break;
-        case GEOS_3D_LINESTRING:
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-            gsize += 4;
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gsize += points * ( 4 * sizeof(double) );
-                    break;
-                case GAIA_XY_M:
-                case GAIA_XY_Z:
-                    gsize += points * ( 3 * sizeof(double) );
-                    break;
-                default:
-                    gsize += points * ( 2 * sizeof(double) );
-                    break;
-            }
-            break;
-        case GEOS_3D_POLYGON:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gsize += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gsize += 4;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gsize += points * ( 4 * sizeof(double) );
-                        break;
-                    case GAIA_XY_M:
-                    case GAIA_XY_Z:
-                        gsize += points * ( 3 * sizeof(double) );
-                        break;
-                    default:
-                        gsize += points * ( 2 * sizeof(double) );
-                        break;
-                }
-                p_in += points * ( 3 * sizeof(double) );
-            }
-            break;
+  p_in = blob + 5;
+  switch ( type )
+  {
+      // compunting the required size
+    case GEOS_3D_POINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gsize += 4 * sizeof( double );
+          break;
+        case GAIA_XY_M:
+        case GAIA_XY_Z:
+          gsize += 3 * sizeof( double );
+          break;
         default:
-            gsize += computeSizeFromMultiWKB3D( p_in, nDims, little_endian, 
-                                                endian_arch );
+          gsize += 2 * sizeof( double );
+          break;
+      }
+      break;
+    case GEOS_3D_LINESTRING:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      gsize += 4;
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gsize += points * ( 4 * sizeof( double ) );
+          break;
+        case GAIA_XY_M:
+        case GAIA_XY_Z:
+          gsize += points * ( 3 * sizeof( double ) );
+          break;
+        default:
+          gsize += points * ( 2 * sizeof( double ) );
+          break;
+      }
+      break;
+    case GEOS_3D_POLYGON:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gsize += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gsize += 4;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gsize += points * ( 4 * sizeof( double ) );
             break;
-    }
-	
-    return gsize;
+          case GAIA_XY_M:
+          case GAIA_XY_Z:
+            gsize += points * ( 3 * sizeof( double ) );
+            break;
+          default:
+            gsize += points * ( 2 * sizeof( double ) );
+            break;
+        }
+        p_in += points * ( 3 * sizeof( double ) );
+      }
+      break;
+    default:
+      gsize += computeSizeFromMultiWKB3D( p_in, nDims, little_endian,
+                                          endian_arch );
+      break;
+  }
+
+  return gsize;
 }
 
 int QgsSpatiaLiteProvider::computeSizeFromMultiWKB3D( const unsigned char *p_in,
-                                                      int nDims, 
-                                                      int little_endian, 
-                                                      int endian_arch )
+    int nDims,
+    int little_endian,
+    int endian_arch )
 {
 // calculating the size required to store this WKB
-    int entities;
-    int type;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int size = 0;
-    	
-    entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-    p_in += 4;
-    size += 4;
-    for ( ie = 0; ie < entities; ie++ )
-    {
-        type = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-        p_in += 5;
-        size += 5;
-        switch ( type )
-        {
-        // compunting the required size
-            case GEOS_3D_POINT:
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        size += 4 * sizeof(double);
-                        break;
-                    case GAIA_XY_Z:
-                    case GAIA_XY_M:
-                        size += 3 * sizeof(double);
-                        break;
-                    default:
-                        size += 2 * sizeof(double);
-                        break;
-                }
-                p_in += 3 * sizeof(double);
-                break;
-            case GEOS_3D_LINESTRING:
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        size += points * ( 4 * sizeof(double) );
-                        break;
-                    case GAIA_XY_Z:
-                    case GAIA_XY_M:
-                        size += points * ( 3 * sizeof(double) );
-                        break;
-                    default:
-                        size += points * ( 2 * sizeof(double) );
-                        break;
-                }
-                p_in += points * ( 3 * sizeof(double) );
-                break;
-            case GEOS_3D_POLYGON:
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    size += 4;
-                    switch ( nDims )
-                    {
-                        case GAIA_XY_Z_M:
-                            size += points * ( 4 * sizeof(double) );
-                            break;
-                        case GAIA_XY_Z:
-                        case GAIA_XY_M:
-                            size += points * ( 3 * sizeof(double) );
-                            break;
-                        default:
-                            size += points * ( 2 * sizeof(double) );
-                            break;
-                    }
-                    p_in += points * ( 3 * sizeof(double) );
-                }
-                break;
-        }
-    }
+  int entities;
+  int type;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int size = 0;
 
-    return size;
+  entities = gaiaImport32( p_in, little_endian, endian_arch );
+  p_in += 4;
+  size += 4;
+  for ( ie = 0; ie < entities; ie++ )
+  {
+    type = gaiaImport32( p_in + 1, little_endian, endian_arch );
+    p_in += 5;
+    size += 5;
+    switch ( type )
+    {
+        // compunting the required size
+      case GEOS_3D_POINT:
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            size += 4 * sizeof( double );
+            break;
+          case GAIA_XY_Z:
+          case GAIA_XY_M:
+            size += 3 * sizeof( double );
+            break;
+          default:
+            size += 2 * sizeof( double );
+            break;
+        }
+        p_in += 3 * sizeof( double );
+        break;
+      case GEOS_3D_LINESTRING:
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            size += points * ( 4 * sizeof( double ) );
+            break;
+          case GAIA_XY_Z:
+          case GAIA_XY_M:
+            size += points * ( 3 * sizeof( double ) );
+            break;
+          default:
+            size += points * ( 2 * sizeof( double ) );
+            break;
+        }
+        p_in += points * ( 3 * sizeof( double ) );
+        break;
+      case GEOS_3D_POLYGON:
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          size += 4;
+          switch ( nDims )
+          {
+            case GAIA_XY_Z_M:
+              size += points * ( 4 * sizeof( double ) );
+              break;
+            case GAIA_XY_Z:
+            case GAIA_XY_M:
+              size += points * ( 3 * sizeof( double ) );
+              break;
+            default:
+              size += points * ( 2 * sizeof( double ) );
+              break;
+          }
+          p_in += points * ( 3 * sizeof( double ) );
+        }
+        break;
+    }
+  }
+
+  return size;
 }
 
-void QgsSpatiaLiteProvider::convertFromGeosWKB ( const unsigned char *blob, 
-                                                 size_t blob_size, 
-                                                 unsigned char **wkb, 
-                                                 size_t *geom_size, 
-                                                 int nDims )
+void QgsSpatiaLiteProvider::convertFromGeosWKB( const unsigned char *blob,
+    size_t blob_size,
+    unsigned char **wkb,
+    size_t *geom_size,
+    int nDims )
 {
 // attempting to convert from 2D/3D GEOS own WKB
-    int type;
-    int gDims;
-    int gsize;
-    int little_endian;
-    int endian_arch = gaiaEndianArch ();
-	
-    *wkb = NULL;
-    *geom_size = 0;
-    if ( blob_size < 5 )
-        return;
-    if ( *( blob + 0 ) == 0x01 )
-        little_endian = GAIA_LITTLE_ENDIAN;
-    else
-        little_endian = GAIA_BIG_ENDIAN;
-    type = gaiaImport32 ( blob + 1, little_endian, endian_arch );
-    if (type == GEOS_3D_POINT || type == GEOS_3D_LINESTRING 
-        || type == GEOS_3D_POLYGON
-        || type == GEOS_3D_MULTIPOINT || type == GEOS_3D_MULTILINESTRING
-        || type == GEOS_3D_MULTIPOLYGON || type == GEOS_3D_GEOMETRYCOLLECTION)
-        gDims = 3;
-    else if (type == GAIA_POINT || type == GAIA_LINESTRING
-        || type == GAIA_POLYGON || type == GAIA_MULTIPOINT
-        || type == GAIA_MULTILINESTRING || type == GAIA_MULTIPOLYGON
-        || type == GAIA_GEOMETRYCOLLECTION)
-        gDims = 2;
-    else
-        return;
-		
-    if ( gDims == 2 && nDims == GAIA_XY )
-    {
+  int type;
+  int gDims;
+  int gsize;
+  int little_endian;
+  int endian_arch = gaiaEndianArch();
+
+  *wkb = NULL;
+  *geom_size = 0;
+  if ( blob_size < 5 )
+    return;
+  if ( *( blob + 0 ) == 0x01 )
+    little_endian = GAIA_LITTLE_ENDIAN;
+  else
+    little_endian = GAIA_BIG_ENDIAN;
+  type = gaiaImport32( blob + 1, little_endian, endian_arch );
+  if ( type == GEOS_3D_POINT || type == GEOS_3D_LINESTRING
+       || type == GEOS_3D_POLYGON
+       || type == GEOS_3D_MULTIPOINT || type == GEOS_3D_MULTILINESTRING
+       || type == GEOS_3D_MULTIPOLYGON || type == GEOS_3D_GEOMETRYCOLLECTION )
+    gDims = 3;
+  else if ( type == GAIA_POINT || type == GAIA_LINESTRING
+            || type == GAIA_POLYGON || type == GAIA_MULTIPOINT
+            || type == GAIA_MULTILINESTRING || type == GAIA_MULTIPOLYGON
+            || type == GAIA_GEOMETRYCOLLECTION )
+    gDims = 2;
+  else
+    return;
+
+  if ( gDims == 2 && nDims == GAIA_XY )
+  {
     // already 2D: simply copying is required
-        unsigned char *wkbGeom = new unsigned char[blob_size + 1];
-        memset( wkbGeom, '\0', blob_size + 1 );
-        memcpy( wkbGeom, blob, blob_size );
-        *wkb = wkbGeom;
-        *geom_size = blob_size + 1;
-        return;
-    }	
-	
+    unsigned char *wkbGeom = new unsigned char[blob_size + 1];
+    memset( wkbGeom, '\0', blob_size + 1 );
+    memcpy( wkbGeom, blob, blob_size );
+    *wkb = wkbGeom;
+    *geom_size = blob_size + 1;
+    return;
+  }
+
 // we need creating a GAIA WKB
-    if ( gDims == 3 )
-        gsize = computeSizeFromGeosWKB3D( blob, blob_size, type, nDims, 
-                                          little_endian, endian_arch );
-    else
-        gsize = computeSizeFromGeosWKB2D( blob, blob_size, type, nDims, 
-                                          little_endian, endian_arch );
-    
-    unsigned char *wkbGeom = new unsigned char[gsize];
-    memset( wkbGeom, '\0', gsize );
-	
-    if ( gDims == 3 )
-        convertFromGeosWKB3D( blob, blob_size, wkbGeom, gsize, nDims, 
-                              little_endian, endian_arch );
-    else
-        convertFromGeosWKB2D( blob, blob_size, wkbGeom, gsize, nDims, 
-                              little_endian, endian_arch );
-							  
-	*wkb = wkbGeom;
-    *geom_size = gsize;
+  if ( gDims == 3 )
+    gsize = computeSizeFromGeosWKB3D( blob, blob_size, type, nDims,
+                                      little_endian, endian_arch );
+  else
+    gsize = computeSizeFromGeosWKB2D( blob, blob_size, type, nDims,
+                                      little_endian, endian_arch );
+
+  unsigned char *wkbGeom = new unsigned char[gsize];
+  memset( wkbGeom, '\0', gsize );
+
+  if ( gDims == 3 )
+    convertFromGeosWKB3D( blob, blob_size, wkbGeom, gsize, nDims,
+                          little_endian, endian_arch );
+  else
+    convertFromGeosWKB2D( blob, blob_size, wkbGeom, gsize, nDims,
+                          little_endian, endian_arch );
+
+  *wkb = wkbGeom;
+  *geom_size = gsize;
 }
 
-void QgsSpatiaLiteProvider::convertFromGeosWKB2D ( const unsigned char *blob, 
-                                                   size_t blob_size, 
-                                                   unsigned char *wkb, 
-                                                   size_t geom_size,  
-                                                   int nDims, 
-                                                   int little_endian, 
-                                                   int endian_arch )
+void QgsSpatiaLiteProvider::convertFromGeosWKB2D( const unsigned char *blob,
+    size_t blob_size,
+    unsigned char *wkb,
+    size_t geom_size,
+    int nDims,
+    int little_endian,
+    int endian_arch )
 {
+  Q_UNUSED( blob_size );
+  Q_UNUSED( geom_size );
 // attempting to convert from 2D GEOS own WKB
-    int type;
-    int entities;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int iv;
-    const unsigned char *p_in;
-    unsigned char *p_out = wkb;
-    double coord;
-	
+  int type;
+  int entities;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int iv;
+  const unsigned char *p_in;
+  unsigned char *p_out = wkb;
+  double coord;
+
 // building from GEOS 2D WKB
-    *p_out++ = 0x01;		// little endian byte order
-    type = gaiaImport32 ( blob + 1, little_endian, endian_arch );
-    switch ( type )
-    {
-    // setting Geometry TYPE
-        case GAIA_POINT:
-            switch ( nDims )
-            {    
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                    break;
-            }
+  *p_out++ = 0x01;  // little endian byte order
+  type = gaiaImport32( blob + 1, little_endian, endian_arch );
+  switch ( type )
+  {
+      // setting Geometry TYPE
+    case GAIA_POINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_LINESTRING:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_POLYGON:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_MULTIPOINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTIPOINTZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTIPOINTZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTIPOINTM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTIPOINT, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_MULTILINESTRING:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTILINESTRING, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_MULTIPOLYGON:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGON, 1, endian_arch );
+          break;
+      }
+      break;
+    case GAIA_GEOMETRYCOLLECTION:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTION, 1, endian_arch );
+          break;
+      }
+      break;
+  }
+  p_in = blob + 5;
+  p_out += 4;
+  switch ( type )
+  {
+      // setting Geometry values
+    case GAIA_POINT:
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // X
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+      {
+        gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+        p_out += sizeof( double );
+      }
+      if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+      {
+        gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+        p_out += sizeof( double );
+      }
+      break;
+    case GAIA_LINESTRING:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, points, 1, endian_arch );
+      p_out += 4;
+      for ( iv = 0; iv < points; iv++ )
+      {
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+          p_out += sizeof( double );
+        }
+        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_POLYGON:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, rings, 1, endian_arch );
+      p_out += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+            p_out += sizeof( double );
+          }
+          if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+            p_out += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GAIA_MULTIPOINT:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
             break;
-        case GAIA_LINESTRING:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
             break;
-        case GAIA_POLYGON:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
             break;
-        case GAIA_MULTIPOINT:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINT, 1, endian_arch);
-                    break;
-            }
+          default:
+            gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
             break;
-        case GAIA_MULTILINESTRING:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRING, 1, endian_arch);
-                    break;
-            }
+        }
+        p_out += 4;
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+          p_out += sizeof( double );
+        }
+        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_MULTILINESTRING:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
             break;
-        case GAIA_MULTIPOLYGON:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGON, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
             break;
-        case GAIA_GEOMETRYCOLLECTION:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTION, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
             break;
-    }
-    p_in = blob + 5;
-    p_out += 4;
-    switch ( type )
-    {
-    // setting Geometry values
-        case GAIA_POINT:
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
+          default:
+            gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+            break;
+        }
+        p_out += 4;
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+            p_out += sizeof( double );
+          }
+          if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+            p_out += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GAIA_MULTIPOLYGON:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+            break;
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+            break;
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+            break;
+          default:
+            gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+            break;
+        }
+        p_out += 4;
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, rings, 1, endian_arch );
+        p_out += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          gaiaExport32( p_out, points, 1, endian_arch );
+          p_out += 4;
+          for ( iv = 0; iv < points; iv++ )
+          {
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
             if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
             {
-                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                p_out += sizeof(double);
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+              p_out += sizeof( double );
             }
             if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
             {
-                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                p_out += sizeof(double);
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+              p_out += sizeof( double );
+            }
+          }
+        }
+      }
+      break;
+    case GAIA_GEOMETRYCOLLECTION:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        int type2 = gaiaImport32( p_in + 1, little_endian, endian_arch );
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( type2 )
+        {
+          case GAIA_POINT:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
+                break;
             }
             break;
-        case GAIA_LINESTRING:			
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
+          case GAIA_LINESTRING:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+                break;
+            }
+            break;
+          case GAIA_POLYGON:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+                break;
+            }
+            break;
+        }
+        p_out += 4;
+        switch ( type2 )
+        {
+            // setting sub-Geometry values
+          case GAIA_POINT:
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+            {
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+              p_out += sizeof( double );
+            }
+            if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+            {
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+              p_out += sizeof( double );
+            }
+            break;
+          case GAIA_LINESTRING:
+            points = gaiaImport32( p_in, little_endian, endian_arch );
             p_in += 4;
-            gaiaExport32 ( p_out, points, 1, endian_arch);
+            gaiaExport32( p_out, points, 1, endian_arch );
             p_out += 4;
             for ( iv = 0; iv < points; iv++ )
             {
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                    p_out += sizeof(double);
-                }
-                if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                    p_out += sizeof(double);
-                }
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // X
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+              {
+                gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+                p_out += sizeof( double );
+              }
+              if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+              {
+                gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+                p_out += sizeof( double );
+              }
             }
             break;
-        case GAIA_POLYGON:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
+          case GAIA_POLYGON:
+            rings = gaiaImport32( p_in, little_endian, endian_arch );
             p_in += 4;
-            gaiaExport32 ( p_out, rings, 1, endian_arch);
+            gaiaExport32( p_out, rings, 1, endian_arch );
             p_out += 4;
             for ( ib = 0; ib < rings; ib++ )
             {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                        p_out += sizeof(double);
-                    }
-                    if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                        p_out += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GAIA_MULTIPOINT:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
+              points = gaiaImport32( p_in, little_endian, endian_arch );
+              p_in += 4;
+              gaiaExport32( p_out, points, 1, endian_arch );
+              p_out += 4;
+              for ( iv = 0; iv < points; iv++ )
+              {
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // X
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+                p_in += sizeof( double );
+                p_out += sizeof( double );
                 if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
                 {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                    p_out += sizeof(double);
+                  gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+                  p_out += sizeof( double );
                 }
                 if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
                 {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                    p_out += sizeof(double);
+                  gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+                  p_out += sizeof( double );
                 }
+              }
             }
             break;
-        case GAIA_MULTILINESTRING:			
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                        p_out += sizeof(double);
-                    }
-                    if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                        p_out += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GAIA_MULTIPOLYGON:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, rings, 1, endian_arch);
-                p_out += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    gaiaExport32 ( p_out, points, 1, endian_arch);
-                    p_out += 4;
-                    for ( iv = 0; iv < points; iv++ )
-                    {
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                            p_out += sizeof(double);
-                        }
-                        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                            p_out += sizeof(double);
-                        }
-                    }
-                }
-            }
-            break;
-        case GAIA_GEOMETRYCOLLECTION:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch );
-            p_out += 4;
-			for ( ie = 0; ie < entities; ie++ )
-			{
-                int type2 = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch (type2)
-                {
-                    case GAIA_POINT:
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                    case GAIA_LINESTRING:			       
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                    case GAIA_POLYGON:
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                }
-                p_out += 4;
-                switch ( type2 )
-                {
-                // setting sub-Geometry values
-                    case GAIA_POINT:
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                            p_out += sizeof(double);
-                        }
-                        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                            p_out += sizeof(double);
-                        }
-                        break;
-                    case GAIA_LINESTRING:			
-                        points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, points, 1, endian_arch);
-                        p_out += 4;
-                        for ( iv = 0; iv < points; iv++ )
-                        {
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                            {
-                                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                                p_out += sizeof(double);
-                            }
-                            if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                            {
-                                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                                p_out += sizeof(double);
-                            }
-                        }
-                        break;
-                    case GAIA_POLYGON:
-                        rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, rings, 1, endian_arch);
-                        p_out += 4;
-                        for ( ib = 0; ib < rings; ib++ )
-                        {
-                            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                            p_in += 4;
-                            gaiaExport32 ( p_out, points, 1, endian_arch);
-                            p_out += 4;
-                            for ( iv = 0; iv < points; iv++ )
-                            {
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                                {
-                                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                                    p_out += sizeof(double);
-                                }
-                                if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                                {
-                                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                                    p_out += sizeof(double);
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            break;
-    }
+        }
+      }
+      break;
+  }
 }
 
-void QgsSpatiaLiteProvider::convertFromGeosWKB3D ( const unsigned char *blob, 
-                                                   size_t blob_size, 
-                                                   unsigned char *wkb, 
-                                                   size_t geom_size,  
-                                                   int nDims, 
-                                                   int little_endian, 
-                                                   int endian_arch )
+void QgsSpatiaLiteProvider::convertFromGeosWKB3D( const unsigned char *blob,
+    size_t blob_size,
+    unsigned char *wkb,
+    size_t geom_size,
+    int nDims,
+    int little_endian,
+    int endian_arch )
 {
+  Q_UNUSED( blob_size );
+  Q_UNUSED( geom_size );
 // attempting to convert from 3D GEOS own WKB
-    int type;
-    int entities;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int iv;
-    const unsigned char *p_in;
-    unsigned char *p_out = wkb;
-    double coord;
-	
+  int type;
+  int entities;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int iv;
+  const unsigned char *p_in;
+  unsigned char *p_out = wkb;
+  double coord;
+
 // building from GEOS 3D WKB
-    *p_out++ = 0x01;		// little endian byte order
-    type = gaiaImport32 ( blob + 1, little_endian, endian_arch );
-    switch ( type )
-    {
-    // setting Geometry TYPE
-        case GEOS_3D_POINT:
-            switch ( nDims )
-            {    
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                    break;
-            }
+  *p_out++ = 0x01;  // little endian byte order
+  type = gaiaImport32( blob + 1, little_endian, endian_arch );
+  switch ( type )
+  {
+      // setting Geometry TYPE
+    case GEOS_3D_POINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_LINESTRING:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_POLYGON:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_MULTIPOINT:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTIPOINTZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTIPOINTZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTIPOINTM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTIPOINT, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_MULTILINESTRING:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTILINESTRINGM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTILINESTRING, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_MULTIPOLYGON:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_MULTIPOLYGON, 1, endian_arch );
+          break;
+      }
+      break;
+    case GEOS_3D_GEOMETRYCOLLECTION:
+      switch ( nDims )
+      {
+        case GAIA_XY_Z_M:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONZM, 1, endian_arch );
+          break;
+        case GAIA_XY_Z:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONZ, 1, endian_arch );
+          break;
+        case GAIA_XY_M:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTIONM, 1, endian_arch );
+          break;
+        default:
+          gaiaExport32( p_out, GAIA_GEOMETRYCOLLECTION, 1, endian_arch );
+          break;
+      }
+      break;
+  }
+  p_in = blob + 5;
+  p_out += 4;
+  switch ( type )
+  {
+      // setting Geometry values
+    case GEOS_3D_POINT:
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // X
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      p_in += sizeof( double );
+      if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+      {
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+        p_out += sizeof( double );
+      }
+      if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+      {
+        gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+        p_out += sizeof( double );
+      }
+      break;
+    case GEOS_3D_LINESTRING:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, points, 1, endian_arch );
+      p_out += 4;
+      for ( iv = 0; iv < points; iv++ )
+      {
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        p_in += sizeof( double );
+        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+          p_out += sizeof( double );
+        }
+        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GEOS_3D_POLYGON:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, rings, 1, endian_arch );
+      p_out += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          p_in += sizeof( double );
+          if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+            p_out += sizeof( double );
+          }
+          if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+            p_out += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GEOS_3D_MULTIPOINT:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
             break;
-        case GEOS_3D_LINESTRING:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
             break;
-        case GEOS_3D_POLYGON:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
             break;
-        case GEOS_3D_MULTIPOINT:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINTM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOINT, 1, endian_arch);
-                    break;
-            }
+          default:
+            gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
             break;
-        case GEOS_3D_MULTILINESTRING:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRINGM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTILINESTRING, 1, endian_arch);
-                    break;
-            }
+        }
+        p_out += 4;
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        p_in += sizeof( double );
+        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+          p_out += sizeof( double );
+        }
+        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+        {
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GEOS_3D_MULTILINESTRING:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
             break;
-        case GEOS_3D_MULTIPOLYGON:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_MULTIPOLYGON, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
             break;
-        case GEOS_3D_GEOMETRYCOLLECTION:
-            switch ( nDims )
-            {
-                case GAIA_XY_Z_M:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONZM, 1, endian_arch);
-                    break;
-                case GAIA_XY_Z:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONZ, 1, endian_arch);
-                    break;
-                case GAIA_XY_M:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTIONM, 1, endian_arch);
-                    break;
-                default:
-                    gaiaExport32 ( p_out, GAIA_GEOMETRYCOLLECTION, 1, endian_arch);
-                    break;
-            }
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
             break;
-    }
-    p_in = blob + 5;
-    p_out += 4;
-    switch ( type )
-    {
-    // setting Geometry values
-        case GEOS_3D_POINT:
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            p_in += sizeof(double);
+          default:
+            gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+            break;
+        }
+        p_out += 4;
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          p_in += sizeof( double );
+          if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+            p_out += sizeof( double );
+          }
+          if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+          {
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+            p_out += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GEOS_3D_MULTIPOLYGON:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( nDims )
+        {
+          case GAIA_XY_Z_M:
+            gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+            break;
+          case GAIA_XY_Z:
+            gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+            break;
+          case GAIA_XY_M:
+            gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+            break;
+          default:
+            gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+            break;
+        }
+        p_out += 4;
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, rings, 1, endian_arch );
+        p_out += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          gaiaExport32( p_out, points, 1, endian_arch );
+          p_out += 4;
+          for ( iv = 0; iv < points; iv++ )
+          {
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            p_in += sizeof( double );
             if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
             {
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                p_out += sizeof(double);
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+              p_out += sizeof( double );
             }
             if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
             {
-                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                p_out += sizeof(double);
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+              p_out += sizeof( double );
+            }
+          }
+        }
+      }
+      break;
+    case GEOS_3D_GEOMETRYCOLLECTION:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        int type2 = gaiaImport32( p_in + 1, little_endian, endian_arch );
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( type2 )
+        {
+          case GEOS_3D_POINT:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_POINTZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_POINTZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_POINTM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_POINT, 1, endian_arch );
+                break;
             }
             break;
-        case GEOS_3D_LINESTRING:			
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
+          case GEOS_3D_LINESTRING:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_LINESTRINGZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_LINESTRINGZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_LINESTRINGM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_LINESTRING, 1, endian_arch );
+                break;
+            }
+            break;
+          case GEOS_3D_POLYGON:
+            switch ( nDims )
+            {
+              case GAIA_XY_Z_M:
+                gaiaExport32( p_out, GAIA_POLYGONZM, 1, endian_arch );
+                break;
+              case GAIA_XY_Z:
+                gaiaExport32( p_out, GAIA_POLYGONZ, 1, endian_arch );
+                break;
+              case GAIA_XY_M:
+                gaiaExport32( p_out, GAIA_POLYGONM, 1, endian_arch );
+                break;
+              default:
+                gaiaExport32( p_out, GAIA_POLYGON, 1, endian_arch );
+                break;
+            }
+            break;
+        }
+        p_out += 4;
+        switch ( type2 )
+        {
+            // setting sub-Geometry values
+          case GEOS_3D_POINT:
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            p_in += sizeof( double );
+            if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+            {
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+              p_out += sizeof( double );
+            }
+            if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+            {
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+              p_out += sizeof( double );
+            }
+            break;
+          case GEOS_3D_LINESTRING:
+            points = gaiaImport32( p_in, little_endian, endian_arch );
             p_in += 4;
-            gaiaExport32 ( p_out, points, 1, endian_arch);
+            gaiaExport32( p_out, points, 1, endian_arch );
             p_out += 4;
             for ( iv = 0; iv < points; iv++ )
             {
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                p_in += sizeof(double);
-                if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                {
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                    p_out += sizeof(double);
-                }
-                if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                    p_out += sizeof(double);
-                }
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // X
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              p_in += sizeof( double );
+              if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
+              {
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+                p_out += sizeof( double );
+              }
+              if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
+              {
+                gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+                p_out += sizeof( double );
+              }
             }
             break;
-        case GEOS_3D_POLYGON:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
+          case GEOS_3D_POLYGON:
+            rings = gaiaImport32( p_in, little_endian, endian_arch );
             p_in += 4;
-            gaiaExport32 ( p_out, rings, 1, endian_arch);
+            gaiaExport32( p_out, rings, 1, endian_arch );
             p_out += 4;
             for ( ib = 0; ib < rings; ib++ )
             {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    p_in += sizeof(double);
-                    if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                        p_out += sizeof(double);
-                    }
-                    if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                        p_out += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GEOS_3D_MULTIPOINT:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                p_in += sizeof(double);
+              points = gaiaImport32( p_in, little_endian, endian_arch );
+              p_in += 4;
+              gaiaExport32( p_out, points, 1, endian_arch );
+              p_out += 4;
+              for ( iv = 0; iv < points; iv++ )
+              {
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // X
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                p_in += sizeof( double );
                 if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
                 {
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                    p_out += sizeof(double);
+                  gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+                  p_out += sizeof( double );
                 }
                 if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
                 {
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                    p_out += sizeof(double);
+                  gaiaExport64( p_out, 0.0, 1, endian_arch );  // M
+                  p_out += sizeof( double );
                 }
+              }
             }
             break;
-        case GEOS_3D_MULTILINESTRING:			
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    p_in += sizeof(double);
-                    if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                        p_out += sizeof(double);
-                    }
-                    if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                    {
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                        p_out += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GEOS_3D_MULTIPOLYGON:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch ( nDims )
-                {
-                    case GAIA_XY_Z_M:
-                        gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                        break;
-                    case GAIA_XY_Z:
-                        gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                        break;
-                    case GAIA_XY_M:
-                        gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                        break;
-                    default:
-                        gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, rings, 1, endian_arch);
-                p_out += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    gaiaExport32 ( p_out, points, 1, endian_arch);
-                    p_out += 4;
-                    for ( iv = 0; iv < points; iv++ )
-                    {
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        p_in += sizeof(double);
-                        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                            p_out += sizeof(double);
-                        }
-                        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                            p_out += sizeof(double);
-                        }
-                    }
-                }
-            }
-            break;
-        case GEOS_3D_GEOMETRYCOLLECTION:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch );
-            p_out += 4;
-			for ( ie = 0; ie < entities; ie++ )
-			{
-                int type2 = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch (type2)
-                {
-                    case GEOS_3D_POINT:
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_POINTZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_POINTZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_POINTM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_POINT, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                    case GEOS_3D_LINESTRING:			       
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_LINESTRINGM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_LINESTRING, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                    case GEOS_3D_POLYGON:
-                        switch ( nDims )
-                        {
-                            case GAIA_XY_Z_M:
-                                gaiaExport32 ( p_out, GAIA_POLYGONZM, 1, endian_arch);
-                                break;
-                            case GAIA_XY_Z:
-                                gaiaExport32 ( p_out, GAIA_POLYGONZ, 1, endian_arch);
-                                break;
-                            case GAIA_XY_M:
-                                gaiaExport32 ( p_out, GAIA_POLYGONM, 1, endian_arch);
-                                break;
-                            default:
-                                gaiaExport32 ( p_out, GAIA_POLYGON, 1, endian_arch);
-                                break;
-                        }
-                        break;
-                }
-                p_out += 4;
-                switch ( type2 )
-                {
-                // setting sub-Geometry values
-                    case GEOS_3D_POINT:
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        p_in += sizeof(double);
-                        if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                            p_out += sizeof(double);
-                        }
-                        if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                        {
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                            p_out += sizeof(double);
-                        }
-                        break;
-                    case GEOS_3D_LINESTRING:			
-                        points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, points, 1, endian_arch);
-                        p_out += 4;
-                        for ( iv = 0; iv < points; iv++ )
-                        {
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            p_in += sizeof(double);
-                            if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                            {
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                                p_out += sizeof(double);
-                            }
-                            if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                            {
-                                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                                p_out += sizeof(double);
-                            }
-                        }
-                        break;
-                    case GEOS_3D_POLYGON:
-                        rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, rings, 1, endian_arch);
-                        p_out += 4;
-                        for ( ib = 0; ib < rings; ib++ )
-                        {
-                            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                            p_in += 4;
-                            gaiaExport32 ( p_out, points, 1, endian_arch);
-                            p_out += 4;
-                            for ( iv = 0; iv < points; iv++ )
-                            {
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                p_in += sizeof(double);
-                                if ( nDims == GAIA_XY_Z || nDims == GAIA_XY_Z_M )
-                                {
-                                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                                    p_out += sizeof(double);
-                                }
-                                if ( nDims == GAIA_XY_M || nDims == GAIA_XY_Z_M )
-                                {
-                                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// M 
-                                    p_out += sizeof(double);
-                                }
-                            }
-                        }
-                        break;
-                }
-            }
-            break;
-    }
+        }
+      }
+      break;
+  }
 }
 
-void QgsSpatiaLiteProvider::convertToGeosWKB ( const unsigned char *blob, 
-                                               size_t blob_size, 
-                                               unsigned char **wkb, 
-                                               size_t *geom_size )
+void QgsSpatiaLiteProvider::convertToGeosWKB( const unsigned char *blob,
+    size_t blob_size,
+    unsigned char **wkb,
+    size_t *geom_size )
 {
 // attempting to convert to 2D/3D GEOS own WKB
-    int type;
-    int dims;
-    int little_endian;
-    int endian_arch = gaiaEndianArch ();
-    int entities;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int iv;
-    size_t gsize = 6;
-    const unsigned char *p_in;
-    unsigned char *p_out;
-    double coord;
-	
-    *wkb = NULL;
-    *geom_size = 0;
-    if ( blob_size < 5 )
-        return;
-    if ( *( blob + 0 ) == 0x01 )
-        little_endian = GAIA_LITTLE_ENDIAN;
-    else
-        little_endian = GAIA_BIG_ENDIAN;
-    type = gaiaImport32 ( blob + 1, little_endian, endian_arch );
-    if (type == GAIA_POINTZ || type == GAIA_LINESTRINGZ 
-        || type == GAIA_POLYGONZ
-        || type == GAIA_MULTIPOINTZ || type == GAIA_MULTILINESTRINGZ
-        || type == GAIA_MULTIPOLYGONZ || type == GAIA_GEOMETRYCOLLECTIONZ)
-        dims = 3;
-    else if (type == GAIA_POINTM || type == GAIA_LINESTRINGM
-        || type == GAIA_POLYGONM || type == GAIA_MULTIPOINTM
-        || type == GAIA_MULTILINESTRINGM || type == GAIA_MULTIPOLYGONM
-        || type == GAIA_GEOMETRYCOLLECTIONM)
-        dims = 3;
-    else if (type == GAIA_POINTZM || type == GAIA_LINESTRINGZM
-        || type == GAIA_POLYGONZM || type == GAIA_MULTIPOINTZM
-        || type == GAIA_MULTILINESTRINGZM || type == GAIA_MULTIPOLYGONZM
-        || type == GAIA_GEOMETRYCOLLECTIONZM)
-        dims = 4;
-    else if (type == GAIA_POINT || type == GAIA_LINESTRING
-        || type == GAIA_POLYGON || type == GAIA_MULTIPOINT
-        || type == GAIA_MULTILINESTRING || type == GAIA_MULTIPOLYGON
-        || type == GAIA_GEOMETRYCOLLECTION)
-        dims = 2;
-    else
-        return;
-		
-    if ( dims == 2 )
-    {
+  int type;
+  int dims;
+  int little_endian;
+  int endian_arch = gaiaEndianArch();
+  int entities;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int iv;
+  size_t gsize = 6;
+  const unsigned char *p_in;
+  unsigned char *p_out;
+  double coord;
+
+  *wkb = NULL;
+  *geom_size = 0;
+  if ( blob_size < 5 )
+    return;
+  if ( *( blob + 0 ) == 0x01 )
+    little_endian = GAIA_LITTLE_ENDIAN;
+  else
+    little_endian = GAIA_BIG_ENDIAN;
+  type = gaiaImport32( blob + 1, little_endian, endian_arch );
+  if ( type == GAIA_POINTZ || type == GAIA_LINESTRINGZ
+       || type == GAIA_POLYGONZ
+       || type == GAIA_MULTIPOINTZ || type == GAIA_MULTILINESTRINGZ
+       || type == GAIA_MULTIPOLYGONZ || type == GAIA_GEOMETRYCOLLECTIONZ )
+    dims = 3;
+  else if ( type == GAIA_POINTM || type == GAIA_LINESTRINGM
+            || type == GAIA_POLYGONM || type == GAIA_MULTIPOINTM
+            || type == GAIA_MULTILINESTRINGM || type == GAIA_MULTIPOLYGONM
+            || type == GAIA_GEOMETRYCOLLECTIONM )
+    dims = 3;
+  else if ( type == GAIA_POINTZM || type == GAIA_LINESTRINGZM
+            || type == GAIA_POLYGONZM || type == GAIA_MULTIPOINTZM
+            || type == GAIA_MULTILINESTRINGZM || type == GAIA_MULTIPOLYGONZM
+            || type == GAIA_GEOMETRYCOLLECTIONZM )
+    dims = 4;
+  else if ( type == GAIA_POINT || type == GAIA_LINESTRING
+            || type == GAIA_POLYGON || type == GAIA_MULTIPOINT
+            || type == GAIA_MULTILINESTRING || type == GAIA_MULTIPOLYGON
+            || type == GAIA_GEOMETRYCOLLECTION )
+    dims = 2;
+  else
+    return;
+
+  if ( dims == 2 )
+  {
     // already 2D: simply copying is required
-        unsigned char *wkbGeom = new unsigned char[blob_size + 1];
-        memset( wkbGeom, '\0', blob_size + 1 );
-        memcpy( wkbGeom, blob, blob_size );
-        *wkb = wkbGeom;
-        *geom_size = blob_size + 1;
-        return;
-    }
-	
-// we need creating a 3D GEOS WKB
-    p_in = blob + 5;
-    switch ( type )
-    {
-    // compunting the required size
-        case GAIA_POINTZ:
-        case GAIA_POINTM: 
-        case GAIA_POINTZM:
-            gsize += 3 * sizeof(double);
-            break;
-        case GAIA_LINESTRINGZ:
-        case GAIA_LINESTRINGM:
-        case GAIA_LINESTRINGZM:
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-            gsize += 4;
-            gsize += points * ( 3 * sizeof(double) );
-            break;
-        case GAIA_POLYGONZ:
-        case GAIA_POLYGONM:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gsize += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gsize += 4;
-                gsize += points * ( 3 * sizeof(double) );
-                p_in += points * ( 3 * sizeof(double) );
-            }
-            break;
-        case GAIA_POLYGONZM:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gsize += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gsize += 4;
-                gsize += points * ( 3 * sizeof(double) );
-                p_in += points * ( 4 * sizeof(double) );
-            }
-            break;
-        default:
-            gsize += computeMultiWKB3Dsize( p_in, little_endian, endian_arch );
-            break;
-    }
-
-    unsigned char *wkbGeom = new unsigned char[gsize];
-    memset( wkbGeom, '\0', gsize );
-	
-// building GEOS 3D WKB
-    *wkbGeom = 0x01;		// little endian byte order
-    type = gaiaImport32 ( blob + 1, little_endian, endian_arch );
-    switch ( type )
-    {
-    // setting Geometry TYPE
-        case GAIA_POINTZ:
-        case GAIA_POINTM: 
-        case GAIA_POINTZM:
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_POINT, 1, endian_arch);
-            break;
-        case GAIA_LINESTRINGZ:
-        case GAIA_LINESTRINGM:
-        case GAIA_LINESTRINGZM:			
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_LINESTRING, 1, endian_arch);
-            break;
-        case GAIA_POLYGONZ:
-        case GAIA_POLYGONM:
-        case GAIA_POLYGONZM:
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_POLYGON, 1, endian_arch);
-            break;
-        case GAIA_MULTIPOINTZ:
-        case GAIA_MULTIPOINTM: 
-        case GAIA_MULTIPOINTZM:
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_MULTIPOINT, 1, endian_arch);
-            break;
-        case GAIA_MULTILINESTRINGZ:
-        case GAIA_MULTILINESTRINGM:
-        case GAIA_MULTILINESTRINGZM:			
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_MULTILINESTRING, 1, endian_arch);
-            break;
-        case GAIA_MULTIPOLYGONZ:
-        case GAIA_MULTIPOLYGONM:
-        case GAIA_MULTIPOLYGONZM:
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_MULTIPOLYGON, 1, endian_arch);
-            break;
-        case GAIA_GEOMETRYCOLLECTIONZ:
-        case GAIA_GEOMETRYCOLLECTIONM:
-        case GAIA_GEOMETRYCOLLECTIONZM:
-            gaiaExport32 ( wkbGeom + 1, GEOS_3D_GEOMETRYCOLLECTION, 1, endian_arch);
-            break;
-    }
-    p_in = blob + 5;
-    p_out = wkbGeom + 5;
-    switch ( type )
-    {
-    // setting Geometry values
-        case GAIA_POINTM:
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            break;
-        case GAIA_POINTZ:
-        case GAIA_POINTZM:
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-            p_in += sizeof(double);
-            p_out += sizeof(double);
-            if (type == GAIA_POINTZM)
-                p_in += sizeof(double);
-            break;
-        case GAIA_LINESTRINGM:			
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, points, 1, endian_arch);
-            p_out += 4;
-            for ( iv = 0; iv < points; iv++ )
-            {
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-            }
-            break;
-        case GAIA_LINESTRINGZ:
-        case GAIA_LINESTRINGZM:			
-            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, points, 1, endian_arch);
-            p_out += 4;
-            for ( iv = 0; iv < points; iv++ )
-            {
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                if (type == GAIA_LINESTRINGZM)
-                    p_in += sizeof(double);
-            }
-            break;
-        case GAIA_POLYGONM:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, rings, 1, endian_arch);
-            p_out += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                }
-            }
-            break;
-        case GAIA_POLYGONZ:
-        case GAIA_POLYGONZM:
-            rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, rings, 1, endian_arch);
-            p_out += 4;
-            for ( ib = 0; ib < rings; ib++ )
-            {
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    if (type == GAIA_POLYGONZM)
-                        p_in += sizeof(double);
-                }
-            }
-            break;
-        case GAIA_MULTIPOINTM:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_POINT, 1, endian_arch);
-                p_out += 4;
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-            }
-            break; 
-        case GAIA_MULTIPOINTZ:
-        case GAIA_MULTIPOINTZM:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_POINT, 1, endian_arch);
-                p_out += 4;
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                p_in += sizeof(double);
-                p_out += sizeof(double);
-                if (type == GAIA_MULTIPOINTZM)
-                    p_in += sizeof(double);
-            }
-            break;
-        case GAIA_MULTILINESTRINGM:			
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_LINESTRING, 1, endian_arch);
-                p_out += 4;
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                }
-            }
-            break;
-        case GAIA_MULTILINESTRINGZ:
-        case GAIA_MULTILINESTRINGZM:			
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_LINESTRING, 1, endian_arch);
-                p_out += 4;
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, points, 1, endian_arch);
-                p_out += 4;
-                for ( iv = 0; iv < points; iv++ )
-                {
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                    gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                    p_in += sizeof(double);
-                    p_out += sizeof(double);
-                    if (type == GAIA_MULTILINESTRINGZM)
-                        p_in += sizeof(double);
-                }
-            }
-            break;
-        case GAIA_MULTIPOLYGONM:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_POLYGON, 1, endian_arch);
-                p_out += 4;
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, rings, 1, endian_arch);
-                p_out += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    gaiaExport32 ( p_out, points, 1, endian_arch);
-                    p_out += 4;
-                    for ( iv = 0; iv < points; iv++ )
-                    {
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GAIA_MULTIPOLYGONZ:
-        case GAIA_MULTIPOLYGONZM:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch);
-            p_out += 4;
-            for ( ie = 0; ie < entities; ie++ )
-            {
-                p_in += 5;
-                *p_out++ = 0x01;
-                gaiaExport32 ( p_out, GEOS_3D_POLYGON, 1, endian_arch);
-                p_out += 4;
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                gaiaExport32 ( p_out, rings, 1, endian_arch);
-                p_out += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    gaiaExport32 ( p_out, points, 1, endian_arch);
-                    p_out += 4;
-                    for ( iv = 0; iv < points; iv++ )
-                    {
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        if (type == GAIA_MULTIPOLYGONZM)
-                            p_in += sizeof(double);
-                    }
-                }
-            }
-            break;
-        case GAIA_GEOMETRYCOLLECTIONM:
-        case GAIA_GEOMETRYCOLLECTIONZ:
-        case GAIA_GEOMETRYCOLLECTIONZM:
-            entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-            p_in += 4;
-            gaiaExport32 ( p_out, entities, 1, endian_arch );
-            p_out += 4;
-			for ( ie = 0; ie < entities; ie++ )
-			{
-                int type2 = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-                p_in += 5;
-                *p_out++ = 0x01;
-                switch (type2)
-                {
-                    case GAIA_POINTZ:
-                    case GAIA_POINTM: 
-                    case GAIA_POINTZM:
-                        gaiaExport32 ( p_out, GEOS_3D_POINT, 1, endian_arch);
-                        break;
-                    case GAIA_LINESTRINGZ:
-                    case GAIA_LINESTRINGM:
-                    case GAIA_LINESTRINGZM:			
-                        gaiaExport32 ( p_out, GEOS_3D_LINESTRING, 1, endian_arch);
-                        break;
-                    case GAIA_POLYGONZ:
-                    case GAIA_POLYGONM:
-                    case GAIA_POLYGONZM:
-                        gaiaExport32 ( p_out, GEOS_3D_POLYGON, 1, endian_arch);
-                        break;
-                }
-                p_out += 4;
-                switch ( type2 )
-                {
-                // setting sub-Geometry values
-                    case GAIA_POINTM:
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        break;
-                    case GAIA_POINTZ:
-                    case GAIA_POINTZM:
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                        gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                        p_in += sizeof(double);
-                        p_out += sizeof(double);
-                        if (type2 == GAIA_POINTZM)
-                            p_in += sizeof(double);
-                        break;
-                    case GAIA_LINESTRINGM:			
-                        points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, points, 1, endian_arch);
-                        p_out += 4;
-                        for ( iv = 0; iv < points; iv++ )
-                        {
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                        }
-                        break;
-                    case GAIA_LINESTRINGZ:
-                    case GAIA_LINESTRINGZM:			
-                        points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, points, 1, endian_arch);
-                        p_out += 4;
-                        for ( iv = 0; iv < points; iv++ )
-                        {
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                            gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                            p_in += sizeof(double);
-                            p_out += sizeof(double);
-                            if (type2 == GAIA_LINESTRINGZM)
-                                p_in += sizeof(double);
-                        }
-                        break;
-                    case GAIA_POLYGONM:
-                        rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, rings, 1, endian_arch);
-                        p_out += 4;
-                        for ( ib = 0; ib < rings; ib++ )
-                        {
-                            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                            p_in += 4;
-                            gaiaExport32 ( p_out, points, 1, endian_arch);
-                            p_out += 4;
-                            for ( iv = 0; iv < points; iv++ )
-                            {
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                gaiaExport64 ( p_out, 0.0, 1, endian_arch );	// Z 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                            }
-                        }
-                        break;
-                    case GAIA_POLYGONZ:
-                    case GAIA_POLYGONZM:
-                        rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                        p_in += 4;
-                        gaiaExport32 ( p_out, rings, 1, endian_arch);
-                        p_out += 4;
-                        for ( ib = 0; ib < rings; ib++ )
-                        {
-                            points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                            p_in += 4;
-                            gaiaExport32 ( p_out, points, 1, endian_arch);
-                            p_out += 4;
-                            for ( iv = 0; iv < points; iv++ )
-                            {
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// X 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Y 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                coord = gaiaImport64 ( p_in, little_endian, endian_arch );
-                                gaiaExport64 ( p_out, coord, 1, endian_arch );	// Z 
-                                p_in += sizeof(double);
-                                p_out += sizeof(double);
-                                if (type2 == GAIA_POLYGONZM)
-                                    p_in += sizeof(double);
-                            }
-                        }
-                        break;
-                }
-            }
-            break;
-    }
-
+    unsigned char *wkbGeom = new unsigned char[blob_size + 1];
+    memset( wkbGeom, '\0', blob_size + 1 );
+    memcpy( wkbGeom, blob, blob_size );
     *wkb = wkbGeom;
-    *geom_size = gsize;
+    *geom_size = blob_size + 1;
+    return;
+  }
+
+// we need creating a 3D GEOS WKB
+  p_in = blob + 5;
+  switch ( type )
+  {
+      // compunting the required size
+    case GAIA_POINTZ:
+    case GAIA_POINTM:
+    case GAIA_POINTZM:
+      gsize += 3 * sizeof( double );
+      break;
+    case GAIA_LINESTRINGZ:
+    case GAIA_LINESTRINGM:
+    case GAIA_LINESTRINGZM:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      gsize += 4;
+      gsize += points * ( 3 * sizeof( double ) );
+      break;
+    case GAIA_POLYGONZ:
+    case GAIA_POLYGONM:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gsize += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gsize += 4;
+        gsize += points * ( 3 * sizeof( double ) );
+        p_in += points * ( 3 * sizeof( double ) );
+      }
+      break;
+    case GAIA_POLYGONZM:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gsize += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gsize += 4;
+        gsize += points * ( 3 * sizeof( double ) );
+        p_in += points * ( 4 * sizeof( double ) );
+      }
+      break;
+    default:
+      gsize += computeMultiWKB3Dsize( p_in, little_endian, endian_arch );
+      break;
+  }
+
+  unsigned char *wkbGeom = new unsigned char[gsize];
+  memset( wkbGeom, '\0', gsize );
+
+// building GEOS 3D WKB
+  *wkbGeom = 0x01;  // little endian byte order
+  type = gaiaImport32( blob + 1, little_endian, endian_arch );
+  switch ( type )
+  {
+      // setting Geometry TYPE
+    case GAIA_POINTZ:
+    case GAIA_POINTM:
+    case GAIA_POINTZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_POINT, 1, endian_arch );
+      break;
+    case GAIA_LINESTRINGZ:
+    case GAIA_LINESTRINGM:
+    case GAIA_LINESTRINGZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_LINESTRING, 1, endian_arch );
+      break;
+    case GAIA_POLYGONZ:
+    case GAIA_POLYGONM:
+    case GAIA_POLYGONZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_POLYGON, 1, endian_arch );
+      break;
+    case GAIA_MULTIPOINTZ:
+    case GAIA_MULTIPOINTM:
+    case GAIA_MULTIPOINTZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_MULTIPOINT, 1, endian_arch );
+      break;
+    case GAIA_MULTILINESTRINGZ:
+    case GAIA_MULTILINESTRINGM:
+    case GAIA_MULTILINESTRINGZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_MULTILINESTRING, 1, endian_arch );
+      break;
+    case GAIA_MULTIPOLYGONZ:
+    case GAIA_MULTIPOLYGONM:
+    case GAIA_MULTIPOLYGONZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_MULTIPOLYGON, 1, endian_arch );
+      break;
+    case GAIA_GEOMETRYCOLLECTIONZ:
+    case GAIA_GEOMETRYCOLLECTIONM:
+    case GAIA_GEOMETRYCOLLECTIONZM:
+      gaiaExport32( wkbGeom + 1, GEOS_3D_GEOMETRYCOLLECTION, 1, endian_arch );
+      break;
+  }
+  p_in = blob + 5;
+  p_out = wkbGeom + 5;
+  switch ( type )
+  {
+      // setting Geometry values
+    case GAIA_POINTM:
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // X
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      break;
+    case GAIA_POINTZ:
+    case GAIA_POINTZM:
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // X
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      coord = gaiaImport64( p_in, little_endian, endian_arch );
+      gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+      p_in += sizeof( double );
+      p_out += sizeof( double );
+      if ( type == GAIA_POINTZM )
+        p_in += sizeof( double );
+      break;
+    case GAIA_LINESTRINGM:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, points, 1, endian_arch );
+      p_out += 4;
+      for ( iv = 0; iv < points; iv++ )
+      {
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+      }
+      break;
+    case GAIA_LINESTRINGZ:
+    case GAIA_LINESTRINGZM:
+      points = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, points, 1, endian_arch );
+      p_out += 4;
+      for ( iv = 0; iv < points; iv++ )
+      {
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        if ( type == GAIA_LINESTRINGZM )
+          p_in += sizeof( double );
+      }
+      break;
+    case GAIA_POLYGONM:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, rings, 1, endian_arch );
+      p_out += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_POLYGONZ:
+    case GAIA_POLYGONZM:
+      rings = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, rings, 1, endian_arch );
+      p_out += 4;
+      for ( ib = 0; ib < rings; ib++ )
+      {
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          if ( type == GAIA_POLYGONZM )
+            p_in += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_MULTIPOINTM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_POINT, 1, endian_arch );
+        p_out += 4;
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+      }
+      break;
+    case GAIA_MULTIPOINTZ:
+    case GAIA_MULTIPOINTZM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_POINT, 1, endian_arch );
+        p_out += 4;
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // X
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        coord = gaiaImport64( p_in, little_endian, endian_arch );
+        gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+        p_in += sizeof( double );
+        p_out += sizeof( double );
+        if ( type == GAIA_MULTIPOINTZM )
+          p_in += sizeof( double );
+      }
+      break;
+    case GAIA_MULTILINESTRINGM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_LINESTRING, 1, endian_arch );
+        p_out += 4;
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_MULTILINESTRINGZ:
+    case GAIA_MULTILINESTRINGZM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_LINESTRING, 1, endian_arch );
+        p_out += 4;
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, points, 1, endian_arch );
+        p_out += 4;
+        for ( iv = 0; iv < points; iv++ )
+        {
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // X
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          coord = gaiaImport64( p_in, little_endian, endian_arch );
+          gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+          p_in += sizeof( double );
+          p_out += sizeof( double );
+          if ( type == GAIA_MULTILINESTRINGZM )
+            p_in += sizeof( double );
+        }
+      }
+      break;
+    case GAIA_MULTIPOLYGONM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_POLYGON, 1, endian_arch );
+        p_out += 4;
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, rings, 1, endian_arch );
+        p_out += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          gaiaExport32( p_out, points, 1, endian_arch );
+          p_out += 4;
+          for ( iv = 0; iv < points; iv++ )
+          {
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GAIA_MULTIPOLYGONZ:
+    case GAIA_MULTIPOLYGONZM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        p_in += 5;
+        *p_out++ = 0x01;
+        gaiaExport32( p_out, GEOS_3D_POLYGON, 1, endian_arch );
+        p_out += 4;
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        gaiaExport32( p_out, rings, 1, endian_arch );
+        p_out += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          gaiaExport32( p_out, points, 1, endian_arch );
+          p_out += 4;
+          for ( iv = 0; iv < points; iv++ )
+          {
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            if ( type == GAIA_MULTIPOLYGONZM )
+              p_in += sizeof( double );
+          }
+        }
+      }
+      break;
+    case GAIA_GEOMETRYCOLLECTIONM:
+    case GAIA_GEOMETRYCOLLECTIONZ:
+    case GAIA_GEOMETRYCOLLECTIONZM:
+      entities = gaiaImport32( p_in, little_endian, endian_arch );
+      p_in += 4;
+      gaiaExport32( p_out, entities, 1, endian_arch );
+      p_out += 4;
+      for ( ie = 0; ie < entities; ie++ )
+      {
+        int type2 = gaiaImport32( p_in + 1, little_endian, endian_arch );
+        p_in += 5;
+        *p_out++ = 0x01;
+        switch ( type2 )
+        {
+          case GAIA_POINTZ:
+          case GAIA_POINTM:
+          case GAIA_POINTZM:
+            gaiaExport32( p_out, GEOS_3D_POINT, 1, endian_arch );
+            break;
+          case GAIA_LINESTRINGZ:
+          case GAIA_LINESTRINGM:
+          case GAIA_LINESTRINGZM:
+            gaiaExport32( p_out, GEOS_3D_LINESTRING, 1, endian_arch );
+            break;
+          case GAIA_POLYGONZ:
+          case GAIA_POLYGONM:
+          case GAIA_POLYGONZM:
+            gaiaExport32( p_out, GEOS_3D_POLYGON, 1, endian_arch );
+            break;
+        }
+        p_out += 4;
+        switch ( type2 )
+        {
+            // setting sub-Geometry values
+          case GAIA_POINTM:
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            break;
+          case GAIA_POINTZ:
+          case GAIA_POINTZM:
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // X
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            coord = gaiaImport64( p_in, little_endian, endian_arch );
+            gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+            p_in += sizeof( double );
+            p_out += sizeof( double );
+            if ( type2 == GAIA_POINTZM )
+              p_in += sizeof( double );
+            break;
+          case GAIA_LINESTRINGM:
+            points = gaiaImport32( p_in, little_endian, endian_arch );
+            p_in += 4;
+            gaiaExport32( p_out, points, 1, endian_arch );
+            p_out += 4;
+            for ( iv = 0; iv < points; iv++ )
+            {
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // X
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+            }
+            break;
+          case GAIA_LINESTRINGZ:
+          case GAIA_LINESTRINGZM:
+            points = gaiaImport32( p_in, little_endian, endian_arch );
+            p_in += 4;
+            gaiaExport32( p_out, points, 1, endian_arch );
+            p_out += 4;
+            for ( iv = 0; iv < points; iv++ )
+            {
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // X
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              coord = gaiaImport64( p_in, little_endian, endian_arch );
+              gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+              p_in += sizeof( double );
+              p_out += sizeof( double );
+              if ( type2 == GAIA_LINESTRINGZM )
+                p_in += sizeof( double );
+            }
+            break;
+          case GAIA_POLYGONM:
+            rings = gaiaImport32( p_in, little_endian, endian_arch );
+            p_in += 4;
+            gaiaExport32( p_out, rings, 1, endian_arch );
+            p_out += 4;
+            for ( ib = 0; ib < rings; ib++ )
+            {
+              points = gaiaImport32( p_in, little_endian, endian_arch );
+              p_in += 4;
+              gaiaExport32( p_out, points, 1, endian_arch );
+              p_out += 4;
+              for ( iv = 0; iv < points; iv++ )
+              {
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // X
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                gaiaExport64( p_out, 0.0, 1, endian_arch );  // Z
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+              }
+            }
+            break;
+          case GAIA_POLYGONZ:
+          case GAIA_POLYGONZM:
+            rings = gaiaImport32( p_in, little_endian, endian_arch );
+            p_in += 4;
+            gaiaExport32( p_out, rings, 1, endian_arch );
+            p_out += 4;
+            for ( ib = 0; ib < rings; ib++ )
+            {
+              points = gaiaImport32( p_in, little_endian, endian_arch );
+              p_in += 4;
+              gaiaExport32( p_out, points, 1, endian_arch );
+              p_out += 4;
+              for ( iv = 0; iv < points; iv++ )
+              {
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // X
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Y
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                coord = gaiaImport64( p_in, little_endian, endian_arch );
+                gaiaExport64( p_out, coord, 1, endian_arch );  // Z
+                p_in += sizeof( double );
+                p_out += sizeof( double );
+                if ( type2 == GAIA_POLYGONZM )
+                  p_in += sizeof( double );
+              }
+            }
+            break;
+        }
+      }
+      break;
+  }
+
+  *wkb = wkbGeom;
+  *geom_size = gsize;
 }
 
 int QgsSpatiaLiteProvider::computeMultiWKB3Dsize( const unsigned char *p_in, int little_endian, int endian_arch )
 {
 // computing the required size to store a GEOS 3D MultiXX
-    int entities;
-    int type;
-    int rings;
-    int points;
-    int ie;
-    int ib;
-    int size = 0;
-    	
-    entities = gaiaImport32 ( p_in, little_endian, endian_arch );
-    p_in += 4;
-    size += 4;
-    for ( ie = 0; ie < entities; ie++ )
-    {
-        type = gaiaImport32 ( p_in + 1, little_endian, endian_arch );
-        p_in += 5;
-        size += 5;
-        switch ( type )
-        {
-        // compunting the required size
-            case GAIA_POINTZ:
-            case GAIA_POINTM: 
-                size += 3 * sizeof(double);
-                p_in += 3 * sizeof(double);
-                break;
-            case GAIA_POINTZM:
-                size += 3 * sizeof(double);
-                p_in += 4 * sizeof(double);
-                break;
-            case GAIA_LINESTRINGZ:
-            case GAIA_LINESTRINGM:
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                size += points * ( 3 * sizeof(double) );
-                p_in += points * ( 3 * sizeof(double) );
-                break;
-            case GAIA_LINESTRINGZM:
-                points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                size += points * ( 3 * sizeof(double) );
-                p_in += points * ( 4 * sizeof(double) );
-                break;
-            case GAIA_POLYGONZ:
-            case GAIA_POLYGONM:
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    size += 4;
-                    size += points * ( 3 * sizeof(double) );
-                    p_in += points * ( 3 * sizeof(double) );
-                }
-                break;
-            case GAIA_POLYGONZM:
-                rings = gaiaImport32 ( p_in, little_endian, endian_arch );
-                p_in += 4;
-                size += 4;
-                for ( ib = 0; ib < rings; ib++ )
-                {
-                    points = gaiaImport32 ( p_in, little_endian, endian_arch );
-                    p_in += 4;
-                    size += 4;
-                    size += points * ( 3 * sizeof(double) );
-                    p_in += points * ( 4 * sizeof(double) );
-                }
-                break;
-        }
-    }
+  int entities;
+  int type;
+  int rings;
+  int points;
+  int ie;
+  int ib;
+  int size = 0;
 
-    return size;
+  entities = gaiaImport32( p_in, little_endian, endian_arch );
+  p_in += 4;
+  size += 4;
+  for ( ie = 0; ie < entities; ie++ )
+  {
+    type = gaiaImport32( p_in + 1, little_endian, endian_arch );
+    p_in += 5;
+    size += 5;
+    switch ( type )
+    {
+        // compunting the required size
+      case GAIA_POINTZ:
+      case GAIA_POINTM:
+        size += 3 * sizeof( double );
+        p_in += 3 * sizeof( double );
+        break;
+      case GAIA_POINTZM:
+        size += 3 * sizeof( double );
+        p_in += 4 * sizeof( double );
+        break;
+      case GAIA_LINESTRINGZ:
+      case GAIA_LINESTRINGM:
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        size += points * ( 3 * sizeof( double ) );
+        p_in += points * ( 3 * sizeof( double ) );
+        break;
+      case GAIA_LINESTRINGZM:
+        points = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        size += points * ( 3 * sizeof( double ) );
+        p_in += points * ( 4 * sizeof( double ) );
+        break;
+      case GAIA_POLYGONZ:
+      case GAIA_POLYGONM:
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          size += 4;
+          size += points * ( 3 * sizeof( double ) );
+          p_in += points * ( 3 * sizeof( double ) );
+        }
+        break;
+      case GAIA_POLYGONZM:
+        rings = gaiaImport32( p_in, little_endian, endian_arch );
+        p_in += 4;
+        size += 4;
+        for ( ib = 0; ib < rings; ib++ )
+        {
+          points = gaiaImport32( p_in, little_endian, endian_arch );
+          p_in += 4;
+          size += 4;
+          size += points * ( 3 * sizeof( double ) );
+          p_in += points * ( 4 * sizeof( double ) );
+        }
+        break;
+    }
+  }
+
+  return size;
 }
 
 QString QgsSpatiaLiteProvider::subsetString()
@@ -2862,7 +3135,7 @@ bool QgsSpatiaLiteProvider::setSubsetString( QString theSQL, bool updateFeatureC
 
 void QgsSpatiaLiteProvider::select( QgsAttributeList fetchAttributes, QgsRectangle rect, bool fetchGeometry, bool useIntersect )
 {
-// preparing the SQL statement
+  QString primaryKey = !isQuery ? "ROWID" : quotedIdentifier( mPrimaryKey );
 
   if ( !valid )
   {
@@ -2877,27 +3150,11 @@ void QgsSpatiaLiteProvider::select( QgsAttributeList fetchAttributes, QgsRectang
     sqliteStatement = NULL;
   }
 
-  QString primaryKey = !isQuery ? "ROWID" : quotedIdentifier( mPrimaryKey );
-
-  QString sql = QString( "SELECT %1" ).arg( primaryKey );
-  for ( QgsAttributeList::const_iterator it = fetchAttributes.constBegin(); it != fetchAttributes.constEnd(); ++it )
-  {
-    const QgsField & fld = field( *it );
-    const QString & fieldname = fld.name();
-    sql += "," + quotedIdentifier( fieldname );
-  }
-  if ( fetchGeometry )
-  {
-    sql += QString( ", AsBinary(%1)" ).arg( quotedIdentifier( mGeometryColumn ) );
-  }
-  sql += QString( " FROM %1" ).arg( mQuery );
-
   QString whereClause;
 
-  if ( !rect.isEmpty() )
+  if ( !rect.isEmpty() && !mGeometryColumn.isNull() )
   {
     // some kind of MBR spatial filtering is required
-    whereClause = " WHERE ";
     if ( useIntersect )
     {
       // we are requested to evaluate a true INTERSECT relationship
@@ -2956,30 +3213,69 @@ void QgsSpatiaLiteProvider::select( QgsAttributeList fetchAttributes, QgsRectang
     }
   }
 
-  if ( !whereClause.isEmpty() )
-    sql += whereClause;
-
   if ( !mSubsetString.isEmpty() )
   {
     if ( !whereClause.isEmpty() )
     {
-      sql += " AND ";
+      whereClause += " AND ";
     }
-    else
-    {
-      sql += " WHERE ";
-    }
-    sql += "( " + mSubsetString + ")";
+    whereClause += "( " + mSubsetString + ")";
   }
 
   mFetchGeom = fetchGeometry;
   mAttributesToFetch = fetchAttributes;
-  if ( sqlite3_prepare_v2( sqliteHandle, sql.toUtf8().constData(), -1, &sqliteStatement, NULL ) != SQLITE_OK )
+  // preparing the SQL statement
+  if ( !prepareStatement( sqliteStatement, fetchAttributes, fetchGeometry, whereClause ) )
+  {
+    // some error occurred
+    sqliteStatement = NULL;
+    return;
+  }
+}
+
+bool QgsSpatiaLiteProvider::prepareStatement(
+  sqlite3_stmt *&stmt,
+  const QgsAttributeList &fetchAttributes,
+  bool fetchGeometry,
+  QString whereClause )
+{
+  if ( fetchGeometry && mGeometryColumn.isNull() )
+  {
+    return false;
+  }
+
+  QString primaryKey = !isQuery ? "ROWID" : quotedIdentifier( mPrimaryKey );
+
+  QString sql = QString( "SELECT %1" ).arg( primaryKey );
+  for ( QgsAttributeList::const_iterator it = fetchAttributes.constBegin(); it != fetchAttributes.constEnd(); ++it )
+  {
+    const QgsField & fld = field( *it );
+    QString fieldname = quotedIdentifier( fld.name() );
+    const QString type = fld.typeName().toLower();
+    if ( type.contains( "geometry" ) || type.contains( "point" ) ||
+         type.contains( "line" ) || type.contains( "polygon" ) )
+    {
+      fieldname = QString( "AsText(%1)" ).arg( fieldname );
+    }
+    sql += "," + fieldname;
+  }
+  if ( fetchGeometry )
+  {
+    sql += QString( ", AsBinary(%1)" ).arg( quotedIdentifier( mGeometryColumn ) );
+  }
+  sql += QString( " FROM %1" ).arg( mQuery );
+
+  if ( !whereClause.isEmpty() )
+    sql += QString( " WHERE %1" ).arg( whereClause );
+
+  if ( sqlite3_prepare_v2( sqliteHandle, sql.toUtf8().constData(), -1, &stmt, NULL ) != SQLITE_OK )
   {
     // some error occurred
     QgsDebugMsg( QString( "SQLite error: %1\n\nSQL: %2" ).arg( sql ).arg( QString::fromUtf8( sqlite3_errmsg( sqliteHandle ) ) ) );
-    sqliteStatement = NULL;
+    return false;
   }
+
+  return true;
 }
 
 
@@ -3250,6 +3546,7 @@ void QgsSpatiaLiteProvider::uniqueValues( int index, QList < QVariant > &uniqueV
   return;
 }
 
+
 bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
 {
   sqlite3_stmt *stmt = NULL;
@@ -3257,13 +3554,14 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
   bool toCommit = false;
   QString sql;
   QString values;
-  int ia;
+  QString separator;
+  int ia, ret;
 
   if ( flist.size() == 0 )
     return true;
   const QgsAttributeMap & attributevec = flist[0].attributeMap();
 
-  int ret = sqlite3_exec( sqliteHandle, "BEGIN", NULL, NULL, &errMsg );
+  ret = sqlite3_exec( sqliteHandle, "BEGIN", NULL, NULL, &errMsg );
   if ( ret != SQLITE_OK )
   {
     // some error occurred
@@ -3271,20 +3569,22 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
   }
   toCommit = true;
 
+  sql = QString( "INSERT INTO %1(" ).arg( quotedIdentifier( mTableName ) );
+  values = QString( ") VALUES (" );
+  separator = "";
+
   if ( !mPrimaryKey.isEmpty() )
   {
-    sql = QString( "INSERT INTO %1(%2,%3" )
-          .arg( quotedIdentifier( mTableName ) )
-          .arg( quotedIdentifier( mPrimaryKey ) )
-          .arg( quotedIdentifier( mGeometryColumn ) );
-    values = QString( ") VALUES (NULL, GeomFromWKB(?,%1)" ).arg( mSrid );
+    sql += separator + quotedIdentifier( mPrimaryKey );
+    values += separator + "NULL";
+    separator = ",";
   }
-  else
+
+  if ( !mGeometryColumn.isNull() )
   {
-    sql = QString( "INSERT INTO %1(%2" )
-          .arg( quotedIdentifier( mTableName ) )
-          .arg( quotedIdentifier( mGeometryColumn ) );
-    values = QString( ") VALUES (GeomFromWKB(?, %1)" ).arg( mSrid );
+    sql += separator + quotedIdentifier( mGeometryColumn );
+    values += separator + QString( "GeomFromWKB(?, %2)" ).arg( mSrid );
+    separator = ",";
   }
 
   for ( QgsAttributeMap::const_iterator it = attributevec.begin(); it != attributevec.end(); it++ )
@@ -3297,8 +3597,8 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
     if ( fieldname.isEmpty() || fieldname == mGeometryColumn || fieldname == mPrimaryKey )
       continue;
 
-    sql += "," + quotedIdentifier( fieldname );
-    values += ",?";
+    sql += separator + quotedIdentifier( fieldname );
+    values += separator + "?";
   }
 
   sql += values;
@@ -3321,19 +3621,22 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
     sqlite3_reset( stmt );
     sqlite3_clear_bindings( stmt );
 
-    // binding GEOMETRY to Prepared Statement
-    unsigned char *wkb = NULL;
-    size_t wkb_size;
-    convertFromGeosWKB ( features->geometry()->asWkb(), 
-                         features->geometry()->wkbSize(), 
-                         &wkb, &wkb_size, nDims );
-    if (wkb == NULL )
-        sqlite3_bind_null( stmt, 1 );
-    else
-        sqlite3_bind_blob( stmt, 1, wkb, wkb_size, free );
-
     // initializing the column counter
-    ia = 1;
+    ia = 0;
+
+    if ( !mGeometryColumn.isNull() )
+    {
+      // binding GEOMETRY to Prepared Statement
+      unsigned char *wkb = NULL;
+      size_t wkb_size;
+      convertFromGeosWKB( features->geometry()->asWkb(),
+                          features->geometry()->wkbSize(),
+                          &wkb, &wkb_size, nDims );
+      if ( !wkb )
+        sqlite3_bind_null( stmt, ++ia );
+      else
+        sqlite3_bind_blob( stmt, ++ia, wkb, wkb_size, free );
+    }
 
     for ( QgsAttributeMap::const_iterator it = attributevec.begin(); it != attributevec.end(); it++ )
     {
@@ -3420,7 +3723,7 @@ abort:
   return false;
 }
 
-bool QgsSpatiaLiteProvider::deleteFeatures( const QgsFeatureIds & id )
+bool QgsSpatiaLiteProvider::deleteFeatures( const QgsFeatureIds &id )
 {
   sqlite3_stmt *stmt = NULL;
   char *errMsg = NULL;
@@ -3452,7 +3755,8 @@ bool QgsSpatiaLiteProvider::deleteFeatures( const QgsFeatureIds & id )
     sqlite3_reset( stmt );
     sqlite3_clear_bindings( stmt );
 
-    sqlite3_bind_int( stmt, 1, *it );
+    qint64 fid = FID_TO_NUMBER( *it );
+    sqlite3_bind_int64( stmt, 1, fid );
 
     // performing actual row deletion
     ret = sqlite3_step( stmt );
@@ -3569,10 +3873,10 @@ bool QgsSpatiaLiteProvider::changeAttributeValues( const QgsChangedAttributesMap
 
   for ( QgsChangedAttributesMap::const_iterator iter = attr_map.begin(); iter != attr_map.end(); ++iter )
   {
-    int fid = iter.key();
+    QgsFeatureId fid = iter.key();
 
     // skip added features
-    if ( fid < 0 )
+    if ( FID_IS_NEW( fid ) )
       continue;
 
     QString sql = QString( "UPDATE %1 SET " ).arg( quotedIdentifier( mTableName ) );
@@ -3690,13 +3994,13 @@ bool QgsSpatiaLiteProvider::changeGeometryValues( QgsGeometryMap & geometry_map 
       // binding GEOMETRY to Prepared Statement
       unsigned char *wkb = NULL;
       size_t wkb_size;
-      convertFromGeosWKB ( iter->asWkb(), iter->wkbSize(), &wkb, &wkb_size, 
-                           nDims );
-      if (wkb == NULL )
-          sqlite3_bind_null( stmt, 1 );
+      convertFromGeosWKB( iter->asWkb(), iter->wkbSize(), &wkb, &wkb_size,
+                          nDims );
+      if ( !wkb )
+        sqlite3_bind_null( stmt, 1 );
       else
-          sqlite3_bind_blob( stmt, 1, wkb, wkb_size, free );
-      sqlite3_bind_int( stmt, 2, iter.key() );
+        sqlite3_bind_blob( stmt, 1, wkb, wkb_size, free );
+      sqlite3_bind_int64( stmt, 2, FID_TO_NUMBER( iter.key() ) );
 
       // performing actual row update
       ret = sqlite3_step( stmt );
@@ -3860,13 +4164,13 @@ void QgsSpatiaLiteProvider::SqliteHandles::sqliteClose()
   }
 }
 
-QString QgsSpatiaLiteProvider::quotedIdentifier( QString id ) const
+QString QgsSpatiaLiteProvider::quotedIdentifier( QString id )
 {
   id.replace( "\"", "\"\"" );
   return id.prepend( "\"" ).append( "\"" );
 }
 
-QString QgsSpatiaLiteProvider::quotedValue( QString value ) const
+QString QgsSpatiaLiteProvider::quotedValue( QString value )
 {
   if ( value.isNull() )
     return "NULL";
@@ -3890,92 +4194,44 @@ bool QgsSpatiaLiteProvider::checkLayerType()
   mVShapeBased = false;
   isQuery = false;
 
-// checking if this one is a Table-based layer
-  QString sql = QString( "SELECT read_only FROM geometry_columns "
-                         "LEFT JOIN geometry_columns_auth "
-                         "USING (f_table_name, f_geometry_column) "
-                         "WHERE f_table_name=%1 and f_geometry_column=%2" )
-                .arg( quotedValue( mTableName ) )
-                .arg( quotedValue( mGeometryColumn ) );
+  QString sql;
 
-  ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
-  if ( ret != SQLITE_OK )
+  if ( mGeometryColumn.isNull() )
   {
-    if ( errMsg && strcmp( errMsg, "no such table: geometry_columns_auth" ) == 0 )
+    // checking if is a non-spatial table
+    sql = QString( "SELECT type FROM sqlite_master "
+                   "WHERE lower(name) = lower(%1) "
+                   "AND type in ('table', 'view') " ).arg( quotedValue( mTableName ) );
+
+    ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
+    if ( ret == SQLITE_OK && rows == 1 )
     {
-      sqlite3_free( errMsg );
-      sql = QString( "SELECT 0 FROM geometry_columns WHERE f_table_name=%1 and f_geometry_column=%2" )
-            .arg( quotedValue( mTableName ) )
-            .arg( quotedValue( mGeometryColumn ) );
-      ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
-    }
-  }
-  if ( ret == SQLITE_OK && rows == 1 )
-  {
-    mTableBased = true;
-    mReadOnly = false;
-    for ( i = 1; i <= rows; i++ )
-    {
-      if ( results[( i * columns ) + 0] != NULL )
+      QString type = QString( results[( columns ) + 0] );
+      if ( type == "table" )
       {
-        if ( atoi( results[( i * columns ) + 0] ) != 0 )
-          mReadOnly = true;
+        mTableBased = true;
+        mReadOnly = false;
       }
+      else if ( type == "view" )
+      {
+        mViewBased = true;
+        mReadOnly = true;
+      }
+      count++;
     }
-    count++;
+    if ( errMsg )
+    {
+      QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
+      sqlite3_free( errMsg );
+      errMsg = 0;
+    }
+    sqlite3_free_table( results );
   }
-  if ( errMsg )
+  else if ( mQuery.startsWith( "(select", Qt::CaseInsensitive ) &&
+            mQuery.endsWith( ")" ) )
   {
-    QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
-    sqlite3_free( errMsg );
-    errMsg = 0;
-  }
-  sqlite3_free_table( results );
+    // checking if this one is a select query
 
-// checking if this one is a View-based layer
-  sql = QString( "SELECT view_name, view_geometry FROM views_geometry_columns"
-                 " WHERE view_name=%1 and view_geometry=%2" ).arg( quotedValue( mTableName ) ).
-        arg( quotedValue( mGeometryColumn ) );
-
-  ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
-  if ( ret == SQLITE_OK && rows == 1 )
-  {
-    mViewBased = true;
-    mReadOnly = true;
-    count++;
-  }
-  if ( errMsg )
-  {
-    QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
-    sqlite3_free( errMsg );
-    errMsg = 0;
-  }
-  sqlite3_free_table( results );
-
-// checking if this one is a VirtualShapefile-based layer
-  sql = QString( "SELECT virt_name, virt_geometry FROM virts_geometry_columns"
-                 " WHERE virt_name=%1 and virt_geometry=%2" ).arg( quotedValue( mTableName ) ).
-        arg( quotedValue( mGeometryColumn ) );
-
-  ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
-  if ( ret == SQLITE_OK && rows == 1 )
-  {
-    mVShapeBased = true;
-    mReadOnly = true;
-    count++;
-  }
-  if ( errMsg )
-  {
-    QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
-    sqlite3_free( errMsg );
-    errMsg = 0;
-  }
-  sqlite3_free_table( results );
-
-  // checking if this one is a select query
-  if ( mQuery.startsWith( "(select", Qt::CaseInsensitive ) &&
-       mQuery.endsWith( ")" ) )
-  {
     // get a new alias for the subquery
     int index = 0;
     QString alias;
@@ -4012,6 +4268,91 @@ bool QgsSpatiaLiteProvider::checkLayerType()
   }
   else
   {
+    // checking if this one is a Table-based layer
+    sql = QString( "SELECT read_only FROM geometry_columns "
+                   "LEFT JOIN geometry_columns_auth "
+                   "USING (f_table_name, f_geometry_column) "
+                   "WHERE f_table_name=%1 and f_geometry_column=%2" )
+          .arg( quotedValue( mTableName ) )
+          .arg( quotedValue( mGeometryColumn ) );
+
+    ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
+    if ( ret != SQLITE_OK )
+    {
+      if ( errMsg && strcmp( errMsg, "no such table: geometry_columns_auth" ) == 0 )
+      {
+        sqlite3_free( errMsg );
+        sql = QString( "SELECT 0 FROM geometry_columns WHERE f_table_name=%1 and f_geometry_column=%2" )
+              .arg( quotedValue( mTableName ) )
+              .arg( quotedValue( mGeometryColumn ) );
+        ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
+      }
+    }
+    if ( ret == SQLITE_OK && rows == 1 )
+    {
+      mTableBased = true;
+      mReadOnly = false;
+      for ( i = 1; i <= rows; i++ )
+      {
+        if ( results[( i * columns ) + 0] != NULL )
+        {
+          if ( atoi( results[( i * columns ) + 0] ) != 0 )
+            mReadOnly = true;
+        }
+      }
+      count++;
+    }
+    if ( errMsg )
+    {
+      QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
+      sqlite3_free( errMsg );
+      errMsg = 0;
+    }
+    sqlite3_free_table( results );
+
+    // checking if this one is a View-based layer
+    sql = QString( "SELECT view_name, view_geometry FROM views_geometry_columns"
+                   " WHERE view_name=%1 and view_geometry=%2" ).arg( quotedValue( mTableName ) ).
+          arg( quotedValue( mGeometryColumn ) );
+
+    ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
+    if ( ret == SQLITE_OK && rows == 1 )
+    {
+      mViewBased = true;
+      mReadOnly = true;
+      count++;
+    }
+    if ( errMsg )
+    {
+      QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
+      sqlite3_free( errMsg );
+      errMsg = 0;
+    }
+    sqlite3_free_table( results );
+
+    // checking if this one is a VirtualShapefile-based layer
+    sql = QString( "SELECT virt_name, virt_geometry FROM virts_geometry_columns"
+                   " WHERE virt_name=%1 and virt_geometry=%2" ).arg( quotedValue( mTableName ) ).
+          arg( quotedValue( mGeometryColumn ) );
+
+    ret = sqlite3_get_table( sqliteHandle, sql.toUtf8().constData(), &results, &rows, &columns, &errMsg );
+    if ( ret == SQLITE_OK && rows == 1 )
+    {
+      mVShapeBased = true;
+      mReadOnly = true;
+      count++;
+    }
+    if ( errMsg )
+    {
+      QgsDebugMsg( QString( "sqlite error %1 [%2]" ).arg( sql ).arg( errMsg ) );
+      sqlite3_free( errMsg );
+      errMsg = 0;
+    }
+    sqlite3_free_table( results );
+  }
+
+  if ( !isQuery )
+  {
     mQuery = quotedIdentifier( mTableName );
   }
 
@@ -4022,6 +4363,12 @@ bool QgsSpatiaLiteProvider::checkLayerType()
 bool QgsSpatiaLiteProvider::getGeometryDetails()
 {
   bool ret = false;
+  if ( mGeometryColumn.isNull() )
+  {
+    geomType = QGis::WKBNoGeometry;
+    return true;
+  }
+
   if ( mTableBased )
     ret = getTableGeometryDetails();
   if ( mViewBased )
@@ -4534,4 +4881,108 @@ QGISEXTERN QString description()
 QGISEXTERN bool isProvider()
 {
   return true;
+}
+
+QGISEXTERN QgsVectorLayerImport::ImportError createEmptyLayer(
+  const QString& uri,
+  const QgsFieldMap &fields,
+  QGis::WkbType wkbType,
+  const QgsCoordinateReferenceSystem *srs,
+  bool overwrite,
+  QMap<int, int> *oldToNewAttrIdxMap,
+  QString *errorMessage,
+  const QMap<QString, QVariant> *options )
+{
+  return QgsSpatiaLiteProvider::createEmptyLayer(
+           uri, fields, wkbType, srs, overwrite,
+           oldToNewAttrIdxMap, errorMessage, options
+         );
+}
+
+// -------------
+
+static bool initializeSpatialMetadata( sqlite3 *sqlite_handle, QString& errCause )
+{
+  // attempting to perform self-initialization for a newly created DB
+  int ret;
+  char sql[1024];
+  char *errMsg = NULL;
+  int count = 0;
+  int i;
+  char **results;
+  int rows;
+  int columns;
+
+  if ( sqlite_handle == NULL )
+    return false;
+  // checking if this DB is really empty
+  strcpy( sql, "SELECT Count(*) from sqlite_master" );
+  ret = sqlite3_get_table( sqlite_handle, sql, &results, &rows, &columns, NULL );
+  if ( ret != SQLITE_OK )
+    return false;
+  if ( rows < 1 )
+    ;
+  else
+  {
+    for ( i = 1; i <= rows; i++ )
+      count = atoi( results[( i * columns ) + 0] );
+  }
+  sqlite3_free_table( results );
+
+  if ( count > 0 )
+    return false;
+
+  // all right, it's empty: proceding to initialize
+  strcpy( sql, "SELECT InitSpatialMetadata()" );
+  ret = sqlite3_exec( sqlite_handle, sql, NULL, NULL, &errMsg );
+  if ( ret != SQLITE_OK )
+  {
+    errCause = QObject::tr( "Unable to initialize SpatialMetadata:\n" );
+    errCause += QString::fromUtf8( errMsg );
+    sqlite3_free( errMsg );
+    return false;
+  }
+  spatial_ref_sys_init( sqlite_handle, 0 );
+  return true;
+}
+
+QGISEXTERN bool createDb( const QString& dbPath, QString& errCause )
+{
+  QgsDebugMsg( "creating a new db" );
+
+  QFileInfo fullPath = QFileInfo( dbPath );
+  QDir path = fullPath.dir();
+  QgsDebugMsg( QString( "making this dir: %1" ).arg( path.absolutePath() ) );
+
+  // Must be sure there is destination directory ~/.qgis
+  QDir().mkpath( path.absolutePath( ) );
+
+  // creating/opening the new database
+  spatialite_init( 0 );
+  sqlite3 *sqlite_handle;
+  int ret = sqlite3_open_v2( dbPath.toUtf8().constData(), &sqlite_handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL );
+  if ( ret )
+  {
+    // an error occurred
+    errCause = QObject::tr( "Could not create a new database\n" );
+    errCause += QString::fromUtf8( sqlite3_errmsg( sqlite_handle ) );
+    sqlite3_close( sqlite_handle );
+    return false;
+  }
+  // activating Foreign Key constraints
+  char *errMsg = NULL;
+  ret = sqlite3_exec( sqlite_handle, "PRAGMA foreign_keys = 1", NULL, 0, &errMsg );
+  if ( ret != SQLITE_OK )
+  {
+    errCause = QObject::tr( "Unable to activate FOREIGN_KEY constraints" );
+    sqlite3_free( errMsg );
+    sqlite3_close( sqlite_handle );
+    return false;
+  }
+  bool init_res = ::initializeSpatialMetadata( sqlite_handle, errCause );
+
+  // all done: closing the DB connection
+  sqlite3_close( sqlite_handle );
+
+  return init_res;
 }

@@ -66,9 +66,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QUndoView>
-
-
-
+#include <QPaintEngine>
 
 
 QgsComposer::QgsComposer( QgisApp *qgis, const QString& title ): QMainWindow(), mTitle( title ), mUndoView( 0 )
@@ -371,16 +369,6 @@ void QgsComposer::changeEvent( QEvent* event )
       break;
   }
 }
-
-void QgsComposer::showEvent( QShowEvent *event )
-{
-  QMainWindow::showEvent( event );
-  // add to menu if (re)opening window (event not due to unminimize)
-  if ( !event->spontaneous() )
-  {
-    QgisApp::instance()->addWindow( mWindowAction );
-  }
-}
 #endif
 
 void QgsComposer::setTitle( const QString& title )
@@ -496,6 +484,38 @@ void QgsComposer::on_mActionRefreshView_triggered()
   mComposition->update();
 }
 
+// Hack to workaround Qt #5114 by disabling PatternTransform
+class QgsPaintEngineHack : public QPaintEngine
+{
+  public:
+    void fixFlags()
+    {
+      gccaps = 0;
+      gccaps |= ( QPaintEngine::PrimitiveTransform
+                  // | QPaintEngine::PatternTransform
+                  | QPaintEngine::PixmapTransform
+                  | QPaintEngine::PatternBrush
+                  // | QPaintEngine::LinearGradientFill
+                  // | QPaintEngine::RadialGradientFill
+                  // | QPaintEngine::ConicalGradientFill
+                  | QPaintEngine::AlphaBlend
+                  // | QPaintEngine::PorterDuff
+                  | QPaintEngine::PainterPaths
+                  | QPaintEngine::Antialiasing
+                  | QPaintEngine::BrushStroke
+                  | QPaintEngine::ConstantOpacity
+                  | QPaintEngine::MaskedBrush
+                  // | QPaintEngine::PerspectiveTransform
+                  | QPaintEngine::BlendModes
+                  // | QPaintEngine::ObjectBoundingModeGradients
+#if QT_VERSION >= 0x040500
+                  | QPaintEngine::RasterOpModes
+#endif
+                  | QPaintEngine::PaintOutsidePaintEvent
+                );
+    }
+};
+
 void QgsComposer::on_mActionExportAsPDF_triggered()
 {
   QSettings myQSettings;  // where we keep last used filter in persistent state
@@ -505,11 +525,13 @@ void QgsComposer::on_mActionExportAsPDF_triggered()
       file.path(), tr( "PDF Format" ) + " (*.pdf *PDF)" );
   myQFileDialog->selectFile( file.fileName() );
   myQFileDialog->setFileMode( QFileDialog::AnyFile );
+  myQFileDialog->setConfirmOverwrite( true );
   myQFileDialog->setAcceptMode( QFileDialog::AcceptSave );
 
   int result = myQFileDialog->exec();
   raise();
-  if ( result != QDialog::Accepted ) return;
+  if ( result != QDialog::Accepted )
+    return;
 
   QString myOutputFileNameQString = myQFileDialog->selectedFiles().first();
   if ( myOutputFileNameQString == "" )
@@ -529,6 +551,13 @@ void QgsComposer::on_mActionExportAsPDF_triggered()
   printer.setOutputFormat( QPrinter::PdfFormat );
   printer.setOutputFileName( myOutputFileNameQString );
   printer.setPaperSize( QSizeF( mComposition->paperWidth(), mComposition->paperHeight() ), QPrinter::Millimeter );
+
+  QPaintEngine *engine = printer.paintEngine();
+  if ( engine )
+  {
+    QgsPaintEngineHack *hack = static_cast<QgsPaintEngineHack*>( engine );
+    hack->fixFlags();
+  }
 
   print( printer );
 }
@@ -676,7 +705,8 @@ void QgsComposer::on_mActionExportAsImage_triggered()
     QString myFilter = tr( "%1 format (*.%2 *.%3)" )
                        .arg( myFormat ).arg( myFormat.toLower() ).arg( myFormat.toUpper() );
 
-    if ( myCounterInt > 0 ) myFilters += ";;";
+    if ( myCounterInt > 0 )
+      myFilters += ";;";
     myFilters += myFilter;
     myFilterMap[myFilter] = myFormat;
     if ( myFormat == myLastUsedFormat )
@@ -704,6 +734,7 @@ void QgsComposer::on_mActionExportAsImage_triggered()
   );
 
   myQFileDialog->setFileMode( QFileDialog::AnyFile );
+  myQFileDialog->setConfirmOverwrite( true );
 
   // set the filter to the last one used
   myQFileDialog->selectFilter( myLastUsedFilter );
@@ -805,11 +836,13 @@ void QgsComposer::on_mActionExportAsSVG_triggered()
       file.path(), tr( "SVG Format" ) + " (*.svg *SVG)" );
   myQFileDialog->selectFile( file.fileName() );
   myQFileDialog->setFileMode( QFileDialog::AnyFile );
+  myQFileDialog->setConfirmOverwrite( true );
   myQFileDialog->setAcceptMode( QFileDialog::AcceptSave );
 
   int result = myQFileDialog->exec();
   raise();
-  if ( result != QDialog::Accepted ) return;
+  if ( result != QDialog::Accepted )
+    return;
 
   QString myOutputFileNameQString = myQFileDialog->selectedFiles().first();
   if ( myOutputFileNameQString == "" )
@@ -1113,14 +1146,44 @@ void QgsComposer::on_mActionRedo_triggered()
   }
 }
 
-void QgsComposer::moveEvent( QMoveEvent *e ) { saveWindowState(); }
+void QgsComposer::moveEvent( QMoveEvent *e )
+{
+  Q_UNUSED( e );
+  saveWindowState();
+}
 
 void QgsComposer::resizeEvent( QResizeEvent *e )
 {
+  Q_UNUSED( e );
+
   // Move size grip when window is resized
   mSizeGrip->move( rect().bottomRight() - mSizeGrip->rect().bottomRight() );
 
   saveWindowState();
+}
+
+void QgsComposer::showEvent( QShowEvent* event )
+{
+  if ( event->spontaneous() ) //event from the window system
+  {
+    //go through maps and restore original preview modes (show on demand after loading from project file)
+    QMap< QgsComposerMap*, QgsComposerMap::PreviewMode >::iterator mapIt = mMapsToRestore.begin();
+    for ( ; mapIt != mMapsToRestore.end(); ++mapIt )
+    {
+      mapIt.key()->setPreviewMode( mapIt.value() );
+      mapIt.key()->cache();
+      mapIt.key()->update();
+    }
+    mMapsToRestore.clear();
+  }
+
+#ifdef Q_WS_MAC
+  // add to menu if (re)opening window (event not due to unminimize)
+  if ( !event->spontaneous() )
+  {
+    QgisApp::instance()->addWindow( mWindowAction );
+  }
+#endif
 }
 
 void QgsComposer::saveWindowState()
@@ -1168,6 +1231,14 @@ void QgsComposer::writeXML( QDomNode& parentNode, QDomDocument& doc )
 {
   QDomElement composerElem = doc.createElement( "Composer" );
   composerElem.setAttribute( "title", mTitle );
+
+  //change preview mode of minimised / hidden maps before saving XML (show contents only on demand)
+  QMap< QgsComposerMap*, QgsComposerMap::PreviewMode >::iterator mapIt = mMapsToRestore.begin();
+  for ( ; mapIt != mMapsToRestore.end(); ++mapIt )
+  {
+    mapIt.key()->setPreviewMode( mapIt.value() );
+  }
+  mMapsToRestore.clear();
 
   //store if composer is open or closed
   if ( isVisible() )
@@ -1283,6 +1354,20 @@ void QgsComposer::readXML( const QDomElement& composerElem, const QDomDocument& 
     QDomElement currentComposerMapElem = composerMapList.at( i ).toElement();
     QgsComposerMap* newMap = new QgsComposerMap( mComposition );
     newMap->readXML( currentComposerMapElem, doc );
+
+    if ( fromTemplate ) //show map directly if loaded from template
+    {
+      newMap->updateItem();
+    }
+    else //show map only on demand if loaded from project
+    {
+      if ( newMap->previewMode() != QgsComposerMap::Rectangle )
+      {
+        mMapsToRestore.insert( newMap, newMap->previewMode() );
+        newMap->setPreviewMode( QgsComposerMap::Rectangle );
+      }
+    }
+
     addComposerMap( newMap );
     mComposition->addItem( newMap );
     mComposition->update();
@@ -1518,6 +1603,12 @@ void QgsComposer::deleteItem( QgsComposerItem* item )
   //the item itself is not deleted here (usually, this is done in the destructor of QgsAddRemoveItemCommand)
   delete( it.value() );
   mItemWidgetMap.remove( it.key() );
+
+  QgsComposerMap* map = dynamic_cast<QgsComposerMap*>( item );
+  if ( map )
+  {
+    mMapsToRestore.remove( map );
+  }
 }
 
 void QgsComposer::setSelectionTool()

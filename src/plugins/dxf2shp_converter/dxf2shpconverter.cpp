@@ -12,7 +12,6 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  ***************************************************************************/
-/*  $Id$ */
 
 //
 // QGIS Specific includes
@@ -34,8 +33,6 @@
 #include <QFile>
 #include <QToolBar>
 
-static const char *const sIdent =
-  "$Id$";
 static const QString sName = QObject::tr( "Dxf2Shp Converter" );
 static const QString sDescription = QObject::tr( "Converts from dxf to shp file format" );
 static const QString sPluginVersion = QObject::tr( "Version 0.1" );
@@ -127,6 +124,7 @@ void dxf2shpConverter::addMyLayer( QString myfname, QString mytitle )
 //! Set icons to the current theme
 void dxf2shpConverter::setCurrentTheme( QString theThemeName )
 {
+  Q_UNUSED( theThemeName );
   QString myCurThemePath = QgsApplication::activeThemePath() + "/plugins/dxf2shp_converter.png";
   QString myDefThemePath = QgsApplication::defaultThemePath() + "/plugins/dxf2shp_converter.png";
   QString myQrcPath = ":/dxf2shp_converter.png";

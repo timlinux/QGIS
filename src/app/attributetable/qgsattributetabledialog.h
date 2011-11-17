@@ -58,6 +58,10 @@ class QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDia
      */
     void editingToggled();
 
+    void updateExtent();
+
+    void viewWillShowContextMenu( QMenu* menu, QModelIndex atIndex );
+
   private slots:
     /**
      * submits the data
@@ -114,6 +118,10 @@ class QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDia
      */
     void on_mToggleEditingButton_toggled();
     /**
+     * Saves edits
+     */
+    void on_mSaveEditsButton_clicked();
+    /**
      * Inverts selection
      */
     void on_mInvertSelectionButton_clicked();
@@ -160,10 +168,16 @@ class QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDia
 
   signals:
     /**
-     * Informs that editing mode ha been toggled
+     * Informs that editing mode has been toggled
      * @param layer layer that has been toggled
      */
     void editingToggled( QgsMapLayer *layer );
+
+    /**
+     * Informs that edits should be saved
+     * @param layer layer whose edits are to be saved
+     */
+    void saveEdits( QgsMapLayer *layer );
 
   protected:
     /**
@@ -192,8 +206,6 @@ class QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDia
      */
     void updateTitle();
 
-    QIcon getThemeIcon( const QString theName );
-
     QLineEdit *mQuery;
     QComboBox *mColumnBox;
     QComboBox *mShowBox;
@@ -212,5 +224,26 @@ class QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDia
 
     QDockWidget *mDock;
 };
+
+
+class QgsAttributeTableAction : public QAction
+{
+    Q_OBJECT
+
+  public:
+    QgsAttributeTableAction( const QString &name, QgsAttributeTableView *view, QgsAttributeTableModel *model, int action, const QModelIndex &fieldIdx ) :
+        QAction( name, view ), mModel( model ), mAction( action ), mFieldIdx( fieldIdx )
+    {}
+
+  public slots:
+    void execute();
+    void featureForm();
+
+  private:
+    QgsAttributeTableModel *mModel;
+    int mAction;
+    QModelIndex mFieldIdx;
+};
+
 
 #endif

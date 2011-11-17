@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QGSSQLANYWHEREPROVIDER_H
 #define QGSSQLANYWHEREPROVIDER_H
@@ -70,7 +69,7 @@ class QgsSqlAnywhereProvider: public QgsVectorDataProvider
       *  @param fetchGeometry true if the feature geometry should be fetched
       *  @param fetchAttributes list of attributes which should be fetched
       */
-    virtual bool featureAtId( int featureId,
+    virtual bool featureAtId( QgsFeatureId featureId,
                               QgsFeature & feature, bool fetchGeometry = true, QgsAttributeList fetchAttributes = QgsAttributeList() );
 
     /** Accessor for sql where clause used to limit dataset */

@@ -24,7 +24,6 @@
 ** National Oceanic and Atmospheric Administration or the Department of Commerce.
 **
 **/
-/*  $Id$ */
 #include "evisimagedisplaywidget.h"
 
 #include "qgsapplication.h"
@@ -130,7 +129,7 @@ void eVisImageDisplayWidget::resizeEvent( QResizeEvent *event )
 void eVisImageDisplayWidget::displayImage( QString path )
 {
   mImageLoaded = mImage->load( path, 0, Qt::AutoColor );
-  this->setToolTip( path );
+  setToolTip( path );
 
   mCurrentZoomStep = 0;
   pbtnZoomOut->setEnabled( false );

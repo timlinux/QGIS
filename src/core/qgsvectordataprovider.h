@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 #ifndef QGSVECTORDATAPROVIDER_H
 #define QGSVECTORDATAPROVIDER_H
 
@@ -30,7 +29,6 @@ class QTextCodec;
 #include "qgsrectangle.h"
 
 typedef QList<int> QgsAttributeList;
-typedef QSet<int> QgsFeatureIds;
 typedef QSet<int> QgsAttributeIds;
 
 /** \ingroup core
@@ -79,7 +77,9 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
       RandomSelectGeometryAtId =     1 << 10,
       /** DEPRECATED - do not use */
       SequentialSelectGeometryAtId = 1 << 11,
-      CreateAttributeIndex = 1 << 12
+      CreateAttributeIndex = 1 << 12,
+      /** Uses mEncoding for conversion of 8-bit strings to unicode */
+      SetEncoding = 1 << 13,
     };
 
     /** bitmask of all provider's editing capabilities */
@@ -131,7 +131,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * Default implementation traverses all features until it finds the one with correct ID.
      * In case the provider supports reading the feature directly, override this function.
      */
-    virtual bool featureAtId( int featureId,
+    virtual bool featureAtId( QgsFeatureId featureId,
                               QgsFeature& feature,
                               bool fetchGeometry = true,
                               QgsAttributeList fetchAttributes = QgsAttributeList() );
@@ -410,7 +410,6 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
 
     // list of errors
     QStringList mErrors;
-
 
     static QStringList smEncodings;
 

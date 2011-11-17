@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgssinglesymbolrenderer.h 5371 2006-04-25 01:52:13Z wonder $ */
 
 #ifndef QGSSINGLESYMBOLRENDERER_H
 #define QGSSINGLESYMBOLRENDERER_H
@@ -67,7 +66,7 @@ class CORE_EXPORT QgsSingleSymbolRenderer: public QgsRenderer
 
     /**Returns renderer symbol for a feature
         @note: this method was added in version 1.6*/
-    QgsSymbol* symbolForFeature( const QgsFeature* f ) { return mSymbol0; }
+    QgsSymbol* symbolForFeature( const QgsFeature* f ) { Q_UNUSED( f ); return mSymbol0; }
 
   protected:
     /**Object containing symbology information*/

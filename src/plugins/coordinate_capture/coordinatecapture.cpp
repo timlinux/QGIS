@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id: plugin.cpp 8053 2008-01-26 13:59:53Z timlinux $ */
 
 //
 // QGIS Specific includes
@@ -49,7 +48,6 @@
 #include <QFile>
 #include <QLabel>
 
-static const char * const sIdent = "$Id: plugin.cpp 8053 2008-01-26 13:59:53Z timlinux $";
 static const QString sName = QObject::tr( "Coordinate Capture" );
 static const QString sDescription = QObject::tr( "Capture mouse coordinates in different CRS" );
 static const QString sPluginVersion = QObject::tr( "Version 0.1" );
@@ -266,6 +264,7 @@ void CoordinateCapture::unload()
 // Set icons to the current theme
 void CoordinateCapture::setCurrentTheme( QString theThemeName )
 {
+  Q_UNUSED( theThemeName );
   mQActionPointer->setIcon( QIcon( getIconPath( "coordinate_capture.png" ) ) );
   mpTrackMouseButton->setIcon( QIcon( getIconPath( "tracking.png" ) ) );
   mpCaptureButton->setIcon( QIcon( getIconPath( "coordinate_capture.png" ) ) );

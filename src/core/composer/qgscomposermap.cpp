@@ -31,6 +31,7 @@
 
 #include "qgslabel.h"
 #include "qgslabelattributes.h"
+#include "qgssymbollayerv2utils.h" //for pointOnLineWithDistance
 
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -40,8 +41,8 @@
 #include <cmath>
 
 QgsComposerMap::QgsComposerMap( QgsComposition *composition, int x, int y, int width, int height )
-    : QgsComposerItem( x, y, width, height, composition ), mKeepLayerSet( false ), mGridEnabled( false ), mGridStyle( Solid ), \
-    mGridIntervalX( 0.0 ), mGridIntervalY( 0.0 ), mGridOffsetX( 0.0 ), mGridOffsetY( 0.0 ), mGridAnnotationPrecision( 3 ), mShowGridAnnotation( false ), \
+    : QgsComposerItem( x, y, width, height, composition ), mKeepLayerSet( false ), mGridEnabled( false ), mGridStyle( Solid ),
+    mGridIntervalX( 0.0 ), mGridIntervalY( 0.0 ), mGridOffsetX( 0.0 ), mGridOffsetY( 0.0 ), mGridAnnotationPrecision( 3 ), mShowGridAnnotation( false ),
     mGridAnnotationPosition( OutsideMapFrame ), mAnnotationFrameDistance( 1.0 ), mGridAnnotationDirection( Horizontal ),
     mCrossLength( 3 ), mMapCanvas( 0 ), mDrawCanvasItems( true )
 {
@@ -85,8 +86,8 @@ QgsComposerMap::QgsComposerMap( QgsComposition *composition, int x, int y, int w
 }
 
 QgsComposerMap::QgsComposerMap( QgsComposition *composition )
-    : QgsComposerItem( 0, 0, 10, 10, composition ), mKeepLayerSet( false ), mGridEnabled( false ), mGridStyle( Solid ), \
-    mGridIntervalX( 0.0 ), mGridIntervalY( 0.0 ), mGridOffsetX( 0.0 ), mGridOffsetY( 0.0 ), mGridAnnotationPrecision( 3 ), mShowGridAnnotation( false ), \
+    : QgsComposerItem( 0, 0, 10, 10, composition ), mKeepLayerSet( false ), mGridEnabled( false ), mGridStyle( Solid ),
+    mGridIntervalX( 0.0 ), mGridIntervalY( 0.0 ), mGridOffsetX( 0.0 ), mGridOffsetY( 0.0 ), mGridAnnotationPrecision( 3 ), mShowGridAnnotation( false ),
     mGridAnnotationPosition( OutsideMapFrame ), mAnnotationFrameDistance( 1.0 ), mGridAnnotationDirection( Horizontal ), mCrossLength( 3 ),
     mMapCanvas( 0 ), mDrawCanvasItems( true )
 {
@@ -235,6 +236,8 @@ void QgsComposerMap::cache( void )
 
 void QgsComposerMap::paint( QPainter* painter, const QStyleOptionGraphicsItem* itemStyle, QWidget* pWidget )
 {
+  Q_UNUSED( pWidget );
+
   if ( !mComposition || !painter )
   {
     return;
@@ -390,6 +393,7 @@ void QgsComposerMap::resize( double dx, double dy )
   QRectF currentRect = rect();
   QRectF newSceneRect = QRectF( transform().dx(), transform().dy(), currentRect.width() + dx, currentRect.height() + dy );
   setSceneRect( newSceneRect );
+  updateItem();
 }
 
 void QgsComposerMap::moveContent( double dx, double dy )
@@ -489,10 +493,6 @@ void QgsComposerMap::setSceneRect( const QRectF& rectangle )
   mExtent = QgsRectangle( mExtent.xMinimum(), mExtent.yMinimum(), mExtent.xMaximum(), mExtent.yMinimum() + newHeight );
   mCacheUpdated = false;
 
-  if ( mPreviewMode != Rectangle )
-  {
-    cache();
-  }
   updateBoundingRect();
   update();
   emit itemChanged();
@@ -513,6 +513,7 @@ void QgsComposerMap::setNewExtent( const QgsRectangle& extent )
   double newHeight = currentRect.width() * extent.height() / extent.width();
 
   setSceneRect( QRectF( transform().dx(), transform().dy(), currentRect.width(), newHeight ) );
+  updateItem();
 }
 
 void QgsComposerMap::setNewScale( double scaleDenominator )
@@ -533,6 +534,12 @@ void QgsComposerMap::setNewScale( double scaleDenominator )
   emit extentChanged();
 }
 
+void QgsComposerMap::setPreviewMode( PreviewMode m )
+{
+  mPreviewMode = m;
+  emit itemChanged();
+}
+
 void QgsComposerMap::setOffset( double xOffset, double yOffset )
 {
   mXOffset = xOffset;
@@ -543,6 +550,16 @@ void QgsComposerMap::setMapRotation( double r )
 {
   setRotation( r );
   emit rotationChanged( r );
+  emit itemChanged();
+}
+
+void QgsComposerMap::updateItem()
+{
+  if ( mPreviewMode != QgsComposerMap::Rectangle &&  !mCacheUpdated )
+  {
+    cache();
+  }
+  QgsComposerItem::updateItem();
 }
 
 bool QgsComposerMap::containsWMSLayer() const
@@ -776,8 +793,8 @@ bool QgsComposerMap::readXML( const QDomElement& itemElem, const QDomDocument& d
     mGridOffsetX = gridElem.attribute( "offsetX", "0" ).toDouble();
     mGridOffsetY = gridElem.attribute( "offsetY", "0" ).toDouble();
     mGridPen.setWidthF( gridElem.attribute( "penWidth", "0" ).toDouble() );
-    mGridPen.setColor( QColor( gridElem.attribute( "penColorRed", "0" ).toInt(), \
-                               gridElem.attribute( "penColorGreen", "0" ).toInt(), \
+    mGridPen.setColor( QColor( gridElem.attribute( "penColorRed", "0" ).toInt(),
+                               gridElem.attribute( "penColorGreen", "0" ).toInt(),
                                gridElem.attribute( "penColorBlue", "0" ).toInt() ) );
     mCrossLength = gridElem.attribute( "crossLength", "3" ).toDouble();
 
@@ -822,7 +839,17 @@ void QgsComposerMap::syncLayerSet()
     return;
   }
 
-  QStringList currentLayerSet = mMapRenderer->layerSet();
+  //if layer set is fixed, do a lookup in the layer registry to also find the non-visible layers
+  QStringList currentLayerSet;
+  if ( mKeepLayerSet )
+  {
+    currentLayerSet = QgsMapLayerRegistry::instance()->mapLayers().uniqueKeys();
+  }
+  else //only consider layers visible in the map
+  {
+    currentLayerSet = mMapRenderer->layerSet();
+  }
+
   for ( int i = mLayerSet.size() - 1; i >= 0; --i )
   {
     if ( !currentLayerSet.contains( mLayerSet.at( i ) ) )
@@ -865,7 +892,7 @@ void QgsComposerMap::drawGrid( QPainter* p )
     for ( ; vIt != verticalLines.constEnd(); ++vIt )
     {
       //start mark
-      crossEnd1 = pointOnLineWithDistance( vIt->second.p1(), vIt->second.p2(), mCrossLength );
+      crossEnd1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( vIt->second.p1(), vIt->second.p2(), mCrossLength );
       p->drawLine( vIt->second.p1(), crossEnd1 );
 
       //test for intersection with every horizontal line
@@ -874,13 +901,13 @@ void QgsComposerMap::drawGrid( QPainter* p )
       {
         if ( hIt->second.intersect( vIt->second, &intersectionPoint ) == QLineF::BoundedIntersection )
         {
-          crossEnd1 = pointOnLineWithDistance( intersectionPoint, vIt->second.p1(), mCrossLength );
-          crossEnd2 = pointOnLineWithDistance( intersectionPoint, vIt->second.p2(), mCrossLength );
+          crossEnd1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, vIt->second.p1(), mCrossLength );
+          crossEnd2 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, vIt->second.p2(), mCrossLength );
           p->drawLine( crossEnd1, crossEnd2 );
         }
       }
       //end mark
-      QPointF crossEnd2 = pointOnLineWithDistance( vIt->second.p2(), vIt->second.p1(), mCrossLength );
+      QPointF crossEnd2 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( vIt->second.p2(), vIt->second.p1(), mCrossLength );
       p->drawLine( vIt->second.p2(), crossEnd2 );
     }
 
@@ -888,7 +915,7 @@ void QgsComposerMap::drawGrid( QPainter* p )
     for ( ; hIt != horizontalLines.constEnd(); ++hIt )
     {
       //start mark
-      crossEnd1 = pointOnLineWithDistance( hIt->second.p1(), hIt->second.p2(), mCrossLength );
+      crossEnd1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( hIt->second.p1(), hIt->second.p2(), mCrossLength );
       p->drawLine( hIt->second.p1(), crossEnd1 );
 
       vIt = verticalLines.constBegin();
@@ -896,13 +923,13 @@ void QgsComposerMap::drawGrid( QPainter* p )
       {
         if ( vIt->second.intersect( hIt->second, &intersectionPoint ) == QLineF::BoundedIntersection )
         {
-          crossEnd1 = pointOnLineWithDistance( intersectionPoint, hIt->second.p1(), mCrossLength );
-          crossEnd2 = pointOnLineWithDistance( intersectionPoint, hIt->second.p2(), mCrossLength );
+          crossEnd1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, hIt->second.p1(), mCrossLength );
+          crossEnd2 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, hIt->second.p2(), mCrossLength );
           p->drawLine( crossEnd1, crossEnd2 );
         }
       }
       //end mark
-      crossEnd1 = pointOnLineWithDistance( hIt->second.p2(), hIt->second.p1(), mCrossLength );
+      crossEnd1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( hIt->second.p2(), hIt->second.p1(), mCrossLength );
       p->drawLine( hIt->second.p2(), crossEnd1 );
     }
 
@@ -1467,7 +1494,7 @@ void QgsComposerMap::drawCanvasItems( QPainter* painter, const QStyleOptionGraph
   {
     currentItem = itemList.at( i );
     //don't draw mapcanvasmap (has z value -10)
-    if ( !currentItem || currentItem->zValue() == -10 )
+    if ( !currentItem || currentItem->data( 0 ).toString() != "AnnotationItem" )
     {
       continue;
     }
@@ -1481,7 +1508,7 @@ void QgsComposerMap::drawCanvasItems( QPainter* painter, const QStyleOptionGraph
   {
     currentItem = itemList.at( i );
     //don't draw mapcanvasmap (has z value -10)
-    if ( !currentItem || currentItem->zValue() == -10 )
+    if ( !currentItem || currentItem->data( 0 ) != "AnnotationItem" )
     {
       continue;
     }
@@ -1550,9 +1577,9 @@ void QgsComposerMap::drawCanvasItem( QGraphicsItem* item, QPainter* painter, con
   painter->scale( scaleFactor, scaleFactor );
 
   //a little trick to let the item know that the paint request comes from the composer
-  item->setData( 0, "composer" );
+  item->setData( 1, "composer" );
   item->paint( painter, itemStyle, 0 );
-  item->setData( 0, "" );
+  item->setData( 1, "" );
   painter->restore();
 }
 

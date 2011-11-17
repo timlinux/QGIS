@@ -15,7 +15,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*  $Id: qgsgeometrycoordinatetransform.h 13377 2010-04-25 01:07:36Z jef $ */
 #ifndef GEOMETRYCOORDINATETRANSFORM_H
 #define GEOMETRYCOORDINATETRANSFORM_H
 
@@ -63,7 +62,8 @@ class QgsGeometryCoordinateTransform
     * \brief None transform the coordinates reference system of the geometry (use by transform)
     * \param geom      Geometry
     */
-    void setNoneGeomTransform( QgsGeometry *geom ) {};
+    void setNoneGeomTransform( QgsGeometry *geom )
+    { Q_UNUSED( geom ); }
 
     QgsCoordinateTransform * mCoordTransform;
     void ( QgsGeometryCoordinateTransform::* mFuncTransform )( QgsGeometry * );

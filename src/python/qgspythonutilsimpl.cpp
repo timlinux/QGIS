@@ -12,7 +12,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 // python should be first include
 // otherwise issues some warnings
@@ -177,7 +176,7 @@ bool QgsPythonUtilsImpl::runString( const QString& command, QString msgOnError )
 
   QString str = "<font color=\"red\">" + msgOnError + "</font><br><pre>\n" + traceback + "\n</pre>"
                 + QObject::tr( "Python version:" ) + "<br>" + version + "<br><br>"
-                + QObject::tr( "QGIS version:" ) + "<br>" + QString( "%1 '%2', %3" ).arg( QGis::QGIS_VERSION ).arg( QGis::QGIS_RELEASE_NAME ).arg( QGis::QGIS_SVN_VERSION ) + "<br><br>"
+                + QObject::tr( "QGIS version:" ) + "<br>" + QString( "%1 '%2', %3" ).arg( QGis::QGIS_VERSION ).arg( QGis::QGIS_RELEASE_NAME ).arg( QGis::QGIS_DEV_VERSION ) + "<br><br>"
                 + QObject::tr( "Python path:" ) + "<br>" + path;
   str.replace( "\n", "<br>" ).replace( "  ", "&nbsp; " );
 
@@ -413,15 +412,20 @@ bool QgsPythonUtilsImpl::evalString( const QString& command, QString& result )
   return success;
 }
 
-
 QString QgsPythonUtilsImpl::pythonPath()
 {
-  return QgsApplication::pkgDataPath() + "/python";
+  if ( QgsApplication::isRunningFromBuildDir() )
+    return QgsApplication::buildOutputPath() + "/python";
+  else
+    return QgsApplication::pkgDataPath() + "/python";
 }
 
 QString QgsPythonUtilsImpl::pluginsPath()
 {
-  return pythonPath() + "/plugins";
+  if ( QgsApplication::isRunningFromBuildDir() )
+    return QString(); // plugins not used
+  else
+    return pythonPath() + "/plugins";
 }
 
 QString QgsPythonUtilsImpl::homePythonPath()
@@ -458,7 +462,7 @@ QStringList QgsPythonUtilsImpl::pluginList()
 
   QString output;
   evalString( "'\\n'.join(qgis.utils.available_plugins)", output );
-  return output.split( QChar( '\n' ) );
+  return output.split( QChar( '\n' ), QString::SkipEmptyParts );
 }
 
 QString QgsPythonUtilsImpl::getPluginMetadata( QString pluginName, QString function )
@@ -509,5 +513,5 @@ QStringList QgsPythonUtilsImpl::listActivePlugins()
 {
   QString output;
   evalString( "'\\n'.join(qgis.utils.active_plugins)", output );
-  return output.split( QChar( '\n' ) );
+  return output.split( QChar( '\n' ), QString::SkipEmptyParts );
 }

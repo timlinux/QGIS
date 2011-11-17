@@ -19,6 +19,7 @@ Build-Depends:
  libqtwebkit-dev,
  libqwt5-qt4-dev,
  libspatialite-dev,
+ libspatialindex-dev,
  libsqlite3-dev,
  pkg-config,
  pyqt4-dev-tools,
@@ -29,7 +30,7 @@ Build-Depends:
  python-qt4-dev (>=4.1.0),
  python-sip (>= 4.5.0),
  python-sip-dev (>= 4.5.0),
- subversion,
+ git,
  doxygen,
  graphviz,
  txt2tags 
@@ -111,7 +112,7 @@ Description: GRASS plugin for Quantum GIS
 
 Package: qgis-plugin-grass-common
 Architecture: all
-Depends: python
+Depends: ${python:Depends}
 Replaces: qgis-common (<< 1.5)
 Breaks: qgis-common (<< 1.5)
 Description: GRASS plugin for Quantum GIS - architecture-independent data
@@ -137,7 +138,7 @@ Package: python-qgis-common
 Section: python
 Architecture: all
 Provides: ${python:Provides}
-Depends: gdal-bin, python-gdal
+Depends: gdal-bin, python-gdal, ${python:Depends}
 XB-Python-Version: ${python:Versions}
 Description: Python bindings to Quantum GIS - architecture-independent files
  Quantum GIS is a Geographic Information System (GIS) which manages, analyzes
@@ -177,9 +178,10 @@ Description: Quantum GIS mapserver
  .
  This package contains the Quantum GIS mapserver.
 
-Package: qgis-sqlanywhere{QGIS_ABI}
+Package: qgis-sqlanywhere
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: qgis-sqlanywhere1.7.0, qgis-sqlanywhere1.7.1, qgis-sqlanywhere1.8.0
 Description: Quantum GIS sql anywhere plugin and provider
  Quantum GIS is a Geographic Information System (GIS) which manages, analyzes
  and display databases of geographic information.
@@ -188,6 +190,7 @@ Description: Quantum GIS sql anywhere plugin and provider
 
 Package: qgis-api-doc
 Architecture: all
+Section: doc
 Description: Quantum GIS API documentation
  Quantum GIS is a Geographic Information System (GIS) which manages, analyzes
  and display databases of geographic information.

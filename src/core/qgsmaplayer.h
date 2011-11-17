@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id$ */
 
 #ifndef QGSMAPLAYER_H
 #define QGSMAPLAYER_H
@@ -24,6 +23,7 @@
 #include <QUndoStack>
 #include <QVariant>
 #include <QImage>
+#include <QDomNode>
 
 #include "qgis.h"
 #include "qgsrectangle.h"
@@ -31,7 +31,6 @@
 class QgsRenderContext;
 class QgsCoordinateReferenceSystem;
 
-class QDomNode;
 class QDomDocument;
 class QKeyEvent;
 class QPainter;
@@ -156,7 +155,7 @@ class CORE_EXPORT QgsMapLayer : public QObject
 
        @returns true if successful
      */
-    bool readXML( QDomNode & layer_node );
+    bool readXML( const QDomNode& layer_node );
 
 
     /** stores state in Dom node
@@ -332,6 +331,9 @@ class CORE_EXPORT QgsMapLayer : public QObject
      * added in 1.5 */
     void clearCacheImage();
 
+    /** \brief Obtain Metadata for this layer */
+    virtual QString metadata();
+
     /** Time stamp of data source in the moment when data/metadata were loaded by provider */
     virtual QDateTime timestamp() const { return QDateTime() ; }
 
@@ -376,7 +378,7 @@ class CORE_EXPORT QgsMapLayer : public QObject
     /** called by readXML(), used by children to read state specific to them from
         project files.
     */
-    virtual bool readXml( QDomNode & layer_node );
+    virtual bool readXml( const QDomNode& layer_node );
 
     /** called by writeXML(), used by children to write state specific to them to
         project files.

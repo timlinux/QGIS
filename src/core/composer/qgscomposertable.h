@@ -58,7 +58,7 @@ class CORE_EXPORT QgsComposerTable: public QgsComposerItem
     void setGridColor( const QColor& c ) { mGridColor = c; }
     QColor gridColor() const { return mGridColor; }
 
-    /**Adapts the size of the frame to match the content. This is normally done in the paint method, but sometimes \
+    /**Adapts the size of the frame to match the content. This is normally done in the paint method, but sometimes
     it needs to be done before the first render*/
     void adjustFrameToSize();
 
@@ -74,7 +74,8 @@ class CORE_EXPORT QgsComposerTable: public QgsComposerItem
     QColor mGridColor;
 
     /**Retrieves feature attributes*/
-    virtual bool getFeatureAttributes( QList<QgsAttributeMap>& attributes ) {return false;} //= 0;
+    virtual bool getFeatureAttributes( QList<QgsAttributeMap>& attributes )
+    { Q_UNUSED( attributes ); return false; } //= 0;
     virtual QMap<int, QString> getHeaderLabels() const { return QMap<int, QString>(); } //= 0;
     /**Calculate the maximum width values of the vector attributes*/
     virtual bool calculateMaxColumnWidths( QMap<int, double>& maxWidthMap, const QList<QgsAttributeMap>& attributeList ) const;

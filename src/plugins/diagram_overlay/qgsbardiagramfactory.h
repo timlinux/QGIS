@@ -31,7 +31,8 @@ class QgsBarDiagramFactory: public QgsWKNDiagramFactory
     QImage* createDiagram( int size, const QgsFeature& f, const QgsRenderContext& renderContext ) const;
 
     /**Creates items to show in the legend*/
-    int createLegendContent( int size, const QgsRenderContext& renderContext, QString value, QMap<QString, QImage*>& items ) const {return 1;} //soon
+    int createLegendContent( int size, const QgsRenderContext& renderContext, QString value, QMap<QString, QImage*>& items ) const
+    { Q_UNUSED( size ); Q_UNUSED( renderContext ); Q_UNUSED( value ); Q_UNUSED( items ); return 1; } //soon
 
     /**Gets the width and height (in pixels) of the diagram image. Considers different width, height values, the maximum width of the drawing pen and the conversion from mm size to pixels according to render context.
     @param size diagram size calculated by diagram renderer (in mm)
@@ -58,7 +59,7 @@ class QgsBarDiagramFactory: public QgsWKNDiagramFactory
      scaling attribute)*/
     int getMaximumHeight( int size, const QgsAttributeMap& featureAttributes ) const;
 
-    /**Calculates the value to size unit ratio for the bar chart (based on the size \
+    /**Calculates the value to size unit ratio for the bar chart (based on the size
      of the scaling attribute)
     @return the ratio or -1 in case of error*/
     double sizeValueRatioBarChart( int size, const QgsAttributeMap& featureAttributes ) const;

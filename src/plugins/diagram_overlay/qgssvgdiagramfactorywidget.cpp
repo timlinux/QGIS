@@ -62,7 +62,8 @@ QgsDiagramFactory* QgsSVGDiagramFactoryWidget::createFactory()
   QgsSVGDiagramFactory* factory = new QgsSVGDiagramFactory();
   if ( !factory->setSVGData( svgData, filePath ) )
   {
-    delete factory; return 0;
+    delete factory;
+    return 0;
   }
 
   return factory;
@@ -118,6 +119,7 @@ void QgsSVGDiagramFactoryWidget::on_mPictureBrowseButton_clicked()
 
 void QgsSVGDiagramFactoryWidget::on_mPreviewListWidget_currentItemChanged( QListWidgetItem* current, QListWidgetItem* previous )
 {
+  Q_UNUSED( previous );
   if ( !current )
   {
     return;
@@ -194,7 +196,8 @@ int QgsSVGDiagramFactoryWidget::addDirectoryToPreview( const QString& path )
     //exclude files that are not svg or image
     if ( !fileIsSvg )
     {
-      ++counter; continue;
+      ++counter;
+      continue;
     }
 
     QListWidgetItem * listItem = new QListWidgetItem( mPreviewListWidget );

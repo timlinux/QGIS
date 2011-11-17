@@ -72,7 +72,7 @@ void QgsSingleSymbolRendererV2::startRender( QgsRenderContext& context, const Qg
   mRotationFieldIdx  = mRotationField.isEmpty()  ? -1 : vlayer->fieldNameIndex( mRotationField );
   mSizeScaleFieldIdx = mSizeScaleField.isEmpty() ? -1 : vlayer->fieldNameIndex( mSizeScaleField );
 
-  mSymbol->startRender( context );
+  mSymbol->startRender( context, vlayer );
 
   if ( mRotationFieldIdx != -1 || mSizeScaleFieldIdx != -1 )
   {
@@ -80,11 +80,13 @@ void QgsSingleSymbolRendererV2::startRender( QgsRenderContext& context, const Qg
     mTempSymbol = mSymbol->clone();
 
     int hints = 0;
-    if ( mRotationFieldIdx != -1 ) hints |= QgsSymbolV2::DataDefinedRotation;
-    if ( mSizeScaleFieldIdx != -1 ) hints |= QgsSymbolV2::DataDefinedSizeScale;
+    if ( mRotationFieldIdx != -1 )
+      hints |= QgsSymbolV2::DataDefinedRotation;
+    if ( mSizeScaleFieldIdx != -1 )
+      hints |= QgsSymbolV2::DataDefinedSizeScale;
     mTempSymbol->setRenderHints( hints );
 
-    mTempSymbol->startRender( context );
+    mTempSymbol->startRender( context, vlayer );
 
     if ( mSymbol->type() == QgsSymbolV2::Marker )
     {
@@ -120,12 +122,20 @@ void QgsSingleSymbolRendererV2::stopRender( QgsRenderContext& context )
 
 QList<QString> QgsSingleSymbolRendererV2::usedAttributes()
 {
-  QList<QString> lst;
+  QSet<QString> attributes;
+  if ( mSymbol )
+  {
+    attributes.unite( mSymbol->usedAttributes() );
+  }
   if ( !mRotationField.isEmpty() )
-    lst.append( mRotationField );
+  {
+    attributes.insert( mRotationField );
+  }
   if ( !mSizeScaleField.isEmpty() )
-    lst.append( mSizeScaleField );
-  return lst;
+  {
+    attributes.insert( mSizeScaleField );
+  }
+  return attributes.toList();
 }
 
 QgsSymbolV2* QgsSingleSymbolRendererV2::symbol() const

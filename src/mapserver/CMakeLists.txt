@@ -17,18 +17,18 @@ ENDIF (CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo
 
 SET ( qgis_mapserv_SRCS
   qgis_map_serv.cpp
+  qgscapabilitiescache.cpp
   qgsconfigcache.cpp
   qgsconfigparser.cpp
-  qgsepsgcache.cpp
   qgsprojectparser.cpp
   qgshttprequesthandler.cpp 
   qgsgetrequesthandler.cpp
+  qgspostrequesthandler.cpp
   qgssoaprequesthandler.cpp
   qgssldparser.cpp
   qgssldrenderer.cpp
   qgswmsserver.cpp
   qgsmapserviceexception.cpp
-  qgsmapserverlogger.cpp
   qgsmslayercache.cpp
   qgsfilter.cpp
   qgssldrule.cpp
@@ -61,6 +61,8 @@ SET ( qgis_mapserv_SRCS
 
 SET (qgis_mapserv_MOC_HDRS
   qgsftptransaction.h
+  qgscapabilitiescache.h
+  qgsconfigcache.h
 )
 
 SET (qgis_mapserv_RCCS 

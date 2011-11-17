@@ -14,7 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* $Id: qgsmapcanvas.h 5341 2006-04-22 12:11:36Z wonder $ */
 
 #ifndef QGSMAPCANVAS_H
 #define QGSMAPCANVAS_H
@@ -244,6 +243,9 @@ class GUI_EXPORT QgsMapCanvas : public QGraphicsView
     //! used to determine if anti-aliasing is enabled or not
     void enableAntiAliasing( bool theFlag );
 
+    //! true if antialising is enabled
+    bool antiAliasingEnabled() const { return mAntiAliasing; }
+
     //! Select which Qt class to render with
     void useImageToRender( bool theFlag );
 
@@ -374,6 +376,9 @@ class GUI_EXPORT QgsMapCanvas : public QGraphicsView
     //! Overridden paint event
     void paintEvent( QPaintEvent * e );
 
+    //! Overridden drag enter event
+    void dragEnterEvent( QDragEnterEvent * e );
+
     //! called when panning is in action, reset indicates end of panning
     void moveCanvasContents( bool reset = false );
 
@@ -463,6 +468,8 @@ class GUI_EXPORT QgsMapCanvas : public QGraphicsView
     //! currently in paint event
     bool mPainting;
 
+    //! indicates whether antialiasing will be used for rendering
+    bool mAntiAliasing;
 }; // class QgsMapCanvas
 
 
