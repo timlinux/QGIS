@@ -31,3 +31,8 @@ a.link.bar{
   font-size: 9pt;
   font-style: italic;
 }
+
+th {
+  text-align: left;
+  padding-left: 4px;
+}

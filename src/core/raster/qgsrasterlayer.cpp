@@ -1717,113 +1717,98 @@ double QgsRasterLayer::maximumValue( QString theBand )
 QString QgsRasterLayer::metadata()
 {
   //even as I am writing this I know it is wrong - we should separate markup from content...TS
-  QString myLabelStart = "<label class=\"span-10\">";
-  QString myLabelEnd   = "</label>";
-  QString myDetailStart = "<p class=\"span-13\">";
-  QString myDetailEnd   = "</p>";
+  QString myLabelStart = "<th>";
+  QString myLabelEnd   = "</th>";
+  QString myDetailStart = "<td>";
+  QString myDetailEnd   = "</td>";
+  QString mySectionTitleStart = "<h2>";
+  QString mySectionTitleEnd = "</h2>";
+  QString mySectionStart = "<table class=\"table-striped table-bordered span12\">";
+  QString myNestedSectionStart = "<table>";
+  QString mySectionEnd = "</table>";
+  QString myRowStart = "<tr>";
+  QString myRowEnd = "</tr>";
 
   QString myMetadata ;
-  myMetadata += myLabelStart + tr( "Driver:" ) + myLabelEnd;
-  myMetadata += myDetailStart;
-  myMetadata += mDataProvider->description();
-  myMetadata += myDetailEnd;
 
-  // Insert provider-specific (e.g. WMS-specific) metadata
-  myMetadata += mDataProvider->metadata();
+  myMetadata += "";
 
-  myMetadata += myLabelStart;
-  myMetadata += tr( "No Data Value" );
-  myMetadata += myLabelEnd;
-  myMetadata += myDetailStart;
+  myMetadata += mySectionTitleStart + tr("Summary") + mySectionTitleEnd;
+  myMetadata += mySectionStart;
+
+  myMetadata += myRowStart + myLabelStart + tr("Title") + myLabelEnd +
+                myDetailStart + mTitle + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Abstract") + myLabelEnd +
+                myDetailStart + mAbstract + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Last modified") + myLabelEnd + myDetailStart +
+          mLastModified.toString() + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Data source") + myLabelEnd +
+                myDetailStart + mDataSource + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Extent") + myLabelEnd +
+                myDetailStart; //nested table will go in this cell
+  myMetadata += myNestedSectionStart;
+  myMetadata += myRowStart + myDetailStart + myDetailEnd + myDetailStart +
+                QString::number(mLayerExtent.yMaximum()) +
+                myDetailEnd + myDetailStart + myDetailEnd + myRowEnd;
+  myMetadata += myRowStart + myDetailStart + QString::number(mLayerExtent.xMinimum()) +
+                myDetailEnd + myDetailStart +
+                myDetailEnd + myDetailStart +
+                QString::number(mLayerExtent.xMaximum()) +
+                myDetailEnd + myRowEnd;
+  myMetadata += myRowStart + myDetailStart + myDetailEnd + myDetailStart +
+                QString::number(mLayerExtent.yMinimum()) +
+                myDetailEnd + myDetailStart + myDetailEnd + myRowEnd;
+  myMetadata += mySectionEnd;// end of nested table
+  myMetadata += myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Dimensions") + myLabelEnd + myDetailStart +
+          QString::number(mWidth) + tr(" rows by ") + QString::number(mHeight) + tr(" columns")
+          + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Data Type") + myLabelEnd + myDetailStart +
+          dataTypeAsString() + myDetailEnd + myRowEnd;
+
+  myMetadata += myRowStart + myLabelStart + tr("Data Type") + myLabelEnd + myDetailStart;
   if ( mValidNoDataValue )
   {
     myMetadata += QString::number( mNoDataValue );
   }
   else
   {
-    myMetadata += "*" + tr( "NoDataValue not set" ) + "*";
+    myMetadata += tr( "Not set" ) + "*";
   }
   myMetadata += myDetailEnd;
 
-  myMetadata += myLabelStart;
-  myMetadata += tr( "Data Type:" );
-  myMetadata += myLabelEnd;
-  myMetadata += myDetailStart;
-  //just use the first band
-  switch ( mDataProvider->srcDataType( 1 ) )
-  {
-    case GDT_Byte:
-      myMetadata += tr( "GDT_Byte - Eight bit unsigned integer" );
-      break;
-    case GDT_UInt16:
-      myMetadata += tr( "GDT_UInt16 - Sixteen bit unsigned integer " );
-      break;
-    case GDT_Int16:
-      myMetadata += tr( "GDT_Int16 - Sixteen bit signed integer " );
-      break;
-    case GDT_UInt32:
-      myMetadata += tr( "GDT_UInt32 - Thirty two bit unsigned integer " );
-      break;
-    case GDT_Int32:
-      myMetadata += tr( "GDT_Int32 - Thirty two bit signed integer " );
-      break;
-    case GDT_Float32:
-      myMetadata += tr( "GDT_Float32 - Thirty two bit floating point " );
-      break;
-    case GDT_Float64:
-      myMetadata += tr( "GDT_Float64 - Sixty four bit floating point " );
-      break;
-    case GDT_CInt16:
-      myMetadata += tr( "GDT_CInt16 - Complex Int16 " );
-      break;
-    case GDT_CInt32:
-      myMetadata += tr( "GDT_CInt32 - Complex Int32 " );
-      break;
-    case GDT_CFloat32:
-      myMetadata += tr( "GDT_CFloat32 - Complex Float32 " );
-      break;
-    case GDT_CFloat64:
-      myMetadata += tr( "GDT_CFloat64 - Complex Float64 " );
-      break;
-    default:
-      myMetadata += tr( "Could not determine raster data type." );
-  }
-  myMetadata += myDetailEnd;
+  myMetadata += myRowStart + myLabelStart + tr("CRS Name") + myLabelEnd + myDetailStart +
+          crs().authid() + " - " + crs().description()
+          + myDetailEnd + myRowEnd;
 
-  myMetadata += myLabelStart;
-  myMetadata += tr( "Layer Coordinate Reference System: " );
-  myMetadata += myLabelEnd;
-  myMetadata += myDetailStart;
-  myMetadata += crs().toProj4();
-  myMetadata += myDetailEnd;
+  myMetadata += myRowStart + myLabelStart + tr("CRS Definition") + myLabelEnd + myDetailStart +
+          crs().toProj4()
+          + myDetailEnd + myRowEnd;
 
-  myMetadata += myLabelStart;
-  myMetadata += tr( "Layer Extent (layer original source projection): " );
-  myMetadata += myLabelEnd;
-  myMetadata += myDetailStart;
-  myMetadata += mDataProvider->extent().toString();
-  myMetadata += myDetailEnd;
+  myMetadata += myRowStart + myLabelStart + tr("Provider") + myLabelEnd + myDetailStart +
+                mDataProvider->description() + myDetailEnd + myRowEnd;
 
-  // output coordinate system
-  // TODO: this is not related to layer, to be removed? [MD]
-#if 0
-  myMetadata += myLabelStart;
-  myMetadata += tr( "Project Spatial Reference System: " );
-  myMetadata += myLabelEnd;
-  myMetadata += myDetailStart;
-  myMetadata +=  mCoordinateTransform->destCRS().toProj4();
-  myMetadata += myDetailEnd;
-#endif
+  myMetadata += mySectionEnd;
+
+  // Insert provider-specific (e.g. WMS-specific) metadata
+
+  myMetadata += mySectionTitleStart + "Driver Details" + mySectionTitleEnd;
+  myMetadata += mDataProvider->metadata();
 
   //
   // Add the stats for each band to the output table
   //
+  myMetadata += mySectionTitleStart + tr("Band Statistics") + mySectionTitleEnd;
+  myMetadata += mySectionStart;
   int myBandCountInt = bandCount();
   for ( int myIteratorInt = 1; myIteratorInt <= myBandCountInt; ++myIteratorInt )
   {
-    QgsDebugMsg( "Raster properties : checking if band " + QString::number( myIteratorInt ) + " has stats? " );
-    //band name
-    myMetadata += "<h2>" + tr("QGIS Metadata") + "</h2></hr>";
     myMetadata += myLabelStart;
     myMetadata += tr( "Band Name:" );
     myMetadata += myLabelEnd;
@@ -1841,6 +1826,7 @@ QString QgsRasterLayer::metadata()
     myMetadata += myLabelStart;
     myMetadata += tr( "Has stats?" );
     myMetadata += myLabelEnd;
+
     //check if full stats for this layer have already been collected
     if ( !hasStatistics( myIteratorInt ) )  //not collected
     {
@@ -1853,7 +1839,6 @@ QString QgsRasterLayer::metadata()
     else                    // collected - show full detail
     {
       QgsDebugMsg( ".....yes" );
-
       myMetadata += myDetailStart;
       myMetadata += tr( "yes" );
       myMetadata += myDetailEnd;
@@ -1923,7 +1908,7 @@ QString QgsRasterLayer::metadata()
       myMetadata += myDetailEnd;
     }
   }
-
+  myMetadata += mySectionEnd;
   QgsDebugMsg( myMetadata );
   return myMetadata;
 }
@@ -5081,3 +5066,47 @@ bool QgsRasterLayer::readColorTable( int theBandNumber, QList<QgsColorRampShader
   return true;
 }
 
+QString QgsRasterLayer::dataTypeAsString() const
+{
+  QString myType;
+  //just use the first band
+  switch ( mDataProvider->srcDataType( 1 ) )
+  {
+    case GDT_Byte:
+      myType += tr( "GDT_Byte - Eight bit unsigned integer" );
+      break;
+    case GDT_UInt16:
+      myType += tr( "GDT_UInt16 - Sixteen bit unsigned integer " );
+      break;
+    case GDT_Int16:
+      myType += tr( "GDT_Int16 - Sixteen bit signed integer " );
+      break;
+    case GDT_UInt32:
+      myType += tr( "GDT_UInt32 - Thirty two bit unsigned integer " );
+      break;
+    case GDT_Int32:
+      myType += tr( "GDT_Int32 - Thirty two bit signed integer " );
+      break;
+    case GDT_Float32:
+      myType += tr( "GDT_Float32 - Thirty two bit floating point " );
+      break;
+    case GDT_Float64:
+      myType += tr( "GDT_Float64 - Sixty four bit floating point " );
+      break;
+    case GDT_CInt16:
+      myType += tr( "GDT_CInt16 - Complex Int16 " );
+      break;
+    case GDT_CInt32:
+      myType += tr( "GDT_CInt32 - Complex Int32 " );
+      break;
+    case GDT_CFloat32:
+      myType += tr( "GDT_CFloat32 - Complex Float32 " );
+      break;
+    case GDT_CFloat64:
+      myType += tr( "GDT_CFloat64 - Complex Float64 " );
+      break;
+    default:
+      myType += tr( "Could not determine raster data type." );
+  }
+  return myType;
+}

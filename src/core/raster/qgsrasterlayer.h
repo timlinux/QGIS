@@ -643,6 +643,11 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
      * */
     void thumbnailAsImage( QImage * thepImage );
 
+    /** \brief Get the layer data type as a string. Only evaluates the first band found.
+      * @note added in QGIS 2.0
+      * */
+    QString dataTypeAsString() const;
+
     /** \brief Emit a signal asking for a repaint. (inherited from maplayer) */
     void triggerRepaint();
 
