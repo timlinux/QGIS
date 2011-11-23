@@ -1884,7 +1884,10 @@ void QgsRasterLayerProperties::refreshHistogram()
   //
   //now draw actual graphs
   //
-
+  int myRedBand = mRasterLayer->bandNumber( cboRed->currentText() );
+  int myGreenBand = mRasterLayer->bandNumber( cboGreen->currentText() );
+  int myBlueBand = mRasterLayer->bandNumber( cboBlue->currentText() );
+  int myGrayBand = mRasterLayer->bandNumber( cboGray->currentText() );
   for ( int myIteratorInt = 1;
       myIteratorInt <= myBandCountInt;
       ++myIteratorInt )
@@ -1903,7 +1906,18 @@ void QgsRasterLayerProperties::refreshHistogram()
       mySeriesJS += QString("[%1,%2]").arg(myBin).arg(myBinValue);
       myFirst = false;
     }
-    mySeriesJS += "]);";
+    QString myColor = "";
+    if ( myIteratorInt == myRedBand )
+      myColor = "#FF0000";
+    else if ( myIteratorInt == myGreenBand )
+      myColor = "#00FF00";
+    else if ( myIteratorInt == myBlueBand )
+      myColor = "#0000FF";
+    else if ( myIteratorInt == myGrayBand )
+      myColor = "#FCFCFC";
+    else
+      myColor = "#F0C1D1";
+    mySeriesJS += QString("], %1, '%2');").arg(myIteratorInt).arg( myColor );
     //QgsDebugMsg( mySeriesJS );
     mWebPlot->page()->mainFrame()->evaluateJavaScript( mySeriesJS );
   }
@@ -1915,12 +1929,12 @@ void QgsRasterLayerProperties::refreshHistogram()
 void QgsRasterLayerProperties::on_mSaveAsImageButton_clicked()
 {
 
-  QPixmap myPixmap( 600, 600 );
+  QPixmap myPixmap( mWebPlot->width(), mWebPlot->height() );
   myPixmap.fill( Qt::white ); // Qt::transparent ?
 
   QPainter painter;
   painter.begin( &myPixmap );
-  //mWebPlot->drawCanvas( &painter );
+  mWebPlot->render( &painter );
   painter.end();
   QPair< QString, QString> myFileNameAndFilter = QgisGui::getSaveAsImageName( this, tr( "Choose a file name to save the map image as" ) );
   if ( myFileNameAndFilter.first != "" )
