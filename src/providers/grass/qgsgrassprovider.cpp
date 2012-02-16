@@ -2279,7 +2279,7 @@ QString *QgsGrassProvider::insertAttributes( int field, int cat )
   return executeSql( field, query );
 }
 
-QString *QgsGrassProvider::deleteAttributes( int field, int cat )
+QString *QgsGrassProvider::deleteAttribute( int field, int cat )
 {
   QgsDebugMsg( QString( "field = %1 cat = %2" ).arg( field ).arg( cat ) );
 
@@ -2481,7 +2481,7 @@ QVector<QgsDataItem*> QgsGrassMapsetItem::createChildren()
 
     QString path = mPath + QDir::separator() + "vector" + QDir::separator() + name;
 
-    QgsDataCollectionItem *map;
+    QgsDataCollectionItem *map = 0;
     if ( layerNames.size() != 1 )
       map = new QgsDataCollectionItem( this, name );
     foreach( QString layerName, layerNames )

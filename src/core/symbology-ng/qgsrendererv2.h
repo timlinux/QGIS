@@ -73,20 +73,26 @@ class CORE_EXPORT QgsFeatureRendererV2
 
     virtual QgsFeatureRendererV2* clone() = 0;
 
-    virtual void renderFeature( QgsFeature& feature, QgsRenderContext& context, int layer = -1, bool selected = false, bool drawVertexMarker = false );
+    virtual bool renderFeature( QgsFeature& feature, QgsRenderContext& context, int layer = -1, bool selected = false, bool drawVertexMarker = false );
 
     //! for debugging
     virtual QString dump();
+
+    enum Capabilities
+    {
+      SymbolLevels = 1,     // rendering with symbol levels (i.e. implements symbols(), symbolForFeature())
+      RotationField = 1 <<  1    // rotate symbols by attribute value
+    };
+
+    //! returns bitwise OR-ed capabilities of the renderer
+    //! \note added in 2.0
+    virtual int capabilities() { return 0; }
 
     //! for symbol levels
     virtual QgsSymbolV2List symbols() = 0;
 
     bool usingSymbolLevels() const { return mUsingSymbolLevels; }
     void setUsingSymbolLevels( bool usingSymbolLevels ) { mUsingSymbolLevels = usingSymbolLevels; }
-
-    bool usingFirstRule() const { return mUsingFirstRule; }
-    void setUsingFirstRule( bool usingFirstRule ) { mUsingFirstRule = usingFirstRule; }
-
 
     //! create a renderer from XML element
     static QgsFeatureRendererV2* load( QDomElement& symbologyElem );
@@ -104,8 +110,24 @@ class CORE_EXPORT QgsFeatureRendererV2
     //! set type and size of editing vertex markers for subsequent rendering
     void setVertexMarkerAppearance( int type, int size );
 
+    //! return rotation field name (or empty string if not set or not supported by renderer)
+    //! @note added in 1.9
+    virtual QString rotationField() const { return ""; }
+    //! sets rotation field of renderer (if supported by the renderer)
+    //! @note added in 1.9
+    virtual void setRotationField( QString fieldName ) { Q_UNUSED( fieldName ); }
+
+
+
   protected:
     QgsFeatureRendererV2( QString type );
+
+    void renderFeatureWithSymbol( QgsFeature& feature,
+                                  QgsSymbolV2* symbol,
+                                  QgsRenderContext& context,
+                                  int layer,
+                                  bool selected,
+                                  bool drawVertexMarker );
 
     //! render editing vertex marker at specified point
     void renderVertexMarker( QPointF& pt, QgsRenderContext& context );
@@ -121,7 +143,6 @@ class CORE_EXPORT QgsFeatureRendererV2
     QString mType;
 
     bool mUsingSymbolLevels;
-    bool mUsingFirstRule;
 
     /** The current type of editing marker */
     int mCurrentVertexMarkerType;

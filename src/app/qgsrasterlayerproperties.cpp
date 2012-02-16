@@ -100,7 +100,7 @@ QgsRasterLayerProperties::QgsRasterLayerProperties( QgsMapLayer* lyr, QgsMapCanv
   leMinimumScale->setValidator( new QDoubleValidator( 0, std::numeric_limits<float>::max(), 1000, this ) );
   leMaximumScale->setText( QString::number( lyr->maximumScale(), 'f' ) );
   leMaximumScale->setValidator( new QDoubleValidator( 0, std::numeric_limits<float>::max(), 1000, this ) );
-  leNoDataValue->setValidator( new QDoubleValidator( -std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), 1000, this ) );
+  leNoDataValue->setValidator( new QDoubleValidator( -std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), 1000, this ) );
 
   leRedMin->setValidator( new QDoubleValidator( this ) );
   leRedMax->setValidator( new QDoubleValidator( this ) );
@@ -159,7 +159,7 @@ QgsRasterLayerProperties::QgsRasterLayerProperties( QgsMapLayer* lyr, QgsMapCanv
   mColormapTreeWidget->setHeaderLabels( headerLabels );
 
   //disable colormap tab completely until 'Colormap' is selected (and only for type GrayOrUndefined)
-  tabPageColormap->setEnabled( false );
+  tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), false );
 
   //
   // Set up the combo boxes that contain band lists using the qstring list generated above
@@ -322,10 +322,14 @@ void QgsRasterLayerProperties::populateColorMapTable( const QList<QgsColorRampSh
 }
 void QgsRasterLayerProperties::populateTransparencyTable()
 {
-  //Clear existsing color transparency list
+  QgsDebugMsg( "entering." );
+
+  //Clear existing color transparency list
   //NOTE: May want to just tableTransparency->clearContents() and fill back in after checking to be sure list and table are the same size
   QString myNumberFormatter;
-  if ( rbtnThreeBand->isChecked() && QgsRasterLayer::PalettedColor != mRasterLayer->drawingStyle() &&
+  if ( tabPageSymbology &&
+       rbtnThreeBand->isChecked() &&
+       QgsRasterLayer::PalettedColor != mRasterLayer->drawingStyle() &&
        QgsRasterLayer::PalettedMultiBandColor != mRasterLayer->drawingStyle() )
   {
     for ( int myTableRunner = tableTransparency->rowCount() - 1; myTableRunner >= 0; myTableRunner-- )
@@ -358,7 +362,7 @@ void QgsRasterLayerProperties::populateTransparencyTable()
   }
   else
   {
-    //Clear existing single band or pallet values gransparency list
+    //Clear existing single band or palette values transparency list
     for ( int myTableRunner = tableTransparency->rowCount() - 1; myTableRunner >= 0; myTableRunner-- )
     {
       tableTransparency->removeRow( myTableRunner );
@@ -384,7 +388,7 @@ void QgsRasterLayerProperties::populateTransparencyTable()
     for ( int myListRunner = 0; myListRunner < myTransparentSingleValuePixelList.count(); myListRunner++ )
     {
       tableTransparency->insertRow( myListRunner );
-      QTableWidgetItem* myGrayItem = new QTableWidgetItem( myNumberFormatter.sprintf( "%.2f", myTransparentSingleValuePixelList[myListRunner].pixelValue ) );
+      QTableWidgetItem* myGrayItem = new QTableWidgetItem( myNumberFormatter.sprintf( "%g", myTransparentSingleValuePixelList[myListRunner].pixelValue ) );
       QTableWidgetItem* myPercentTransparentItem = new QTableWidgetItem( myNumberFormatter.sprintf( "%.2f", myTransparentSingleValuePixelList[myListRunner].percentTransparent ) );
 
       tableTransparency->setItem( myListRunner, 0, myGrayItem );
@@ -396,7 +400,7 @@ void QgsRasterLayerProperties::populateTransparencyTable()
   tableTransparency->resizeRowsToContents();
 }
 
-/** Set the message indicating if any min max values are estimates */
+// Set the message indicating if any min max values are estimates
 void QgsRasterLayerProperties::setMinimumMaximumEstimateWarning()
 {
   bool myEstimatedValues = false;
@@ -735,6 +739,7 @@ void QgsRasterLayerProperties::sync()
     cboRed->setCurrentIndex( cboRed->findText( mRasterLayer->redBandName() ) );
     cboGreen->setCurrentIndex( cboGreen->findText( mRasterLayer->greenBandName() ) );
     cboBlue->setCurrentIndex( cboBlue->findText( mRasterLayer->blueBandName() ) );
+    cboGray->setCurrentIndex( cboGray->findText( mRasterLayer->grayBandName() ) );
 
     //Display the current default contrast enhancement algorithm
     mDefaultContrastEnhancementAlgorithm = myQSettings.value( "/Raster/defaultContrastEnhancementAlgorithm", "NoEnhancement" ).toString();
@@ -763,6 +768,7 @@ void QgsRasterLayerProperties::sync()
   }
 
   QgsDebugMsg( "populate transparency tab" );
+
   /*
    * Transparent Pixel Tab
    */
@@ -784,13 +790,19 @@ void QgsRasterLayerProperties::sync()
   //add current NoDataValue to NoDataValue line edit
   if ( mRasterLayer->isNoDataValueValid() )
   {
-    leNoDataValue->insert( QString::number( mRasterLayer->noDataValue(), 'f' ) );
+    leNoDataValue->insert( QString::number( mRasterLayer->noDataValue(), 'g' ) );
   }
   else
   {
     leNoDataValue->insert( "" );
   }
 
+  populateTransparencyTable();
+
+  QgsDebugMsg( "populate colormap tab" );
+  /*
+   * Transparent Pixel Tab
+   */
   //restore colormap tab if the layer has custom classification
   syncColormapTab();
 
@@ -848,6 +860,9 @@ void QgsRasterLayerProperties::sync()
   pixmapPalette->repaint();
 
 
+  mLayerTitleLineEdit->setText( mRasterLayer->title() );
+  mLayerAbstractTextEdit->setPlainText( mRasterLayer->abstract() );
+
 } // QgsRasterLayerProperties::sync()
 
 void QgsRasterLayerProperties::syncColormapTab()
@@ -863,35 +878,45 @@ void QgsRasterLayerProperties::syncColormapTab()
     return;
   }
 
-  if ( QgsRasterLayer::ColorRampShader != mRasterLayer->colorShadingAlgorithm() )
+  QgsDebugMsg( QString( "colorShadingAlgorithm = %1" ).arg( mRasterLayer->colorShadingAlgorithmAsString() ) );
+  if ( QgsRasterLayer::ColorRampShader == mRasterLayer->colorShadingAlgorithm() )
   {
-    return;
-  }
+    QgsColorRampShader* myRasterShaderFunction = ( QgsColorRampShader* )mRasterLayer->rasterShader()->rasterShaderFunction();
+    if ( myRasterShaderFunction )
+    {
+      //restore the colormap tab if layer has custom symbology
+      populateColorMapTable( myRasterShaderFunction->colorRampItemList() );
 
-  QgsColorRampShader* myRasterShaderFunction = ( QgsColorRampShader* )mRasterLayer->rasterShader()->rasterShaderFunction();
-  if ( !myRasterShaderFunction )
-  {
-    return;
-  }
-  //restore the colormap tab if layer has custom symbology
-  populateColorMapTable( myRasterShaderFunction->colorRampItemList() );
+      sboxNumberOfEntries->setValue( mColormapTreeWidget->topLevelItemCount() );
 
-  sboxNumberOfEntries->setValue( mColormapTreeWidget->topLevelItemCount() );
-
-  //restor state of 'color interpolation' combo box
-  if ( QgsColorRampShader::INTERPOLATED == myRasterShaderFunction->colorRampType() )
-  {
-    cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Linear" ) ) );
-  }
-  else if ( QgsColorRampShader::DISCRETE == myRasterShaderFunction->colorRampType() )
-  {
-    cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Discrete" ) ) );
+      //restor state of 'color interpolation' combo box
+      if ( QgsColorRampShader::INTERPOLATED == myRasterShaderFunction->colorRampType() )
+      {
+        cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Linear" ) ) );
+      }
+      else if ( QgsColorRampShader::DISCRETE == myRasterShaderFunction->colorRampType() )
+      {
+        cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Discrete" ) ) );
+      }
+      else
+      {
+        cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Exact" ) ) );
+      }
+    }
   }
   else
   {
-    cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Exact" ) ) );
+    //load default color table if any so that user can return to it if previously switched to different shader, PseudoColorShader or FreakOutShader for example
+    // It would be better however to restore possibly previously modified color table
+    QgsDebugMsg( "use default color table" );
+    QList<QgsColorRampShader::ColorRampItem> myColorRampList;
+    if ( mRasterLayer->readColorTable( 1, &myColorRampList ) )
+    {
+      populateColorMapTable( myColorRampList );
+      // INTERPOLATED is used as default for Palette raster type
+      cboxColorInterpolation->setCurrentIndex( cboxColorInterpolation->findText( tr( "Linear" ) ) );
+    }
   }
-
 }
 
 bool QgsRasterLayerProperties::validUserDefinedMinMax()
@@ -1430,6 +1455,9 @@ void QgsRasterLayerProperties::apply()
   mRasterLayer->thumbnailAsPixmap( &myQPixmap );
   pixmapThumbnail->setPixmap( myQPixmap );
 
+  mRasterLayer->setTitle( mLayerTitleLineEdit->text() );
+  mRasterLayer->setAbstract( mLayerAbstractTextEdit->toPlainText() );
+
   // update symbology
   emit refreshLegend( mRasterLayer->id(), false );
 
@@ -1688,7 +1716,7 @@ void QgsRasterLayerProperties::on_cboxColorMap_currentIndexChanged( const QStrin
 
   if ( theText == tr( "Pseudocolor" ) || theText == tr( "Freak Out" ) )
   {
-    tabPageColormap->setEnabled( false );
+    tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), false );
     rbtnSingleBandMinMax->setEnabled( false );
     rbtnSingleBandStdDev->setEnabled( true );
     sboxSingleBandStdDev->setEnabled( true );
@@ -1698,7 +1726,7 @@ void QgsRasterLayerProperties::on_cboxColorMap_currentIndexChanged( const QStrin
   }
   else if ( theText == tr( "Colormap" ) )
   {
-    tabPageColormap->setEnabled( true );
+    tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), true );
     rbtnSingleBandMinMax->setEnabled( false );
     rbtnSingleBandStdDev->setEnabled( false );
     sboxSingleBandStdDev->setEnabled( false );
@@ -1708,7 +1736,7 @@ void QgsRasterLayerProperties::on_cboxColorMap_currentIndexChanged( const QStrin
   }
   else if ( theText == tr( "User Defined" ) )
   {
-    tabPageColormap->setEnabled( false );
+    tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), false );
     rbtnSingleBandMinMax->setEnabled( true );
     rbtnSingleBandStdDev->setEnabled( true );
     sboxSingleBandStdDev->setEnabled( true );
@@ -1718,7 +1746,7 @@ void QgsRasterLayerProperties::on_cboxColorMap_currentIndexChanged( const QStrin
   }
   else
   {
-    tabPageColormap->setEnabled( false );
+    tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), false );
     rbtnSingleBandMinMax->setEnabled( true );
     rbtnSingleBandStdDev->setEnabled( true );
     sboxSingleBandStdDev->setEnabled( true );
@@ -1789,7 +1817,7 @@ void QgsRasterLayerProperties::on_pbnExportTransparentPixelValues_clicked()
 {
   QSettings myQSettings;
   QString myLastDir = myQSettings.value( "lastRasterFileFilterDir", "" ).toString();
-  QString myFileName = QFileDialog::getSaveFileName( this, tr( "Save file" ), myLastDir, tr( "Textfile (*.txt)" ) );
+  QString myFileName = QFileDialog::getSaveFileName( this, tr( "Save file" ), myLastDir, tr( "Textfile" ) + " (*.txt)" );
   if ( !myFileName.isEmpty() )
   {
     if ( !myFileName.endsWith( ".txt", Qt::CaseInsensitive ) )
@@ -1951,7 +1979,7 @@ void QgsRasterLayerProperties::on_pbnImportTransparentPixelValues_clicked()
   QString myBadLines;
   QSettings myQSettings;
   QString myLastDir = myQSettings.value( "lastRasterFileFilterDir", "" ).toString();
-  QString myFileName = QFileDialog::getOpenFileName( this, tr( "Open file" ), myLastDir, tr( "Textfile (*.txt)" ) );
+  QString myFileName = QFileDialog::getOpenFileName( this, tr( "Open file" ), myLastDir, tr( "Textfile" ) + " (*.txt)" );
   QFile myInputFile( myFileName );
   if ( myInputFile.open( QFile::ReadOnly ) )
   {
@@ -2052,7 +2080,7 @@ void QgsRasterLayerProperties::on_rbtnSingleBand_toggled( bool theState )
 
     if ( cboxColorMap->currentText() == tr( "Pseudocolor" ) )
     {
-      tabPageColormap->setEnabled( true );
+      tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), true );
     }
 
     if ( cboxColorMap->currentText() == tr( "Pseudocolor" ) || cboxColorMap->currentText() == tr( "Color Ramp" ) || cboxColorMap->currentText() == tr( "Freak Out" ) || mRasterLayer->rasterType() == QgsRasterLayer::Palette )
@@ -2130,7 +2158,7 @@ void QgsRasterLayerProperties::on_rbtnThreeBand_toggled( bool theState )
     stackedWidget->setCurrentIndex( 0 );
     rbtnSingleBand->setChecked( false );
     cboxColorMap->setEnabled( false );
-    tabPageColormap->setEnabled( false );
+    tabBar->setTabEnabled( tabBar->indexOf( tabPageColormap ), false );
 
     grpRgbBands->setEnabled( true );
 
@@ -2426,7 +2454,7 @@ void QgsRasterLayerProperties::on_pbtnExportColorMapToFile_clicked()
 {
   QSettings myQSettings;
   QString myLastDir = myQSettings.value( "lastRasterFileFilterDir", "" ).toString();
-  QString myFileName = QFileDialog::getSaveFileName( this, tr( "Save file" ), myLastDir, tr( "Textfile (*.txt)" ) );
+  QString myFileName = QFileDialog::getSaveFileName( this, tr( "Save file" ), myLastDir, tr( "Textfile" ) + " (*.txt)" );
   if ( !myFileName.isEmpty() )
   {
     if ( !myFileName.endsWith( ".txt", Qt::CaseInsensitive ) )
@@ -2508,7 +2536,7 @@ void QgsRasterLayerProperties::on_pbtnLoadColorMapFromFile_clicked()
   QString myBadLines;
   QSettings myQSettings;
   QString myLastDir = myQSettings.value( "lastRasterFileFilterDir", "" ).toString();
-  QString myFileName = QFileDialog::getOpenFileName( this, tr( "Open file" ), myLastDir, tr( "Textfile (*.txt)" ) );
+  QString myFileName = QFileDialog::getOpenFileName( this, tr( "Open file" ), myLastDir, tr( "Textfile" ) + " (*.txt)" );
   QFile myInputFile( myFileName );
   if ( myInputFile.open( QFile::ReadOnly ) )
   {
@@ -2867,131 +2895,65 @@ void QgsRasterLayerProperties::on_pbnSaveDefaultStyle_clicked()
 
 void QgsRasterLayerProperties::on_pbnLoadStyle_clicked()
 {
-  QSettings myQSettings;  // where we keep last used filter in persistent state
-  QString myLastUsedDir = myQSettings.value( "style/lastStyleDir", "." ).toString();
+  QSettings settings;
+  QString lastUsedDir = settings.value( "style/lastStyleDir", "." ).toString();
 
-  //create a file dialog
-  std::auto_ptr < QFileDialog > myFileDialog
-  (
-    new QFileDialog(
-      this,
-      QFileDialog::tr( "Load layer properties from style file (.qml)" ),
-      myLastUsedDir,
-      tr( "QGIS Layer Style File (*.qml)" )
-    )
-  );
-  myFileDialog->setFileMode( QFileDialog::AnyFile );
-  myFileDialog->setAcceptMode( QFileDialog::AcceptOpen );
+  QString fileName = QFileDialog::getOpenFileName(
+                       this,
+                       tr( "Load layer properties from style file" ),
+                       lastUsedDir,
+                       tr( "QGIS Layer Style File" ) + " (*.qml)" );
+  if ( fileName.isEmpty() )
+    return;
 
-  //prompt the user for a file name
-  QString myFileName;
-  if ( myFileDialog->exec() == QDialog::Accepted )
+  // ensure the user never omits the extension from the file name
+  if ( !fileName.endsWith( ".qml", Qt::CaseInsensitive ) )
+    fileName += ".qml";
+
+  bool defaultLoadedFlag = false;
+  QString message = mRasterLayer->loadNamedStyle( fileName, defaultLoadedFlag );
+  if ( defaultLoadedFlag )
   {
-    QStringList myFiles = myFileDialog->selectedFiles();
-    if ( !myFiles.isEmpty() )
-    {
-      myFileName = myFiles[0];
-    }
+    sync();
+  }
+  else
+  {
+    QMessageBox::information( this, tr( "Saved Style" ), message );
   }
 
-  if ( !myFileName.isEmpty() )
-  {
-    if ( myFileDialog->selectedFilter() == tr( "QGIS Layer Style File (*.qml)" ) )
-    {
-      //ensure the user never omitted the extension from the file name
-      if ( !myFileName.toUpper().endsWith( ".QML" ) )
-      {
-        myFileName += ".qml";
-      }
-      bool defaultLoadedFlag = false;
-      QString myMessage = mRasterLayer->loadNamedStyle( myFileName, defaultLoadedFlag );
-      //reset if the default style was loaded ok only
-      if ( defaultLoadedFlag )
-      {
-        sync();
-      }
-      else
-      {
-        //let the user know something went wrong...
-        QMessageBox::information( this,
-                                  tr( "Saved Style" ),
-                                  myMessage
-                                );
-      }
-    }
-    else
-    {
-      QMessageBox::warning( this, tr( "QGIS" ), tr( "Unknown style format: %1" ).arg( myFileDialog->selectedFilter() ) );
-
-    }
-    myQSettings.setValue( "style/lastStyleDir", myFileDialog->directory().absolutePath() );
-  }
+  settings.setValue( "style/lastStyleDir", QFileInfo( fileName ).absolutePath() );
 }
 
 
 void QgsRasterLayerProperties::on_pbnSaveStyleAs_clicked()
 {
+  QSettings settings;
+  QString lastUsedDir = settings.value( "style/lastStyleDir", "." ).toString();
 
-  QSettings myQSettings;  // where we keep last used filter in persistent state
-  QString myLastUsedDir = myQSettings.value( "style/lastStyleDir", "." ).toString();
+  QString outputFileName = QFileDialog::getSaveFileName(
+                             this,
+                             tr( "Save layer properties as style file" ),
+                             lastUsedDir,
+                             tr( "QGIS Layer Style File" ) + " (*.qml)" );
+  if ( outputFileName.isEmpty() )
+    return;
 
-  //create a file dialog
-  std::auto_ptr < QFileDialog > myFileDialog
-  (
-    new QFileDialog(
-      this,
-      QFileDialog::tr( "Save layer properties as style file (.qml)" ),
-      myLastUsedDir,
-      tr( "QGIS Layer Style File (*.qml)" )
-    )
-  );
-  myFileDialog->setFileMode( QFileDialog::AnyFile );
-  myFileDialog->setAcceptMode( QFileDialog::AcceptSave );
+  // ensure the user never omits the extension from the file name
+  if ( !outputFileName.endsWith( ".qml", Qt::CaseInsensitive ) )
+    outputFileName += ".qml";
 
-  //prompt the user for a file name
-  QString myOutputFileName;
-  if ( myFileDialog->exec() == QDialog::Accepted )
+  bool defaultLoadedFlag = false;
+  QString message = mRasterLayer->saveNamedStyle( outputFileName, defaultLoadedFlag );
+  if ( defaultLoadedFlag )
   {
-    QStringList myFiles = myFileDialog->selectedFiles();
-    if ( !myFiles.isEmpty() )
-    {
-      myOutputFileName = myFiles[0];
-    }
+    sync();
+  }
+  else
+  {
+    QMessageBox::information( this, tr( "Saved Style" ), message );
   }
 
-  if ( !myOutputFileName.isEmpty() )
-  {
-    if ( myFileDialog->selectedFilter() == tr( "QGIS Layer Style File (*.qml)" ) )
-    {
-      //ensure the user never omitted the extension from the file name
-      if ( !myOutputFileName.toUpper().endsWith( ".QML" ) )
-      {
-        myOutputFileName += ".qml";
-      }
-      bool defaultLoadedFlag = false;
-      QString myMessage = mRasterLayer->saveNamedStyle( myOutputFileName, defaultLoadedFlag );
-      //reset if the default style was loaded ok only
-      if ( defaultLoadedFlag )
-      {
-        //don't show the message if all went well...
-        sync();
-      }
-      else
-      {
-        //if something went wrong let the user know why
-        QMessageBox::information( this,
-                                  tr( "Saved Style" ),
-                                  myMessage
-                                );
-      }
-    }
-    else
-    {
-      QMessageBox::warning( this, tr( "QGIS" ), tr( "Unknown style format: %1" ).arg( myFileDialog->selectedFilter() ) );
-
-    }
-    myQSettings.setValue( "style/lastStyleDir", myFileDialog->directory().absolutePath() );
-  }
+  settings.setValue( "style/lastStyleDir", QFileInfo( outputFileName ).absolutePath() );
 }
 
 void QgsRasterLayerProperties::on_btnResetNull_clicked( )
@@ -3000,7 +2962,7 @@ void QgsRasterLayerProperties::on_btnResetNull_clicked( )
   mRasterLayer->resetNoDataValue();
   if ( mRasterLayer->isNoDataValueValid() )
   {
-    leNoDataValue->setText( QString::number( mRasterLayer->noDataValue(), 'f' ) );
+    leNoDataValue->setText( QString::number( mRasterLayer->noDataValue(), 'g' ) );
   }
   else
   {

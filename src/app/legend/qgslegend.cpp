@@ -169,9 +169,17 @@ int QgsLegend::addGroup( QString name, bool expand, QTreeWidgetItem* parent )
   QgsLegendGroup *group;
 
   if ( parentGroup )
+  {
     group = new QgsLegendGroup( parentGroup, name );
+  }
   else
+  {
     group = new QgsLegendGroup( this, name );
+    if ( currentItem() )
+    {
+      moveItem( group, currentItem() );
+    }
+  }
 
   QModelIndex groupIndex = indexFromItem( group );
   setExpanded( groupIndex, expand );
@@ -202,7 +210,7 @@ void QgsLegend::removeAll()
   mDropTarget = 0;
 }
 
-void QgsLegend::selectAll( bool select )
+void QgsLegend::setLayersVisible( bool visible )
 {
   if ( !mMapCanvas || mMapCanvas->isDrawing() )
   {
@@ -210,23 +218,20 @@ void QgsLegend::selectAll( bool select )
   }
 
   // Turn off rendering to improve speed.
-  bool renderFlagState = mMapCanvas->renderFlag();
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( false );
+  mMapCanvas->freeze();
 
   for ( QTreeWidgetItem* theItem = firstItem(); theItem; theItem = nextItem( theItem ) )
   {
     QgsLegendItem* litem = dynamic_cast<QgsLegendItem *>( theItem );
     if ( litem && litem->type() == QgsLegendItem::LEGEND_LAYER )
     {
-      theItem->setCheckState( 0, select ? Qt::Checked : Qt::Unchecked );
+      theItem->setCheckState( 0, visible ? Qt::Checked : Qt::Unchecked );
       handleItemChange( theItem, 0 );
     }
   }
 
   // Turn on rendering (if it was on previously)
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( true );
+  mMapCanvas->freeze( false );
 
   QgsProject::instance()->dirty( true );
 }
@@ -244,6 +249,8 @@ void QgsLegend::removeLayer( QString layerId )
 {
   QgsDebugMsg( "Entering." );
 
+  bool invLayerRemoved = false;
+
   for ( QTreeWidgetItem* theItem = firstItem(); theItem; theItem = nextItem( theItem ) )
   {
     QgsLegendItem *li = dynamic_cast<QgsLegendItem *>( theItem );
@@ -254,15 +261,21 @@ void QgsLegend::removeLayer( QString layerId )
 
       if ( ll && ll->layer() && ll->layer()->id() == layerId )
       {
+        if ( !ll->isVisible() )
+        {
+          invLayerRemoved = true;
+        }
         removeItem( ll );
         delete ll;
         break;
       }
     }
   }
-
   updateMapCanvasLayerSet();
   adjustIconSize();
+
+  if ( invLayerRemoved )
+    emit invisibleLayerRemoved();
 }
 
 void QgsLegend::mousePressEvent( QMouseEvent * e )
@@ -585,7 +598,7 @@ void QgsLegend::handleRightClickEvent( QTreeWidgetItem* item, const QPoint& posi
     return;
   }
 
-  QMenu theMenu;
+  QMenu theMenu( tr( "Legend context" ), this );
 
   QgsLegendItem* li = dynamic_cast<QgsLegendItem *>( item );
   if ( li )
@@ -615,9 +628,17 @@ void QgsLegend::handleRightClickEvent( QTreeWidgetItem* item, const QPoint& posi
     {
       theMenu.addAction( tr( "Re&name" ), this, SLOT( openEditor() ) );
     }
+    //
+    // Option to group layers, if the selection is more than one
+    //
+    if ( selectedLayers().length() > 1 )
+    {
+      theMenu.addAction( tr( "&Group selected" ), this, SLOT( groupSelectedLayers() ) );
+    }
+    // ends here
   }
 
-  theMenu.addAction( QgisApp::getThemeIcon( "/folder_new.png" ), tr( "&Add group" ), this, SLOT( addGroupToCurrentItem() ) );
+  theMenu.addAction( QgisApp::getThemeIcon( "/folder_new.png" ), tr( "&Add new group" ), this, SLOT( addGroupToCurrentItem() ) );
   theMenu.addAction( QgisApp::getThemeIcon( "/mActionExpandTree.png" ), tr( "&Expand all" ), this, SLOT( expandAll() ) );
   theMenu.addAction( QgisApp::getThemeIcon( "/mActionCollapseTree.png" ), tr( "&Collapse all" ), this, SLOT( collapseAll() ) );
 
@@ -800,14 +821,34 @@ void QgsLegend::addLayer( QgsMapLayer * layer )
   blockSignals( false );
 
   QgsLegendGroup *lg = dynamic_cast<QgsLegendGroup *>( currentItem() );
-  QSettings settings;
-  if ( lg && settings.value( "/qgis/addNewLayersToCurrentGroup", false ).toBool() )
+  if ( !lg && currentItem() )
   {
-    lg->insertChild( 0, llayer );
+    lg = dynamic_cast<QgsLegendGroup *>( currentItem()->parent() );
+  }
+
+  int index;
+  if ( lg )
+  {
+    index = lg->indexOfChild( currentItem() );
   }
   else
   {
-    insertTopLevelItem( 0, llayer );
+    index = indexOfTopLevelItem( currentItem() );
+  }
+
+  if ( index < 0 )
+  {
+    index = 0;
+  }
+
+  QSettings settings;
+  if ( lg && settings.value( "/qgis/addNewLayersToCurrentGroup", false ).toBool() )
+  {
+    lg->insertChild( index, llayer );
+  }
+  else
+  {
+    insertTopLevelItem( index, llayer );
     setCurrentItem( llayer );
   }
 
@@ -820,6 +861,8 @@ void QgsLegend::addLayer( QgsMapLayer * layer )
   // first layer?
   if ( layers().count() == 1 )
   {
+    if ( !mMapCanvas->mapRenderer()->hasCrsTransformEnabled() )
+      mMapCanvas->mapRenderer()->setDestinationCrs( layer->crs() );
     mMapCanvas->zoomToFullExtent();
     mMapCanvas->clearExtentHistory();
   }
@@ -995,11 +1038,17 @@ void QgsLegend::legendGroupRemove()
     return;
   }
 
+  // Turn off rendering to improve speed.
+  mMapCanvas->freeze();
+
   QgsLegendGroup* lg = dynamic_cast<QgsLegendGroup *>( currentItem() );
   if ( lg )
   {
     removeGroup( lg );
   }
+
+  // Turn on rendering (if it was on previously)
+  mMapCanvas->freeze( false );
 }
 
 void QgsLegend::legendGroupSetCRS()
@@ -1914,15 +1963,12 @@ void QgsLegend::handleItemChange( QTreeWidgetItem* item, int column )
     ll->layer()->setLayerName( ll->text( 0 ) );
   }
 
-  bool renderFlagState = false;
   bool changing = mChanging;
   mChanging = true;
 
   if ( !changing )
   {
-    renderFlagState = mMapCanvas->renderFlag();
-    if ( renderFlagState )
-      mMapCanvas->setRenderFlag( false );
+    mMapCanvas->freeze();
 
     if ( item->isSelected() )
     {
@@ -1971,13 +2017,12 @@ void QgsLegend::handleItemChange( QTreeWidgetItem* item, int column )
 
   if ( !changing )
   {
-    // update layer set
-    updateMapCanvasLayerSet();
-
     // If it was on, turn it back on, otherwise leave it
     // off, as turning it on causes a refresh.
-    if ( renderFlagState )
-      mMapCanvas->setRenderFlag( true );
+    mMapCanvas->freeze( false );
+
+    // update layer set
+    updateMapCanvasLayerSet();
   }
 
   mChanging = changing;
@@ -2255,9 +2300,7 @@ void QgsLegend::refreshCheckStates()
 void QgsLegend::removeSelectedLayers()
 {
   // Turn off rendering to improve speed.
-  bool renderFlagState = mMapCanvas->renderFlag();
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( false );
+  mMapCanvas->freeze();
 
   foreach( QTreeWidgetItem * item, selectedItems() )
   {
@@ -2277,16 +2320,13 @@ void QgsLegend::removeSelectedLayers()
   }
 
   // Turn on rendering (if it was on previously)
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( true );
+  mMapCanvas->freeze( false );
 }
 
 void QgsLegend::setCRSForSelectedLayers( const QgsCoordinateReferenceSystem &crs )
 {
   // Turn off rendering to improve speed.
-  bool renderFlagState = mMapCanvas->renderFlag();
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( false );
+  mMapCanvas->freeze();
 
   foreach( QTreeWidgetItem * item, selectedItems() )
   {
@@ -2306,8 +2346,7 @@ void QgsLegend::setCRSForSelectedLayers( const QgsCoordinateReferenceSystem &crs
   }
 
   // Turn on rendering (if it was on previously)
-  if ( renderFlagState )
-    mMapCanvas->setRenderFlag( true );
+  mMapCanvas->freeze( false );
 }
 
 bool QgsLegend::parentGroupEmbedded( QTreeWidgetItem* item ) const
@@ -2370,3 +2409,39 @@ void QgsLegend::toggleDrawingOrderUpdate()
 {
   setUpdateDrawingOrder( !mUpdateDrawingOrder );
 }
+
+void QgsLegend::groupSelectedLayers()
+{
+  //avoid multiple refreshes of map canvas because of itemChanged signal
+  blockSignals( true );
+
+  QTreeWidgetItem * parent;
+  foreach( QTreeWidgetItem* item, selectedItems() )
+  {
+    parent = item->parent();
+  }
+  QgsLegendGroup *group;
+
+  if ( parent )
+  {
+    group = new QgsLegendGroup( parent, tr( "sub-group" ) );
+  }
+  else
+  {
+    group = new QgsLegendGroup( this, tr( "group" ) );
+  }
+
+  foreach( QTreeWidgetItem * item, selectedItems() )
+  {
+    QgsLegendLayer* layer = dynamic_cast<QgsLegendLayer *>( item );
+    if ( layer )
+    {
+      insertItem( item, group );
+    }
+  }
+  editItem( group, 0 );
+
+  blockSignals( false );
+
+}
+

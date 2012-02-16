@@ -39,6 +39,8 @@ IF (WITH_GRASS)
   SET (GRASS_PREFIX ${GRASS_PREFIX} CACHE PATH "Path to GRASS base directory")
 ENDIF (WITH_GRASS)
 
+SET (WITH_DESKTOP TRUE CACHE BOOL "Determines whether QGIS desktop should be built")
+
 # mapserver by us disabled default because it needs FastCGI (which is optional dependency)
 SET (WITH_MAPSERVER FALSE CACHE BOOL "Determines whether QGIS mapserver should be built")
 
@@ -77,6 +79,17 @@ IF (WITH_BINDINGS)
   # QGIS bindings to package search path
   SET (BINDINGS_GLOBAL_INSTALL FALSE CACHE BOOL "Install bindings to global python directory? (might need root)")
 ENDIF (WITH_BINDINGS)
+
+#BUILD WITH QtMobility by default on android only. Other platform can force it
+IF (ANDROID)
+    SET (DEFAULT_WITH_QTMOBILITY TRUE)
+ELSE (ANDROID)
+    SET (DEFAULT_WITH_QTMOBILITY FALSE)
+ENDIF (ANDROID)
+SET (WITH_QTMOBILITY ${DEFAULT_WITH_QTMOBILITY} CACHE BOOL "Determines QtMobility related code should be build (for example internal GPS)")
+IF (WITH_QTMOBILITY)
+    FIND_PACKAGE(QtMobility 1.1.0)
+ENDIF (WITH_QTMOBILITY)
 
 SET (WITH_GLOBE FALSE CACHE BOOL "Determines whether Globe plugin should be built")
 IF (WITH_GLOBE)
@@ -117,7 +130,7 @@ ENDIF (NOT BISON_EXECUTABLE)
 #############################################################
 # search for dependencies
 
-IF(NOT WIN32)
+IF(NOT WIN32 AND NOT ANDROID)
   INCLUDE(CheckFunctionExists)
   CHECK_FUNCTION_EXISTS(openpty OPENPTY_IN_LIBC)
   IF(NOT OPENPTY_IN_LIBC)
@@ -130,14 +143,13 @@ IF(NOT WIN32)
       MESSAGE (SEND_ERROR "openpty not found!")
     ENDIF(NEED_LIBUTIL)
   ENDIF(NOT OPENPTY_IN_LIBC)
-ENDIF(NOT WIN32)
+ENDIF(NOT WIN32 AND NOT ANDROID)
 
 # required
 FIND_PACKAGE(Proj)
-FIND_PACKAGE(Expat)    # GPS importer plugin
-FIND_PACKAGE(GSL)      # Georeferencer
 FIND_PACKAGE(GEOS)
 FIND_PACKAGE(GDAL)
+FIND_PACKAGE(Expat)
 
 IF (NOT WITH_INTERNAL_SPATIALINDEX)
   FIND_PACKAGE(Spatialindex REQUIRED)
@@ -186,11 +198,18 @@ SET(QT_USE_QTXML 1)
 SET(QT_USE_QTNETWORK 1)
 SET(QT_USE_QTSVG 1)
 SET(QT_USE_QTSQL 1)
-SET(QT_USE_QTWEBKIT 1)
 
-IF (NOT QT_QTXML_FOUND OR NOT QT_QTNETWORK_FOUND OR NOT QT_QTSVG_FOUND OR NOT QT_QTSQL_FOUND OR NOT QT_QTWEBKIT_FOUND)
+IF (NOT QT_QTXML_FOUND OR NOT QT_QTNETWORK_FOUND OR NOT QT_QTSVG_FOUND OR NOT QT_QTSQL_FOUND)
   MESSAGE(SEND_ERROR "Some Qt4 modules haven't been found!")
-ENDIF ()
+ENDIF (NOT QT_QTXML_FOUND OR NOT QT_QTNETWORK_FOUND OR NOT QT_QTSVG_FOUND OR NOT QT_QTSQL_FOUND)
+
+IF(WITH_DESKTOP)
+  SET(QT_USE_QTWEBKIT 1)
+
+  IF(NOT QT_QTWEBKIT_FOUND)
+    MESSAGE(SEND_ERROR "Qt Webkit module required for QGIS Desktop!")
+  ENDIF(NOT QT_QTWEBKIT_FOUND)
+ENDIF(WITH_DESKTOP)
 
 IF (ENABLE_TESTS)
   SET( QT_USE_QTTEST  TRUE )
@@ -343,6 +362,10 @@ ELSE (WIN32)
 
 ENDIF (WIN32)
 
+IF (ANDROID)
+    SET (DEFAULT_PLUGIN_SUBDIR  lib)
+    SET (DEFAULT_DATA_SUBDIR    files/share)
+ENDIF (ANDROID)
 
 #assume we have escaped compiler directives
 #eventually we want to change this to new

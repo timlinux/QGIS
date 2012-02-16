@@ -259,6 +259,7 @@ QgsNumericSortTreeWidgetItem *QgsWMSSourceSelect::createItem(
   item->setText( 1, names[0].simplified() );
   item->setText( 2, names[1].simplified() );
   item->setText( 3, names[2].simplified() );
+  item->setToolTip( 3, "<font color=black>" + names[2].simplified()  + "</font>" );
 
   items[ id ] = item;
 
@@ -499,7 +500,7 @@ void QgsWMSSourceSelect::enableLayersForCrs( QTreeWidgetItem *item )
   if ( !layerName.isEmpty() && styleName.isEmpty() )
   {
     // layer
-    bool disable = !item->data( 0, Qt::UserRole + 2 ).toStringList().contains( mCRS );
+    bool disable = !item->data( 0, Qt::UserRole + 2 ).toStringList().contains( mCRS, Qt::CaseInsensitive );
 
     item->setDisabled( disable );
 
@@ -1041,6 +1042,8 @@ void QgsWMSSourceSelect::on_btnSearch_clicked()
   // disable Add WMS button
   btnAddWMS->setEnabled( false );
 
+  QApplication::setOverrideCursor( Qt::WaitCursor );
+
   QSettings settings;
   QString mySearchUrl = settings.value( "/qgis/WMSSearchUrl", "http://geopole.org/wms/search?search=%1&type=rss" ).toString();
   QUrl url( mySearchUrl.arg( leSearchTerm->text() ) );
@@ -1052,6 +1055,8 @@ void QgsWMSSourceSelect::on_btnSearch_clicked()
 
 void QgsWMSSourceSelect::searchFinished()
 {
+  QApplication::restoreOverrideCursor();
+
   QNetworkReply *r = qobject_cast<QNetworkReply *>( sender() );
   if ( !r )
     return;

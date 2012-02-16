@@ -227,7 +227,7 @@ class QgsLegend : public QTreeWidget
      * the legend, and in the map.
      * @return void
      */
-    void selectAll( bool select );
+    void setLayersVisible( bool visible );
 
     /*!
      * Slot called when user wishes to add a new empty layer group to the legend.
@@ -312,6 +312,9 @@ class QgsLegend : public QTreeWidget
 
     /** Update drawing order */
     void unsetUpdateDrawingOrder( bool dontUpdateDrawingOrder ) { setUpdateDrawingOrder( !dontUpdateDrawingOrder ); }
+
+    /** Create a new group for the selected items **/
+    void groupSelectedLayers();
 
   protected:
 
@@ -515,6 +518,7 @@ class QgsLegend : public QTreeWidget
     void itemMoved( QModelIndex oldIndex, QModelIndex newIndex );
 
     void zOrderChanged();
+    void invisibleLayerRemoved();
 
     void updateDrawingOrderChecked( bool );
     void updateDrawingOrderUnchecked( bool );

@@ -397,7 +397,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief  Accessor for transparent band name mapping */
     QString transparentBandName() const { return mTransparencyBandName; }
 
-    /**  \brief [ data provider interface ] Does this layer use a provider for setting/retrieving data? 
+    /**  \brief [ data provider interface ] Does this layer use a provider for setting/retrieving data?
      * @deprecated in 2.0
      */
     Q_DECL_DEPRECATED bool usesProvider();
@@ -548,12 +548,12 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     /** \brief Get an 100x100 pixmap of the color palette. If the layer has no palette a white pixmap will be returned */
     QPixmap paletteAsPixmap( int theBandNumber = 1 );
 
-    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer? 
+    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer?
      * @note added in 2.0
      */
     QString providerType() const;
 
-    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer? 
+    /**  \brief [ data provider interface ] Which provider is being used for this Raster Layer?
      * @deprecated use providerType()
      */
     Q_DECL_DEPRECATED QString providerKey() const { return providerType(); }
@@ -634,7 +634,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     void showProgress( int theValue );
 
     /** \brief Returns the sublayers of this layer - Useful for providers that manage their own layers, such as WMS */
-    QStringList subLayers() const;
+    virtual QStringList subLayers() const;
 
     /** \brief Draws a thumbnail of the rasterlayer into the supplied pixmap pointer */
     void thumbnailAsPixmap( QPixmap * theQPixmap );
@@ -647,7 +647,7 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
     void triggerRepaint();
 
     //
-    // Virtural methods
+    // Virtual methods
     //
     /**
      * Reorders the *previously selected* sublayers of this layer from bottom to top
@@ -655,12 +655,12 @@ class CORE_EXPORT QgsRasterLayer : public QgsMapLayer
      * (Useful for providers that manage their own layers, such as WMS)
      *
      */
-    virtual void setLayerOrder( const QStringList & layers );
+    virtual void setLayerOrder( const QStringList &layers );
 
     /**
      * Set the visibility of the given sublayer name
      */
-    virtual void setSubLayerVisibility( const QString & name, bool vis );
+    virtual void setSubLayerVisibility( QString name, bool vis );
 
     /** Time stamp of data source in the moment when data/metadata were loaded by provider */
     virtual QDateTime timestamp() const { return mDataProvider->timestamp() ; }
