@@ -1794,7 +1794,7 @@ QString QgsRasterLayer::metadata()
   myMetadata += tr( "Layer Coordinate Reference System: " );
   myMetadata += myLabelEnd;
   myMetadata += myDetailStart;
-  myMetadata += crs().oProj4();
+  myMetadata += crs().toProj4();
   myMetadata += myDetailEnd;
 
   myMetadata += myLabelStart;
