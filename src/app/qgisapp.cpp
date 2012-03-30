@@ -1633,9 +1633,10 @@ void QgisApp::setupConnections()
            this, SLOT( markDirty() ) );
 
   // connect map layer registry
-  connect( QgsMapLayerRegistry::instance(), SIGNAL( layerWasAdded( QgsMapLayer * ) ),
-           this, SLOT( layerWasAdded( QgsMapLayer * ) ) );
-  connect( QgsMapLayerRegistry::instance(), SIGNAL( layerWillBeRemoved( QString ) ),
+  connect( QgsMapLayerRegistry::instance(), SIGNAL( layersAdded( QgsMapLayer * ) ),
+           this, SLOT( layersWereAdded( QgsMapLayer * ) ) );
+  connect( QgsMapLayerRegistry::instance(),
+           SIGNAL( layersWillBeRemoved( QStringList ) ),
            this, SLOT( removingLayer( QString ) ) );
 
   // Connect warning dialog from project reading
@@ -4638,13 +4639,17 @@ void QgisApp::isInOverview()
   mMapLegend->legendLayerShowInOverview();
 }
 
-void QgisApp::removingLayer( QString layerId )
+void QgisApp::removingLayers( QStringList theLayers )
 {
-  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer*>( QgsMapLayerRegistry::instance()->mapLayer( layerId ) );
-  if ( !vlayer || !vlayer->isEditable() )
-    return;
+  foreach (const QString &layerId, theLayers)
+  {
+    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer*>(
+          QgsMapLayerRegistry::instance()->mapLayer( layerId ) );
+    if ( !vlayer || !vlayer->isEditable() )
+      return;
 
-  toggleEditing( vlayer, false );
+    toggleEditing( vlayer, false );
+  }
 }
 
 void QgisApp::removeAllLayers()
@@ -5956,31 +5961,35 @@ void QgisApp::markDirty()
   // notify the project that there was a change
   QgsProject::instance()->dirty( true );
 }
-
-void QgisApp::layerWasAdded( QgsMapLayer *layer )
+//changed from layerWasAdded to layersWereAdded in 1.8
+void QgisApp::layersWereAdded( QList<QgsMapLayer *> theLayers )
 {
-  QgsDataProvider *provider = 0;
-
-  QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
-  if ( vlayer )
-    provider = vlayer->dataProvider();
-
-  QgsRasterLayer *rlayer = qobject_cast<QgsRasterLayer *>( layer );
-  if ( rlayer )
+  for (int i = 0; i < theLayers.size(); ++i)
   {
-    // connect up any request the raster may make to update the app progress
-    connect( rlayer, SIGNAL( drawingProgress( int, int ) ), this, SLOT( showProgress( int, int ) ) );
+    QgsMapLayer * layer = theLayers.at(i);
+    QgsDataProvider *provider = 0;
 
-    // connect up any request the raster may make to update the statusbar message
-    connect( rlayer, SIGNAL( statusChanged( QString ) ), this, SLOT( showStatusMessage( QString ) ) );
+    QgsVectorLayer *vlayer = qobject_cast<QgsVectorLayer *>( layer );
+    if ( vlayer )
+      provider = vlayer->dataProvider();
 
-    provider = rlayer->dataProvider();
-  }
+    QgsRasterLayer *rlayer = qobject_cast<QgsRasterLayer *>( layer );
+    if ( rlayer )
+    {
+      // connect up any request the raster may make to update the app progress
+      connect( rlayer, SIGNAL( drawingProgress( int, int ) ), this, SLOT( showProgress( int, int ) ) );
 
-  if ( provider )
-  {
-    connect( provider, SIGNAL( dataChanged() ), layer, SLOT( clearCacheImage() ) );
-    connect( provider, SIGNAL( dataChanged() ), mMapCanvas, SLOT( refresh() ) );
+      // connect up any request the raster may make to update the statusbar message
+      connect( rlayer, SIGNAL( statusChanged( QString ) ), this, SLOT( showStatusMessage( QString ) ) );
+
+      provider = rlayer->dataProvider();
+    }
+
+    if ( provider )
+    {
+      connect( provider, SIGNAL( dataChanged() ), layer, SLOT( clearCacheImage() ) );
+      connect( provider, SIGNAL( dataChanged() ), mMapCanvas, SLOT( refresh() ) );
+    }
   }
 }
 
