@@ -45,6 +45,34 @@
 
 const int AUTOSCROLL_MARGIN = 16;
 
+// This function finds a unique group name [prefix1, prefix2, ...] by adding an
+// incremental integer to prefix. It is necessary because group names are the
+// only way of identifying groups in QgsLegendInterface.
+// Could add a "parent" argument and use that instead, or pass it as prefix
+static QString getUniqueGroupName( QString prefix, QStringList groups )
+{
+  QString suffix;
+  if ( groups.size() == 0 )
+  {
+    suffix = "1";
+  }
+  else
+  {
+    // get a list of strings that match prefix, and keep the suffix
+    QStringList match = groups.filter( QRegExp( QString( "^" + prefix ) ) );
+    match.replaceInStrings( prefix, QString( "" ) );
+    // find the maximum
+    int max = 0;
+    foreach( QString m, match )
+    {
+      if ( m.toInt() > max )
+        max = m.toInt();
+    }
+    suffix = QString( "%1" ).arg( max + 1 );
+  }
+  return prefix + suffix;
+}
+
 QgsLegend::QgsLegend( QgsMapCanvas *canvas, QWidget * parent, const char *name )
     : QTreeWidget( parent )
     , mMousePressedFlag( false )
@@ -164,19 +192,22 @@ int QgsLegend::addGroup( QString name, bool expand, QTreeWidgetItem* parent )
   blockSignals( true );
 
   bool nameEmpty = name.isEmpty();
-  if ( nameEmpty )
-    name = tr( "group" ); // some default name if none specified
 
   QgsLegendGroup *parentGroup = dynamic_cast<QgsLegendGroup *>( parent );
   QgsLegendGroup *group;
 
   if ( parentGroup )
   {
+    if ( nameEmpty )
+      name = getUniqueGroupName( tr( "sub-group" ), groups() );
     group = new QgsLegendGroup( parentGroup, name );
   }
   else
   {
+    if ( nameEmpty )
+      name = getUniqueGroupName( tr( "group" ), groups() );
     group = new QgsLegendGroup( this, name );
+
     if ( currentItem() )
     {
       moveItem( group, currentItem() );
@@ -190,6 +221,9 @@ int QgsLegend::addGroup( QString name, bool expand, QTreeWidgetItem* parent )
     openEditor();
 
   blockSignals( false );
+
+  emit itemAdded( groupIndex );
+
   return groupIndex.row();
 }
 
@@ -278,6 +312,7 @@ void QgsLegend::removeLayers( QStringList theLayers )
     updateMapCanvasLayerSet();
     adjustIconSize();
 
+    emit itemRemoved();
     if ( invLayerRemoved )
       emit invisibleLayerRemoved();
   }
@@ -630,8 +665,8 @@ void QgsLegend::handleRightClickEvent( QTreeWidgetItem* item, const QPoint& posi
       theMenu.addAction( QgisApp::getThemeIcon( "/mActionZoomToLayer.png" ),
                          tr( "Zoom to Group" ), this, SLOT( legendLayerZoom() ) );
 
-      theMenu.addAction( QgisApp::getThemeIcon( "/mActionRemoveLayer.png" ),
-                         tr( "&Remove" ), this, SLOT( legendGroupRemove() ) );
+      // use QGisApp::removeLayer() to remove all selected layers+groups
+      theMenu.addAction( QgisApp::getThemeIcon( "/mActionRemoveLayer.png" ), tr( "&Remove" ), QgisApp::instance(), SLOT( removeLayer() ) );
 
       theMenu.addAction( QgisApp::getThemeIcon( "/mActionSetCRS.png" ),
                          tr( "&Set Group CRS" ), this, SLOT( legendGroupSetCRS() ) );
@@ -641,6 +676,7 @@ void QgsLegend::handleRightClickEvent( QTreeWidgetItem* item, const QPoint& posi
     {
       theMenu.addAction( tr( "Re&name" ), this, SLOT( openEditor() ) );
     }
+
     //
     // Option to group layers, if the selection is more than one
     //
@@ -881,6 +917,7 @@ void QgsLegend::addLayers( QList<QgsMapLayer *> theLayerList )
     refreshLayerSymbology( layer->id(), layer->type() != QgsMapLayer::RasterLayer );
 
     updateMapCanvasLayerSet();
+    emit itemAdded( indexFromItem( llayer ) );
 }
   // first layer?
   if ( myFirstLayerFlag )
@@ -893,6 +930,8 @@ void QgsLegend::addLayers( QList<QgsMapLayer *> theLayerList )
   }
   //make the QTreeWidget item up-to-date
   doItemsLayout();
+
+
 }
 
 //deprecated since 1.8 - delegates to addLayers
@@ -1132,6 +1171,8 @@ void QgsLegend::removeGroup( QgsLegendGroup *lg )
 
   delete lg;
 
+  emit itemRemoved();
+
   adjustIconSize();
 }
 
@@ -1165,6 +1206,8 @@ void QgsLegend::moveLayer( QgsMapLayer *ml, int groupIndex )
     return;
 
   insertItem( layer, group );
+
+  emit itemMovedGroup( dynamic_cast<QgsLegendItem*>( layer ), groupIndex );
 }
 
 void QgsLegend::legendLayerShowInOverview()
@@ -1799,11 +1842,14 @@ void QgsLegend::insertItem( QTreeWidgetItem* move, QTreeWidgetItem* into )
     }
     intoItem->receive( movedItem );
     movedItem->restoreAppearanceSettings();//apply the settings again
+    emit itemMovedGroup( movedItem, indexFromItem( intoItem ).row() );
   }
 }
 
 void QgsLegend::moveItem( QTreeWidgetItem* move, QTreeWidgetItem* after )
 {
+  QModelIndex oldIndex = indexFromItem( move );
+
   QgsDebugMsgLevel( QString( "Moving layer : %1 (%2)" ).arg( move->text( 0 ) ).arg( move->type() ), 3 );
   if ( after )
   {
@@ -1842,6 +1888,8 @@ void QgsLegend::moveItem( QTreeWidgetItem* move, QTreeWidgetItem* after )
   }
 
   static_cast<QgsLegendItem*>( move )->restoreAppearanceSettings();//apply the settings again
+
+  emit itemMoved( oldIndex, indexFromItem( move ) );
 }
 
 void QgsLegend::removeItem( QTreeWidgetItem* item )
@@ -2468,24 +2516,42 @@ void QgsLegend::groupSelectedLayers()
 
   if ( parent )
   {
-    group = new QgsLegendGroup( parent, tr( "sub-group" ) );
+    group = new QgsLegendGroup( parent,
+                                getUniqueGroupName( tr( "sub-group" ), groups() ) );
   }
   else
   {
-    group = new QgsLegendGroup( this, tr( "group" ) );
+    group = new QgsLegendGroup( this,
+                                getUniqueGroupName( tr( "group" ), groups() ) );
   }
+
+  // save old indexes so we can notify changes
+  QList< QModelIndex > oldIndexes;
+  QList< QTreeWidgetItem* > selected;
 
   foreach( QTreeWidgetItem * item, selectedItems() )
   {
     QgsLegendLayer* layer = dynamic_cast<QgsLegendLayer *>( item );
     if ( layer )
     {
-      insertItem( item, group );
+      oldIndexes.append( indexFromItem( item ) );
+      selected.append( item );
     }
   }
+  foreach( QTreeWidgetItem * item, selected )
+  {
+    insertItem( item, group );
+  }
+
   editItem( group, 0 );
 
   blockSignals( false );
 
+  // notify that group was added and that items were moved
+  emit itemAdded( indexFromItem( group ) );
+  for ( int i = 0; i < selected.size(); i++ )
+  {
+    emit itemMoved( oldIndexes[i], indexFromItem( selected[i] ) );
+  }
 }
 
