@@ -309,13 +309,12 @@ void QgsLegend::removeLayers( QStringList theLayers )
         }
       }
     }
-    updateMapCanvasLayerSet();
-    adjustIconSize();
-
     emit itemRemoved();
     if ( invLayerRemoved )
       emit invisibleLayerRemoved();
   }
+  updateMapCanvasLayerSet();
+  adjustIconSize();
 }
 
 //deprecated delegates to removeLayers now
