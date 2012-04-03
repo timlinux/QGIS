@@ -2208,6 +2208,7 @@ void QgisApp::addVectorLayer()
 
 bool QgisApp::addVectorLayers( QStringList const & theLayerQStringList, const QString& enc, const QString dataSourceType )
 {
+  QList<QgsMapLayer *> myList;
   foreach( QString src, theLayerQStringList )
   {
     src = src.trimmed();
@@ -2238,8 +2239,8 @@ bool QgisApp::addVectorLayers( QStringList const & theLayerQStringList, const QS
     {
       mMapCanvas->freeze( false );
 
-// Let render() do its own cursor management
-//      QApplication::restoreOverrideCursor();
+      // Let render() do its own cursor management
+      //      QApplication::restoreOverrideCursor();
 
       // XXX insert meaningful whine to the user here
       return false;
@@ -2269,8 +2270,7 @@ bool QgisApp::addVectorLayers( QStringList const & theLayerQStringList, const QS
         QString ligne = sublayers.at( 0 );
         QStringList elements = ligne.split( ":" );
         layer->setLayerName( elements.at( 1 ) );
-        // Register this layer with the layers registry
-        QgsMapLayerRegistry::instance()->addMapLayer( layer );
+        myList << layer;
       }
       else
       {
@@ -2292,6 +2292,8 @@ bool QgisApp::addVectorLayers( QStringList const & theLayerQStringList, const QS
     }
 
   }
+  // Register this layer with the layers registry
+  QgsMapLayerRegistry::instance()->addMapLayers( myList );
 
   // update UI
   qApp->processEvents();
@@ -2485,6 +2487,7 @@ void QgisApp::addDatabaseLayer()
 
 void QgisApp::addDatabaseLayers( QStringList const & layerPathList, QString const & providerKey )
 {
+  QList<QgsMapLayer *> myList;
   if ( mMapCanvas && mMapCanvas->isDrawing() )
   {
     return;
@@ -2522,8 +2525,9 @@ void QgisApp::addDatabaseLayers( QStringList const & layerPathList, QString cons
 
     if ( layer->isValid() )
     {
-      // register this layer with the central layers registry
-      QgsMapLayerRegistry::instance()->addMapLayer( layer );
+      // add to list of layers to register
+      //with the central layers registry
+      myList << layer;
     }
     else
     {
@@ -2534,6 +2538,7 @@ void QgisApp::addDatabaseLayers( QStringList const & layerPathList, QString cons
     //qWarning("incrementing iterator");
   }
 
+  QgsMapLayerRegistry::instance()->addMapLayers( myList );
   statusBar()->showMessage( mMapCanvas->extent().toString( 2 ) );
 
   // update UI
@@ -5240,7 +5245,9 @@ QgsVectorLayer* QgisApp::addVectorLayer( QString vectorLayerPath, QString baseNa
   if ( layer && layer->isValid() )
   {
     // Register this layer with the layers registry
-    QgsMapLayerRegistry::instance()->addMapLayer( layer );
+    QList<QgsMapLayer *> myList;
+    myList << layer;
+    QgsMapLayerRegistry::instance()->addMapLayers( myList );
     statusBar()->showMessage( mMapCanvas->extent().toString( 2 ) );
 
   }
@@ -5280,7 +5287,9 @@ void QgisApp::addMapLayer( QgsMapLayer *theMapLayer )
   if ( theMapLayer->isValid() )
   {
     // Register this layer with the layers registry
-    QgsMapLayerRegistry::instance()->addMapLayer( theMapLayer );
+    QList<QgsMapLayer *> myList;
+    myList << theMapLayer;
+    QgsMapLayerRegistry::instance()->addMapLayers( myList );
     // add it to the mapcanvas collection
     // not necessary since adding to registry adds to canvas mMapCanvas->addLayer(theMapLayer);
 
@@ -6630,7 +6639,9 @@ bool QgisApp::addRasterLayer( QgsRasterLayer *theRasterLayer )
   }
 
   // register this layer with the central layers registry
-  QgsMapLayerRegistry::instance()->addMapLayer( theRasterLayer );
+  QList<QgsMapLayer *> myList;
+  myList << theRasterLayer;
+  QgsMapLayerRegistry::instance()->addMapLayers( myList );
 
   return true;
 }
