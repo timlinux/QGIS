@@ -135,12 +135,13 @@ void QgsMapLayerRegistry::removeAllMapLayers()
   // now let all canvas observers know to clear themselves,
   // and then consequently any of their map legends
   QStringList myList;
-  while ( mMapLayers.size() > 0 )
+  QMap<QString, QgsMapLayer *>::iterator it;
+  for ( it = mMapLayers.begin(); it != mMapLayers.end() ; ++it )
   {
-    QString id = mMapLayers.begin().key();
+    QString id = it.key();
     myList << id;
   }
-  removeMapLayers(myList);
+  removeMapLayers(myList, false);
   mMapLayers.clear();
 } // QgsMapLayerRegistry::removeAllMapLayers()
 
