@@ -2321,6 +2321,8 @@ void QgisApp::initLayerTreeView()
   connect( mLayerTreeView, SIGNAL( doubleClicked( QModelIndex ) ), this, SLOT( layerTreeViewDoubleClicked( QModelIndex ) ) );
   connect( mLayerTreeView, SIGNAL( currentLayerChanged( QgsMapLayer* ) ), this, SLOT( activeLayerChanged( QgsMapLayer* ) ) );
   connect( mLayerTreeView->selectionModel(), SIGNAL( currentChanged( QModelIndex, QModelIndex ) ), this, SLOT( updateNewLayerInsertionPoint() ) );
+  connect( QgsProject::instance()->layerTreeRegistryBridge(), SIGNAL( addedLayersToLayerTree( QList<QgsMapLayer*> ) ),
+           this, SLOT( autoSelectAddedLayer( QList<QgsMapLayer*> ) ) );
 
   // add group tool button
   QToolButton* btnAddGroup = new QToolButton;
@@ -2446,6 +2448,15 @@ void QgisApp::updateNewLayerInsertionPoint()
   QgsProject::instance()->layerTreeRegistryBridge()->setLayerInsertionPoint( parentGroup, index );
 }
 
+void QgisApp::autoSelectAddedLayer( QList<QgsMapLayer*> layers )
+{
+  if ( layers.count() )
+  {
+    QgsLayerTreeLayer* nodeLayer = QgsProject::instance()->layerTreeRoot()->findLayer( layers[0]->id() );
+    QModelIndex index = mLayerTreeView->layerTreeModel()->node2index( nodeLayer );
+    mLayerTreeView->setCurrentIndex( index );
+  }
+}
 
 void QgisApp::createMapTips()
 {
@@ -3780,7 +3791,6 @@ void QgisApp::enableProjectMacros()
   // load macros
   QgsPythonRunner::run( "qgis.utils.reloadProjectMacros()" );
 }
-
 
 /**
   adds a saved project to qgis, usually called on startup by specifying a
