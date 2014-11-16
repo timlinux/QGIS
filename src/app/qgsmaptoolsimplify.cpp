@@ -261,7 +261,11 @@ void QgsMapToolSimplify::canvasPressEvent( QMouseEvent * e )
     return;
   }
 
-  QgsPoint layerCoords = mCanvas->getCoordinateTransform()->toMapPoint( e->pos().x(), e->pos().y() );
+  QgsCoordinateReferenceSystem source_crs = mCanvas->mapSettings().destinationCrs();
+  QgsCoordinateReferenceSystem dest_crs = vlayer->crs();
+  QgsPoint canvasCoords = mCanvas->getCoordinateTransform()->toMapPoint( e->pos().x(), e->pos().y() );
+  QgsCoordinateTransform transform = QgsCoordinateTransform(source_crs, dest_crs);
+  QgsPoint layerCoords = transform.transform(canvasCoords);
 
   double r = QgsTolerance::vertexSearchRadius( vlayer, mCanvas->mapSettings() );
   QgsRectangle selectRect = QgsRectangle( layerCoords.x() - r, layerCoords.y() - r,
