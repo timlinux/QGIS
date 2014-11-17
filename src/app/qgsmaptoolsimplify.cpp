@@ -148,7 +148,7 @@ int QgsMapToolSimplify::calculateDivider( double minimum, double maximum )
   return i;
 }
 
-bool QgsMapToolSimplify::calculateSliderBoudaries()
+bool QgsMapToolSimplify::calculateSliderBoundaries()
 {
   double minTolerance = -1, maxTolerance = -1;
 
@@ -204,14 +204,14 @@ bool QgsMapToolSimplify::calculateSliderBoudaries()
 
     int foundVertexes = QgsSimplifyFeature::simplifyPoints( pts, tol ).size();
     if ( foundVertexes < requiredCnt + 1 )
-    { //required or lower number of verticies found
+    { //required or lower number of vertices found
       if ( foundVertexes == requiredCnt )
       {
         found = true;
         maxTolerance = tol;
       }
       else
-      { //solving problem that polygon would have less than minimum alowed vertexes
+      { //solving problem that polygon would have less than minimum alowed vertices
         bottomFound = true;
         highTol = tol;
         tol = ( highTol + lowTol ) / 2;
@@ -237,7 +237,7 @@ bool QgsMapToolSimplify::calculateSliderBoudaries()
         }
       }
       else
-      { //still too much verticies left so we need to increase tolerance
+      { //still too much vertices left so we need to increase tolerance
         lowTol = tol;
         tol = tol * 2;
       }
@@ -260,12 +260,14 @@ void QgsMapToolSimplify::canvasPressEvent( QMouseEvent * e )
     notifyNotVectorLayer();
     return;
   }
-
-  QgsCoordinateReferenceSystem source_crs = mCanvas->mapSettings().destinationCrs();
-  QgsCoordinateReferenceSystem dest_crs = vlayer->crs();
+  QString authId = mCanvas->mapSettings().destinationCrs().authid();
+  QgsCoordinateReferenceSystem canvasCrs( authId );
+  authId = vlayer->crs().authid();
+  QgsCoordinateReferenceSystem layerCrs( authId );
   QgsPoint canvasCoords = mCanvas->getCoordinateTransform()->toMapPoint( e->pos().x(), e->pos().y() );
-  QgsCoordinateTransform transform = QgsCoordinateTransform(source_crs, dest_crs);
-  QgsPoint layerCoords = transform.transform(canvasCoords);
+  QgsCoordinateTransform transform( canvasCrs, layerCrs );
+  QgsCoordinateTransform reverseTransform( layerCrs, canvasCrs );
+  QgsPoint layerCoords = transform.transform( canvasCoords );
 
   double r = QgsTolerance::vertexSearchRadius( vlayer, mCanvas->mapSettings() );
   QgsRectangle selectRect = QgsRectangle( layerCoords.x() - r, layerCoords.y() - r,
@@ -301,12 +303,14 @@ void QgsMapToolSimplify::canvasPressEvent( QMouseEvent * e )
     }
 
     mRubberBand = new QgsRubberBand( mCanvas );
-    mRubberBand->setToGeometry( mSelectedFeature.geometry(), 0 );
+    geometry = mSelectedFeature.geometry();
+    geometry->transform( reverseTransform );
+    mRubberBand->setToGeometry( geometry , 0 );
     mRubberBand->setColor( QColor( 255, 0, 0, 65 ) );
     mRubberBand->setWidth( 2 );
     mRubberBand->show();
-    //calculate boudaries for slidebar
-    if ( calculateSliderBoudaries() )
+    //calculate boundaries for slidebar
+    if ( calculateSliderBoundaries() )
     {
       // show dialog as a non-modal window
       mSimplifyDialog->show();
@@ -356,7 +360,7 @@ QVector<QgsPoint> QgsMapToolSimplify::getPointList( QgsFeature& f )
 
 
 
-bool QgsSimplifyFeature::simplifyLine( QgsFeature& lineFeature, double tolerance )
+bool QgsSimplifyFeature:: simplifyLine( QgsFeature& lineFeature, double tolerance )
 {
   QgsGeometry* line = lineFeature.geometry();
   if ( line->type() != QGis::Line )

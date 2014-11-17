@@ -44,9 +44,9 @@ class APP_EXPORT QgsSimplifyDialog : public QDialog, private Ui::SimplifyLineDia
     void storeSimplified();
 
   private slots:
-    /** Internal signal when value is changed */
+    /** Internal slot when value is changed */
     void valueChanged( int value );
-    /** Internal signal to store simplified feature */
+    /** Internal slot to store simplified feature */
     void simplify();
 };
 
@@ -69,11 +69,17 @@ class APP_EXPORT QgsMapToolSimplify: public QgsMapToolEdit
     void removeRubberBand();
 
   private:
+    /** Transform from canvas to layer CRS. **/
+    QgsCoordinateTransform mTransform;
+
+    /** Transform from layer to canvas CRS. **/
+    QgsCoordinateTransform mReverseTransform;
+
     /** Divider calculation, because slider can go only by whole numbers */
     int calculateDivider( double minimum, double maximum );
 
     /** Function to calculate tolerance boudaries for simplifying */
-    bool calculateSliderBoudaries();
+    bool calculateSliderBoundaries();
 
     /** Function to get list of vertexes from feature */
     QVector<QgsPoint> getPointList( QgsFeature& f );
