@@ -34,10 +34,10 @@ from processing.core.Processing import Processing
 from processing.core.ProcessingLog import ProcessingLog
 from processing.core.ProcessingConfig import ProcessingConfig
 from processing.core.GeoAlgorithm import GeoAlgorithm
-from processing.gui.MissingDependencyDialog import MissingDependencyDialog
+from processing.gui.MessageDialog import MessageDialog
 from processing.gui.AlgorithmClassification import AlgorithmDecorator
-from processing.gui.ParametersDialog import ParametersDialog
-from processing.gui.BatchProcessingDialog import BatchProcessingDialog
+from processing.gui.AlgorithmDialog import AlgorithmDialog
+from processing.gui.BatchAlgorithmDialog import BatchAlgorithmDialog
 from processing.gui.EditRenderingStylesDialog import EditRenderingStylesDialog
 
 from processing.ui.ui_ProcessingToolbox import Ui_ProcessingToolbox
@@ -177,7 +177,7 @@ class ProcessingToolbox(QDockWidget, Ui_ProcessingToolbox):
         if isinstance(item, TreeAlgorithmItem):
             alg = Processing.getAlgorithm(item.alg.commandLineName())
             alg = alg.getCopy()
-            dlg = BatchProcessingDialog(alg)
+            dlg = BatchAlgorithmDialog(alg)
             dlg.exec_()
 
     def executeAlgorithm(self):
@@ -186,13 +186,17 @@ class ProcessingToolbox(QDockWidget, Ui_ProcessingToolbox):
             alg = Processing.getAlgorithm(item.alg.commandLineName())
             message = alg.checkBeforeOpeningParametersDialog()
             if message:
-                dlg = MissingDependencyDialog(message)
+                dlg = MessageDialog()
+                dlg.setTitle(self.tr('Missing dependency'))
+                dlg.setMessage(
+                    self.tr('<h3>Missing dependency. This algorithm cannot '
+                            'be run :-( </h3>\n%s') % message)
                 dlg.exec_()
                 return
             alg = alg.getCopy()
             dlg = alg.getCustomParametersDialog()
             if not dlg:
-                dlg = ParametersDialog(alg)
+                dlg = AlgorithmDialog(alg)
             canvas = iface.mapCanvas()
             prevMapTool = canvas.mapTool()
             dlg.show()

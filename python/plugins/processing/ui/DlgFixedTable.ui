@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DlgMultipleSelection</class>
- <widget class="QDialog" name="DlgMultipleSelection">
+ <class>DlgFixedTable</class>
+ <widget class="QDialog" name="DlgFixedTable">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Multiple selection</string>
+   <string>Fixed table</string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="spacing">
@@ -21,13 +21,10 @@
     <number>9</number>
    </property>
    <item>
-    <widget class="QListView" name="lstLayers">
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
-     </property>
-     <property name="alternatingRowColors">
+    <widget class="QTableView" name="tblView">
+     <attribute name="horizontalHeaderStretchLastSection">
       <bool>true</bool>
-     </property>
+     </attribute>
     </widget>
    </item>
    <item>
@@ -47,7 +44,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>DlgMultipleSelection</receiver>
+   <receiver>DlgFixedTable</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -63,7 +60,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>DlgMultipleSelection</receiver>
+   <receiver>DlgFixedTable</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
