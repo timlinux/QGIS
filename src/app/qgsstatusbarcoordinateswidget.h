@@ -21,8 +21,8 @@ class QFont;
 class QLabel;
 class QLineEdit;
 class QTimer;
-class QToolButton;
 class QValidator;
+class QFocusEvent;
 
 class QgsMapCanvas;
 class QgsPoint;
@@ -37,6 +37,12 @@ class APP_EXPORT QgsStatusBarCoordinatesWidget : public QWidget
     {
       MapCanvas,
       Custom
+    };
+
+    enum ViewMode
+    {
+      Coordinates,
+      Extents
     };
 
   public:
@@ -54,16 +60,22 @@ class APP_EXPORT QgsStatusBarCoordinatesWidget : public QWidget
 
   private slots:
     void showMouseCoordinates( const QgsPoint &p );
-    void extentsViewToggled( bool theFlag );
+    void extentsViewToggled( QMouseEvent* event);
     void validateCoordinates();
     void dizzy();
     void showExtent();
+    //! Event handler for when focus is lost so that we can show the label and hide the line edit
+    void showLabel();
+    //! Event handler for when focus is gained so that we can hide the label and show the line edit
+    void mousePressEvent(QMouseEvent* event);
 
   private:
     void refreshMapCanvas();
 
+
+    ViewMode mViewMode;
     QLineEdit *mLineEdit;
-    QToolButton *mToggleExtentsViewButton;
+    QLabel *mToggleExtentsViewLabel;
     //! Widget that will live on the statusbar to display "Coordinate / Extent"
     QLabel *mLabel;
 

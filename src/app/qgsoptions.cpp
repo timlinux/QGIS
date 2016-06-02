@@ -380,7 +380,7 @@ QgsOptions::QgsOptions( QWidget *parent, Qt::WindowFlags fl )
   // log rendering events, for userspace debugging
   mLogCanvasRefreshChkBx->setChecked( mSettings->value( "/Map/logCanvasRefreshEvent", false ).toBool() );
 
-  //set the default projection behaviour radio buttongs
+  //set the default projection behaviour radio buttons
   if ( mSettings->value( "/Projections/defaultBehaviour", "prompt" ).toString() == "prompt" )
   {
     radPromptForProjection->setChecked( true );

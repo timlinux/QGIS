@@ -2172,9 +2172,10 @@ void QgisApp::createStatusBar()
     mRotationEdit->setWrapping( true );
     mRotationEdit->setSingleStep( 5.0 );
     mRotationEdit->setFont( myFont );
-    mRotationEdit->setWhatsThis( tr( "Shows the current map clockwise rotation "
-                                     "in degrees. It also allows editing to set "
-                                     "the rotation" ) );
+    mRotationEdit->setWhatsThis(
+          tr( "Shows the current map clockwise rotation "
+              "in degrees. It also allows editing to set "
+              "the rotation" ) );
     mRotationEdit->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
     statusBar()->addPermanentWidget( mRotationEdit, 0 );
     connect( mRotationEdit, SIGNAL( valueChanged( double ) ), this, SLOT( userRotation() ) );
@@ -9690,15 +9691,15 @@ void QgisApp::updateCRSStatusBar()
 
   if ( mMapCanvas->mapSettings().hasCrsTransformEnabled() )
   {
-    mOnTheFlyProjectionStatusButton->setText( tr( "%1 (OTF)" ).arg( mOnTheFlyProjectionStatusButton->text() ) );
+    mOnTheFlyProjectionStatusButton->setText( tr( "%1" ).arg( mOnTheFlyProjectionStatusButton->text() ) );
     mOnTheFlyProjectionStatusButton->setToolTip(
-      tr( "Current CRS: %1 (OTFR enabled)" ).arg( mMapCanvas->mapSettings().destinationCrs().description() ) );
+      tr( "Current Coordinate Reference System: %1 On-the-fly reprojection enabled" ).arg( mMapCanvas->mapSettings().destinationCrs().description() ) );
     mOnTheFlyProjectionStatusButton->setIcon( QgsApplication::getThemeIcon( "mIconProjectionEnabled.png" ) );
   }
   else
   {
     mOnTheFlyProjectionStatusButton->setToolTip(
-      tr( "Current CRS: %1 (OTFR disabled)" ).arg( mMapCanvas->mapSettings().destinationCrs().description() ) );
+      tr( "Current Coordinate Reference System: %1 On-the-fly reprojection disabled" ).arg( mMapCanvas->mapSettings().destinationCrs().description() ) );
     mOnTheFlyProjectionStatusButton->setIcon( QgsApplication::getThemeIcon( "mIconProjectionDisabled.png" ) );
   }
 }

@@ -293,7 +293,7 @@ void QgsMeasureDialog::updateUi()
         toolTip += tr( "Area is calculated in %1, based on project CRS (%2)." ).arg( QgsUnitTypes::toString( resultUnit ),
                    mTool->canvas()->mapSettings().destinationCrs().description() );
         toolTip += "<br> * " + tr( "Ellipsoidal calculation is not possible with CRS transformation disabled." );
-        setWindowTitle( tr( "Measure (OTF off)" ) );
+        setWindowTitle( tr( "Measure - On-the-fly projection is off" ) );
       }
       else
       {
@@ -311,7 +311,7 @@ void QgsMeasureDialog::updateUi()
           toolTip += tr( "Area is calculated in %1, based on project CRS (%2)." ).arg( QgsUnitTypes::toString( resultUnit ),
                      mTool->canvas()->mapSettings().destinationCrs().description() );
         }
-        setWindowTitle( tr( "Measure (OTF on)" ) );
+        setWindowTitle( tr( "Measure - On-the-fly projection is on" ) );
       }
 
       if ( QgsUnitTypes::unitType( resultUnit ) == QgsUnitTypes::Geographic &&
@@ -367,14 +367,14 @@ void QgsMeasureDialog::updateUi()
         toolTip += tr( "Distance is calculated in %1, based on project CRS (%2)." ).arg( QgsUnitTypes::toString( resultUnit ),
                    mTool->canvas()->mapSettings().destinationCrs().description() );
         toolTip += "<br> * " + tr( "Ellipsoidal calculation is not possible with CRS transformation disabled." );
-        setWindowTitle( tr( "Measure (OTF off)" ) );
+        setWindowTitle( tr( "Measure - On-the-fly projection is off)" ) );
       }
       else
       {
         if ( mDa.willUseEllipsoid() )
         {
           resultUnit = QGis::Meters;
-          toolTip += "<br> * " + tr( "Project CRS transformation is turned on and ellipsoidal calculation is selected." ) + ' ';
+          toolTip += "<br> * " + tr( "Project coordidnate reference system transformation is turned on and ellipsoidal calculation is selected." ) + ' ';
           toolTip += "<br> * " + tr( "The coordinates are transformed to the chosen ellipsoid (%1), and the distance is calculated in %2." ).arg( mDa.ellipsoid(),
                      QgsUnitTypes::toString( resultUnit ) );
         }
@@ -385,7 +385,7 @@ void QgsMeasureDialog::updateUi()
           toolTip += tr( "Distance is calculated in %1, based on project CRS (%2)." ).arg( QgsUnitTypes::toString( resultUnit ),
                      mTool->canvas()->mapSettings().destinationCrs().description() );
         }
-        setWindowTitle( tr( "Measure (OTF on)" ) );
+        setWindowTitle( tr( "Measure - On the fly projection is on" ) );
       }
 
       if ( QgsUnitTypes::unitType( resultUnit ) == QgsUnitTypes::Geographic &&
