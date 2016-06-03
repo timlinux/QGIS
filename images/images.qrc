@@ -591,6 +591,10 @@
         <file>themes/default/styleicons/singlebandpseudocolor.svg</file>
         <file>themes/default/mActionToggleExtentsView.svg</file>
         <file>themes/default/mActionToggleCoordinatesView.svg</file>
+	<file>themes/default/mActionStatusLock.svg</file>
+	<file>themes/default/mActionStatusScale.svg</file>
+	<file>themes/default/mActionStatusUnlock.svg</file>
+	<file>themes/default/mActionStatusZoom.svg</file>
         <file>themes/default/mIconAfs.svg</file>
         <file>themes/default/mIconAms.svg</file>
         <file>themes/default/mActionAddAmsLayer.svg</file>

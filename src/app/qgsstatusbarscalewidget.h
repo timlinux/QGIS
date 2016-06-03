@@ -64,6 +64,12 @@ class APP_EXPORT QgsStatusBarScaleWidget : public QWidget
 
   private slots:
     void userScale() const;
+    //! Added in 2.18
+    void lockToggled( bool );
+    //! Event handler for when focus is lost so that we can show the label and hide the line edit - added in 2.18
+    void showLabel();
+    //! Event handler for when focus is gained so that we can hide the label and show the line edit - added in 2.18
+    void mousePressEvent(QMouseEvent* event);
 
   signals:
     void scaleLockChanged( bool );
@@ -73,9 +79,11 @@ class APP_EXPORT QgsStatusBarScaleWidget : public QWidget
     QHBoxLayout *mLayout;
     QToolButton* mLockButton;
 
-    //! Widget that will live on the statusbar to display "scale 1:"
-    QLabel* mLabel;
-    //! Widget that will live on the statusbar to display scale value
+    //! Widget that will live on the statusbar to display icon
+    QLabel* mIconLabel;
+    //! Widget that will live on the statusbar to display scale
+    QLabel* mScaleLabel;
+    //! Widget that will live on the statusbar to change / copy scale value
     QgsScaleComboBox* mScale;
 };
 

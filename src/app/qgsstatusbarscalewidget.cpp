@@ -29,17 +29,30 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
     : QWidget( parent )
     , mMapCanvas( canvas )
 {
-  // add a label to show current scale
-  mLabel = new QLabel();
-  mLabel->setObjectName( "mScaleLabel" );
-  mLabel->setMinimumWidth( 10 );
-  //mScaleLabel->setMaximumHeight( 20 );
-  mLabel->setMargin( 3 );
-  mLabel->setAlignment( Qt::AlignCenter );
-  mLabel->setFrameStyle( QFrame::NoFrame );
-  mLabel->setText( tr( "Scale" ) );
-  mLabel->setToolTip( tr( "Current map scale" ) );
+  // add a label to show scale icon
+  mIconLabel = new QLabel( this );
+  mIconLabel->setFixedSize(32,16);
+  QPixmap scaleIcon = QgsApplication::getThemePixmap("mActionStatusScale.svg" );
+  mIconLabel->setPixmap( scaleIcon.scaled(
+        mIconLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+  mIconLabel->setToolTip( tr( "Show ond switch map scale" ) );
+  mIconLabel->setObjectName( "mScaleIcon" );
+  mIconLabel->setMinimumWidth( 10 );
+  mIconLabel->setMargin( 3 );
+  mIconLabel->setAlignment( Qt::AlignCenter );
+  mIconLabel->setFrameStyle( QFrame::NoFrame );
 
+  // add a label to show scale when not chaning it
+  mScaleLabel = new QLabel( this );
+  mIconLabel->setToolTip( tr( "Current map scale" ) );
+  mIconLabel->setObjectName( "mScaleLabel" );
+  mIconLabel->setMinimumWidth( 10 );
+  mIconLabel->setMargin( 3 );
+  mIconLabel->setAlignment( Qt::AlignCenter );
+  mIconLabel->setFrameStyle( QFrame::NoFrame );
+
+  // combo widget for changing scale
   mScale = new QgsScaleComboBox();
   mScale->setObjectName( "mScaleEdit" );
   // seems setFont() change font only for popup not for line edit,
@@ -50,14 +63,15 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mScale->setToolTip( tr( "Current map scale (formatted as x:y)" ) );
 
   mLockButton = new QToolButton();
-  mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "/locked.svg" ) ) );
+  mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusUnlock.svg" ) ) );
   mLockButton->setToolTip( tr( "Lock the scale to use magnifier to zoom in or out." ) );
   mLockButton->setCheckable( true );
   mLockButton->setChecked( false );
 
   // layout
   mLayout = new QHBoxLayout( this );
-  mLayout->addWidget( mLabel );
+  mLayout->addWidget( mIconLabel );
+  mLayout->addWidget( mScaleLabel );
   mLayout->addWidget( mScale );
   mLayout->addWidget( mLockButton );
   mLayout->setContentsMargins( 0, 0, 0, 0 );
@@ -68,16 +82,36 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
 
   connect( mScale, SIGNAL( scaleChanged( double ) ), this, SLOT( userScale() ) );
 
-  connect( mLockButton, SIGNAL( toggled( bool ) ), this, SIGNAL( scaleLockChanged( bool ) ) );
+  connect( mLockButton, SIGNAL( toggled( bool ) ), this, SLOT( lockToggled( bool ) ) );
+
+  // Manage toggle label interactions
+  mScale->hide();
+  connect( mScale->lineEdit(), SIGNAL( editingFinished() ), this, SLOT( showLabel() ) );
+  connect( mScale, SIGNAL( indexChanged() ), this, SLOT( showLabel() ) );
+  this->setFocusPolicy( Qt::StrongFocus );
 }
 
 QgsStatusBarScaleWidget::~QgsStatusBarScaleWidget()
 {
 }
 
+void QgsStatusBarScaleWidget::lockToggled( bool is_locked )
+{
+  if (is_locked)
+  {
+    mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusLock.svg" ) ) );
+  }
+  else
+  {
+    mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusUnlock.svg" ) ) );
+  }
+  emit scaleLockChanged( is_locked );
+}
+
 void QgsStatusBarScaleWidget::setScale( double scale )
 {
   mScale->setScale( scale );
+  mScaleLabel->setText( QString( "1:%1" ).arg( scale ) );
 }
 
 bool QgsStatusBarScaleWidget::isLocked() const
@@ -87,7 +121,7 @@ bool QgsStatusBarScaleWidget::isLocked() const
 
 void QgsStatusBarScaleWidget::setFont( const QFont &font )
 {
-  mLabel->setFont( font );
+  mIconLabel->setFont( font );
   mScale->lineEdit()->setFont( font );
 }
 
@@ -100,4 +134,18 @@ void QgsStatusBarScaleWidget::userScale() const
 {
   // Why has MapCanvas the scale inverted?
   mMapCanvas->zoomScale( 1.0 / mScale->scale() );
+}
+
+void QgsStatusBarScaleWidget::showLabel()
+{
+  mScale->hide();
+  mScaleLabel->show();
+}
+
+void QgsStatusBarScaleWidget::mousePressEvent(QMouseEvent* event)
+{
+  Q_UNUSED(event);
+  mScale->show();
+  mScale->setFocus();
+  mScaleLabel->hide();
 }

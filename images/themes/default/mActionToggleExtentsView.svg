@@ -2,16 +2,16 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="64" height="64" viewBox="0, 0, 64, 64">
   <g id="Layer_1">
-    <path d="M4.028,4.466 L61.235,4.466 L61.235,61.322 L4.028,61.322 L4.028,4.466 z" fill-opacity="0" stroke="#000000" stroke-width="1"/>
+    <path d="M3.397,3.572 L60.604,3.572 L60.604,60.428 L3.397,60.428 L3.397,3.572 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <g>
-      <path d="M16.752,32.894 L48.511,32.894" fill-opacity="0" stroke="#000000" stroke-width="1"/>
-      <path d="M16.752,29.894 L8.752,32.894 L16.752,35.894 z" fill-opacity="0" stroke="#000000" stroke-width="1" stroke-opacity="1"/>
-      <path d="M48.511,35.894 L56.511,32.894 L48.511,29.894 z" fill-opacity="0" stroke="#000000" stroke-width="1" stroke-opacity="1"/>
+      <path d="M15.421,32 L48.579,32" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+      <path d="M15.421,29 L7.069,32 L15.421,35 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+      <path d="M48.579,35 L56.931,32 L48.579,29 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
     </g>
     <g>
-      <path d="M32.631,16.14 L32.631,49.648" fill-opacity="0" stroke="#000000" stroke-width="1"/>
-      <path d="M35.631,16.14 L32.631,8.14 L29.631,16.14 z" fill-opacity="0" stroke="#000000" stroke-width="1" stroke-opacity="1"/>
-      <path d="M29.631,49.648 L32.631,57.648 L35.631,49.648 z" fill-opacity="0" stroke="#000000" stroke-width="1" stroke-opacity="1"/>
+      <path d="M32,15.246 L32,48.754" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+      <path d="M35,15.246 L32,7.246 L29,15.246 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+      <path d="M29,48.754 L32,56.754 L35,48.754 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
     </g>
   </g>
 </svg>

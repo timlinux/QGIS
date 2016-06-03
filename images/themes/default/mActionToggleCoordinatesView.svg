@@ -3,9 +3,11 @@
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="64" height="64" viewBox="0, 0, 64, 64">
   <g id="Layer_1">
     <g>
-      <path d="M33.245,57.687 C19.335,57.687 8.058,46.41 8.058,32.5 C8.058,18.59 19.335,7.313 33.245,7.313 C47.155,7.313 58.431,18.59 58.431,32.5 C58.431,46.41 47.155,57.687 33.245,57.687 z" fill-opacity="0" stroke="#000000" stroke-width="1"/>
+      <path d="M31.23,58.388 C17.32,58.388 6.043,47.111 6.043,33.201 C6.043,19.291 17.32,8.014 31.23,8.014 C45.14,8.014 56.416,19.291 56.416,33.201 C56.416,47.111 45.14,58.388 31.23,58.388 z" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
     </g>
-    <path d="M33.245,2.101 L33.245,63.512" fill-opacity="0" stroke="#000000" stroke-width="1"/>
-    <path d="M2.495,32.807 L62.505,32.807" fill-opacity="0" stroke="#000000" stroke-width="1"/>
+    <path d="M1.619,33.201 L11.619,33.201" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+    <path d="M51.459,33.201 L61.459,33.201" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+    <path d="M31.23,3.616 L31.23,13.616" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+    <path d="M32,53.42 L32,63.42" fill-opacity="0" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
   </g>
 </svg>

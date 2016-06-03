@@ -64,9 +64,9 @@ class APP_EXPORT QgsStatusBarCoordinatesWidget : public QWidget
     void validateCoordinates();
     void dizzy();
     void showExtent();
-    //! Event handler for when focus is lost so that we can show the label and hide the line edit
+    //! Event handler for when focus is lost so that we can show the label and hide the line edit - added in 2.18
     void showLabel();
-    //! Event handler for when focus is gained so that we can hide the label and show the line edit
+    //! Event handler for when focus is gained so that we can hide the label and show the line edit - added in 2.18
     void mousePressEvent(QMouseEvent* event);
 
   private:
