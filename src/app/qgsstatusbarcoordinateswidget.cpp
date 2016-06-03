@@ -22,6 +22,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QEvent>
+#include <QMouseEvent>
 #include "qgsstatusbarcoordinateswidget.h"
 #include "qgsapplication.h"
 #include "qgsmapcanvas.h"
@@ -48,13 +49,12 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
   //mToggleExtentsViewLabel->setMaximumWidth( 20 );
   //mToggleExtentsViewLabel->setBaseSize( 32, 32 );
   mToggleExtentsViewLabel->setFixedSize(16,16);
-  QPixmap icon = QgsApplication::getThemePixmap("mActionToggleCoordinatesView.svg" );
-  mToggleExtentsViewLabel->setPixmap( icon.scaled(
+  mExtentsIcon = QgsApplication::getThemePixmap("mActionToggleExtentsView.svg" );
+  mCoordinatesIcon = QgsApplication::getThemePixmap("mActionToggleCoordinatesView.svg" );
+  mToggleExtentsViewLabel->setPixmap( mCoordinatesIcon.scaled(
         mToggleExtentsViewLabel->size(),
         Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
   mToggleExtentsViewLabel->setToolTip( tr( "Toggle between extents and mouse position display" ) );
-  connect( mToggleExtentsViewLabel, SIGNAL( mousePressEvent( QMousePressEvent* ) ),
-           this, SLOT( extentsViewToggled( QMousePressEvent* ) ) );
 
   // add a label to show current position
   mLabel = new QLabel( QString(), this );
@@ -204,27 +204,32 @@ void QgsStatusBarCoordinatesWidget::dizzy()
   mMapCanvas->setTransform( matrix );
 }
 
-void QgsStatusBarCoordinatesWidget::extentsViewToggled( QMouseEvent* event )
+void QgsStatusBarCoordinatesWidget::extentsViewToggled( )
 {
-  Q_UNUSED(event);
-  mLineEdit->hide();
-  mLabel->show();
-  if ( mViewMode == QgsStatusBarCoordinatesWidget::Extents)
+  if ( mViewMode == QgsStatusBarCoordinatesWidget::Extents )
   {
-    //extents view mode!
-    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemePixmap( "/mActionToggleCoordinatesView.svg" ) );
+    //extents view mode, so switching to coordinates view
+    mToggleExtentsViewLabel->setPixmap( mCoordinatesIcon.scaled(
+        mToggleExtentsViewLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
     mLineEdit->setReadOnly( true );
-    showExtent();
     mViewMode = QgsStatusBarCoordinatesWidget::Coordinates;
+    mLabel->setToolTip( tr( "Current map coordinates" ) );
+    mLabel->setText( tr("Move mouse onto map") );
   }
   else
   {
-    //mouse cursor pos view mode!
-    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemePixmap( "/mActionToggleExtentsView.svg" ) );
+    assert( mExtentsIcon );
+    //mouse cursor pos view mode so switching to extents
+    mToggleExtentsViewLabel->setPixmap( mExtentsIcon.scaled(
+        mToggleExtentsViewLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
     mLineEdit->setToolTip( tr( "Map coordinates for the current view extents" ) );
     mLineEdit->setReadOnly( false );
-    mLabel->setText( tr( "Coordinates" ) );
+    showExtent();
     mViewMode = QgsStatusBarCoordinatesWidget::Extents;
+    mLabel->setToolTip( tr( "Current map extents" ) );
+    showExtent();
   }
 }
 
@@ -288,7 +293,13 @@ void QgsStatusBarCoordinatesWidget::showLabel()
 void QgsStatusBarCoordinatesWidget::mousePressEvent(QMouseEvent* event)
 {
   Q_UNUSED(event);
-  mLineEdit->show();
-  mLineEdit->setFocus();
-  mLabel->hide();
+  if ( mToggleExtentsViewLabel->underMouse() ) {
+    extentsViewToggled();
+  }
+  else
+  {
+    mLineEdit->show();
+    mLineEdit->setFocus();
+    mLabel->hide();
+  }
 }

@@ -60,7 +60,7 @@ class APP_EXPORT QgsStatusBarCoordinatesWidget : public QWidget
 
   private slots:
     void showMouseCoordinates( const QgsPoint &p );
-    void extentsViewToggled( QMouseEvent* event);
+    void extentsViewToggled();
     void validateCoordinates();
     void dizzy();
     void showExtent();
@@ -70,6 +70,8 @@ class APP_EXPORT QgsStatusBarCoordinatesWidget : public QWidget
     void mousePressEvent(QMouseEvent* event);
 
   private:
+    QPixmap mCoordinatesIcon;
+    QPixmap mExtentsIcon;
     void refreshMapCanvas();
 
 
