@@ -17,7 +17,6 @@ SET(QGIS_APP_SRCS
   qgsbookmarks.cpp
   qgsbrowserdockwidget.cpp
   qgsclipboard.cpp
-  qgsconfigureshortcutsdialog.cpp
   qgscustomization.cpp
   qgscustomprojectiondialog.cpp
   qgsdecorationitem.cpp
@@ -116,7 +115,6 @@ SET(QGIS_APP_SRCS
   qgsrelationadddlg.cpp
   qgsstatisticalsummarydockwidget.cpp
   qgstextannotationdialog.cpp
-  qgsshortcutsmanager.cpp
   qgssnappingdialog.cpp
   qgssvgannotationdialog.cpp
   qgsundowidget.cpp
@@ -196,7 +194,6 @@ SET (QGIS_APP_MOC_HDRS
   qgsbookmarks.h
   qgsbrowserdockwidget.h
   qgsclipboard.h
-  qgsconfigureshortcutsdialog.h
   qgscustomization.h
   qgscustomprojectiondialog.h
   qgsdecorationitem.h
@@ -229,7 +226,6 @@ SET (QGIS_APP_MOC_HDRS
   qgsmaplayerstyleguiutils.h
   qgsrulebasedlabelingwidget.h
   qgssavestyletodbdialog.h
-  qgsshortcutsmanager.h
   qgsstatusbarcoordinateswidget.h
   qgsstatusbarmagnifierwidget.h
   qgsstatusbarscalewidget.h
@@ -661,7 +657,7 @@ IF (POSTGRES_FOUND)
 ENDIF (POSTGRES_FOUND)
 
 IF(MSVC)
-  INSTALL(FILES qgis.ico DESTINATION ${CMAKE_INSTALL_PREFIX}/icons)
+  INSTALL(FILES qgis.ico qgis-mime.ico qgis-qgs.ico qgis-qlr.ico qgis-qml.ico qgis-qpt.ico DESTINATION ${CMAKE_INSTALL_PREFIX}/icons)
 ENDIF(MSVC)
 
 INSTALL(TARGETS qgis_app

@@ -139,9 +139,12 @@ QgsGdalProvider::QgsGdalProvider( const QString &uri, bool update )
 
   QgsGdalProviderBase::registerGdalDrivers();
 
-  // GDAL tends to open AAIGrid as Float32 which results in lost precision
-  // and confusing values shown to users, force Float64
-  CPLSetConfigOption( "AAIGRID_DATATYPE", "Float64" );
+  if ( !CPLGetConfigOption( "AAIGRID_DATATYPE", nullptr ) )
+  {
+    // GDAL tends to open AAIGrid as Float32 which results in lost precision
+    // and confusing values shown to users, force Float64
+    CPLSetConfigOption( "AAIGRID_DATATYPE", "Float64" );
+  }
 
   // To get buildSupportedRasterFileFilter the provider is called with empty uri
   if ( uri.isEmpty() )
@@ -974,7 +977,7 @@ QString QgsGdalProvider::generateBandName( int theBandNumber ) const
   return QgsRasterDataProvider::generateBandName( theBandNumber );
 }
 
-QgsRasterIdentifyResult QgsGdalProvider::identify( const QgsPoint & thePoint, QgsRaster::IdentifyFormat theFormat, const QgsRectangle &theExtent, int theWidth, int theHeight )
+QgsRasterIdentifyResult QgsGdalProvider::identify( const QgsPoint & thePoint, QgsRaster::IdentifyFormat theFormat, const QgsRectangle &theExtent, int theWidth, int theHeight , int /*theDpi*/ )
 {
   QgsDebugMsg( QString( "thePoint =  %1 %2" ).arg( thePoint.x(), 0, 'g', 10 ).arg( thePoint.y(), 0, 'g', 10 ) );
 
@@ -1068,7 +1071,14 @@ QgsRasterIdentifyResult QgsGdalProvider::identify( const QgsPoint & thePoint, Qg
     }
     else
     {
-      results.insert( i, value );
+      if ( srcDataType( i ) == QGis::Float32 )
+      {
+        // Insert a float QVariant so that QgsMapToolIdentify::identifyRasterLayer()
+        // can print a string without an excessive precision
+        results.insert( i, static_cast<float>( value ) );
+      }
+      else
+        results.insert( i, value );
     }
     delete myBlock;
   }
@@ -2643,6 +2653,15 @@ void QgsGdalProvider::initBaseDataset()
 
     int isValid = false;
     double myNoDataValue = GDALGetRasterNoDataValue( myGdalBand, &isValid );
+    // We check that the double value we just got is representable in the
+    // data type. In normal situations this should not be needed, but it happens
+    // to have 8bit TIFFs with nan as the nodata value. If not checking against
+    // the min/max bounds, it would be cast to 0 by representableValue().
+    if ( isValid && !QgsRaster::isRepresentableValue( myNoDataValue, dataTypeFromGdal( myGdalDataType ) ) )
+    {
+      QgsDebugMsg( QString( "GDALGetRasterNoDataValue = %1 is not representable in data type, so ignoring it" ).arg( myNoDataValue ) );
+      isValid = false;
+    }
     if ( isValid )
     {
       QgsDebugMsg( QString( "GDALGetRasterNoDataValue = %1" ).arg( myNoDataValue ) );

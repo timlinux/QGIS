@@ -1287,11 +1287,18 @@ bool QgsOgrProvider::deleteAttributes( const QgsAttributeIds &attributes )
   qSort( attrsLst.begin(), attrsLst.end(), qGreater<int>() );
   Q_FOREACH ( int attr, attrsLst )
   {
-    if ( attr == 0 && mFirstFieldIsFid )
+    if ( mFirstFieldIsFid )
     {
-      pushError( tr( "Cannot delete feature id column" ) );
-      res = false;
-      break;
+      if ( attr == 0 )
+      {
+        pushError( tr( "Cannot delete feature id column" ) );
+        res = false;
+        break;
+      }
+      else
+      {
+        --attr;
+      }
     }
     if ( OGR_L_DeleteField( ogrLayer, attr ) != OGRERR_NONE )
     {
@@ -1304,6 +1311,60 @@ bool QgsOgrProvider::deleteAttributes( const QgsAttributeIds &attributes )
 #else
   Q_UNUSED( attributes );
   pushError( tr( "Deleting fields is not supported prior to GDAL 1.9.0" ) );
+  return false;
+#endif
+}
+
+bool QgsOgrProvider::renameAttributes( const QgsFieldNameMap& renamedAttributes )
+{
+  if ( !doInitialActionsForEdition() )
+    return false;
+
+#if defined(GDAL_VERSION_NUM) && GDAL_VERSION_NUM >= 1900
+  QgsFieldNameMap::const_iterator renameIt = renamedAttributes.constBegin();
+  bool result = true;
+  for ( ; renameIt != renamedAttributes.constEnd(); ++renameIt )
+  {
+    int fieldIndex = renameIt.key();
+    if ( fieldIndex < 0 || fieldIndex >= mAttributeFields.count() )
+    {
+      pushError( tr( "Invalid attribute index" ) );
+      result = false;
+      continue;
+    }
+    if ( mAttributeFields.indexFromName( renameIt.value() ) >= 0 )
+    {
+      //field name already in use
+      pushError( tr( "Error renaming field %1: name '%2' already exists" ).arg( fieldIndex ).arg( renameIt.value() ) );
+      result = false;
+      continue;
+    }
+    int ogrFieldIndex = fieldIndex;
+    if ( mFirstFieldIsFid )
+    {
+      ogrFieldIndex -= 1;
+      if ( ogrFieldIndex < 0 )
+      {
+        pushError( tr( "Invalid attribute index" ) );
+        result = false;
+        continue;
+      }
+    }
+
+    //type does not matter, it will not be used
+    OGRFieldDefnH fld = OGR_Fld_Create( mEncoding->fromUnicode( renameIt.value() ), OFTReal );
+    if ( OGR_L_AlterFieldDefn( ogrLayer, ogrFieldIndex, fld, ALTER_NAME_FLAG ) != OGRERR_NONE )
+    {
+      pushError( tr( "OGR error renaming field %1: %2" ).arg( fieldIndex ).arg( CPLGetLastErrorMsg() ) );
+      result = false;
+    }
+    OGR_Fld_Destroy( fld );
+  }
+  loadFields();
+  return result;
+#else
+  Q_UNUSED( attributes );
+  pushError( tr( "Renaming fields is not supported prior to GDAL 1.9.0" ) );
   return false;
 #endif
 }
@@ -1715,6 +1776,11 @@ void QgsOgrProvider::computeCapabilities()
     if ( mWriteAccessPossible && OGR_L_TestCapability( ogrLayer, "DeleteField" ) )
     {
       ability |= DeleteAttributes;
+    }
+
+    if ( mWriteAccessPossible && OGR_L_TestCapability( ogrLayer, "AlterFieldDefn" ) )
+    {
+      ability |= RenameAttributes;
     }
 
 #if defined(OLCStringsAsUTF8)

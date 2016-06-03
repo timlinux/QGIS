@@ -257,6 +257,7 @@ void QgsFieldsProperties::loadRows()
 
   mFieldsList->resizeColumnsToContents();
   connect( mFieldsList, SIGNAL( cellChanged( int, int ) ), this, SLOT( attributesListCellChanged( int, int ) ) );
+  updateFieldRenamingStatus();
 }
 
 void QgsFieldsProperties::setRow( int row, int idx, const QgsField& field )
@@ -306,6 +307,12 @@ void QgsFieldsProperties::setRow( int row, int idx, const QgsField& field )
 
   for ( int i = 0; i < attrCommentCol; i++ )
     mFieldsList->item( row, i )->setFlags( mFieldsList->item( row, i )->flags() & ~Qt::ItemIsEditable );
+
+  bool canRenameFields = mLayer->isEditable() && ( mLayer->dataProvider()->capabilities() & QgsVectorDataProvider::RenameAttributes ) && !mLayer->readOnly();
+  if ( canRenameFields )
+    mFieldsList->item( row, attrNameCol )->setFlags( mFieldsList->item( row, attrNameCol )->flags() | Qt::ItemIsEditable );
+  else
+    mFieldsList->item( row, attrNameCol )->setFlags( mFieldsList->item( row, attrNameCol )->flags() & ~Qt::ItemIsEditable );
 
   FieldConfig cfg( mLayer, idx );
   QPushButton *pb;
@@ -527,6 +534,9 @@ void QgsFieldsProperties::attributeTypeDialog()
 
   attributeTypeDialog.setFieldEditable( cfg.mEditable );
   attributeTypeDialog.setLabelOnTop( cfg.mLabelOnTop );
+  attributeTypeDialog.setNotNull( cfg.mNotNull );
+  attributeTypeDialog.setExpression( cfg.mConstraint );
+  attributeTypeDialog.setExpressionDescription( cfg.mConstraintDescription );
 
   attributeTypeDialog.setWidgetV2Config( cfg.mEditorWidgetV2Config );
   attributeTypeDialog.setWidgetV2Type( cfg.mEditorWidgetV2Type );
@@ -536,6 +546,9 @@ void QgsFieldsProperties::attributeTypeDialog()
 
   cfg.mEditable = attributeTypeDialog.fieldEditable();
   cfg.mLabelOnTop = attributeTypeDialog.labelOnTop();
+  cfg.mNotNull = attributeTypeDialog.notNull();
+  cfg.mConstraintDescription = attributeTypeDialog.expressionDescription();
+  cfg.mConstraint = attributeTypeDialog.expression();
 
   cfg.mEditorWidgetV2Type = attributeTypeDialog.editorWidgetV2Type();
   cfg.mEditorWidgetV2Config = attributeTypeDialog.editorWidgetV2Config();
@@ -596,6 +609,7 @@ bool QgsFieldsProperties::addAttribute( const QgsField &field )
 void QgsFieldsProperties::editingToggled()
 {
   updateButtons();
+  updateFieldRenamingStatus();
 }
 
 QgsFieldsProperties::FieldConfig QgsFieldsProperties::configForRow( int row )
@@ -709,7 +723,7 @@ void QgsFieldsProperties::updateButtons()
 
 void QgsFieldsProperties::attributesListCellChanged( int row, int column )
 {
-  if ( column == attrAliasCol && mLayer ) //only consider attribute aliases in this function
+  if ( column == attrAliasCol && mLayer )
   {
     int idx = mFieldsList->item( row, attrIdCol )->text().toInt();
 
@@ -731,6 +745,26 @@ void QgsFieldsProperties::attributesListCellChanged( int row, int column )
       {
         mLayer->remAttributeAlias( idx );
       }
+    }
+  }
+  else if ( column == attrNameCol && mLayer && mLayer->isEditable() )
+  {
+    QTableWidgetItem *nameItem = mFieldsList->item( row, column );
+    if ( !nameItem ||
+         nameItem->text().isEmpty() ||
+         !mLayer->fields().exists( row ) ||
+         mLayer->fields().at( row ).name() == nameItem->text() )
+      return;
+
+    mLayer->beginEditCommand( tr( "Rename attribute" ) );
+    if ( mLayer->renameAttribute( row,  nameItem->text() ) )
+    {
+      mLayer->endEditCommand();
+    }
+    else
+    {
+      mLayer->destroyEditCommand();
+      QMessageBox::critical( this, tr( "Failed to rename field" ), tr( "Failed to rename field to '%1'. Is the field name unique?" ).arg( nameItem->text() ) );
     }
   }
 }
@@ -806,6 +840,19 @@ void QgsFieldsProperties::setupEditTypes()
 QString QgsFieldsProperties::editTypeButtonText( QgsVectorLayer::EditType type )
 {
   return editTypeMap[ type ];
+}
+
+void QgsFieldsProperties::updateFieldRenamingStatus()
+{
+  bool canRenameFields = mLayer->isEditable() && ( mLayer->dataProvider()->capabilities() & QgsVectorDataProvider::RenameAttributes ) && !mLayer->readOnly();
+
+  for ( int row = 0; row < mFieldsList->rowCount(); ++row )
+  {
+    if ( canRenameFields )
+      mFieldsList->item( row, attrNameCol )->setFlags( mFieldsList->item( row, attrNameCol )->flags() | Qt::ItemIsEditable );
+    else
+      mFieldsList->item( row, attrNameCol )->setFlags( mFieldsList->item( row, attrNameCol )->flags() & ~Qt::ItemIsEditable );
+  }
 }
 
 QgsAttributeEditorElement* QgsFieldsProperties::createAttributeEditorWidget( QTreeWidgetItem* item, QObject *parent )
@@ -908,6 +955,9 @@ void QgsFieldsProperties::apply()
 
     mLayer->editFormConfig()->setReadOnly( i, !cfg.mEditable );
     mLayer->editFormConfig()->setLabelOnTop( i, cfg.mLabelOnTop );
+    mLayer->editFormConfig()->setNotNull( i, cfg.mNotNull );
+    mLayer->editFormConfig()->setExpressionDescription( i, cfg.mConstraintDescription );
+    mLayer->editFormConfig()->setExpression( i, cfg.mConstraint );
 
     mLayer->editFormConfig()->setWidgetType( idx, cfg.mEditorWidgetV2Type );
     mLayer->editFormConfig()->setWidgetConfig( idx, cfg.mEditorWidgetV2Config );
@@ -974,6 +1024,8 @@ QgsFieldsProperties::FieldConfig::FieldConfig()
     : mEditable( true )
     , mEditableEnabled( true )
     , mLabelOnTop( false )
+    , mNotNull( false )
+    , mConstraintDescription( QString() )
     , mButton( nullptr )
 {
 }
@@ -985,6 +1037,9 @@ QgsFieldsProperties::FieldConfig::FieldConfig( QgsVectorLayer* layer, int idx )
   mEditableEnabled = layer->fields().fieldOrigin( idx ) != QgsFields::OriginJoin
                      && layer->fields().fieldOrigin( idx ) != QgsFields::OriginExpression;
   mLabelOnTop = layer->editFormConfig()->labelOnTop( idx );
+  mNotNull = layer->editFormConfig()->notNull( idx );
+  mConstraint = layer->editFormConfig()->expression( idx );
+  mConstraintDescription = layer->editFormConfig()->expressionDescription( idx );
   mEditorWidgetV2Type = layer->editFormConfig()->widgetType( idx );
   mEditorWidgetV2Config = layer->editFormConfig()->widgetConfig( idx );
 
@@ -1091,7 +1146,6 @@ QTreeWidgetItem* DesignerTree::addItem( QTreeWidgetItem* parent, QgsFieldsProper
 
 void DesignerTree::dragMoveEvent( QDragMoveEvent *event )
 {
-  QTreeWidgetItem* targetItem = itemAt( event->pos() );
   const QMimeData* data = event->mimeData();
 
   if ( data->hasFormat( "application/x-qgsattributetabledesignerelement" ) )
@@ -1101,13 +1155,6 @@ void DesignerTree::dragMoveEvent( QDragMoveEvent *event )
     QByteArray itemData = data->data( "application/x-qgsattributetabledesignerelement" );
     QDataStream stream( &itemData, QIODevice::ReadOnly );
     stream >> itemElement;
-
-    // Forbid dropping fields on root item
-    if ( itemElement.type() == QgsFieldsProperties::DesignerTreeItemData::Field && !targetItem )
-    {
-      event->ignore();
-      return;
-    }
 
     // Inner drag and drop actions are always MoveAction
     if ( event->source() == this )
@@ -1148,10 +1195,10 @@ bool DesignerTree::dropMimeData( QTreeWidgetItem* parent, int index, const QMime
         addItem( parent, itemElement );
         bDropSuccessful = true;
       }
-      else // Should never happen as we ignore drops of fields onto the root element in dragMoveEvent, but actually does happen. Qt?
+      else
       {
-        // addItem( invisibleRootItem(), itemName );
-        // bDropSuccessful = true;
+        addItem( invisibleRootItem(), itemElement );
+        bDropSuccessful = true;
       }
     }
   }

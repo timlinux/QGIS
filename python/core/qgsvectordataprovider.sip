@@ -54,7 +54,9 @@ class QgsVectorDataProvider : QgsDataProvider
       /** Supports joint updates for attributes and geometry
        * Providers supporting this should still define ChangeGeometries | ChangeAttributeValues
        */
-      ChangeFeatures
+      ChangeFeatures,
+      /** Supports renaming attributes (fields). Added in QGIS 2.16 */
+      RenameAttributes,
     };
 
     /** Bitmask of all provider's editing capabilities */
@@ -87,7 +89,7 @@ class QgsVectorDataProvider : QgsDataProvider
      * @note added in 2.4
      * @return new instance of QgsAbstractFeatureSource (caller is responsible for deleting it)
      */
-    virtual QgsAbstractFeatureSource* featureSource() const /Factory/;
+    virtual QgsAbstractFeatureSource *featureSource() const = 0 /Factory/;
 
     /**
      * Returns the permanent storage type for this layer as a friendly name.
@@ -206,6 +208,14 @@ class QgsVectorDataProvider : QgsDataProvider
     virtual bool deleteAttributes( const QSet<int> &attributes );
 
     /**
+     * Renames existing attributes.
+     * @param renamedAttributes map of attribute index to new attribute name
+     * @return true in case of success and false in case of failure
+     * @note added in QGIS 2.16
+     */
+    virtual bool renameAttributes( const QgsFieldNameMap& renamedAttributes );
+
+    /**
      * Changes attribute values of existing features.
      * @param attr_map a map containing changed attributes
      * @return true in case of success and false in case of failure
@@ -281,7 +291,7 @@ class QgsVectorDataProvider : QgsDataProvider
     /**
      * Return list of indexes to fetch all attributes in nextFeature()
      */
-    QList<int> attributeIndexes();
+    virtual QList<int> attributeIndexes();
 
     /**
      * Return list of indexes of fields that make up the primary key
@@ -320,7 +330,7 @@ class QgsVectorDataProvider : QgsDataProvider
      * Returns true if the provider is strict about the type of inserted features
      * (e.g. no multipolygon in a polygon layer)
      */
-    bool doesStrictFeatureTypeCheck() const;
+    virtual bool doesStrictFeatureTypeCheck() const;
 
     /** Returns a list of available encodings */
     static const QStringList &availableEncodings();

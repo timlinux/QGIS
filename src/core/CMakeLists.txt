@@ -81,7 +81,6 @@ SET(QGIS_CORE_SRCS
   qgsactionmanager.cpp
   qgsaggregatecalculator.cpp
   qgsattributetableconfig.cpp
-  qgsbillboardregistry.cpp
   qgsbrowsermodel.cpp
   qgscachedfeatureiterator.cpp
   qgscacheindex.cpp
@@ -102,6 +101,7 @@ SET(QGIS_CORE_SRCS
   qgsdataitemprovider.cpp
   qgsdataitemproviderregistry.cpp
   qgsdatasourceuri.cpp
+  qgsdataprovider.cpp
   qgsdatetimestatisticalsummary.cpp
   qgsdatumtransformstore.cpp
   qgsdbfilterproxymodel.cpp
@@ -186,6 +186,7 @@ SET(QGIS_CORE_SRCS
   qgsrendercontext.cpp
   qgsrulebasedlabeling.cpp
   qgsrunprocess.cpp
+  qgsruntimeprofiler.cpp
   qgsscalecalculator.cpp
   qgsscaleexpression.cpp
   qgsscaleutils.cpp
@@ -450,7 +451,6 @@ ENDIF(NOT MSVC)
 
 SET(QGIS_CORE_MOC_HDRS
   qgsapplication.h
-  qgsbillboardregistry.h
   qgsbrowsermodel.h
   qgscontexthelp.h
   qgscoordinatetransform.h
@@ -693,6 +693,7 @@ SET(QGIS_CORE_HDRS
   qgsrelation.h
   qgsrenderchecker.h
   qgsrendercontext.h
+  qgsruntimeprofiler.h
   qgsscalecalculator.h
   qgsscaleexpression.h
   qgsscaleutils.h

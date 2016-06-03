@@ -975,11 +975,11 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer
     QgsFeatureIterator getFeatures( const QgsFeatureRequest& request = QgsFeatureRequest() );
 
     /** Adds a feature
-        @param f feature to add
+        @param feature feature to add
         @param alsoUpdateExtent If True, will also go to the effort of e.g. updating the extents.
         @return                    True in case of success and False in case of error
      */
-    bool addFeature( QgsFeature& f, bool alsoUpdateExtent = true );
+    bool addFeature( QgsFeature& feature, bool alsoUpdateExtent = true );
 
     /** Updates an existing feature. This method needs to query the datasource
         on every call. Consider using {@link changeAttributeValue()} or
@@ -1315,6 +1315,13 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer
 
     /** Removes an alias (a display name) for attributes to display in dialogs */
     void remAttributeAlias( int attIndex );
+
+    /** Renames an attribute field  (but does not commit it).
+     * @param attIndex attribute index
+     * @param newName new name of field
+     * @note added in QGIS 2.16
+    */
+    bool renameAttribute( int attIndex, const QString& newName );
 
     /**
      * Adds a tab (for the attribute editor form) holding groups and fields

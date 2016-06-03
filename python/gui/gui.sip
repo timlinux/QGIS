@@ -21,6 +21,7 @@
 
 %Include qgsblendmodecombobox.sip
 
+
 %Include qgisinterface.sip
 %Include qgsactionmenu.sip
 %Include qgsadvanceddigitizingcanvasitem.sip
@@ -54,6 +55,7 @@
 %Include qgscomposerruler.sip
 %Include qgscomposerview.sip
 %Include qgscompoundcolorwidget.sip
+%Include qgsconfigureshortcutsdialog.sip
 %Include qgscredentialdialog.sip
 %Include qgsdatadefinedbutton.sip
 %Include qgsdetaileditemdata.sip
@@ -117,6 +119,8 @@
 %Include qgsmaptoolpan.sip
 %Include qgsmaptooltouch.sip
 %Include qgsmaptoolzoom.sip
+%Include qgsmapstylepanel.sip
+%Include qgsmaplayerstylemanagerwidget.sip
 %Include qgsmessagebar.sip
 %Include qgsmessagebaritem.sip
 %Include qgsmessagelogviewer.sip
@@ -147,7 +151,9 @@
 %Include qgsscalevisibilitydialog.sip
 %Include qgsscalewidget.sip
 %Include qgssearchquerybuilder.sip
+%Include qgsshortcutsmanager.sip
 %Include qgsslider.sip
+%Include qgssourceselectdialog.sip
 %Include qgssublayersdialog.sip
 %Include qgssvgannotationitem.sip
 %Include qgstablewidgetitem.sip
@@ -192,6 +198,8 @@
 %Include auth/qgsauthtrustedcasdialog.sip
 
 %Include layertree/qgscustomlayerorderwidget.sip
+%Include layertree/qgslayertreeembeddedconfigwidget.sip
+%Include layertree/qgslayertreeembeddedwidgetregistry.sip
 %Include layertree/qgslayertreemapcanvasbridge.sip
 %Include layertree/qgslayertreeview.sip
 %Include layertree/qgslayertreeviewdefaultactions.sip
@@ -243,6 +251,7 @@
 %Include symbology-ng/qgsvectorfieldsymbollayerwidget.sip
 %Include symbology-ng/qgsvectorgradientcolorrampv2dialog.sip
 %Include symbology-ng/qgsvectorrandomcolorrampv2dialog.sip
+%Include symbology-ng/qgsrendererwidgetcontainer.sip
 
 %Include effects/qgseffectdrawmodecombobox.sip
 %Include effects/qgseffectstackpropertieswidget.sip

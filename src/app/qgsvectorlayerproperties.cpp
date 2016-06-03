@@ -251,6 +251,9 @@ QgsVectorLayerProperties::QgsVectorLayerProperties(
   diagLayout->addWidget( diagramPropertiesDialog );
   mDiagramFrame->setLayout( diagLayout );
 
+  // Legend tab
+  mLegendConfigEmbeddedWidget->setLayer( mLayer );
+
   // WMS Name as layer short name
   mLayerShortNameLineEdit->setText( mLayer->shortName() );
   // WMS Name validator
@@ -535,6 +538,9 @@ void QgsVectorLayerProperties::apply()
     labelingDialog->writeSettingsToLayer();
   }
 
+  // apply legend settings
+  mLegendConfigEmbeddedWidget->applyToLayer();
+
   //
   // Set up sql subset query if applicable
   //
@@ -586,9 +592,9 @@ void QgsVectorLayerProperties::apply()
 
   for ( int i = 0; i < columns.size(); ++i )
   {
-    if ( columns.at( i ).mType == QgsAttributeTableConfig::Action )
+    if ( columns.at( i ).type == QgsAttributeTableConfig::Action )
     {
-      columns[i].mHidden = !mActionDialog->showWidgetInAttributeTable();
+      columns[i].hidden = !mActionDialog->showWidgetInAttributeTable();
     }
   }
 

@@ -92,6 +92,9 @@ class APP_EXPORT QgsFieldsProperties : public QWidget, private Ui_QgsFieldsPrope
         bool mEditable;
         bool mEditableEnabled;
         bool mLabelOnTop;
+        bool mNotNull;
+        QString mConstraint;
+        QString mConstraintDescription;
         QPushButton* mButton;
         QString mEditorWidgetV2Type;
         QMap<QString, QVariant> mEditorWidgetV2Config;
@@ -214,6 +217,11 @@ class APP_EXPORT QgsFieldsProperties : public QWidget, private Ui_QgsFieldsPrope
     static QMap< QgsVectorLayer::EditType, QString > editTypeMap;
     static void setupEditTypes();
     static QString editTypeButtonText( QgsVectorLayer::EditType type );
+
+  private:
+
+    void updateFieldRenamingStatus();
+
 };
 
 QDataStream& operator<< ( QDataStream& stream, const QgsFieldsProperties::DesignerTreeItemData& data );

@@ -32,6 +32,7 @@ class QgsPaintEffect;
 class QgsRendererV2Widget;
 class QgsMapCanvas;
 
+
 class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::QgsRendererV2PropsDialogBase
 {
     Q_OBJECT
@@ -56,7 +57,7 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
     void layerVariablesChanged();
 
     /**
-     * Emmited when something on the widget has changed.
+     * Emitted when something on the widget has changed.
      * All widgets will fire this event to notify of an internal change.
      */
     void widgetChanged();
@@ -75,6 +76,8 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
     void showOrderByDialog();
 
     void changeOrderBy( const QgsFeatureRequest::OrderBy& orderBy, bool orderByEnabled );
+
+    void updateUIState( bool hidden );
 
   protected:
     /**

@@ -86,7 +86,7 @@ class Processing:
         """Use this method to add algorithms from external providers.
         """
 
-        if provider.getName() in [p.getName for p in algList.providers]:
+        if provider.getName() in [p.getName() for p in algList.providers]:
             return
         try:
             provider.initializeSettings()
@@ -112,9 +112,12 @@ class Processing:
         """
         try:
             provider.unload()
-            Processing.providers.remove(provider)
-            algList.remove(provider.getName())
-            del Processing.actions[provider.getName()]
+            for p in Processing.providers:
+                if p.getName() == provider.getName():
+                    Processing.providers.remove(p)
+            algList.removeProvider(provider.getName())
+            if provider.getName() in Processing.actions:
+                del Processing.actions[provider.getName()]
             for act in provider.contextMenuActions:
                 Processing.contextMenuActions.remove(act)
         except:
@@ -130,8 +133,15 @@ class Processing:
         return algList.getProviderFromName(name)
 
     @staticmethod
+    def activateProvider(providerOrName, activate=True):
+        providerName = providerOrName.getName() if isinstance(providerOrName, AlgorithmProvider) else providerOrName
+        name = 'ACTIVATE_' + providerName.upper().replace(' ', '_')
+        ProcessingConfig.setSettingValue(name, activate)
+        algList.providerUpdated.emit(providerName)
+
+    @staticmethod
     def initialize():
-        if Processing.providers:
+        if "model" in [p.getName() for p in Processing.providers]:
             return
         # Add the basic providers
         for c in AlgorithmProvider.__subclasses__():
@@ -289,7 +299,7 @@ class Processing:
         if kwargs is not None and "progress" in kwargs.keys():
             progress = kwargs["progress"]
         elif iface is not None:
-            progress = MessageBarProgress()
+            progress = MessageBarProgress(alg.name)
 
         ret = runalg(alg, progress)
         if ret:

@@ -102,12 +102,15 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
       /** Supports joint updates for attributes and geometry
        * Providers supporting this should still define ChangeGeometries | ChangeAttributeValues
        */
-      ChangeFeatures =                              1 << 18
+      ChangeFeatures =                              1 << 18,
+      /** Supports renaming attributes (fields). Added in QGIS 2.16 */
+      RenameAttributes =                            1 << 19,
     };
 
     /** Bitmask of all provider's editing capabilities */
     const static int EditingCapabilities = AddFeatures | DeleteFeatures |
-                                           ChangeAttributeValues | ChangeGeometries | AddAttributes | DeleteAttributes;
+                                           ChangeAttributeValues | ChangeGeometries | AddAttributes | DeleteAttributes |
+                                           RenameAttributes;
 
     /**
      * Constructor of the vector provider
@@ -136,7 +139,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * @note added in 2.4
      * @return new instance of QgsAbstractFeatureSource (caller is responsible for deleting it)
      */
-    virtual QgsAbstractFeatureSource* featureSource() const { Q_ASSERT( 0 && "All providers must support featureSource()" ); return nullptr; }
+    virtual QgsAbstractFeatureSource *featureSource() const = 0;
 
     /**
      * Returns the permanent storage type for this layer as a friendly name.
@@ -165,6 +168,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * @return map of fields
      * @see QgsFields
      */
+    // TODO QGIS 3: return by value
     virtual const QgsFields &fields() const = 0;
 
     /**
@@ -253,6 +257,14 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * @return true in case of success and false in case of failure
      */
     virtual bool deleteAttributes( const QgsAttributeIds &attributes );
+
+    /**
+     * Renames existing attributes.
+     * @param renamedAttributes map of attribute index to new attribute name
+     * @return true in case of success and false in case of failure
+     * @note added in QGIS 2.16
+     */
+    virtual bool renameAttributes( const QgsFieldNameMap& renamedAttributes );
 
     /**
      * Changes attribute values of existing features.

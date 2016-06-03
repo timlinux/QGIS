@@ -1105,13 +1105,13 @@ QgsFeatureIterator QgsVectorLayer::getFeatures( const QgsFeatureRequest& request
 }
 
 
-bool QgsVectorLayer::addFeature( QgsFeature& f, bool alsoUpdateExtent )
+bool QgsVectorLayer::addFeature( QgsFeature& feature, bool alsoUpdateExtent )
 {
   Q_UNUSED( alsoUpdateExtent ); // TODO[MD]
   if ( !mValid || !mEditBuffer || !mDataProvider )
     return false;
 
-  bool success = mEditBuffer->addFeature( f );
+  bool success = mEditBuffer->addFeature( feature );
 
   if ( success )
     updateExtents();
@@ -2358,6 +2358,14 @@ void QgsVectorLayer::remAttributeAlias( int attIndex )
     mAttributeAliasMap.remove( name );
     emit layerModified();
   }
+}
+
+bool QgsVectorLayer::renameAttribute( int attIndex, const QString& newName )
+{
+  if ( !mEditBuffer || !mDataProvider )
+    return false;
+
+  return mEditBuffer->renameAttribute( attIndex, newName );
 }
 
 void QgsVectorLayer::addAttributeAlias( int attIndex, const QString& aliasString )
@@ -3744,7 +3752,11 @@ QgsAttributeTableConfig QgsVectorLayer::attributeTableConfig() const
 
 void QgsVectorLayer::setAttributeTableConfig( const QgsAttributeTableConfig& attributeTableConfig )
 {
-  mAttributeTableConfig = attributeTableConfig;
+  if ( mAttributeTableConfig != attributeTableConfig )
+  {
+    mAttributeTableConfig = attributeTableConfig;
+    emit configChanged();
+  }
 }
 
 void QgsVectorLayer::setDiagramLayerSettings( const QgsDiagramLayerSettings& s )

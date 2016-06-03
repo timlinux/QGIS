@@ -26,19 +26,19 @@ namespace osgEarth
   class SpatialReference;
 }
 
-struct QgsGlobeFrustumHighlightCallback : public osg::NodeCallback
+class QgsGlobeFrustumHighlightCallback : public osg::NodeCallback
 {
-public:
-  QgsGlobeFrustumHighlightCallback( osg::View* view, osgEarth::Terrain* terrain, QgsMapCanvas* mapCanvas, QColor color );
-  ~QgsGlobeFrustumHighlightCallback();
+  public:
+    QgsGlobeFrustumHighlightCallback( osg::View* view, osgEarth::Terrain* terrain, QgsMapCanvas* mapCanvas, QColor color );
+    ~QgsGlobeFrustumHighlightCallback();
 
-  void operator()( osg::Node*, osg::NodeVisitor* ) override;
+    void operator()( osg::Node*, osg::NodeVisitor* ) override;
 
-private:
-  osg::View* mView;
-  osgEarth::Terrain* mTerrain;
-  QgsRubberBand* mRubberBand;
-  osgEarth::SpatialReference* mSrs;
+  private:
+    osg::View* mView;
+    osgEarth::Terrain* mTerrain;
+    QgsRubberBand* mRubberBand;
+    osgEarth::SpatialReference* mSrs;
 };
 
 #endif // QGSGLOBEFRUSTUMHIGHLIGHT_H

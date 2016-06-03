@@ -1,3 +1,17 @@
+/***************************************************************************
+    qgsglobefeaturesource.h
+    ---------------------
+    begin                : May 2016
+    copyright            : (C) 2016 by Sandro Mani
+    email                : smani at sourcepole dot ch
+ ***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 #ifndef QGSGLOBEFEATURESOURCE_H
 #define QGSGLOBEFEATURESOURCE_H
 
@@ -24,7 +38,7 @@ class QgsGlobeFeatureSource : public QObject, public osgEarth::Features::Feature
     const char* className() const override { return "QGISFeatureSource"; }
     const char* libraryName() const override { return "QGIS"; }
 
-    void initialize( const osgDB::Options* dbOptions );
+    void initialize( const osgDB::Options* dbOptions ) override;
 
   protected:
     const osgEarth::Features::FeatureProfile* createFeatureProfile() override { return mProfile; }

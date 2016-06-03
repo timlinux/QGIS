@@ -31,6 +31,7 @@ SET(QGIS_GUI_SRCS
   symbology-ng/qgspointdisplacementrendererwidget.cpp
   symbology-ng/qgsrendererv2propertiesdialog.cpp
   symbology-ng/qgsrendererv2widget.cpp
+  symbology-ng/qgsrendererwidgetcontainer.cpp
   symbology-ng/qgsrulebasedrendererv2widget.cpp
   symbology-ng/qgssinglesymbolrendererv2widget.cpp
   symbology-ng/qgssizescalewidget.cpp
@@ -153,6 +154,9 @@ SET(QGIS_GUI_SRCS
   editorwidgets/qgsvaluerelationwidgetfactory.cpp
 
   layertree/qgscustomlayerorderwidget.cpp
+  layertree/qgslayertreeembeddedconfigwidget.cpp
+  layertree/qgslayertreeembeddedwidgetregistry.cpp
+  layertree/qgslayertreeembeddedwidgetsimpl.cpp
   layertree/qgslayertreemapcanvasbridge.cpp
   layertree/qgslayertreeview.cpp
   layertree/qgslayertreeviewdefaultactions.cpp
@@ -190,6 +194,7 @@ SET(QGIS_GUI_SRCS
   qgscomposerruler.cpp
   qgscomposerview.cpp
   qgscompoundcolorwidget.cpp
+  qgsconfigureshortcutsdialog.cpp
   qgscredentialdialog.cpp
   qgscursors.cpp
   qgsdatadefinedbutton.cpp
@@ -241,6 +246,7 @@ SET(QGIS_GUI_SRCS
   qgsmaplayermodel.cpp
   qgsmaplayerpropertiesfactory.cpp
   qgsmaplayerproxymodel.cpp
+  qgsmaplayerstylemanagerwidget.cpp
   qgsmapmouseevent.cpp
   qgsmapoverviewcanvas.cpp
   qgsmaptip.cpp
@@ -253,6 +259,7 @@ SET(QGIS_GUI_SRCS
   qgsmaptoolidentifyfeature.cpp
   qgsmaptoolpan.cpp
   qgsmaptoolzoom.cpp
+  qgsmapstylepanel.cpp
   qgsmessagebar.cpp
   qgsmessagebaritem.cpp
   qgsmessagelogviewer.cpp
@@ -266,6 +273,7 @@ SET(QGIS_GUI_SRCS
   qgsoptionsdialogbase.cpp
   qgsorderbydialog.cpp
   qgsowssourceselect.cpp
+  qgssourceselectdialog.cpp
   qgspixmaplabel.cpp
   qgspluginmanagerinterface.cpp
   qgsprevieweffect.cpp
@@ -283,6 +291,7 @@ SET(QGIS_GUI_SRCS
   qgsscalevisibilitydialog.cpp
   qgsscalewidget.cpp
   qgssearchquerybuilder.cpp
+  qgsshortcutsmanager.cpp
   qgsslider.cpp
   qgssublayersdialog.cpp
   qgssqlcomposerdialog.cpp
@@ -343,6 +352,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgscomposerruler.h
   qgscomposerview.h
   qgscompoundcolorwidget.h
+  qgsconfigureshortcutsdialog.h
   qgscredentialdialog.h
   qgsdatadefinedbutton.h
   qgsdatumtransformdialog.h
@@ -387,6 +397,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsmaplayercombobox.h
   qgsmaplayermodel.h
   qgsmaplayerproxymodel.h
+  qgsmaplayerstylemanagerwidget.h
   qgsmapoverviewcanvas.h
   qgsmaptool.h
   qgsmaptooladvanceddigitizing.h
@@ -396,9 +407,8 @@ SET(QGIS_GUI_MOC_HDRS
   qgsmaptoolidentify.h
   qgsmaptoolidentifyfeature.h
   qgsmaptoolpan.h
-  qgsmaptoolpan.h
   qgsmaptoolzoom.h
-  qgsmaptoolzoom.h
+  qgsmapstylepanel.h
   qgsmessagebar.h
   qgsmessagebaritem.h
   qgsmessagelogviewer.h
@@ -411,6 +421,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsoptionsdialogbase.h
   qgsorderbydialog.h
   qgsowssourceselect.h
+  qgssourceselectdialog.h
   qgspixmaplabel.h
   qgspluginmanagerinterface.h
   qgsprevieweffect.h
@@ -427,6 +438,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsscalevisibilitydialog.h
   qgsscalewidget.h
   qgssearchquerybuilder.h
+  qgsshortcutsmanager.h
   qgsslider.h
   qgssqlcomposerdialog.h
   qgssublayersdialog.h
@@ -466,6 +478,7 @@ SET(QGIS_GUI_MOC_HDRS
   symbology-ng/qgspointdisplacementrendererwidget.h
   symbology-ng/qgsrendererv2propertiesdialog.h
   symbology-ng/qgsrendererv2widget.h
+  symbology-ng/qgsrendererwidgetcontainer.h
   symbology-ng/qgsrulebasedrendererv2widget.h
   symbology-ng/qgssinglesymbolrendererv2widget.h
   symbology-ng/qgssizescalewidget.h
@@ -574,6 +587,8 @@ SET(QGIS_GUI_MOC_HDRS
   editorwidgets/qgsvaluerelationwidgetwrapper.h
 
   layertree/qgscustomlayerorderwidget.h
+  layertree/qgslayertreeembeddedconfigwidget.h
+  layertree/qgslayertreeembeddedwidgetsimpl.h
   layertree/qgslayertreemapcanvasbridge.h
   layertree/qgslayertreeview.h
   layertree/qgslayertreeviewdefaultactions.h
@@ -668,6 +683,9 @@ SET(QGIS_GUI_HDRS
   editorwidgets/qgsuuidwidgetfactory.h
   editorwidgets/qgsvaluemapwidgetfactory.h
   editorwidgets/qgsvaluerelationwidgetfactory.h
+
+  layertree/qgslayertreeembeddedconfigwidget.h
+  layertree/qgslayertreeembeddedwidgetregistry.h
 
   raster/qgsrasterrendererwidget.h
 )

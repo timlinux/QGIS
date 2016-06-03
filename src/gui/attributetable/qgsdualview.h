@@ -226,6 +226,12 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
      */
     void toggleSearchMode( bool enabled );
 
+    /**
+     * Copy the content of the selected cell in the clipboard.
+     * @note added in QGIS 1.16
+     */
+    void copyCellContent() const;
+
   signals:
     /**
      * Is emitted, whenever the display expression is successfully changed
@@ -267,6 +273,20 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
 
     void viewWillShowContextMenu( QMenu* menu, const QModelIndex& atIndex );
 
+    void showViewHeaderMenu( QPoint point );
+
+    void organizeColumns();
+
+    void tableColumnResized( int column, int width );
+
+    void hideColumn();
+
+    void resizeColumn();
+
+    void autosizeColumn();
+
+    void modifySort();
+
     void previewExpressionChanged( const QString& expression );
 
     void sortByPreviewExpression();
@@ -306,11 +326,13 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
     QgsAttributeForm* mAttributeForm;
     QSignalMapper* mPreviewActionMapper;
     QMenu* mPreviewColumnsMenu;
+    QMenu* mHorizontalHeaderMenu;
     QgsVectorLayerCache* mLayerCache;
     QProgressDialog* mProgressDlg;
     QgsIFeatureSelectionManager* mFeatureSelectionManager;
     QgsDistanceArea mDistanceArea;
     QString mDisplayExpression;
+    QgsAttributeTableConfig mConfig;
 
     friend class TestQgsDualView;
 };
@@ -357,5 +379,7 @@ class GUI_EXPORT QgsAttributeTableMapLayerAction : public QAction
     QgsMapLayerAction* mAction;
     QModelIndex mFieldIdx;
 };
+
+Q_DECLARE_METATYPE( QModelIndex );
 
 #endif // QGSDUALVIEW_H

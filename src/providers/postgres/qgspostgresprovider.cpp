@@ -25,7 +25,6 @@
 #include <qgscoordinatereferencesystem.h>
 
 #include <QMessageBox>
-#include <QSettings>
 
 #include "qgsvectorlayerimport.h"
 #include "qgsprovidercountcalcevent.h"
@@ -1123,7 +1122,7 @@ bool QgsPostgresProvider::hasSufficientPermsAndCapabilities()
       testAccess = connectionRO()->PQexec( sql );
       if ( testAccess.PQresultStatus() == PGRES_TUPLES_OK && testAccess.PQntuples() == 1 )
       {
-        mEnabledCapabilities |= QgsVectorDataProvider::AddAttributes | QgsVectorDataProvider::DeleteAttributes;
+        mEnabledCapabilities |= QgsVectorDataProvider::AddAttributes | QgsVectorDataProvider::DeleteAttributes | QgsVectorDataProvider::RenameAttributes;
       }
     }
   }
@@ -1655,11 +1654,9 @@ bool QgsPostgresProvider::isValid()
 
 QVariant QgsPostgresProvider::defaultValue( int fieldId )
 {
-  QSettings settings;
-
   QVariant defVal = mDefaultValues.value( fieldId, QString::null );
 
-  if ( settings.value( "/qgis/evaluateDefaultValues", false ).toBool() && !defVal.isNull() )
+  if ( providerProperty( EvaluateDefaultValues, false ).toBool() && !defVal.isNull() )
   {
     const QgsField& fld = field( fieldId );
 
@@ -2242,6 +2239,66 @@ bool QgsPostgresProvider::deleteAttributes( const QgsAttributeIds& ids )
   catch ( PGException &e )
   {
     pushError( tr( "PostGIS error while deleting attributes: %1" ).arg( e.errorMessage() ) );
+    conn->rollback();
+    returnvalue = false;
+  }
+
+  loadFields();
+  conn->unlock();
+  return returnvalue;
+}
+
+bool QgsPostgresProvider::renameAttributes( const QgsFieldNameMap& renamedAttributes )
+{
+  if ( mIsQuery )
+    return false;
+
+
+  QString sql = "BEGIN;";
+
+  QgsFieldNameMap::const_iterator renameIt = renamedAttributes.constBegin();
+  bool returnvalue = true;
+  for ( ; renameIt != renamedAttributes.constEnd(); ++renameIt )
+  {
+    int fieldIndex = renameIt.key();
+    if ( fieldIndex < 0 || fieldIndex >= mAttributeFields.count() )
+    {
+      pushError( tr( "Invalid attribute index: %1" ).arg( fieldIndex ) );
+      return false;
+    }
+    if ( mAttributeFields.indexFromName( renameIt.value() ) >= 0 )
+    {
+      //field name already in use
+      pushError( tr( "Error renaming field %1: name '%2' already exists" ).arg( fieldIndex ).arg( renameIt.value() ) );
+      return false;
+    }
+
+    sql += QString( "ALTER TABLE %1 RENAME COLUMN %2 TO %3;" )
+           .arg( mQuery,
+                 quotedIdentifier( mAttributeFields.at( fieldIndex ).name() ),
+                 quotedIdentifier( renameIt.value() ) );
+  }
+  sql += "COMMIT;";
+
+  QgsPostgresConn* conn = connectionRW();
+  if ( !conn )
+  {
+    return false;
+  }
+  conn->lock();
+
+  try
+  {
+    conn->begin();
+    //send sql statement and do error handling
+    QgsPostgresResult result( conn->PQexec( sql ) );
+    if ( result.PQresultStatus() != PGRES_COMMAND_OK )
+      throw PGException( result );
+    returnvalue = conn->commit();
+  }
+  catch ( PGException &e )
+  {
+    pushError( tr( "PostGIS error while renaming attributes: %1" ).arg( e.errorMessage() ) );
     conn->rollback();
     returnvalue = false;
   }
