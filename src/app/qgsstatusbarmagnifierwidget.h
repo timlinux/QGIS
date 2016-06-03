@@ -54,6 +54,10 @@ class APP_EXPORT QgsStatusBarMagnifierWidget : public QWidget
   public slots:
     //! will be triggered from map canvas changes (from mouse wheel, zoom)
     void updateMagnification( double factor );
+    //! Event handler for when focus is lost so that we can show the label and hide the line edit
+    void showLabel();
+    //! Event handler for when focus is gained so that we can hide the label and show the line edit
+    void mousePressEvent(QMouseEvent* event);
 
 
   private slots:

@@ -30,6 +30,9 @@
 #include "qgslogger.h"
 
 
+/* Since 2.16 this widget will use a label to display info. If you click the label
+   it will hide the label and show the input widget. When the widget loses
+   focus it will be hidden again and the label will be shown. */
 QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
     : QWidget( parent )
     , mDizzyTimer( nullptr )
@@ -37,21 +40,34 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
     , mMousePrecisionDecimalPlaces( 0 )
 {
   mViewMode = QgsStatusBarCoordinatesWidget::Coordinates;
+
+  // a label with icon that acts as a toggle to switch
+  // between mouse pos and extents display in status bar widget
+  // when clicked
+  mToggleExtentsViewLabel = new QLabel( this );
+  //mToggleExtentsViewLabel->setMaximumWidth( 20 );
+  //mToggleExtentsViewLabel->setBaseSize( 32, 32 );
+  mToggleExtentsViewLabel->setFixedSize(16,16);
+  QPixmap icon = QgsApplication::getThemePixmap("mActionToggleCoordinatesView.svg" );
+  mToggleExtentsViewLabel->setPixmap( icon.scaled(
+        mToggleExtentsViewLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+  mToggleExtentsViewLabel->setToolTip( tr( "Toggle between extents and mouse position display" ) );
+  connect( mToggleExtentsViewLabel, SIGNAL( mousePressEvent( QMousePressEvent* ) ),
+           this, SLOT( extentsViewToggled( QMousePressEvent* ) ) );
+
   // add a label to show current position
   mLabel = new QLabel( QString(), this );
   mLabel->setObjectName( "mCoordsLabel" );
-  mLabel->setMinimumWidth( 10 );
-  //mCoordsLabel->setMaximumHeight( 20 );
-  mLabel->setMargin( 3 );
+  mLabel->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Minimum);
+  mLabel->setScaledContents( true );
   mLabel->setAlignment( Qt::AlignCenter );
   mLabel->setFrameStyle( QFrame::NoFrame );
-  mLabel->setText( tr( "Coordinates" ) );
   mLabel->setToolTip( tr( "Current map coordinates" ) );
 
   mLineEdit = new QLineEdit( this );
   mLineEdit->setMinimumWidth( 10 );
   mLineEdit->setMaximumWidth( 300 );
-  //mLineEdit->setMaximumHeight( 20 );
   mLineEdit->setContentsMargins( 0, 0, 0, 0 );
   mLineEdit->setAlignment( Qt::AlignCenter );
   connect( mLineEdit, SIGNAL( returnPressed() ), this, SLOT( validateCoordinates() ) );
@@ -65,19 +81,12 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
             "center to a given position. The format is longitude,latitude or east,north" ) );
   mLineEdit->setToolTip( tr( "Current map coordinates (longitude,latitude or east,north)" ) );
 
-  //toggle to switch between mouse pos and extents display in status bar widget
-  mToggleExtentsViewLabel = new QLabel( this );
-  mToggleExtentsViewLabel->setMaximumWidth( 20 );
-  mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemeIcon( "mActionToggleCoordinatesView.svg" ).pixmap( QSize( 64, 64 ) ) );
-  mToggleExtentsViewLabel->setToolTip( tr( "Toggle extents and mouse position display" ) );
-  connect( mToggleExtentsViewLabel, SIGNAL( mousePressEvent( QMousePressEvent* ) ), this, SLOT( extentsViewToggled( QMousePressEvent* ) ) );
-
   QHBoxLayout* layout = new QHBoxLayout( this );
   setLayout( layout );
   layout->addItem( new QSpacerItem( 0, 0, QSizePolicy::Expanding ) );
+  layout->addWidget( mToggleExtentsViewLabel );
   layout->addWidget( mLabel );
   layout->addWidget( mLineEdit );
-  layout->addWidget( mToggleExtentsViewLabel );
   layout->setContentsMargins( 0, 0, 0, 0 );
   layout->setAlignment( Qt::AlignRight );
   layout->setSpacing( 0 );
@@ -86,9 +95,7 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
   mDizzyTimer = new QTimer( this );
   connect( mDizzyTimer, SIGNAL( timeout() ), this, SLOT( dizzy() ) );
 
-  // Added in 2.16 - use a label to display info. If you click the label
-  // it will hide the label and show the input widget. When the widget loses
-  // focus it will be hidden again.
+  // Manage toggle label interactions
   mLineEdit->hide();
   connect( mLineEdit, SIGNAL( editingFinished() ), this, SLOT( showLabel() ) );
   this->setFocusPolicy( Qt::StrongFocus );
@@ -205,7 +212,7 @@ void QgsStatusBarCoordinatesWidget::extentsViewToggled( QMouseEvent* event )
   if ( mViewMode == QgsStatusBarCoordinatesWidget::Extents)
   {
     //extents view mode!
-    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemeIcon( "mActionToggleCoordinatesView.svg" ).pixmap( QSize( 64, 64 ) ) );
+    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemePixmap( "/mActionToggleCoordinatesView.svg" ) );
     mLineEdit->setReadOnly( true );
     showExtent();
     mViewMode = QgsStatusBarCoordinatesWidget::Coordinates;
@@ -213,7 +220,7 @@ void QgsStatusBarCoordinatesWidget::extentsViewToggled( QMouseEvent* event )
   else
   {
     //mouse cursor pos view mode!
-    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemeIcon( "mActionToggleExtentsView.svg" ).pixmap(QSize( 64, 64 ) ) );
+    mToggleExtentsViewLabel->setPixmap( QgsApplication::getThemePixmap( "/mActionToggleExtentsView.svg" ) );
     mLineEdit->setToolTip( tr( "Map coordinates for the current view extents" ) );
     mLineEdit->setReadOnly( false );
     mLabel->setText( tr( "Coordinates" ) );
@@ -284,5 +291,4 @@ void QgsStatusBarCoordinatesWidget::mousePressEvent(QMouseEvent* event)
   mLineEdit->show();
   mLineEdit->setFocus();
   mLabel->hide();
-  QgsDebugMsg( QString( "Coordinates widget clicked." ) );
 }

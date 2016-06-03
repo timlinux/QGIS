@@ -53,6 +53,7 @@ QgsStatusBarMagnifierWidget::QgsStatusBarMagnifierWidget( QWidget* parent )
   mSpinBox->setClearValue( defaultFactor );
 
   connect( mSpinBox, SIGNAL( valueChanged( double ) ), this, SLOT( setMagnification( double ) ) );
+  mLabel->setText( QString( "%1 \%" ).arg( mSpinBox->value( ) ) );
 
   // layout
   mLayout = new QHBoxLayout( this );
@@ -63,6 +64,11 @@ QgsStatusBarMagnifierWidget::QgsStatusBarMagnifierWidget( QWidget* parent )
   mLayout->setSpacing( 0 );
 
   setLayout( mLayout );
+
+  // Manage toggle label interactions
+  mSpinBox->hide();
+  connect( mSpinBox, SIGNAL( editingFinished() ), this, SLOT( showLabel() ) );
+  this->setFocusPolicy( Qt::StrongFocus );
 }
 
 QgsStatusBarMagnifierWidget::~QgsStatusBarMagnifierWidget()
@@ -88,4 +94,19 @@ void QgsStatusBarMagnifierWidget::updateMagnification( double factor )
 void QgsStatusBarMagnifierWidget::setMagnification( double value )
 {
   emit magnificationChanged( value / 100 );
+}
+
+void QgsStatusBarMagnifierWidget::showLabel()
+{
+  mSpinBox->hide();
+  mLabel->setText( QString( "%1 \%" ).arg( mSpinBox->value( ) ) );
+  mLabel->show();
+}
+
+void QgsStatusBarMagnifierWidget::mousePressEvent(QMouseEvent* event)
+{
+  Q_UNUSED(event);
+  mSpinBox->show();
+  mSpinBox->setFocus();
+  mLabel->hide();
 }

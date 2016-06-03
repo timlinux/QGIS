@@ -420,6 +420,7 @@ QIcon QgsApplication::getThemeIcon( const QString &theName )
 
   QString myPreferredPath = activeThemePath() + QDir::separator() + theName;
   QString myDefaultPath = defaultThemePath() + QDir::separator() + theName;
+  QgsDebugMsg( "Icon requested for :" + myDefaultPath );
   if ( QFile::exists( myPreferredPath ) )
   {
     icon = QIcon( myPreferredPath );
@@ -445,6 +446,7 @@ QPixmap QgsApplication::getThemePixmap( const QString &theName )
 {
   QString myPreferredPath = activeThemePath() + QDir::separator() + theName;
   QString myDefaultPath = defaultThemePath() + QDir::separator() + theName;
+  QgsDebugMsg( "Pixmap requested for :" + myDefaultPath );
   if ( QFile::exists( myPreferredPath ) )
   {
     return QPixmap( myPreferredPath );
