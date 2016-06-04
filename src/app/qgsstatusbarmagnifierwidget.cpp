@@ -31,6 +31,15 @@ QgsStatusBarMagnifierWidget::QgsStatusBarMagnifierWidget( QWidget* parent )
   int maximumFactor = ( int ) 100 * settings.value( "/qgis/magnifier_factor_max", 10 ).toDouble();
   int defaultFactor = ( int ) 100 * settings.value( "/qgis/magnifier_factor_default", 1.0 ).toDouble();
 
+  // icon
+  mIconLabel =  new QLabel( this );
+  mIconLabel->setFixedSize(16,16);
+  QPixmap iconPixmap = QgsApplication::getThemePixmap("mActionStatusZoom.svg" );
+  mIconLabel->setPixmap( iconPixmap.scaled(
+        mIconLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+  mIconLabel->setToolTip( tr( "Magnify the canvas without changing scale." ) );
+
   // label
   mLabel = new QLabel();
   mLabel->setMinimumWidth( 10 );
@@ -57,6 +66,7 @@ QgsStatusBarMagnifierWidget::QgsStatusBarMagnifierWidget( QWidget* parent )
 
   // layout
   mLayout = new QHBoxLayout( this );
+  mLayout->addWidget( mIconLabel );
   mLayout->addWidget( mLabel );
   mLayout->addWidget( mSpinBox );
   mLayout->setContentsMargins( 0, 0, 0, 0 );

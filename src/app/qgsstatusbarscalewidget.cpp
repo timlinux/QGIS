@@ -43,7 +43,7 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mIconLabel->setAlignment( Qt::AlignCenter );
   mIconLabel->setFrameStyle( QFrame::NoFrame );
 
-  // add a label to show scale when not chaning it
+  // add a label to show scale when not changing it
   mScaleLabel = new QLabel( this );
   mIconLabel->setToolTip( tr( "Current map scale" ) );
   mIconLabel->setObjectName( "mScaleLabel" );
@@ -53,7 +53,7 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mIconLabel->setFrameStyle( QFrame::NoFrame );
 
   // combo widget for changing scale
-  mScale = new QgsScaleComboBox();
+  mScale = new QgsScaleComboBox( this );
   mScale->setObjectName( "mScaleEdit" );
   // seems setFont() change font only for popup not for line edit,
   // so we need to set font for it separately
@@ -62,18 +62,21 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mScale->setWhatsThis( tr( "Displays the current map scale" ) );
   mScale->setToolTip( tr( "Current map scale (formatted as x:y)" ) );
 
-  mLockButton = new QToolButton();
-  mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusUnlock.svg" ) ) );
-  mLockButton->setToolTip( tr( "Lock the scale to use magnifier to zoom in or out." ) );
-  mLockButton->setCheckable( true );
-  mLockButton->setChecked( false );
+  mLockLabel = new QLabel( this );
+  mIconLabel->setFixedSize(16,16);
+  mLockIcon = QgsApplication::getThemePixmap("mActionStatusLock.svg" );
+  mUnlockIcon = QgsApplication::getThemePixmap("mActionStatusUnlock.svg" );
+  mLockLabel->setPixmap( mUnlockIcon.scaled(
+        mLockLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+  mLockLabel->setToolTip( tr( "Lock the scale to use magnifier tnd scroll wheel to zoom in or out." ) );
 
   // layout
   mLayout = new QHBoxLayout( this );
   mLayout->addWidget( mIconLabel );
   mLayout->addWidget( mScaleLabel );
   mLayout->addWidget( mScale );
-  mLayout->addWidget( mLockButton );
+  mLayout->addWidget( mLockLabel );
   mLayout->setContentsMargins( 0, 0, 0, 0 );
   mLayout->setAlignment( Qt::AlignRight );
   mLayout->setSpacing( 0 );
@@ -81,8 +84,6 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   setLayout( mLayout );
 
   connect( mScale, SIGNAL( scaleChanged( double ) ), this, SLOT( userScale() ) );
-
-  connect( mLockButton, SIGNAL( toggled( bool ) ), this, SLOT( lockToggled( bool ) ) );
 
   // Manage toggle label interactions
   mScale->hide();
@@ -99,11 +100,11 @@ void QgsStatusBarScaleWidget::lockToggled( bool is_locked )
 {
   if (is_locked)
   {
-    mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusLock.svg" ) ) );
+    mLockLabel->setPixmap( mLockIcon );
   }
   else
   {
-    mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "mActionStatusUnlock.svg" ) ) );
+    mLockLabel->setPixmap( mUnlockIcon );
   }
   emit scaleLockChanged( is_locked );
 }
@@ -118,7 +119,8 @@ void QgsStatusBarScaleWidget::setScale( double scale )
 
 bool QgsStatusBarScaleWidget::isLocked() const
 {
-  return mLockButton->isChecked();
+  // return mLockButton->isChecked();
+  return false;
 }
 
 void QgsStatusBarScaleWidget::setFont( const QFont &font )
@@ -147,7 +149,15 @@ void QgsStatusBarScaleWidget::showLabel()
 void QgsStatusBarScaleWidget::mousePressEvent(QMouseEvent* event)
 {
   Q_UNUSED(event);
-  mScale->show();
-  mScale->setFocus();
-  mScaleLabel->hide();
+  if ( mLockLabel->underMouse() ) {
+    mLockLabel->setPixmap( mLockIcon.scaled(
+        mLockLabel->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+  }
+  else
+  {
+    mScale->show();
+    mScale->setFocus();
+    mScaleLabel->hide();
+  }
 }

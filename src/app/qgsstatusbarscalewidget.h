@@ -20,7 +20,7 @@
 class QFont;
 class QHBoxLayout;
 class QLabel;
-class QToolButton;
+class QPixmap;
 class QValidator;
 
 class QgsMapCanvas;
@@ -77,7 +77,12 @@ class APP_EXPORT QgsStatusBarScaleWidget : public QWidget
   private:
     QgsMapCanvas* mMapCanvas;
     QHBoxLayout *mLayout;
-    QToolButton* mLockButton;
+    //! Icon used to show that scale is locked so we can zoom without changing scale
+    QPixmap mLockIcon;
+    //! Icon used to show scale is unlocked so that zooming will change scale
+    QPixmap mUnlockIcon;
+    //! A label showing the lock icon which will behave like a toggle button when clicked.
+    QLabel* mLockLabel;
 
     //! Widget that will live on the statusbar to display icon
     QLabel* mIconLabel;
