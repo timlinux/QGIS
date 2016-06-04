@@ -111,7 +111,9 @@ void QgsStatusBarScaleWidget::lockToggled( bool is_locked )
 void QgsStatusBarScaleWidget::setScale( double scale )
 {
   mScale->setScale( scale );
-  mScaleLabel->setText( QString( "1:%1" ).arg( scale ) );
+  // we update the label too so that switching between
+  // read only label mode and editable widget mode are seamless
+  mScaleLabel->setText( mScale->toString( scale ) );
 }
 
 bool QgsStatusBarScaleWidget::isLocked() const
