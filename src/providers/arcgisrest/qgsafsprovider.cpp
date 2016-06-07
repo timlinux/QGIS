@@ -34,11 +34,12 @@
 QgsAfsProvider::QgsAfsProvider( const QString& uri )
     : QgsVectorDataProvider( uri )
     , mValid( false )
+    , mObjectIdFieldIdx( -1 )
 {
   mDataSource = QgsDataSourceURI( uri );
 
   // Set CRS
-  mSourceCRS = QgsCRSCache::instance()->crsByAuthId( mDataSource.param( "crs" ) );
+  mSourceCRS = QgsCRSCache::instance()->crsByOgcWmsCrs( mDataSource.param( "crs" ) );
 
   // Get layer info
   QString errorTitle, errorMessage;

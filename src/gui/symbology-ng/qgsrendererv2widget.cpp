@@ -272,6 +272,7 @@ void QgsRendererV2Widget::applyChanges()
 }
 
 
+
 ////////////
 
 #include "qgsfield.h"

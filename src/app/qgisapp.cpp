@@ -127,6 +127,7 @@
 #include "qgscoordinatetransform.h"
 #include "qgscoordinateutils.h"
 #include "qgscredentialdialog.h"
+#include "qgscrscache.h"
 #include "qgscursors.h"
 #include "qgscustomization.h"
 #include "qgscustomlayerorderwidget.h"
@@ -494,8 +495,8 @@ void QgisApp::validateSrs( QgsCoordinateReferenceSystem &srs )
     if ( authid.isNull() )
       authid = QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs().authid();
 
-    QgsCoordinateReferenceSystem defaultCrs;
-    if ( defaultCrs.createFromOgcWmsCrs( authid ) )
+    QgsCoordinateReferenceSystem defaultCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( authid );
+    if ( defaultCrs.isValid() )
     {
       mySelector->setSelectedCrsId( defaultCrs.srsid() );
     }
@@ -544,6 +545,7 @@ QgisApp *QgisApp::smInstance = nullptr;
 // constructor starts here
 QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCheck, QWidget * parent, Qt::WindowFlags fl )
     : QMainWindow( parent, fl )
+    , mProfiler( nullptr )
     , mNonEditMapTool( nullptr )
     , mScaleWidget( nullptr )
     , mMagnifierWidget( nullptr )
@@ -587,13 +589,13 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
   }
 
   smInstance = this;
-  profiler = QgsRuntimeProfiler::instance();
+  mProfiler = QgsRuntimeProfiler::instance();
 
   namSetup();
 
   // load GUI: actions, menus, toolbars
-  profiler->beginGroup( "qgisapp" );
-  profiler->beginGroup( "startup" );
+  mProfiler->beginGroup( "qgisapp" );
+  mProfiler->beginGroup( "startup" );
   startProfile( "Setting up UI" );
   setupUi( this );
   endProfile();
@@ -1054,14 +1056,14 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
 #ifdef ANDROID
   toggleFullScreen();
 #endif
-  profiler->endGroup();
-  profiler->endGroup();
+  mProfiler->endGroup();
+  mProfiler->endGroup();
 
   QgsDebugMsg( "PROFILE TIMES" );
-  QgsDebugMsg( QString( "PROFILE TIMES TOTAL - %1 " ).arg( profiler->totalTime() ) );
+  QgsDebugMsg( QString( "PROFILE TIMES TOTAL - %1 " ).arg( mProfiler->totalTime() ) );
 #ifdef QGISDEBUG
-  QList<QPair<QString, double> >::const_iterator it = profiler->profileTimes().constBegin();
-  for ( ; it != profiler->profileTimes().constEnd(); ++it )
+  QList<QPair<QString, double> >::const_iterator it = mProfiler->profileTimes().constBegin();
+  for ( ; it != mProfiler->profileTimes().constEnd(); ++it )
   {
     QString name = ( *it ).first;
     double time = ( *it ).second;
@@ -1073,6 +1075,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
 
 QgisApp::QgisApp()
     : QMainWindow( nullptr, nullptr )
+    , mProfiler( nullptr )
     , mStyleSheetBuilder( nullptr )
     , mActionPluginSeparator1( nullptr )
     , mActionPluginSeparator2( nullptr )
@@ -4378,8 +4381,7 @@ void QgisApp::fileNew( bool thePromptToSaveFlag, bool forceBlank )
 
   // set project CRS
   QString defCrs = settings.value( "/Projections/projectDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString();
-  QgsCoordinateReferenceSystem srs;
-  srs.createFromOgcWmsCrs( defCrs );
+  QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsByOgcWmsCrs( defCrs );
   mMapCanvas->setDestinationCrs( srs );
   // write the projections _proj string_ to project settings
   prj->writeEntry( "SpatialRefSys", "/ProjectCRSProj4String", srs.toProj4() );
@@ -5858,7 +5860,7 @@ void QgisApp::fieldCalculator()
   QgsFieldCalculator calc( myLayer, this );
   if ( calc.exec() )
   {
-    mMapCanvas->refresh();
+    myLayer->triggerRepaint();
   }
 }
 
@@ -6864,7 +6866,7 @@ void QgisApp::mergeAttributesOfSelectedFeatures()
 
   if ( mapCanvas() )
   {
-    mapCanvas()->refresh();
+    vl->triggerRepaint();
   }
 }
 
@@ -7044,7 +7046,7 @@ void QgisApp::mergeSelectedFeatures()
 
   if ( mapCanvas() )
   {
-    mapCanvas()->refresh();
+    vl->triggerRepaint();
   }
 }
 
@@ -7366,7 +7368,7 @@ void QgisApp::editPaste( QgsMapLayer *destinationLayer )
                                QgsMessageBar::WARNING, messageTimeout() );
   }
 
-  mMapCanvas->refresh();
+  pasteVectorLayer->triggerRepaint();
 }
 
 void QgisApp::pasteAsNewVector()
@@ -7599,8 +7601,7 @@ void QgisApp::pasteStyle( QgsMapLayer * destinationLayer )
       }
 
       mLayerTreeView->refreshLayerSymbology( selectionLayer->id() );
-      mMapCanvas->clearCache();
-      mMapCanvas->refresh();
+      selectionLayer->triggerRepaint();
     }
   }
 }
@@ -8055,7 +8056,7 @@ void QgisApp::layerSubsetString()
   {
     if ( subsetBefore != qb->sql() )
     {
-      mMapCanvas->refresh();
+      vlayer->triggerRepaint();
       if ( mLayerTreeView )
       {
         mLayerTreeView->refreshLayerSymbology( vlayer->id() );
@@ -8877,7 +8878,7 @@ void QgisApp::histogramStretch( bool visibleAreaOnly, QgsRaster::ContrastEnhance
 
   myRasterLayer->setContrastEnhancement( QgsContrastEnhancement::StretchToMinimumMaximum, theLimits, myRectangle );
 
-  mMapCanvas->refresh();
+  myRasterLayer->triggerRepaint();
 }
 
 void QgisApp::increaseBrightness()
@@ -11042,12 +11043,12 @@ void QgisApp::keyPressEvent( QKeyEvent * e )
 
 void QgisApp::startProfile( const QString& name )
 {
-  profiler->start( name );
+  mProfiler->start( name );
 }
 
 void QgisApp::endProfile()
 {
-  profiler->end();
+  mProfiler->end();
 }
 
 void QgisApp::functionProfile( void ( QgisApp::*fnc )(), QgisApp* instance, QString name )

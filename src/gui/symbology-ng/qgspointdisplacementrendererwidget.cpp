@@ -49,6 +49,7 @@ QgsPointDisplacementRendererWidget::QgsPointDisplacementRendererWidget( QgsVecto
     return;
   }
   setupUi( this );
+
   mDistanceUnitWidget->setUnits( QgsSymbolV2::OutputUnitList() << QgsSymbolV2::MM << QgsSymbolV2::MapUnit << QgsSymbolV2::Pixel );
 
   if ( renderer )
@@ -86,11 +87,11 @@ QgsPointDisplacementRendererWidget::QgsPointDisplacementRendererWidget( QgsVecto
   }
 
   //insert possible renderer types
-  QStringList rendererList = QgsRendererV2Registry::instance()->renderersList();
+  QStringList rendererList = QgsRendererV2Registry::instance()->renderersList( QgsRendererV2AbstractMetadata::PointLayer );
   QStringList::const_iterator it = rendererList.constBegin();
   for ( ; it != rendererList.constEnd(); ++it )
   {
-    if ( *it != "pointDisplacement" && *it != "heatmapRenderer" && *it != "invertedPolygonRenderer" )
+    if ( *it != "pointDisplacement" )
     {
       QgsRendererV2AbstractMetadata* m = QgsRendererV2Registry::instance()->rendererMetadata( *it );
       mRendererComboBox->addItem( m->icon(), m->visibleName(), *it );
@@ -381,7 +382,8 @@ void QgsPointDisplacementRendererWidget::updateCenterIcon()
 
 void QgsPointDisplacementRendererWidget::setupBlankUi( const QString& layerName )
 {
-  QGridLayout* layout = new QGridLayout( this );
   QLabel* label = new QLabel( tr( "The point displacement renderer only applies to (single) point layers. \n'%1' is not a point layer and cannot be displayed by the point displacement renderer" ).arg( layerName ), this );
+  QVBoxLayout* layout = new QVBoxLayout( this );
+  layout->setContentsMargins( 0, 0, 0, 0 );
   layout->addWidget( label );
 }

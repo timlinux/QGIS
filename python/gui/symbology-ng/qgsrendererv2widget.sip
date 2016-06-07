@@ -53,7 +53,12 @@ class QgsRendererV2Widget : QWidget
      */
     void widgetChanged();
 
-    void panelOpened( bool opened );
+    /** Shows a panel widget inside the renderer widget.
+     * @param widget widget panel to show
+     * @note added in QGIS 2.16
+     */
+    void showPanel( QgsRendererWidgetContainer* widget );
+
   protected:
     /** Subclasses may provide the capability of changing multiple symbols at once by implementing the following two methods
       and by connecting the slot contextMenuViewCategories(const QPoint&)*/

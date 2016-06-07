@@ -66,8 +66,8 @@ QgsMapStylingWidget::QgsMapStylingWidget( QgsMapCanvas* canvas, QList<QgsMapStyl
 
   mStyleManagerFactory = new QgsMapLayerStyleManagerWidgetFactory();
 
-  connect( mUndoButton, SIGNAL( pressed() ), mUndoWidget, SLOT( undo() ) );
-  connect( mRedoButton, SIGNAL( pressed() ), mUndoWidget, SLOT( redo() ) );
+  connect( mUndoButton, SIGNAL( pressed() ), this, SLOT( undo() ) );
+  connect( mRedoButton, SIGNAL( pressed() ), this, SLOT( redo() ) );
 
   connect( mAutoApplyTimer, SIGNAL( timeout() ), this, SLOT( apply() ) );
 
@@ -77,6 +77,8 @@ QgsMapStylingWidget::QgsMapStylingWidget( QgsMapCanvas* canvas, QList<QgsMapStyl
   connect( mLayerCombo, SIGNAL( layerChanged( QgsMapLayer* ) ), this, SLOT( setLayer( QgsMapLayer* ) ) );
 
   mButtonBox->button( QDialogButtonBox::Apply )->setEnabled( false );
+
+  mStackedWidget->setCurrentIndex( 0 );
 }
 
 QgsMapStylingWidget::~QgsMapStylingWidget()
@@ -107,6 +109,7 @@ void QgsMapStylingWidget::setLayer( QgsMapLayer *layer )
   }
 
   mCurrentLayer = layer;
+  connect( mCurrentLayer, SIGNAL( repaintRequested() ), this, SLOT( updateCurrentWidgetLayer() ) );
 
   int lastPage = mOptionsListWidget->currentIndex().row();
   mOptionsListWidget->clear();
@@ -125,7 +128,7 @@ void QgsMapStylingWidget::setLayer( QgsMapLayer *layer )
 
   Q_FOREACH ( QgsMapStylePanelFactory* factory, mPageFactories )
   {
-    if ( factory->layerType().testFlag( layer->type() ) )
+    if ( factory->supportsLayer( layer ) )
     {
       QListWidgetItem* item =  new QListWidgetItem( factory->icon(), "" );
       mOptionsListWidget->addItem( item );
@@ -150,6 +153,7 @@ void QgsMapStylingWidget::setLayer( QgsMapLayer *layer )
 
 void QgsMapStylingWidget::apply()
 {
+  disconnect( mCurrentLayer, SIGNAL( repaintRequested() ), this, SLOT( updateCurrentWidgetLayer() ) );
   QString undoName = "Style Change";
   if ( !mCurrentLayer )
     return;
@@ -195,7 +199,7 @@ void QgsMapStylingWidget::apply()
     mMapCanvas->clearCache();
     mMapCanvas->refresh();
   }
-
+  disconnect( mCurrentLayer, SIGNAL( repaintRequested() ), this, SLOT( updateCurrentWidgetLayer() ) );
 }
 
 void QgsMapStylingWidget::autoApply()
@@ -206,8 +210,21 @@ void QgsMapStylingWidget::autoApply()
   }
 }
 
+void QgsMapStylingWidget::undo()
+{
+  mUndoWidget->undo();
+  updateCurrentWidgetLayer();
+}
+
+void QgsMapStylingWidget::redo()
+{
+  mUndoWidget->redo();
+  updateCurrentWidgetLayer();
+}
+
 void QgsMapStylingWidget::updateCurrentWidgetLayer()
 {
+  QgsDebugMsg( "UPDATE!!!" );
   mBlockAutoApply = true;
 
   QgsMapLayer* layer = mCurrentLayer;
@@ -404,7 +421,7 @@ QgsMapStylePanel *QgsMapLayerStyleManagerWidgetFactory::createPanel( QgsMapLayer
 
 }
 
-QgsMapStylePanelFactory::LayerTypesFlags QgsMapLayerStyleManagerWidgetFactory::layerType()
+bool QgsMapLayerStyleManagerWidgetFactory::supportsLayer( QgsMapLayer *layer )
 {
-  return QgsMapLayer::VectorLayer;
+  return ( layer->type() == QgsMapLayer::VectorLayer || layer->type() == QgsMapLayer::RasterLayer );
 }
