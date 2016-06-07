@@ -1625,6 +1625,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! Widget that will live in the statusbar to display and edit coords
     QgsStatusBarCoordinatesWidget *mCoordsEdit;
 
+    //! Widget that will live on the statusbar to display "Rotation" Icon
+    QLabel *mRotationLabelIcon;
     //! Widget that will live on the statusbar to display "Rotation"
     QLabel *mRotationLabel;
     //! Widget that will live in the statusbar to display and edit rotation

@@ -550,6 +550,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
     , mScaleWidget( nullptr )
     , mMagnifierWidget( nullptr )
     , mCoordsEdit( nullptr )
+    , mRotationLabelIcon( nullptr )
     , mRotationLabel( nullptr )
     , mRotationEdit( nullptr )
     , mRotationEditValidator( nullptr )
@@ -1096,6 +1097,7 @@ QgisApp::QgisApp()
     , mScaleWidget( nullptr )
     , mMagnifierWidget( nullptr )
     , mCoordsEdit( nullptr )
+    , mRotationLabelIcon( nullptr )
     , mRotationLabel( nullptr )
     , mRotationEdit( nullptr )
     , mRotationEditValidator( nullptr )
@@ -2298,19 +2300,20 @@ void QgisApp::createStatusBar()
 
   if ( QgsMapCanvas::rotationEnabled() )
   {
-    // add a widget to show/set current rotation
-    mRotationLabel = new QLabel( QString(), statusBar() );
-    mRotationLabel->setObjectName( "mRotationLabel" );
-    mRotationLabel->setFont( myFont );
-    mRotationLabel->setMinimumWidth( 10 );
-    //mRotationLabel->setMaximumHeight( 20 );
-    mRotationLabel->setMargin( 3 );
-    mRotationLabel->setAlignment( Qt::AlignCenter );
-    mRotationLabel->setFrameStyle( QFrame::NoFrame );
-    mRotationLabel->setText( tr( "Rotation" ) );
-    mRotationLabel->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-    statusBar()->addPermanentWidget( mRotationLabel, 0 );
+    // Little icon shown next to rotation label / edit widget
+    mRotationLabelIcon = new QLabel( this );
+    mRotationLabelIcon->setFixedSize(16,16);
+    QPixmap rotationIcon = QgsApplication::getThemePixmap("mActionStatusRotate.svg" );
+    mRotationLabelIcon->setPixmap( rotationIcon.scaled(
+        mRotationLabelIcon->size(),
+        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
+    mRotationLabelIcon->setObjectName( "mRotationLabelIcon" );
+    mRotationLabelIcon->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
+    statusBar()->addPermanentWidget( mRotationLabelIcon, 0 );
 
+    // add a widget to set current rotation
+    // when it loses focus it will be hidden and
+    // the label shown in its place
     mRotationEdit = new QgsDoubleSpinBox( statusBar() );
     mRotationEdit->setObjectName( "mRotationEdit" );
     mRotationEdit->setClearValue( 0.0 );
@@ -2327,6 +2330,16 @@ void QgisApp::createStatusBar()
               "the rotation" ) );
     mRotationEdit->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
     statusBar()->addPermanentWidget( mRotationEdit, 0 );
+    connect( mRotationEdit, SIGNAL( editingFinished() ), this, SLOT( showRotationLabel() ) );
+
+    // add the widget to show the current rotation
+    // this will be hidden when you click it and the
+    // spin box shown in its place
+    mRotationLabel = new QLabel( this );
+    mRotationLabelIcon->setObjectName( "mRotationLabel" );
+    mRotationLabelIcon->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
+    statusBar()->addPermanentWidget( mRotationLabel, 0 );
+
     connect( mRotationEdit, SIGNAL( valueChanged( double ) ), this, SLOT( userRotation() ) );
 
     showRotation();
@@ -10065,6 +10078,7 @@ void QgisApp::showRotation()
   // update the statusbar with the current rotation.
   double myrotation = mMapCanvas->rotation();
   mRotationEdit->setValue( myrotation );
+  mRotationLabel->setText( mRotationEdit->value() )
 } // QgisApp::showRotation
 
 

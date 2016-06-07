@@ -63,7 +63,7 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mScale->setToolTip( tr( "Current map scale (formatted as x:y)" ) );
 
   mLockLabel = new QLabel( this );
-  mIconLabel->setFixedSize(16,16);
+  mLockLabel->setFixedSize(16,16);
   mLockIcon = QgsApplication::getThemePixmap("mActionStatusLock.svg" );
   mUnlockIcon = QgsApplication::getThemePixmap("mActionStatusUnlock.svg" );
   mLockLabel->setPixmap( mUnlockIcon.scaled(
