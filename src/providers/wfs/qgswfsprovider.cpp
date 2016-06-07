@@ -655,6 +655,12 @@ QString QgsWFSProvider::subsetString()
 
 bool QgsWFSProvider::setSubsetString( const QString& theSQL, bool updateFeatureCount )
 {
+  QgsDebugMsg( QString( "theSql = '%1'" ).arg( theSQL ) );
+
+  // Invalid and cancel current download before altering fields, etc...
+  // (crashes might happen if not done at the beginning)
+  mShared->invalidateCache();
+
   mSubsetString = theSQL;
   mCacheMinMaxDirty = true;
 
@@ -663,7 +669,10 @@ bool QgsWFSProvider::setSubsetString( const QString& theSQL, bool updateFeatureC
   mShared->mLayerPropertiesList.clear();
   mShared->mMapFieldNameToSrcLayerNameFieldName.clear();
   mShared->mDistinctSelect = false;
-  if ( theSQL.startsWith( "SELECT ", Qt::CaseInsensitive ) )
+  if ( theSQL.startsWith( "SELECT ", Qt::CaseInsensitive ) ||
+       theSQL.startsWith( "SELECT\t", Qt::CaseInsensitive ) ||
+       theSQL.startsWith( "SELECT\r", Qt::CaseInsensitive ) ||
+       theSQL.startsWith( "SELECT\n", Qt::CaseInsensitive ) )
   {
     QString errorMsg, warningMsg;
     if ( !processSQL( theSQL, errorMsg, warningMsg ) )
