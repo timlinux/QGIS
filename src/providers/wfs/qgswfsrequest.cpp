@@ -172,7 +172,6 @@ bool QgsWFSRequest::sendPOST( const QUrl& url, const QString& contentTypeHeader,
 
 void QgsWFSRequest::abort()
 {
-  QgsDebugMsg( "Entered" );
   mIsAborted = true;
   if ( mReply )
   {
@@ -206,7 +205,6 @@ void QgsWFSRequest::replyProgress( qint64 bytesReceived, qint64 bytesTotal )
 
 void QgsWFSRequest::replyFinished()
 {
-  QgsDebugMsg( "entering." );
   if ( !mIsAborted && mReply )
   {
     if ( mReply->error() == QNetworkReply::NoError )

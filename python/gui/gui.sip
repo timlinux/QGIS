@@ -63,6 +63,7 @@
 %Include qgsdetaileditemwidget.sip
 %Include qgsdial.sip
 %Include qgsdialog.sip
+%Include qgsdockwidget.sip
 %Include qgsencodingfiledialog.sip
 %Include qgserrordialog.sip
 %Include qgsexpressionbuilderdialog.sip
@@ -134,6 +135,7 @@
 %Include qgsoptionsdialogbase.sip
 %Include qgsorderbydialog.sip
 %Include qgsowssourceselect.sip
+%Include qgspanelwidget.sip
 %Include qgspixmaplabel.sip
 %Include qgspluginmanagerinterface.sip
 %Include qgsprevieweffect.sip
@@ -251,7 +253,6 @@
 %Include symbology-ng/qgsvectorfieldsymbollayerwidget.sip
 %Include symbology-ng/qgsvectorgradientcolorrampv2dialog.sip
 %Include symbology-ng/qgsvectorrandomcolorrampv2dialog.sip
-%Include symbology-ng/qgsrendererwidgetcontainer.sip
 
 %Include effects/qgseffectdrawmodecombobox.sip
 %Include effects/qgseffectstackpropertieswidget.sip

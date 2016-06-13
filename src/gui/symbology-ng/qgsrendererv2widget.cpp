@@ -19,13 +19,14 @@
 #include "qgssymbollevelsv2dialog.h"
 #include "qgsexpressionbuilderdialog.h"
 #include "qgsmapcanvas.h"
+#include "qgspanelwidget.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QMenu>
 
 QgsRendererV2Widget::QgsRendererV2Widget( QgsVectorLayer* layer, QgsStyleV2* style )
-    : QWidget()
+    : QgsPanelWidget()
     , mLayer( layer )
     , mStyle( style )
     , mMapCanvas( nullptr )
@@ -253,6 +254,7 @@ void QgsRendererV2Widget::showSymbolLevelsDialog( QgsFeatureRendererV2* r )
   if ( dlg.exec() )
   {
     r->setUsingSymbolLevels( dlg.usingLevels() );
+    emit widgetChanged();
   }
 }
 
@@ -269,6 +271,11 @@ const QgsMapCanvas* QgsRendererV2Widget::mapCanvas() const
 void QgsRendererV2Widget::applyChanges()
 {
   apply();
+}
+
+void QgsRendererV2Widget::setDockMode( bool dockMode )
+{
+  mDockMode = dockMode;
 }
 
 

@@ -494,7 +494,6 @@ void QgsRasterTransparencyWidget::pixelSelected( const QgsPoint & canvasPoint )
 
 void QgsRasterTransparencyWidget::populateTransparencyTable( QgsRasterRenderer *renderer )
 {
-  QgsDebugMsg( "entering." );
   if ( !mRasterLayer )
   {
     return;
@@ -550,7 +549,6 @@ void QgsRasterTransparencyWidget::populateTransparencyTable( QgsRasterRenderer *
 
 void QgsRasterTransparencyWidget::setupTransparencyTable( int nBands )
 {
-  QgsDebugMsg( "Entered" );
   tableTransparency->clear();
   tableTransparency->setColumnCount( 0 );
   tableTransparency->setRowCount( 0 );

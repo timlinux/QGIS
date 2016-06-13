@@ -188,7 +188,6 @@ bool QgsWcsCapabilities::sendRequest( QString const & url )
 
 void QgsWcsCapabilities::clear()
 {
-  QgsDebugMsg( "Entered" );
   mCoverageCount = 0;
   mCoveragesSupported.clear();
   mCapabilities = QgsWcsCapabilitiesProperty();
@@ -691,7 +690,6 @@ void QgsWcsCapabilities::parseContentMetadata( QDomElement const & e, QgsWcsCove
 void QgsWcsCapabilities::parseCoverageOfferingBrief( QDomElement const & e, QgsWcsCoverageSummary &coverageSummary, QgsWcsCoverageSummary *parent )
 {
   Q_UNUSED( parent );
-  QgsDebugMsg( "Entered" );
   coverageSummary.orderId = ++mCoverageCount;
 
   coverageSummary.identifier = firstChildText( e, "name" );
@@ -1169,7 +1167,6 @@ QString QgsWcsCapabilities::lastErrorFormat()
 
 bool QgsWcsCapabilities::setAuthorization( QNetworkRequest &request ) const
 {
-  QgsDebugMsg( "entered" );
   if ( mUri.hasParam( "authcfg" ) && !mUri.param( "authcfg" ).isEmpty() )
   {
     return QgsAuthManager::instance()->updateNetworkRequest( request, mUri.param( "authcfg" ) );

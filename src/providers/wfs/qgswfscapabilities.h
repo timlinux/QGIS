@@ -35,11 +35,15 @@ class QgsWFSCapabilities : public QgsWFSRequest
     //! description of a vector layer
     struct FeatureType
     {
+      //! Default constructor
+      FeatureType() : bboxSRSIsWGS84( false ), insertCap( false ), updateCap( false ), deleteCap( false ) {}
+
       QString name;
       QString title;
       QString abstract;
       QList<QString> crslist; // first is default
-      QgsRectangle bboxLongLat;
+      QgsRectangle bbox;
+      bool bboxSRSIsWGS84; // if false, the bbox is expressed in crslist[0] CRS
       bool insertCap;
       bool updateCap;
       bool deleteCap;
@@ -92,6 +96,7 @@ class QgsWFSCapabilities : public QgsWFSRequest
       QList<FeatureType> featureTypes;
       QList<Function> spatialPredicatesList;
       QList<Function> functionList;
+      bool useEPSGColumnFormat; // whether to use EPSG:XXXX srsname
 
       QSet< QString > setAllTypenames;
       QMap< QString, QString> mapUnprefixedTypenameToPrefixedTypename;

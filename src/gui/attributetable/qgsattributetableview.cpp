@@ -115,17 +115,13 @@ void QgsAttributeTableView::setAttributeTableConfig( const QgsAttributeTableConf
 
 void QgsAttributeTableView::setModel( QgsAttributeTableFilterModel* filterModel )
 {
-  if ( mFilterModel )
-  {
-    // Cleanup old model stuff if present
-    disconnect( mFilterModel, SIGNAL( filterAboutToBeInvalidated() ), this, SLOT( onFilterAboutToBeInvalidated() ) );
-    disconnect( mFilterModel, SIGNAL( filterInvalidated() ), this, SLOT( onFilterInvalidated() ) );
-  }
-
   mFilterModel = filterModel;
   QTableView::setModel( filterModel );
 
-  connect( mFilterModel, SIGNAL( destroyed() ), this, SLOT( modelDeleted() ) );
+  if ( mFilterModel )
+  {
+    connect( mFilterModel, SIGNAL( destroyed() ), this, SLOT( modelDeleted() ) );
+  }
 
   delete mFeatureSelectionModel;
   mFeatureSelectionModel = nullptr;
@@ -142,11 +138,12 @@ void QgsAttributeTableView::setModel( QgsAttributeTableFilterModel* filterModel 
     mTableDelegate->setFeatureSelectionModel( mFeatureSelectionModel );
     connect( mFeatureSelectionModel, SIGNAL( requestRepaint( QModelIndexList ) ), this, SLOT( repaintRequested( QModelIndexList ) ) );
     connect( mFeatureSelectionModel, SIGNAL( requestRepaint() ), this, SLOT( repaintRequested() ) );
-  }
 
-  mActionWidget = createActionWidget( 0 );
-  mActionWidget->setVisible( false );
-  updateActionImage( mActionWidget );
+    delete mActionWidget;
+    mActionWidget = createActionWidget( 0 );
+    mActionWidget->setVisible( false );
+    updateActionImage( mActionWidget );
+  }
 }
 
 void QgsAttributeTableView::setFeatureSelectionManager( QgsIFeatureSelectionManager* featureSelectionManager )

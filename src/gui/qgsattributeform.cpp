@@ -51,6 +51,7 @@ QgsAttributeForm::QgsAttributeForm( QgsVectorLayer* vl, const QgsFeature &featur
     : QWidget( parent )
     , mLayer( vl )
     , mMessageBar( nullptr )
+    , mOwnsMessageBar( true )
     , mMultiEditUnsavedMessageBarItem( nullptr )
     , mMultiEditMessageBarItem( nullptr )
     , mInvalidConstraintMessage( nullptr )
@@ -173,26 +174,45 @@ void QgsAttributeForm::setMode( QgsAttributeForm::Mode mode )
     }
   }
 
+  bool relationWidgetsVisible = ( mMode == QgsAttributeForm::SingleEditMode || mMode == QgsAttributeForm::AddFeatureMode );
+  Q_FOREACH ( QgsRelationWidgetWrapper* w, findChildren<  QgsRelationWidgetWrapper* >() )
+  {
+    w->setVisible( relationWidgetsVisible );
+  }
+
   switch ( mode )
   {
     case QgsAttributeForm::SingleEditMode:
       setFeature( mFeature );
       mSearchButtonBox->setVisible( false );
+      mInvalidConstraintMessage->show();
       break;
 
     case QgsAttributeForm::AddFeatureMode:
       synchronizeEnabledState();
       mSearchButtonBox->setVisible( false );
+      mInvalidConstraintMessage->show();
       break;
 
     case QgsAttributeForm::MultiEditMode:
       resetMultiEdit( false );
       synchronizeEnabledState();
       mSearchButtonBox->setVisible( false );
+      mInvalidConstraintMessage->show();
       break;
 
     case QgsAttributeForm::SearchMode:
       mSearchButtonBox->setVisible( true );
+      hideButtonBox();
+      if ( mContext.formMode() != QgsAttributeEditorContext::Embed )
+      {
+        delete mInvalidConstraintMessage;
+        mInvalidConstraintMessage = nullptr;
+      }
+      else
+      {
+        mInvalidConstraintMessage->hide();
+      }
       break;
   }
 
@@ -385,7 +405,8 @@ void QgsAttributeForm::filterTriggered()
 {
   QString filter = createFilterExpression();
   emit filterExpressionSet( filter, ReplaceFilter );
-  setMode( SingleEditMode );
+  if ( mContext.formMode() == QgsAttributeEditorContext::Embed )
+    setMode( SingleEditMode );
 }
 
 void QgsAttributeForm::filterAndTriggered()
@@ -394,7 +415,8 @@ void QgsAttributeForm::filterAndTriggered()
   if ( filter.isEmpty() )
     return;
 
-  setMode( SingleEditMode );
+  if ( mContext.formMode() == QgsAttributeEditorContext::Embed )
+    setMode( SingleEditMode );
   emit filterExpressionSet( filter, FilterAnd );
 }
 
@@ -404,7 +426,8 @@ void QgsAttributeForm::filterOrTriggered()
   if ( filter.isEmpty() )
     return;
 
-  setMode( SingleEditMode );
+  if ( mContext.formMode() == QgsAttributeEditorContext::Embed )
+    setMode( SingleEditMode );
   emit filterExpressionSet( filter, FilterOr );
 }
 
@@ -436,7 +459,8 @@ void QgsAttributeForm::runSearchSelect( QgsVectorLayer::SelectBehaviour behaviou
 
   mLayer->selectByExpression( filter, behaviour );
   pushSelectedFeaturesMessage();
-  setMode( SingleEditMode );
+  if ( mContext.formMode() == QgsAttributeEditorContext::Embed )
+    setMode( SingleEditMode );
 }
 
 void QgsAttributeForm::searchSetSelection()
@@ -757,7 +781,7 @@ bool QgsAttributeForm::currentFormFeature( QgsFeature &feature )
 void QgsAttributeForm::clearInvalidConstraintsMessage()
 {
   mInvalidConstraintMessage->clear();
-  mInvalidConstraintMessage->setStyleSheet( "" );
+  mInvalidConstraintMessage->setStyleSheet( QString() );
 }
 
 void QgsAttributeForm::displayInvalidConstraintMessage( const QStringList &f,
@@ -968,13 +992,16 @@ void QgsAttributeForm::synchronizeEnabledState()
   // push a message and disable the OK button if constraints are invalid
   clearInvalidConstraintsMessage();
 
-  QStringList invalidFields, descriptions;
-  bool validConstraint = currentFormValidConstraints( invalidFields, descriptions );
+  if ( mMode != SearchMode )
+  {
+    QStringList invalidFields, descriptions;
+    bool validConstraint = currentFormValidConstraints( invalidFields, descriptions );
 
-  if ( ! validConstraint )
-    displayInvalidConstraintMessage( invalidFields, descriptions );
+    if ( ! validConstraint )
+      displayInvalidConstraintMessage( invalidFields, descriptions );
 
-  isEditable = isEditable & validConstraint;
+    isEditable = isEditable & validConstraint;
+  }
 
   // change ok button status
   QPushButton* okButton = mButtonBox->button( QDialogButtonBox::Ok );
@@ -1245,14 +1272,14 @@ void QgsAttributeForm::init()
     mSearchButtonBox->setLayout( boxLayout );
     mSearchButtonBox->setObjectName( "searchButtonBox" );
 
-    QPushButton* clearButton = new QPushButton( tr( "Reset form" ), mSearchButtonBox );
+    QPushButton* clearButton = new QPushButton( tr( "&Reset form" ), mSearchButtonBox );
     connect( clearButton, SIGNAL( clicked( bool ) ), this, SLOT( resetSearch() ) );
     boxLayout->addWidget( clearButton );
     boxLayout->addStretch( 1 );
 
     QToolButton* selectButton = new QToolButton();
     selectButton->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Minimum );
-    selectButton->setText( tr( "Select features" ) );
+    selectButton->setText( tr( "&Select features" ) );
     selectButton->setPopupMode( QToolButton::MenuButtonPopup );
     connect( selectButton, SIGNAL( clicked( bool ) ), this, SLOT( searchSetSelection() ) );
     QMenu* selectMenu = new QMenu( selectButton );
@@ -1271,20 +1298,30 @@ void QgsAttributeForm::init()
     selectButton->setMenu( selectMenu );
     boxLayout->addWidget( selectButton );
 
-    QToolButton* filterButton = new QToolButton();
-    filterButton->setText( tr( "Filter features" ) );
-    filterButton->setPopupMode( QToolButton::MenuButtonPopup );
-    filterButton->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Minimum );
-    connect( filterButton, SIGNAL( clicked( bool ) ), this, SLOT( filterTriggered() ) );
-    QMenu* filterMenu = new QMenu( filterButton );
-    QAction* filterAndAction = new QAction( tr( "Filter within (\"AND\")" ), filterMenu );
-    connect( filterAndAction, SIGNAL( triggered( bool ) ), this, SLOT( filterAndTriggered() ) );
-    filterMenu->addAction( filterAndAction );
-    QAction* filterOrAction = new QAction( tr( "Extend filter (\"OR\")" ), filterMenu );
-    connect( filterOrAction, SIGNAL( triggered( bool ) ), this, SLOT( filterOrTriggered() ) );
-    filterMenu->addAction( filterOrAction );
-    filterButton->setMenu( filterMenu );
-    boxLayout->addWidget( filterButton );
+    if ( mContext.formMode() == QgsAttributeEditorContext::Embed )
+    {
+      QToolButton* filterButton = new QToolButton();
+      filterButton->setText( tr( "Filter features" ) );
+      filterButton->setPopupMode( QToolButton::MenuButtonPopup );
+      filterButton->setSizePolicy( QSizePolicy::Minimum, QSizePolicy::Minimum );
+      connect( filterButton, SIGNAL( clicked( bool ) ), this, SLOT( filterTriggered() ) );
+      QMenu* filterMenu = new QMenu( filterButton );
+      QAction* filterAndAction = new QAction( tr( "Filter within (\"AND\")" ), filterMenu );
+      connect( filterAndAction, SIGNAL( triggered( bool ) ), this, SLOT( filterAndTriggered() ) );
+      filterMenu->addAction( filterAndAction );
+      QAction* filterOrAction = new QAction( tr( "Extend filter (\"OR\")" ), filterMenu );
+      connect( filterOrAction, SIGNAL( triggered( bool ) ), this, SLOT( filterOrTriggered() ) );
+      filterMenu->addAction( filterOrAction );
+      filterButton->setMenu( filterMenu );
+      boxLayout->addWidget( filterButton );
+    }
+    else
+    {
+      QPushButton* closeButton = new QPushButton( tr( "Close" ), mSearchButtonBox );
+      connect( closeButton, SIGNAL( clicked( bool ) ), this, SIGNAL( closed() ) );
+      closeButton->setShortcut( Qt::Key_Escape );
+      boxLayout->addWidget( closeButton );
+    }
 
     layout->addWidget( mSearchButtonBox );
   }
@@ -1302,6 +1339,12 @@ void QgsAttributeForm::init()
   {
     iface->initForm();
   }
+
+  if ( mContext.formMode() == QgsAttributeEditorContext::Embed || mMode == SearchMode )
+  {
+    hideButtonBox();
+  }
+
   QApplication::restoreOverrideCursor();
 }
 
@@ -1781,6 +1824,14 @@ void QgsAttributeForm::setMultiEditFeatureIds( const QgsFeatureIds& fids )
     }
   }
   mIsSettingMultiEditFeatures = false;
+}
+
+void QgsAttributeForm::setMessageBar( QgsMessageBar* messageBar )
+{
+  if ( mOwnsMessageBar )
+    delete mMessageBar;
+  mOwnsMessageBar = false;
+  mMessageBar = messageBar;
 }
 
 int QgsAttributeForm::messageTimeout()

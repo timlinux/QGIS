@@ -1983,7 +1983,6 @@ void QgsOracleProvider::appendGeomParam( const QgsGeometry *geom, QSqlQuery &qry
 
 bool QgsOracleProvider::changeGeometryValues( const QgsGeometryMap &geometry_map )
 {
-  QgsDebugMsg( "entering." );
 
   if ( mIsQuery || mGeometryColumn.isNull() || !mConnection )
     return false;
@@ -3402,19 +3401,25 @@ QGISEXTERN QString loadStyle( const QString &uri, QString &errCause )
   QSqlQuery qry( *conn );
 
   QString style;
-  if ( !qry.exec( QString( "SELECT styleQML FROM ("
-                           "SELECT styleQML"
-                           " FROM layer_styles"
-                           " WHERE f_table_catalog=%1"
-                           " AND f_table_schema=%2"
-                           " AND f_table_name=%3"
-                           " AND f_geometry_column=%4"
-                           " ORDER BY useAsDefault DESC"
-                           ") WHERE rownum=1" )
-                  .arg( QgsOracleConn::quotedValue( dsUri.database() ) )
-                  .arg( QgsOracleConn::quotedValue( dsUri.schema() ) )
-                  .arg( QgsOracleConn::quotedValue( dsUri.table() ) )
-                  .arg( QgsOracleConn::quotedValue( dsUri.geometryColumn() ) ) ) )
+  if ( !qry.exec( "SELECT COUNT(*) FROM user_tables WHERE table_name='LAYER_STYLES'" ) || !qry.next() || qry.value( 0 ).toInt() == 0 )
+  {
+    errCause = QObject::tr( "Unable layer style table not found [%1]" ).arg( qry.lastError().text() );
+    conn->disconnect();
+    return QString::null;
+  }
+  else if ( !qry.exec( QString( "SELECT styleQML FROM ("
+                                "SELECT styleQML"
+                                " FROM layer_styles"
+                                " WHERE f_table_catalog=%1"
+                                " AND f_table_schema=%2"
+                                " AND f_table_name=%3"
+                                " AND f_geometry_column=%4"
+                                " ORDER BY useAsDefault DESC"
+                                ") WHERE rownum=1" )
+                       .arg( QgsOracleConn::quotedValue( dsUri.database() ) )
+                       .arg( QgsOracleConn::quotedValue( dsUri.schema() ) )
+                       .arg( QgsOracleConn::quotedValue( dsUri.table() ) )
+                       .arg( QgsOracleConn::quotedValue( dsUri.geometryColumn() ) ) ) )
   {
     errCause = QObject::tr( "Could not retrieve style [%1]" ).arg( qry.lastError().text() );
   }

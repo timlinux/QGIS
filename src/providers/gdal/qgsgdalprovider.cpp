@@ -181,7 +181,6 @@ QgsGdalProvider::QgsGdalProvider( const QString &uri, bool update )
 
 QgsGdalProvider* QgsGdalProvider::clone() const
 {
-  QgsDebugMsg( "Entered" );
   QgsGdalProvider * provider = new QgsGdalProvider( dataSourceUri() );
   provider->copyBaseSettings( *this );
   return provider;
@@ -227,7 +226,6 @@ bool QgsGdalProvider::crsFromWkt( const char *wkt )
 
 QgsGdalProvider::~QgsGdalProvider()
 {
-  QgsDebugMsg( "entering." );
   if ( mGdalBaseDataset )
   {
     GDALDereferenceDataset( mGdalBaseDataset );
@@ -425,7 +423,6 @@ void QgsGdalProvider::readBlock( int theBandNo, int xBlock, int yBlock, void *bl
   // TODO!!!: Check data alignment!!! May it happen that nearest value which
   // is not nearest is assigned to an output cell???
 
-  //QgsDebugMsg( "Entered" );
 
   //QgsDebugMsg( "yBlock = "  + QString::number( yBlock ) );
 
@@ -874,13 +871,11 @@ void QgsGdalProvider::computeMinMax( int theBandNo ) const
  */
 QList<QgsColorRampShader::ColorRampItem> QgsGdalProvider::colorTable( int theBandNumber )const
 {
-  QgsDebugMsg( "entered." );
   return QgsGdalProviderBase::colorTable( mGdalDataset, theBandNumber );
 }
 
 QgsCoordinateReferenceSystem QgsGdalProvider::crs()
 {
-  QgsDebugMsg( "Entered" );
   return mCrs;
 }
 
@@ -1985,7 +1980,6 @@ static QString createFileFilter_( QString const &longName, QString const &glob )
 
 void buildSupportedRasterFileFilterAndExtensions( QString & theFileFiltersString, QStringList & theExtensions, QStringList & theWildcards )
 {
-  QgsDebugMsg( "Entered" );
 
   // then iterate through all of the supported drivers, adding the
   // corresponding file filter

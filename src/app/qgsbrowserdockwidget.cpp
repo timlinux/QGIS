@@ -262,7 +262,7 @@ void QgsBrowserPropertiesDialog::setItem( QgsDataItem* item )
 }
 
 QgsBrowserDockWidget::QgsBrowserDockWidget( const QString& name, QWidget * parent )
-    : QDockWidget( parent )
+    : QgsDockWidget( parent )
     , mModel( nullptr )
     , mProxyModel( nullptr )
     , mPropertiesWidgetEnabled( false )
@@ -365,7 +365,7 @@ void QgsBrowserDockWidget::showEvent( QShowEvent * e )
     mSplitter->setSizes( sizes );
   }
 
-  QDockWidget::showEvent( e );
+  QgsDockWidget::showEvent( e );
 }
 
 void QgsBrowserDockWidget::showContextMenu( QPoint pt )
@@ -470,7 +470,6 @@ void QgsBrowserDockWidget::refresh()
 
 void QgsBrowserDockWidget::refreshModel( const QModelIndex& index )
 {
-  QgsDebugMsg( "Entered" );
   QgsDataItem *item = mModel->dataItem( index );
   if ( item )
   {

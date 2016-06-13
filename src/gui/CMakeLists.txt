@@ -31,7 +31,6 @@ SET(QGIS_GUI_SRCS
   symbology-ng/qgspointdisplacementrendererwidget.cpp
   symbology-ng/qgsrendererv2propertiesdialog.cpp
   symbology-ng/qgsrendererv2widget.cpp
-  symbology-ng/qgsrendererwidgetcontainer.cpp
   symbology-ng/qgsrulebasedrendererv2widget.cpp
   symbology-ng/qgssinglesymbolrendererv2widget.cpp
   symbology-ng/qgssizescalewidget.cpp
@@ -204,6 +203,7 @@ SET(QGIS_GUI_SRCS
   qgsdetaileditemwidget.cpp
   qgsdial.cpp
   qgsdialog.cpp
+  qgsdockwidget.cpp
   qgsencodingfiledialog.cpp
   qgserrordialog.cpp
   qgsexpressionbuilderdialog.cpp
@@ -274,6 +274,7 @@ SET(QGIS_GUI_SRCS
   qgsorderbydialog.cpp
   qgsowssourceselect.cpp
   qgssourceselectdialog.cpp
+  qgspanelwidget.cpp
   qgspixmaplabel.cpp
   qgspluginmanagerinterface.cpp
   qgsprevieweffect.cpp
@@ -360,6 +361,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsdetaileditemwidget.h
   qgsdial.h
   qgsdialog.h
+  qgsdockwidget.h
   qgsencodingfiledialog.h
   qgserrordialog.h
   qgsexpressionbuilderdialog.h
@@ -422,6 +424,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsorderbydialog.h
   qgsowssourceselect.h
   qgssourceselectdialog.h
+  qgspanelwidget.h
   qgspixmaplabel.h
   qgspluginmanagerinterface.h
   qgsprevieweffect.h
@@ -478,7 +481,6 @@ SET(QGIS_GUI_MOC_HDRS
   symbology-ng/qgspointdisplacementrendererwidget.h
   symbology-ng/qgsrendererv2propertiesdialog.h
   symbology-ng/qgsrendererv2widget.h
-  symbology-ng/qgsrendererwidgetcontainer.h
   symbology-ng/qgsrulebasedrendererv2widget.h
   symbology-ng/qgssinglesymbolrendererv2widget.h
   symbology-ng/qgssizescalewidget.h
@@ -756,12 +758,7 @@ INCLUDE_DIRECTORIES(SYSTEM
   ${GDAL_INCLUDE_DIR}
 )
 
-IF (NOT MSVC)
-  ADD_DEFINITIONS("-UGUI_EXPORT")
-  IF ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
-  ENDIF()
-ENDIF (NOT MSVC)
+REMOVE_DEFINITIONS("-DGUI_EXPORT=${DLLIMPORT}")
 ADD_DEFINITIONS("\"-DGUI_EXPORT=${DLLEXPORT}\"")
 
 # disable deprecation warnings for classes re-exporting deprecated methods

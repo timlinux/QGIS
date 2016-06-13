@@ -235,29 +235,25 @@ QgsOptions::QgsOptions( QWidget *parent, Qt::WindowFlags fl )
   }
 
   //local directories to search when looking for an SVG with a given basename
-  myPaths = mSettings->value( "svg/searchPathsForSVG", QDir::homePath() ).toString();
-  if ( !myPaths.isEmpty() )
+  QStringList svgPaths = QgsApplication::svgPaths();
+  if ( !svgPaths.isEmpty() )
   {
-    QStringList myPathList = myPaths.split( '|' );
-    QStringList::const_iterator pathIt = myPathList.constBegin();
-    for ( ; pathIt != myPathList.constEnd(); ++pathIt )
+    Q_FOREACH ( const QString& path, svgPaths )
     {
       QListWidgetItem* newItem = new QListWidgetItem( mListSVGPaths );
-      newItem->setText( *pathIt );
+      newItem->setText( path );
       newItem->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable );
       mListSVGPaths->addItem( newItem );
     }
   }
 
-  myPaths = mSettings->value( "composer/searchPathsForTemplates", "" ).toString();
-  if ( !myPaths.isEmpty() )
+  QStringList templatePaths = QgsApplication::composerTemplatePaths();
+  if ( !templatePaths.isEmpty() )
   {
-    QStringList myPathList = myPaths.split( '|' );
-    QStringList::const_iterator pathIt = myPathList.constBegin();
-    for ( ; pathIt != myPathList.constEnd(); ++pathIt )
+    Q_FOREACH ( const QString& path, templatePaths )
     {
       QListWidgetItem* newItem = new QListWidgetItem( mListComposerTemplatePaths );
-      newItem->setText( *pathIt );
+      newItem->setText( path );
       newItem->setFlags( Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable );
       mListComposerTemplatePaths->addItem( newItem );
     }
@@ -318,16 +314,12 @@ QgsOptions::QgsOptions( QWidget *parent, Qt::WindowFlags fl )
   }
 
   // cache settings
-  QNetworkDiskCache *cache = qobject_cast<QNetworkDiskCache*>( QgsNetworkAccessManager::instance()->cache() );
-  if ( cache )
-  {
-    mCacheDirectory->setText( cache->cacheDirectory() );
-    mCacheSize->setMinimum( 0 );
-    mCacheSize->setMaximum( std::numeric_limits<int>::max() );
-    mCacheSize->setSingleStep( 1024 );
-    QgsDebugMsg( QString( "set cacheSize: %1" ).arg( cache->maximumCacheSize() ) );
-    mCacheSize->setValue( cache->maximumCacheSize() / 1024 );
-  }
+  mCacheDirectory->setText( mSettings->value( "cache/directory" ).toString() );
+  mCacheDirectory->setPlaceholderText( QDir( QgsApplication::qgisSettingsDirPath() ).canonicalPath() + QDir::separator() + "cache" );
+  mCacheSize->setMinimum( 0 );
+  mCacheSize->setMaximum( std::numeric_limits<int>::max() );
+  mCacheSize->setSingleStep( 1024 );
+  mCacheSize->setValue( mSettings->value( "cache/size" ).toInt() / 1024 );
 
   //wms search server
   leWmsSearch->setText( mSettings->value( "/qgis/WMSSearchUrl", "http://geopole.org/wms/search?search=%1&type=rss" ).toString() );

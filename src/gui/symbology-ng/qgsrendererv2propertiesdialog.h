@@ -31,7 +31,6 @@ class QgsSymbolV2;
 class QgsPaintEffect;
 class QgsRendererV2Widget;
 class QgsMapCanvas;
-class QgsRendererWidgetContainer;
 
 
 class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::QgsRendererV2PropsDialogBase
@@ -39,7 +38,15 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
     Q_OBJECT
 
   public:
-    QgsRendererV2PropertiesDialog( QgsVectorLayer* layer, QgsStyleV2* style, bool embedded = false );
+
+    /** Constructor for QgsRendererV2PropertiesDialog.
+     * @param layer associated layer
+     * @param style style collection
+     * @param embedded set to true to indicate that the dialog will be embedded in another widget, rather
+     * than shown as a dialog by itself
+     * @param parent parent widget
+     */
+    QgsRendererV2PropertiesDialog( QgsVectorLayer* layer, QgsStyleV2* style, bool embedded = false, QWidget* parent = nullptr );
     ~QgsRendererV2PropertiesDialog();
 
     /** Sets the map canvas associated with the dialog. This allows the widget to retrieve the current
@@ -48,6 +55,13 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
      * @note added in QGIS 2.12
      */
     void setMapCanvas( QgsMapCanvas* canvas );
+
+    /**
+     * Set the widget in dock mode which tells the widget to emit panel
+     * widgets and not open dialogs
+     * @param dockMode True to enable dock mode.
+     */
+    void setDockMode( bool dockMode );
 
   signals:
     /**
@@ -72,18 +86,6 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
 
     //! Apply and accept the changes for the dialog.
     void onOK();
-
-    /** Shows a panel widget inside the renderer widget.
-     * @param container widget panel to show
-     * @note added in QGIS 2.16
-     */
-    void showPanel( QgsRendererWidgetContainer *container );
-
-    /**
-     * Closes the given panel in the stack of panels.
-     * @param container The container widget to close.
-     */
-    void closePanel( QgsRendererWidgetContainer *container );
 
   private slots:
     void showOrderByDialog();
@@ -118,6 +120,9 @@ class GUI_EXPORT QgsRendererV2PropertiesDialog : public QDialog, private Ui::Qgs
     QgsMapCanvas* mMapCanvas;
 
     QgsFeatureRequest::OrderBy mOrderBy;
+
+  private:
+    bool mDockMode;
 };
 
 

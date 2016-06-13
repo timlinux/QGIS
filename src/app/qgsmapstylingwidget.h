@@ -36,15 +36,15 @@ class QgsRendererV2PropertiesDialog;
 class QgsRendererRasterPropertiesWidget;
 class QgsUndoWidget;
 class QgsRasterHistogramWidget;
-class QgsMapStylePanelFactory;
+class QgsMapStylingPanelFactory;
 class QgsMapLayerStyleManagerWidget;
 
-class APP_EXPORT QgsMapLayerStyleManagerWidgetFactory : public QgsMapStylePanelFactory
+class APP_EXPORT QgsMapLayerStyleManagerWidgetFactory : public QgsMapStylingPanelFactory
 {
   public:
     QIcon icon() override;
     QString title() override;
-    QgsMapStylePanel *createPanel( QgsMapLayer *layer, QgsMapCanvas *canvas, QWidget *parent ) override;
+    QgsMapStylingPanel *createPanel( QgsMapLayer *layer, QgsMapCanvas *canvas, QWidget *parent ) override;
     bool supportsLayer( QgsMapLayer *layer ) override;
 };
 
@@ -66,11 +66,11 @@ class APP_EXPORT QgsMapStylingWidget : public QWidget, private Ui::QgsMapStyling
 {
     Q_OBJECT
   public:
-    QgsMapStylingWidget( QgsMapCanvas *canvas, QList<QgsMapStylePanelFactory *> pages, QWidget *parent = 0 );
+    QgsMapStylingWidget( QgsMapCanvas *canvas, QList<QgsMapStylingPanelFactory *> pages, QWidget *parent = 0 );
     ~QgsMapStylingWidget();
     QgsMapLayer* layer() { return mCurrentLayer; }
 
-    void setPageFactories( QList<QgsMapStylePanelFactory*> factories );
+    void setPageFactories( QList<QgsMapStylingPanelFactory*> factories );
 
   signals:
     void styleChanged( QgsMapLayer* layer );
@@ -85,6 +85,7 @@ class APP_EXPORT QgsMapStylingWidget : public QWidget, private Ui::QgsMapStyling
   private slots:
     void updateCurrentWidgetLayer();
     void layerAboutToBeRemoved( QgsMapLayer* layer );
+    void liveApplyToggled( bool value );
 
   private:
     void pushUndoItem( const QString& name );
@@ -99,8 +100,8 @@ class APP_EXPORT QgsMapStylingWidget : public QWidget, private Ui::QgsMapStyling
     QgsLabelingWidget *mLabelingWidget;
     QgsRendererV2PropertiesDialog* mVectorStyleWidget;
     QgsRendererRasterPropertiesWidget* mRasterStyleWidget;
-    QList<QgsMapStylePanelFactory*> mPageFactories;
-    QMap<int, QgsMapStylePanelFactory*> mUserPages;
+    QList<QgsMapStylingPanelFactory*> mPageFactories;
+    QMap<int, QgsMapStylingPanelFactory*> mUserPages;
     QgsMapLayerStyleManagerWidgetFactory* mStyleManagerFactory;
 };
 

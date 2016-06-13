@@ -27,7 +27,7 @@
 #include "qgsheatmaprendererwidget.h"
 #include "qgs25drendererwidget.h"
 #include "qgsnullsymbolrendererwidget.h"
-#include "qgsrendererwidgetcontainer.h"
+#include "qgspanelwidget.h"
 
 #include "qgsorderbydialog.h"
 #include "qgsapplication.h"
@@ -79,14 +79,16 @@ static void _initRendererWidgetFunctions()
   initialized = true;
 }
 
-QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* layer, QgsStyleV2* style, bool embedded )
-    : mLayer( layer )
+QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* layer, QgsStyleV2* style, bool embedded, QWidget* parent )
+    : QDialog( parent )
+    , mLayer( layer )
     , mStyle( style )
     , mActiveWidget( nullptr )
     , mPaintEffect( nullptr )
     , mMapCanvas( nullptr )
 {
   setupUi( this );
+  mLayerRenderingGroupBox->setSettingGroup( "layerRenderingGroupBox" );
 
   // can be embedded in vector layer properties
   if ( embedded )
@@ -95,6 +97,7 @@ QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* la
     layout()->setContentsMargins( 0, 0, 0, 0 );
   }
 
+  this->setDockMode( embedded );
 
   // initialize registry's widget functions
   _initRendererWidgetFunctions();
@@ -119,9 +122,10 @@ QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* la
   connect( checkboxEnableOrderBy, SIGNAL( toggled( bool ) ), btnOrderBy, SLOT( setEnabled( bool ) ) );
   connect( checkboxEnableOrderBy, SIGNAL( toggled( bool ) ), lineEditOrderBy, SLOT( setEnabled( bool ) ) );
   connect( btnOrderBy, SIGNAL( clicked( bool ) ), this, SLOT( showOrderByDialog() ) );
-  connect( mEffectWidget, SIGNAL( showPanel( QgsRendererWidgetContainer* ) ), this, SLOT( showPanel( QgsRendererWidgetContainer* ) ) );
 
-  mEffectWidget->setDockMode( true );
+  QList<QgsPanelWidget*> panels;
+  panels << mEffectWidget;
+  mainStack->connectPanels( panels );
 
   syncToLayer();
 
@@ -195,6 +199,12 @@ void QgsRendererV2PropertiesDialog::setMapCanvas( QgsMapCanvas* canvas )
     mActiveWidget->setMapCanvas( mMapCanvas );
 }
 
+void QgsRendererV2PropertiesDialog::setDockMode( bool dockMode )
+{
+  mDockMode = dockMode;
+  mEffectWidget->setDockMode( dockMode );
+}
+
 
 void QgsRendererV2PropertiesDialog::rendererChanged()
 {
@@ -248,7 +258,8 @@ void QgsRendererV2PropertiesDialog::rendererChanged()
       connect( mActiveWidget, SIGNAL( layerVariablesChanged() ), this, SIGNAL( layerVariablesChanged() ) );
     }
     connect( mActiveWidget, SIGNAL( widgetChanged() ), this, SIGNAL( widgetChanged() ) );
-    connect( mActiveWidget, SIGNAL( showPanel( QgsRendererWidgetContainer* ) ), this, SLOT( showPanel( QgsRendererWidgetContainer* ) ) );
+    mainStack->connectPanel( mActiveWidget );
+    w->setDockMode( mDockMode );
   }
   else
   {
@@ -291,20 +302,6 @@ void QgsRendererV2PropertiesDialog::onOK()
   accept();
 }
 
-void QgsRendererV2PropertiesDialog::showPanel( QgsRendererWidgetContainer *container )
-{
-  connect( container, SIGNAL( accepted( QgsRendererWidgetContainer* ) ), this, SLOT( closePanel( QgsRendererWidgetContainer* ) ) );
-
-  int page = this->mainStack->addWidget( container );
-  this->mainStack->setCurrentIndex( page );
-}
-
-void QgsRendererV2PropertiesDialog::closePanel( QgsRendererWidgetContainer *container )
-{
-  this->mainStack->removeWidget( container );
-  this->mainStack->setCurrentIndex( this->mainStack->currentIndex() - 1 );
-  container->deleteLater();
-}
 
 void QgsRendererV2PropertiesDialog::syncToLayer()
 {
@@ -378,7 +375,7 @@ void QgsRendererV2PropertiesDialog::changeOrderBy( const QgsFeatureRequest::Orde
 
 void QgsRendererV2PropertiesDialog::updateUIState( bool hidden )
 {
-  groupBox->setHidden( hidden );
+  mLayerRenderingGroupBox->setHidden( hidden );
   cboRenderers->setHidden( hidden );
 }
 
