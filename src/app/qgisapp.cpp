@@ -10078,7 +10078,7 @@ void QgisApp::showRotation()
   // update the statusbar with the current rotation.
   double myrotation = mMapCanvas->rotation();
   mRotationEdit->setValue( myrotation );
-  mRotationLabel->setText( mRotationEdit->value() )
+  mRotationLabel->setText( QString( "%1").arg(mRotationEdit->value()) );
 } // QgisApp::showRotation
 
 
