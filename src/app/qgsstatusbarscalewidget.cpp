@@ -85,16 +85,13 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
 
   connect( mScale, SIGNAL( scaleChanged( double ) ), this, SLOT( userScale() ) );
 
-<<<<<<< HEAD
   // Manage toggle label interactions
   mScale->hide();
   connect( mScale->lineEdit(), SIGNAL( editingFinished() ), this, SLOT( showLabel() ) );
   connect( mScale, SIGNAL( indexChanged() ), this, SLOT( showLabel() ) );
   this->setFocusPolicy( Qt::StrongFocus );
-=======
-  connect( mLockButton, SIGNAL( toggled( bool ) ), this, SIGNAL( scaleLockChanged( bool ) ) );
-  connect( mLockButton, SIGNAL( toggled( bool ) ), mScale, SLOT( setDisabled( bool ) ) );
->>>>>>> upstream/master
+  //connect( mLockButton, SIGNAL( toggled( bool ) ), this, SIGNAL( scaleLockChanged( bool ) ) );
+  //connect( mLockButton, SIGNAL( toggled( bool ) ), mScale, SLOT( setDisabled( bool ) ) );
 }
 
 QgsStatusBarScaleWidget::~QgsStatusBarScaleWidget()
