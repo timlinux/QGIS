@@ -36,7 +36,11 @@ QgsMultiBandColorRendererWidget::QgsMultiBandColorRendererWidget( QgsRasterLayer
 
     mMinMaxWidget = new QgsRasterMinMaxWidget( layer, this );
     mMinMaxWidget->setExtent( extent );
-    layout()->addWidget( mMinMaxWidget );
+    mMinMaxWidget->setMapCanvas( mCanvas );
+    QHBoxLayout *layout = new QHBoxLayout();
+    layout->setContentsMargins( 0, 0, 0, 0 );
+    mMinMaxContainerWidget->setLayout( layout );
+    layout->addWidget( mMinMaxWidget );
     connect( mMinMaxWidget, SIGNAL( load( int, double, double, int ) ),
              this, SLOT( loadMinMax( int, double, double, int ) ) );
 
@@ -103,6 +107,12 @@ QgsRasterRenderer* QgsMultiBandColorRendererWidget::renderer()
   QgsMultiBandColorRenderer* r = new QgsMultiBandColorRenderer( provider, redBand, greenBand, blueBand );
   setCustomMinMaxValues( r, provider, redBand, greenBand, blueBand );
   return r;
+}
+
+void QgsMultiBandColorRendererWidget::setMapCanvas( QgsMapCanvas* canvas )
+{
+  QgsRasterRendererWidget::setMapCanvas( canvas );
+  mMinMaxWidget->setMapCanvas( canvas );
 }
 
 void QgsMultiBandColorRendererWidget::createValidators()

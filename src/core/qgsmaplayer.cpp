@@ -64,9 +64,7 @@ QgsMapLayer::QgsMapLayer( QgsMapLayer::LayerType type,
     , mStyleManager( new QgsMapLayerStyleManager( this ) )
 {
   // Set the display name = internal name
-  QgsDebugMsg( "original name: '" + mLayerOrigName + '\'' );
   mLayerName = capitaliseLayerName( mLayerOrigName );
-  QgsDebugMsg( "display name: '" + mLayerName + '\'' );
 
   mShortName = "";
   //mShortName.replace( QRegExp( "[\\W]" ), "_" );
@@ -86,6 +84,8 @@ QgsMapLayer::QgsMapLayer( QgsMapLayer::LayerType type,
   mMinScale = 0;
   mMaxScale = 100000000;
   mScaleBasedVisibility = false;
+
+  connect( this, SIGNAL( nameChanged() ), this, SIGNAL( layerNameChanged() ) );
 }
 
 QgsMapLayer::~QgsMapLayer()
@@ -105,16 +105,21 @@ QString QgsMapLayer::id() const
   return mID;
 }
 
-/** Write property of QString layerName. */
 void QgsMapLayer::setLayerName( const QString & name )
 {
-  QgsDebugMsg( "new original name: '" + name + '\'' );
+  setName( name );
+}
+
+void QgsMapLayer::setName( const QString& name )
+{
   QString newName = capitaliseLayerName( name );
-  QgsDebugMsg( "new display name: '" + name + '\'' );
-  if ( name == mLayerOrigName && newName == mLayerName ) return;
+  if ( name == mLayerOrigName && newName == mLayerName )
+    return;
+
   mLayerOrigName = name; // store the new original name
   mLayerName = newName;
-  emit layerNameChanged();
+
+  emit nameChanged();
 }
 
 /** Read property of QString layerName. */
@@ -147,6 +152,7 @@ void QgsMapLayer::setBlendMode( QPainter::CompositionMode blendMode )
 {
   mBlendMode = blendMode;
   emit blendModeChanged( blendMode );
+  emit styleChanged();
 }
 
 /** Read blend mode for layer */
@@ -433,7 +439,7 @@ bool QgsMapLayer::readLayerXML( const QDomElement& layerElement )
   // set name
   mnl = layerElement.namedItem( "layername" );
   mne = mnl.toElement();
-  setLayerName( mne.text() );
+  setName( mne.text() );
 
   //short name
   QDomElement shortNameElem = layerElement.firstChildElement( "shortname" );
@@ -1230,12 +1236,6 @@ bool QgsMapLayer::importNamedStyle( QDomDocument& myDocument, QString& myErrorMe
   setMinimumScale( myRoot.attribute( "minimumScale" ).toDouble() );
   setMaximumScale( myRoot.attribute( "maximumScale" ).toDouble() );
 
-  QDomNode extentNode = myRoot.namedItem( "extent" );
-  if ( !extentNode.isNull() )
-  {
-    setExtent( QgsXmlUtils::readRectangle( extentNode.toElement() ) );
-  }
-
 #if 0
   //read transparency level
   QDomNode transparencyNode = myRoot.namedItem( "transparencyLevelInt" );
@@ -1264,11 +1264,6 @@ void QgsMapLayer::exportNamedStyle( QDomDocument &doc, QString &errorMsg )
   myRootNode.setAttribute( "hasScaleBasedVisibilityFlag", hasScaleBasedVisibility() ? 1 : 0 );
   myRootNode.setAttribute( "minimumScale", QString::number( minimumScale() ) );
   myRootNode.setAttribute( "maximumScale", QString::number( maximumScale() ) );
-
-  if ( !mExtent.isNull() )
-  {
-    myRootNode.appendChild( QgsXmlUtils::writeRectangle( mExtent, myDocument ) );
-  }
 
 #if 0
   // <transparencyLevelInt>
@@ -1620,6 +1615,21 @@ QString QgsMapLayer::loadSldStyle( const QString &theURI, bool &theResultFlag )
   return "";
 }
 
+bool QgsMapLayer::readStyle( const QDomNode& node, QString& errorMessage )
+{
+  Q_UNUSED( node );
+  Q_UNUSED( errorMessage );
+  return false;
+}
+
+bool QgsMapLayer::writeStyle( QDomNode& node, QDomDocument& doc, QString& errorMessage ) const
+{
+  Q_UNUSED( node );
+  Q_UNUSED( doc );
+  Q_UNUSED( errorMessage );
+  return false;
+}
+
 
 QUndoStack* QgsMapLayer::undoStack()
 {
@@ -1701,6 +1711,11 @@ void QgsMapLayer::triggerRepaint()
 QString QgsMapLayer::metadata()
 {
   return QString();
+}
+
+void QgsMapLayer::emitStyleChanged()
+{
+  emit styleChanged();
 }
 
 void QgsMapLayer::setExtent( const QgsRectangle &r )

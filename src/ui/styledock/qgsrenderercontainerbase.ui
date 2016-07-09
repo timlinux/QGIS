@@ -14,10 +14,13 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QToolButton" name="mBackButton">
+      <widget class="QPushButton" name="mBackButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -25,21 +28,21 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>Back</string>
+        <string/>
        </property>
        <property name="icon">
         <iconset resource="../../../images/images.qrc">
          <normaloff>:/images/themes/default/mActionArrowLeft.png</normaloff>:/images/themes/default/mActionArrowLeft.png</iconset>
        </property>
-       <property name="toolButtonStyle">
-        <enum>Qt::ToolButtonTextBesideIcon</enum>
+       <property name="autoRepeat">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QLabel" name="mTitleText">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+        <sizepolicy hsizetype="Ignored" vsizetype="Maximum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -52,7 +55,33 @@
     </layout>
    </item>
    <item>
-    <layout class="QVBoxLayout" name="mWidgetLayout"/>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>375</width>
+        <height>596</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QStackedWidget" name="mStackedWidget">
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
   </layout>
  </widget>

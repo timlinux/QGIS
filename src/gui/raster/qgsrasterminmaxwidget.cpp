@@ -20,10 +20,12 @@
 
 #include "qgsrasterlayer.h"
 #include "qgsrasterminmaxwidget.h"
+#include "qgsmapcanvas.h"
 
-QgsRasterMinMaxWidget::QgsRasterMinMaxWidget( QgsRasterLayer* theLayer, QWidget *parent ):
-    QWidget( parent )
+QgsRasterMinMaxWidget::QgsRasterMinMaxWidget( QgsRasterLayer* theLayer, QWidget *parent )
+    : QWidget( parent )
     , mLayer( theLayer )
+    , mCanvas( nullptr )
 {
   QgsDebugMsg( "Entered." );
   setupUi( this );
@@ -50,6 +52,29 @@ QgsRasterMinMaxWidget::~QgsRasterMinMaxWidget()
 {
 }
 
+void QgsRasterMinMaxWidget::setMapCanvas( QgsMapCanvas* canvas )
+{
+  mCanvas = canvas;
+}
+
+QgsMapCanvas* QgsRasterMinMaxWidget::mapCanvas()
+{
+  return mCanvas;
+}
+
+QgsRectangle QgsRasterMinMaxWidget::extent()
+{
+  if ( !cbxClipExtent->isChecked() )
+    return QgsRectangle();
+
+  if ( mLayer && mCanvas )
+    return mCanvas->mapSettings().outputExtentToLayerExtent( mLayer, mCanvas->extent() );
+  else if ( mCanvas )
+    return mCanvas->extent();
+  else
+    return QgsRectangle();
+}
+
 void QgsRasterMinMaxWidget::on_mLoadPushButton_clicked()
 {
   QgsDebugMsg( "Entered." );
@@ -66,7 +91,7 @@ void QgsRasterMinMaxWidget::on_mLoadPushButton_clicked()
     double myMax = std::numeric_limits<double>::quiet_NaN();
 
     QgsRectangle myExtent = extent(); // empty == full
-    if ( mCurrentExtentRadioButton->isChecked() )
+    if ( cbxClipExtent->isChecked() )
     {
       origin |= QgsRasterRenderer::MinMaxSubExtent;
     }
@@ -77,7 +102,7 @@ void QgsRasterMinMaxWidget::on_mLoadPushButton_clicked()
     QgsDebugMsg( QString( "myExtent.isEmpty() = %1" ).arg( myExtent.isEmpty() ) );
 
     int mySampleSize = sampleSize(); // 0 == exact
-    if ( mEstimateRadioButton->isChecked() )
+    if ( cboAccuracy->currentIndex() == 0 )
     {
       origin |= QgsRasterRenderer::MinMaxEstimated;
     }

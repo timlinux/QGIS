@@ -30,7 +30,9 @@ class SymbolLayerItem;
 #include <QMap>
 #include <QStandardItemModel>
 
-
+/** \ingroup gui
+ * \class QgsLayerPropertiesWidget
+ */
 class GUI_EXPORT QgsLayerPropertiesWidget : public QgsPanelWidget, private Ui::LayerPropertiesWidget
 {
     Q_OBJECT
@@ -58,7 +60,7 @@ class GUI_EXPORT QgsLayerPropertiesWidget : public QgsPanelWidget, private Ui::L
      * widgets and not open dialogs
      * @param dockMode True to enable dock mode.
      */
-    void setDockMode( bool dockMode );
+    virtual void setDockMode( bool dockMode ) override;
 
   public slots:
     void layerTypeChanged();
@@ -92,7 +94,6 @@ class GUI_EXPORT QgsLayerPropertiesWidget : public QgsPanelWidget, private Ui::L
     void reloadLayer();
 
   private:
-    bool mDockMode;
     QgsExpressionContext* mPresetExpressionContext;
     QgsMapCanvas* mMapCanvas;
 

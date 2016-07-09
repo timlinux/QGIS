@@ -35,7 +35,7 @@
 #include "qgslabel.h"
 #include "qgsgenericprojectionselector.h"
 #include "qgslogger.h"
-#include "qgsmaplayerpropertiesfactory.h"
+#include "qgsmaplayerconfigwidgetfactory.h"
 #include "qgsmaplayerregistry.h"
 #include "qgsmaplayerstyleguiutils.h"
 #include "qgspluginmetadata.h"
@@ -45,7 +45,6 @@
 #include "qgsloadstylefromdbdialog.h"
 #include "qgsvectorlayer.h"
 #include "qgsvectorlayerproperties.h"
-#include "qgsvectorlayerpropertiespage.h"
 #include "qgsconfig.h"
 #include "qgsvectordataprovider.h"
 #include "qgsquerybuilder.h"
@@ -328,17 +327,23 @@ void QgsVectorLayerProperties::setLabelCheckBox()
   labelCheckBox->setCheckState( Qt::Checked );
 }
 
-void QgsVectorLayerProperties::addPropertiesPageFactory( QgsMapLayerPropertiesFactory* factory )
+void QgsVectorLayerProperties::addPropertiesPageFactory( QgsMapLayerConfigWidgetFactory* factory )
 {
-  QListWidgetItem* item = factory->createVectorLayerPropertiesItem( mLayer, mOptionsListWidget );
-  if ( item )
+  if ( !factory->supportLayerPropertiesDialog() )
   {
-    mOptionsListWidget->addItem( item );
-
-    QgsVectorLayerPropertiesPage* page = factory->createVectorLayerPropertiesPage( mLayer, this );
-    mLayerPropertiesPages << page;
-    mOptionsStackedWidget->addWidget( page );
+    return;
   }
+
+  QListWidgetItem* item = new QListWidgetItem();
+  item->setIcon( factory->icon() );
+  item->setText( factory->title() );
+  item->setToolTip( factory->title() );
+
+  mOptionsListWidget->addItem( item );
+
+  QgsMapLayerConfigWidget* page = factory->createWidget( mLayer, nullptr, false, this );
+  mLayerPropertiesPages << page;
+  mOptionsStackedWidget->addWidget( page );
 }
 
 void QgsVectorLayerProperties::insertField()
@@ -613,7 +618,7 @@ void QgsVectorLayerProperties::apply()
   }
   Q_NOWARN_DEPRECATED_POP
 
-  mLayer->setLayerName( mLayerOrigNameLineEdit->text() );
+  mLayer->setName( mLayerOrigNameLineEdit->text() );
 
   // Apply fields settings
   mFieldsPropertiesDialog->apply();
@@ -628,7 +633,7 @@ void QgsVectorLayerProperties::apply()
   diagramPropertiesDialog->apply();
 
   // apply all plugin dialogs
-  Q_FOREACH ( QgsVectorLayerPropertiesPage* page, mLayerPropertiesPages )
+  Q_FOREACH ( QgsMapLayerConfigWidget* page, mLayerPropertiesPages )
   {
     page->apply();
   }
@@ -1281,6 +1286,23 @@ void QgsVectorLayerProperties::addJoinToTreeWidget( const QgsVectorJoinInfo& joi
   mJoinTreeWidget->setCurrentItem( joinItem );
 }
 
+void QgsVectorLayerProperties::openPanel( QgsPanelWidget *panel )
+{
+  QDialog* dlg = new QDialog();
+  QString key =  QString( "/UI/paneldialog/%1" ).arg( panel->panelTitle() );
+  QSettings settings;
+  dlg->restoreGeometry( settings.value( key ).toByteArray() );
+  dlg->setWindowTitle( panel->panelTitle() );
+  dlg->setLayout( new QVBoxLayout() );
+  dlg->layout()->addWidget( panel );
+  QDialogButtonBox* buttonBox = new QDialogButtonBox( QDialogButtonBox::Ok );
+  connect( buttonBox, SIGNAL( accepted() ), dlg, SLOT( accept() ) );
+  dlg->layout()->addWidget( buttonBox );
+  dlg->exec();
+  settings.setValue( key, dlg->saveGeometry() );
+  panel->acceptPanel();
+}
+
 void QgsVectorLayerProperties::on_mButtonRemoveJoin_clicked()
 {
   QTreeWidgetItem* currentJoinItem = mJoinTreeWidget->currentItem();
@@ -1306,9 +1328,9 @@ void QgsVectorLayerProperties::updateSymbologyPage()
   if ( mLayer->rendererV2() )
   {
     mRendererDialog = new QgsRendererV2PropertiesDialog( mLayer, QgsStyleV2::defaultStyle(), true, this );
-    mRendererDialog->setDockMode( true );
+    mRendererDialog->setDockMode( false );
     mRendererDialog->setMapCanvas( QgisApp::instance()->mapCanvas() );
-
+    connect( mRendererDialog, SIGNAL( showPanel( QgsPanelWidget* ) ), this, SLOT( openPanel( QgsPanelWidget* ) ) );
     connect( mRendererDialog, SIGNAL( layerVariablesChanged() ), this, SLOT( updateVariableEditor() ) );
 
     // display the menu to choose the output format (fix #5136)

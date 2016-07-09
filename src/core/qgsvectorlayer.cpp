@@ -659,6 +659,7 @@ void QgsVectorLayer::setDiagramRenderer( QgsDiagramRendererV2* r )
   delete mDiagramRenderer;
   mDiagramRenderer = r;
   emit rendererChanged();
+  emit styleChanged();
 }
 
 QGis::GeometryType QgsVectorLayer::geometryType() const
@@ -788,7 +789,8 @@ long QgsVectorLayer::featureCount( QgsSymbolV2* symbol )
   return mSymbolFeatureCountMap.value( symbol );
 }
 
-/** Used by QgsVectorLayer::countSymbolFeatures() to provide an interruption checker
+/** \ingroup core
+ * Used by QgsVectorLayer::countSymbolFeatures() to provide an interruption checker
  *  @note not available in Python bindings
  */
 class QgsVectorLayerInterruptionCheckerDuringCountSymbolFeatures: public QgsInterruptionChecker
@@ -1687,11 +1689,11 @@ bool QgsVectorLayer::readXml( const QDomNode& layer_node )
 
 void QgsVectorLayer::setDataSource( const QString& dataSource, const QString& baseName, const QString& provider, bool loadDefaultStyleFlag )
 {
-  QGis::GeometryType oldGeomType = geometryType();
+  QGis::GeometryType oldGeomType = mValid && mDataProvider ? geometryType() : QGis::UnknownGeometry;
 
   mDataSource = dataSource;
   mLayerName = capitaliseLayerName( baseName );
-  setLayerName( mLayerName );
+  setName( mLayerName );
   setDataProvider( provider );
 
   if ( !mValid )
@@ -1735,13 +1737,13 @@ bool QgsVectorLayer::setDataProvider( QString const & provider )
   //      version big-time with an abnormal termination error
   delete mDataProvider;
   mDataProvider = ( QgsVectorDataProvider* )( QgsProviderRegistry::instance()->provider( provider, mDataSource ) );
-  connect( mDataProvider, SIGNAL( raiseError( QString ) ), this, SIGNAL( raiseError( QString ) ) );
-
   if ( !mDataProvider )
   {
     QgsDebugMsg( " unable to get data provider" );
     return false;
   }
+
+  connect( mDataProvider, SIGNAL( raiseError( QString ) ), this, SIGNAL( raiseError( QString ) ) );
 
   QgsDebugMsg( "Instantiated the data provider plugin" );
 
@@ -1790,7 +1792,7 @@ bool QgsVectorLayer::setDataProvider( QString const & provider )
       }
 
       if ( !lName.isEmpty() )
-        setLayerName( lName );
+        setName( lName );
     }
 
     QgsDebugMsg( "Beautified layer name " + name() );
@@ -2964,6 +2966,7 @@ void QgsVectorLayer::setRendererV2( QgsFeatureRendererV2 *r )
     mSymbolFeatureCountMap.clear();
 
     emit rendererChanged();
+    emit styleChanged();
   }
 }
 
@@ -3469,6 +3472,7 @@ void QgsVectorLayer::setFeatureBlendMode( QPainter::CompositionMode featureBlend
 {
   mFeatureBlendMode = featureBlendMode;
   emit featureBlendModeChanged( featureBlendMode );
+  emit styleChanged();
 }
 
 /** Read blend mode for layer */
@@ -3482,6 +3486,7 @@ void QgsVectorLayer::setLayerTransparency( int layerTransparency )
 {
   mLayerTransparency = layerTransparency;
   emit layerTransparencyChanged( layerTransparency );
+  emit styleChanged();
 }
 
 /** Read transparency for layer */
@@ -3804,11 +3809,10 @@ QString QgsVectorLayer::metadata()
   else
   {
     QString typeString( QGis::vectorGeometryType( geometryType() ) );
+    QString wkbTypeString = QgsWKBTypes::displayString( QGis::fromOldWkbType( mWkbType ) );
 
     myMetadata += "<p class=\"glossy\">" + tr( "Geometry type of the features in this layer" ) + "</p>\n";
-    myMetadata += "<p>";
-    myMetadata += typeString;
-    myMetadata += "</p>\n";
+    myMetadata += QString( "<p>%1 (WKB type: \"%2\")</p>\n" ).arg( typeString, wkbTypeString );
   }
 
   QgsAttributeList pkAttrList = pkAttributeList();
@@ -4059,6 +4063,7 @@ QDomElement QgsAttributeEditorContainer::toDomElement( QDomDocument& doc ) const
   QDomElement elem = doc.createElement( "attributeEditorContainer" );
   elem.setAttribute( "name", mName );
   elem.setAttribute( "columnCount", mColumnCount );
+  elem.setAttribute( "groupBox", mIsGroupBox ? 1 : 0 );
 
   Q_FOREACH ( QgsAttributeEditorElement* child, mChildren )
   {

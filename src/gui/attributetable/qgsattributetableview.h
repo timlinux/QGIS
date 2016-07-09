@@ -33,7 +33,7 @@ class QMenu;
 class QProgressDialog;
 class QgsAttributeTableConfig;
 
-/**
+/** \ingroup gui
  * @brief
  * Provides a table view of features of a @link QgsVectorLayer @endlink.
  *
@@ -155,22 +155,22 @@ class GUI_EXPORT QgsAttributeTableView : public QTableView
     void showHorizontalSortIndicator();
     void actionTriggered();
     void columnSizeChanged( int index, int oldWidth, int newWidth );
+    void onActionColumnItemPainted( const QModelIndex& index );
+    void recreateActionWidgets();
 
   private:
     void updateActionImage( QWidget* widget );
     QWidget* createActionWidget( QgsFeatureId fid );
 
     void selectRow( int row, bool anchor );
-    QgsAttributeTableModel* mMasterModel;
     QgsAttributeTableFilterModel* mFilterModel;
     QgsFeatureSelectionModel* mFeatureSelectionModel;
     QgsIFeatureSelectionManager* mFeatureSelectionManager;
     QgsAttributeTableDelegate* mTableDelegate;
-    QAbstractItemModel* mModel; // Most likely the filter model
     QMenu *mActionPopup;
     int mRowSectionAnchor;
     QItemSelectionModel::SelectionFlag mCtrlDragSelectionFlag;
-    QWidget* mActionWidget;
+    QMap< QModelIndex, QWidget* > mActionWidgets;
 };
 
 #endif

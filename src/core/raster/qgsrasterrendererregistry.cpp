@@ -29,9 +29,11 @@
 
 QgsRasterRendererRegistryEntry::QgsRasterRendererRegistryEntry( const QString& theName, const QString& theVisibleName,
     QgsRasterRendererCreateFunc rendererFunction,
-    QgsRasterRendererWidgetCreateFunc widgetFunction ):
-    name( theName ), visibleName( theVisibleName ), rendererCreateFunction( rendererFunction ),
-    widgetCreateFunction( widgetFunction )
+    QgsRasterRendererWidgetCreateFunc widgetFunction )
+    : name( theName )
+    , visibleName( theVisibleName )
+    , rendererCreateFunction( rendererFunction )
+    , widgetCreateFunction( widgetFunction )
 {
 }
 
@@ -62,7 +64,7 @@ QgsRasterRendererRegistry::QgsRasterRendererRegistry()
                                           QgsSingleBandPseudoColorRenderer::create, nullptr ) );
   insert( QgsRasterRendererRegistryEntry( "singlebandcolordata", QObject::tr( "Singleband color data" ),
                                           QgsSingleBandColorDataRenderer::create, nullptr ) );
-  insert( QgsRasterRendererRegistryEntry( "hillshade", QObject::tr( "Hillshade renderer" ),
+  insert( QgsRasterRendererRegistryEntry( "hillshade", QObject::tr( "Hillshade" ),
                                           QgsHillshadeRenderer::create, nullptr ) );
 }
 

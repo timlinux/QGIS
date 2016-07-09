@@ -22,7 +22,7 @@
 
 #include "qgsfield.h"
 
-/**
+/** \ingroup core
  * This is a container for configuration of the attribute table.
  * The configuration is specific for one vector layer.
  * \note added in QGIS 2.16
@@ -168,6 +168,18 @@ class CORE_EXPORT QgsAttributeTableConfig
     void setColumnHidden( int column, bool hidden );
 
     /**
+     * Get the sort order
+     * @note Added in 2.16
+     */
+    Qt::SortOrder sortOrder() const;
+
+    /**
+     * Set the sort order
+     * @note Added in 2.16
+     */
+    void setSortOrder( const Qt::SortOrder& sortOrder );
+
+    /**
      * Compare this configuration to other.
      */
     bool operator!= ( const QgsAttributeTableConfig& other ) const;
@@ -176,6 +188,7 @@ class CORE_EXPORT QgsAttributeTableConfig
     QVector<ColumnConfig> mColumns;
     ActionWidgetStyle mActionWidgetStyle;
     QString mSortExpression;
+    Qt::SortOrder mSortOrder;
 };
 
 Q_DECLARE_METATYPE( QgsAttributeTableConfig::ColumnConfig )

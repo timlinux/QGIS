@@ -21,6 +21,8 @@
 #include "qgsmapcanvas.h"
 #include "qgsmaprenderer.h"
 #include "qgsproject.h"
+#include "qgsmessagelog.h"
+#include "qgscrscache.h"
 
 #include "qgslogger.h"
 
@@ -39,6 +41,10 @@ QgsBookmarks::QgsBookmarks( QWidget *parent )
 {
   setupUi( this );
   restorePosition();
+
+  bookmarksDockContents->layout()->setMargin( 0 );
+  bookmarksDockContents->layout()->setContentsMargins( 0, 0, 0, 0 );
+  static_cast< QGridLayout* >( bookmarksDockContents->layout() )->setVerticalSpacing( 0 );
 
   QToolButton* btnImpExp = new QToolButton;
   btnImpExp->setAutoRaise( true );
@@ -60,7 +66,6 @@ QgsBookmarks::QgsBookmarks( QWidget *parent )
   connect( actionZoomTo, SIGNAL( triggered() ), this, SLOT( zoomToBookmark() ) );
 
   mBookmarkToolbar->addWidget( btnImpExp );
-  mBookmarkToolbar->addAction( actionHelp );
 
   // open the database
   QSqlDatabase db = QSqlDatabase::addDatabase( "QSQLITE", "bookmarks" );
@@ -228,7 +233,7 @@ void QgsBookmarks::zoomToBookmark()
   if ( srid > 0 &&
        srid != QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs().srsid() )
   {
-    QgsCoordinateTransform ct( QgsCoordinateReferenceSystem( srid, QgsCoordinateReferenceSystem::InternalCrsId ),
+    QgsCoordinateTransform ct( QgsCRSCache::instance()->crsBySrsId( srid ),
                                QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs() );
     rect = ct.transform( rect );
     if ( rect.isEmpty() )
@@ -562,7 +567,7 @@ QVariant QgsMergedBookmarksTableModel::data( const QModelIndex& index, int role 
 
 bool QgsMergedBookmarksTableModel::setData( const QModelIndex& index, const QVariant& value, int role )
 {
-  // is project or QGIS
+  // last column triggers a move from QGIS to project bookmark
   if ( index.column() == mQgisTableModel.columnCount() )
   {
     if ( index.row() < mQgisTableModel.rowCount() )
@@ -581,7 +586,8 @@ bool QgsMergedBookmarksTableModel::setData( const QModelIndex& index, const QVar
     }
     return true;
   }
-  if ( index.column() < mQgisTableModel.rowCount() )
+
+  if ( index.row() < mQgisTableModel.rowCount() )
   {
     return mQgisTableModel.setData( index, value, role );
   }

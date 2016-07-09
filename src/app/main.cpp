@@ -37,6 +37,7 @@
 #if QT_VERSION < 0x050000
 #include <QPlastiqueStyle>
 #endif
+#include <QDesktopWidget>
 #include <QTranslator>
 #include <QImageReader>
 #include <QMessageBox>
@@ -119,7 +120,7 @@ void usage( std::string const & appName )
             << "\t[--project projectfile]\tload the given QGIS project\n"
             << "\t[--extent xmin,ymin,xmax,ymax]\tset initial map extent\n"
             << "\t[--nologo]\thide splash screen\n"
-            << "\t[--noversioncheck]\tdon't check for new version of QGIS at startup"
+            << "\t[--noversioncheck]\tdon't check for new version of QGIS at startup\n"
             << "\t[--noplugins]\tdon't restore plugins on startup\n"
             << "\t[--nocustomization]\tdon't apply GUI customization\n"
             << "\t[--customizationfile]\tuse the given ini file as GUI customization\n"
@@ -1032,12 +1033,12 @@ int main( int argc, char *argv[] )
   //set up splash screen
   QString mySplashPath( QgsCustomization::instance()->splashPath() );
   QPixmap myPixmap( mySplashPath + QLatin1String( "splash.png" ) );
-  QSplashScreen *mypSplash = new QSplashScreen( myPixmap );
-  if ( mySettings.value( "/qgis/hideSplash" ).toBool() || myHideSplash )
-  {
-    //splash screen hidden
-  }
-  else
+
+  int w = 600 * qApp->desktop()->logicalDpiX() / 96;
+  int h = 300 * qApp->desktop()->logicalDpiY() / 96;
+
+  QSplashScreen *mypSplash = new QSplashScreen( myPixmap.scaled( w, h, Qt::KeepAspectRatio ) );
+  if ( !myHideSplash && !mySettings.value( "/qgis/hideSplash" ).toBool() )
   {
     //for win and linux we can just automask and png transparency areas will be used
     mypSplash->setMask( myPixmap.mask() );

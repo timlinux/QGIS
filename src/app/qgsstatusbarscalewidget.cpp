@@ -113,10 +113,12 @@ void QgsStatusBarScaleWidget::lockToggled( bool is_locked )
 
 void QgsStatusBarScaleWidget::setScale( double scale )
 {
+  mScale->blockSignals( true );
   mScale->setScale( scale );
   // we update the label too so that switching between
   // read only label mode and editable widget mode are seamless
   mScaleLabel->setText( mScale->toString( scale ) );
+  mScale->blockSignals( false );
 }
 
 bool QgsStatusBarScaleWidget::isLocked() const

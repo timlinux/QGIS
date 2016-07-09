@@ -119,6 +119,11 @@ void QgsMapToolOffsetCurve::canvasReleaseEvent( QgsMapMouseEvent* e )
         createDistanceWidget();
       }
     }
+
+    if ( !mOriginalGeometry )
+    {
+      emit messageEmitted( tr( "Could not find a nearby feature in any vector layer." ) );
+    }
     return;
   }
 

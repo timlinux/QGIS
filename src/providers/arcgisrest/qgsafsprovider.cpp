@@ -34,6 +34,7 @@
 QgsAfsProvider::QgsAfsProvider( const QString& uri )
     : QgsVectorDataProvider( uri )
     , mValid( false )
+    , mGeometryType( QgsWKBTypes::Unknown )
     , mObjectIdFieldIdx( -1 )
 {
   mDataSource = QgsDataSourceURI( uri );
@@ -244,7 +245,7 @@ bool QgsAfsProvider::getFeature( const QgsFeatureId &id, QgsFeature &f, bool fet
   }
   f = mCache[id];
   Q_ASSERT( f.isValid() );
-  return filterRect.isNull() || f.geometry()->intersects( filterRect );
+  return filterRect.isNull() || ( f.geometry() && f.geometry()->intersects( filterRect ) );
 }
 
 void QgsAfsProvider::setDataSourceUri( const QString &uri )

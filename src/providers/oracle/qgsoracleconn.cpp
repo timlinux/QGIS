@@ -382,7 +382,7 @@ QString QgsOracleConn::fieldExpression( const QgsField &fld )
 
 void QgsOracleConn::retrieveLayerTypes( QgsOracleLayerProperty &layerProperty, bool useEstimatedMetadata, bool onlyExistingTypes )
 {
-  QgsDebugMsg( "entering: " + layerProperty.toString() );
+  QgsDebugMsgLevel( "entering: " + layerProperty.toString(), 3 );
 
   if ( layerProperty.isView )
   {
@@ -678,6 +678,7 @@ void QgsOracleConn::deleteConnection( QString theConnName )
   settings.remove( key + "/allowGeometrylessTables" );
   settings.remove( key + "/estimatedMetadata" );
   settings.remove( key + "/onlyExistingTypes" );
+  settings.remove( key + "/includeGeoAttributes" );
   settings.remove( key + "/saveUsername" );
   settings.remove( key + "/savePassword" );
   settings.remove( key + "/save" );
@@ -698,7 +699,7 @@ void QgsOracleConn::setSelectedConnection( QString name )
 
 QgsDataSourceURI QgsOracleConn::connUri( QString theConnName )
 {
-  QgsDebugMsg( "theConnName = " + theConnName );
+  QgsDebugMsgLevel( "theConnName = " + theConnName, 3 );
 
   QSettings settings;
 

@@ -1244,9 +1244,8 @@ void QgsPalLayerSettings::writeToLayer( QgsVectorLayer* layer )
   layer->setCustomProperty( "labeling/zIndex", zIndex );
 
   writeDataDefinedPropertyMap( layer, nullptr, dataDefinedProperties );
+  layer->emitStyleChanged();
 }
-
-
 
 void QgsPalLayerSettings::readXml( QDomElement& elem )
 {
@@ -2918,7 +2917,7 @@ void QgsPalLayerSettings::registerFeature( QgsFeature& f, QgsRenderContext &cont
     {
       distance *= vectorScaleFactor;
     }
-    double d = qAbs( ptOne.x() - ptZero.x() ) * distance;
+    double d = ptOne.distance( ptZero ) * distance;
     ( *labelFeature )->setDistLabel( d );
   }
 

@@ -63,8 +63,8 @@ QgsNewGeoPackageLayerDialog::QgsNewGeoPackageLayerDialog( QWidget *parent, Qt::W
   QSettings settings;
   restoreGeometry( settings.value( "/Windows/NewGeoPackageLayer/geometry" ).toByteArray() );
 
-  mAddAttributeButton->setIcon( QgsApplication::getThemeIcon( "/mActionNewAttribute.png" ) );
-  mRemoveAttributeButton->setIcon( QgsApplication::getThemeIcon( "/mActionDeleteAttribute.png" ) );
+  mAddAttributeButton->setIcon( QgsApplication::getThemeIcon( "/mActionNewAttribute.svg" ) );
+  mRemoveAttributeButton->setIcon( QgsApplication::getThemeIcon( "/mActionDeleteAttribute.svg" ) );
 
 #ifdef SUPPORT_GEOMETRY_LESS
   mGeometryTypeBox->addItem( tr( "Non spatial" ), wkbNone );
@@ -389,7 +389,7 @@ bool QgsNewGeoPackageLayerDialog::apply()
   int crsId = mCrsSelector->crs().srsid();
   if ( wkbType != wkbNone && crsId > 0 )
   {
-    QgsCoordinateReferenceSystem srs( crsId, QgsCoordinateReferenceSystem::InternalCrsId );
+    QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( crsId );
     QString srsWkt = srs.toWkt();
     hSRS = OSRNewSpatialReference( srsWkt.toLocal8Bit().data() );
   }

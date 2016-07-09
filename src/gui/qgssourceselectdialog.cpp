@@ -37,7 +37,8 @@
 #include <QRadioButton>
 #include <QImageReader>
 
-/** Item delegate with tweaked sizeHint.
+/** \ingroup gui
+ * Item delegate with tweaked sizeHint.
  * @note not available in Python bindings */
 class QgsSourceSelectItemDelegate : public QItemDelegate
 {
@@ -195,7 +196,7 @@ QString QgsSourceSelectDialog::getPreferredCrs( const QSet<QString>& crsSet ) co
   //first: project CRS
   long ProjectCRSID = QgsProject::instance()->readNumEntry( "SpatialRefSys", "/ProjectCRSID", -1 );
   //convert to EPSG
-  QgsCoordinateReferenceSystem projectRefSys( ProjectCRSID, QgsCoordinateReferenceSystem::InternalCrsId );
+  QgsCoordinateReferenceSystem projectRefSys = QgsCRSCache::instance()->crsBySrsId( ProjectCRSID );
   QString ProjectCRS;
   if ( projectRefSys.isValid() )
   {

@@ -21,6 +21,8 @@
 #include <qgspallabeling.h>
 #include "qgsvectorlayerlabeling.h"
 
+#include "qgsmaplayerconfigwidget.h"
+
 class QgsLabelingGui;
 class QgsMapCanvas;
 class QgsRuleBasedLabelingWidget;
@@ -30,7 +32,7 @@ class QgsMapLayer;
 /**
  * Master widget for configuration of labeling of a vector layer
  */
-class QgsLabelingWidget : public QWidget, private Ui::QgsLabelingWidget
+class QgsLabelingWidget : public QgsMapLayerConfigWidget, private Ui::QgsLabelingWidget
 {
     Q_OBJECT
   public:
@@ -60,8 +62,6 @@ class QgsLabelingWidget : public QWidget, private Ui::QgsLabelingWidget
   protected:
     QgsVectorLayer* mLayer;
     QgsMapCanvas* mCanvas;
-
-    bool mDockMode;
 
     QWidget* mWidget;
     QgsLabelingGui* mLabelGui;

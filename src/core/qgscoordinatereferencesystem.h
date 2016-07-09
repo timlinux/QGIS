@@ -114,6 +114,7 @@ class CORE_EXPORT QgsCoordinateReferenceSystem
      * @note SRID and EpsgCrsId may be blank if no match can be found on SRS db.
      * @param theWkt The WKT for the desired spatial reference system.
      * @return bool TRUE if success else false
+     * @note this method is expensive. Consider using QgsCRSCache::crsByWkt() instead.
      */
     bool createFromWkt( const QString &theWkt );
 
@@ -124,6 +125,7 @@ class CORE_EXPORT QgsCoordinateReferenceSystem
      * @note Any members will be overwritten during this process.
      * @param theSrsId The QGIS SrsId for the desired spatial reference system.
      * @return bool TRUE if success else false
+     * @note this method is expensive. Consider using QgsCRSCache::crsBySrsId() instead.
      */
     bool createFromSrsId( const long theSrsId );
 

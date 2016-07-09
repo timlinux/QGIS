@@ -70,6 +70,7 @@ QgsOracleProvider::QgsOracleProvider( QString const & uri )
   mSrid = mUri.srid().toInt();
   mRequestedGeomType = mUri.wkbType();
   mUseEstimatedMetadata = mUri.useEstimatedMetadata();
+  mIncludeGeoAttributes = mUri.hasParam( "includegeoattributes" ) ? mUri.param( "includegeoattributes" ) == "true" : false;
 
   mConnection = QgsOracleConn::connectDb( mUri );
   if ( !mConnection )
@@ -158,6 +159,10 @@ QgsOracleProvider::QgsOracleProvider( QString const & uri )
   << QgsVectorDataProvider::NativeType( tr( "Text, fixed length (char)" ), "CHAR", QVariant::String, 1, 255 )
   << QgsVectorDataProvider::NativeType( tr( "Text, limited variable length (varchar2)" ), "VARCHAR2", QVariant::String, 1, 255 )
   << QgsVectorDataProvider::NativeType( tr( "Text, unlimited length (long)" ), "LONG", QVariant::String )
+
+  // date type
+  << QgsVectorDataProvider::NativeType( tr( "Date" ), "DATE", QVariant::Date, 38, 38, 0, 0 )
+  << QgsVectorDataProvider::NativeType( tr( "Date & Time" ), "TIMESTAMP(6)", QVariant::DateTime, 38, 38, 6, 6 )
   ;
 
   QString key;
@@ -605,11 +610,12 @@ bool QgsOracleProvider::loadFields()
                              ",t.char_used"
                              ",t.data_default"
                              " FROM all_tab_columns t"
-                             " WHERE t.owner=%1 AND t.table_name=%2%3"
+                             " WHERE t.owner=%1 AND t.table_name=%2%3%4"
                              " ORDER BY t.column_id" )
                .arg( quotedValue( mOwnerName ) )
                .arg( quotedValue( mTableName ) )
                .arg( mGeometryColumn.isEmpty() ? "" : QString( " AND t.column_name<>%1 " ).arg( quotedValue( mGeometryColumn ) ) )
+               .arg( mIncludeGeoAttributes ? "" : " AND (t.data_type_owner<>'MDSYS' OR t.data_type<>'SDO_GEOMETRY')" )
              ) )
     {
       while ( qry.next() )
@@ -739,7 +745,15 @@ bool QgsOracleProvider::loadFields()
     if ( !mIsQuery && !types.contains( field.name() ) )
       continue;
 
-    mAttributeFields.append( QgsField( field.name(), field.type(), types.value( field.name() ), field.length(), field.precision(), comments.value( field.name() ) ) );
+    QVariant::Type type = field.type();
+
+    if ( types.value( field.name() ) == "DATE" )
+    {
+      // date types are incorrectly detected as datetime
+      type = QVariant::Date;
+    }
+
+    mAttributeFields.append( QgsField( field.name(), type, types.value( field.name() ), field.length(), field.precision(), comments.value( field.name() ) ) );
     mDefaultValues.append( defvalues.value( field.name(), QVariant() ) );
   }
 
@@ -1244,7 +1258,7 @@ bool QgsOracleProvider::addFeatures( QgsFeatureList &flist )
 
       const QgsField &fld = mAttributeFields[idx];
 
-      QgsDebugMsg( "Checking field against: " + fld.name() );
+      QgsDebugMsgLevel( "Checking field against: " + fld.name(), 4 );
 
       if ( fld.name().isEmpty() || fld.name() == mGeometryColumn )
         continue;
@@ -1311,7 +1325,7 @@ bool QgsOracleProvider::addFeatures( QgsFeatureList &flist )
     {
       QgsAttributes attributevec = features->attributes();
 
-      QgsDebugMsg( QString( "insert feature %1" ).arg( features->id() ) );
+      QgsDebugMsgLevel( QString( "insert feature %1" ).arg( features->id() ), 4 );
 
       if ( !mGeometryColumn.isNull() )
       {
@@ -2287,8 +2301,8 @@ bool QgsOracleProvider::getGeometryDetails()
     }
 
     if ( exec( qry, QString( mUseEstimatedMetadata
-                             ?  "SELECT DISTINCT gtype FROM (SELECT t.%1.sdo_gtype AS gtype FROM %2 t WHERE rownum<1000) WHERE rownum<=2"
-                             :  "SELECT DISTINCT t.%1.sdo_gtype FROM %2 t WHERE rownum<=2" ).arg( quotedIdentifier( geomCol ) ).arg( mQuery ) ) )
+                             ?  "SELECT DISTINCT gtype FROM (SELECT t.%1.sdo_gtype AS gtype FROM %2 t WHERE t.%1 IS NOT NULL AND rownum<1000) WHERE rownum<=2"
+                             :  "SELECT DISTINCT t.%1.sdo_gtype FROM %2 t WHERE t.%1 IS NOT NULL AND rownum<=2" ).arg( quotedIdentifier( geomCol ) ).arg( mQuery ) ) )
     {
       if ( qry.next() )
       {
@@ -2520,6 +2534,11 @@ bool QgsOracleProvider::convertField( QgsField &field )
       break;
 
     case QVariant::DateTime:
+      fieldType = "TIMESTAMP";
+      fieldPrec = -1;
+      break;
+
+
     case QVariant::Time:
     case QVariant::String:
       fieldType = "VARCHAR2(2047)";
@@ -3274,7 +3293,7 @@ QGISEXTERN bool saveStyle( const QString &uri,
 
   if ( !qry.exec( sql ) )
   {
-    errCause = QObject::tr( "Unable to check style existences [%1]" ).arg( qry.lastError().text() );
+    errCause = QObject::tr( "Unable to check style existence [%1]" ).arg( qry.lastError().text() );
     conn->disconnect();
     return false;
   }
@@ -3403,7 +3422,7 @@ QGISEXTERN QString loadStyle( const QString &uri, QString &errCause )
   QString style;
   if ( !qry.exec( "SELECT COUNT(*) FROM user_tables WHERE table_name='LAYER_STYLES'" ) || !qry.next() || qry.value( 0 ).toInt() == 0 )
   {
-    errCause = QObject::tr( "Unable layer style table not found [%1]" ).arg( qry.lastError().text() );
+    errCause = QObject::tr( "Unable to find layer style table [%1]" ).arg( qry.lastError().text() );
     conn->disconnect();
     return QString::null;
   }
@@ -3461,7 +3480,7 @@ QGISEXTERN int listStyles( const QString &uri,
   }
   else if ( qry.value( 0 ).toInt() == 0 )
   {
-    errCause = QObject::tr( "Layer style table does not exists [%1]" ).arg( qry.value( 0 ).toString() );
+    errCause = QObject::tr( "Layer style table does not exist [%1]" ).arg( qry.value( 0 ).toString() );
   }
   else
   {
@@ -3523,7 +3542,7 @@ QGISEXTERN QString getStyleById( const QString& uri, QString styleId, QString& e
 
   if ( !qry.exec( QString( "SELECT styleQml FROM layer_styles WHERE id=%1" ).arg( QgsOracleConn::quotedValue( styleId ) ) ) )
   {
-    errCause = QObject::tr( "Could load layer style table [%1]" ).arg( qry.lastError().text() );
+    errCause = QObject::tr( "Could not load layer style table [%1]" ).arg( qry.lastError().text() );
   }
   else if ( !qry.next() )
   {

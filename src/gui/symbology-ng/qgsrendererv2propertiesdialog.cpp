@@ -97,8 +97,6 @@ QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* la
     layout()->setContentsMargins( 0, 0, 0, 0 );
   }
 
-  this->setDockMode( embedded );
-
   // initialize registry's widget functions
   _initRendererWidgetFunctions();
 
@@ -120,12 +118,7 @@ QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* la
 
   connect( cboRenderers, SIGNAL( currentIndexChanged( int ) ), this, SLOT( rendererChanged() ) );
   connect( checkboxEnableOrderBy, SIGNAL( toggled( bool ) ), btnOrderBy, SLOT( setEnabled( bool ) ) );
-  connect( checkboxEnableOrderBy, SIGNAL( toggled( bool ) ), lineEditOrderBy, SLOT( setEnabled( bool ) ) );
   connect( btnOrderBy, SIGNAL( clicked( bool ) ), this, SLOT( showOrderByDialog() ) );
-
-  QList<QgsPanelWidget*> panels;
-  panels << mEffectWidget;
-  mainStack->connectPanels( panels );
 
   syncToLayer();
 
@@ -133,13 +126,12 @@ QgsRendererV2PropertiesDialog::QgsRendererV2PropertiesDialog( QgsVectorLayer* la
   widgets << mLayerTransparencySpnBx
   << cboRenderers
   << checkboxEnableOrderBy
-  << lineEditOrderBy
   << mBlendModeComboBox
   << mFeatureBlendComboBox
   << mEffectWidget;
 
-
   connectValueChanged( widgets, SIGNAL( widgetChanged() ) );
+  connect( mEffectWidget, SIGNAL( showPanel( QgsPanelWidget* ) ), this, SLOT( openPanel( QgsPanelWidget* ) ) );
 }
 
 void QgsRendererV2PropertiesDialog::connectValueChanged( QList<QWidget *> widgets, const char *slot )
@@ -203,13 +195,13 @@ void QgsRendererV2PropertiesDialog::setDockMode( bool dockMode )
 {
   mDockMode = dockMode;
   mEffectWidget->setDockMode( dockMode );
+  if ( mActiveWidget )
+    mActiveWidget->setDockMode( mDockMode );
 }
 
 
 void QgsRendererV2PropertiesDialog::rendererChanged()
 {
-
-  QgsDebugMsg( "RENDERER CHANGED" );
   if ( cboRenderers->currentIndex() == -1 )
   {
     QgsDebugMsg( "No current item -- this should never happen!" );
@@ -258,7 +250,7 @@ void QgsRendererV2PropertiesDialog::rendererChanged()
       connect( mActiveWidget, SIGNAL( layerVariablesChanged() ), this, SIGNAL( layerVariablesChanged() ) );
     }
     connect( mActiveWidget, SIGNAL( widgetChanged() ), this, SIGNAL( widgetChanged() ) );
-    mainStack->connectPanel( mActiveWidget );
+    connect( mActiveWidget, SIGNAL( showPanel( QgsPanelWidget* ) ), this, SLOT( openPanel( QgsPanelWidget* ) ) );
     w->setDockMode( mDockMode );
   }
   else
@@ -302,6 +294,33 @@ void QgsRendererV2PropertiesDialog::onOK()
   accept();
 }
 
+void QgsRendererV2PropertiesDialog::openPanel( QgsPanelWidget *panel )
+{
+  QgsDebugMsg( "Open panel!!!" );
+  if ( mDockMode )
+  {
+    QgsDebugMsg( "DOCK MODE" );
+    emit showPanel( panel );
+  }
+  else
+  {
+    QgsDebugMsg( "DIALOG MODE" );
+    // Show the dialog version if no one is connected
+    QDialog* dlg = new QDialog();
+    QString key =  QString( "/UI/paneldialog/%1" ).arg( panel->panelTitle() );
+    QSettings settings;
+    dlg->restoreGeometry( settings.value( key ).toByteArray() );
+    dlg->setWindowTitle( panel->panelTitle() );
+    dlg->setLayout( new QVBoxLayout() );
+    dlg->layout()->addWidget( panel );
+    QDialogButtonBox* buttonBox = new QDialogButtonBox( QDialogButtonBox::Ok );
+    connect( buttonBox, SIGNAL( accepted() ), dlg, SLOT( accept() ) );
+    dlg->layout()->addWidget( buttonBox );
+    dlg->exec();
+    settings.setValue( key, dlg->saveGeometry() );
+    panel->acceptPanel();
+  }
+}
 
 void QgsRendererV2PropertiesDialog::syncToLayer()
 {
@@ -327,11 +346,10 @@ void QgsRendererV2PropertiesDialog::syncToLayer()
     mOrderBy = mLayer->rendererV2()->orderBy();
   }
 
-  lineEditOrderBy->setText( mOrderBy.dump() );
-
   // setup slot rendererChanged()
   //setup order by
-  if ( mLayer->rendererV2()->orderByEnabled() )
+  if ( mLayer->rendererV2() &&
+       mLayer->rendererV2()->orderByEnabled() )
   {
     checkboxEnableOrderBy->setChecked( true );
   }
@@ -339,18 +357,19 @@ void QgsRendererV2PropertiesDialog::syncToLayer()
   {
     btnOrderBy->setEnabled( false );
     checkboxEnableOrderBy->setChecked( false );
-    lineEditOrderBy->setEnabled( false );
   }
-  lineEditOrderBy->setReadOnly( true );
 
-  // set current renderer from layer
-  QString rendererName = mLayer->rendererV2()->type();
+  if ( mLayer->rendererV2() )
+  {
+    // set current renderer from layer
+    QString rendererName = mLayer->rendererV2()->type();
 
-  int rendererIdx = cboRenderers->findData( rendererName );
-  cboRenderers->setCurrentIndex( rendererIdx );
+    int rendererIdx = cboRenderers->findData( rendererName );
+    cboRenderers->setCurrentIndex( rendererIdx );
 
-  // no renderer found... this mustn't happen
-  Q_ASSERT( rendererIdx != -1 && "there must be a renderer!" );
+    // no renderer found... this mustn't happen
+    Q_ASSERT( rendererIdx != -1 && "there must be a renderer!" );
+  }
 
 }
 
@@ -362,14 +381,13 @@ void QgsRendererV2PropertiesDialog::showOrderByDialog()
   if ( dlg.exec() )
   {
     mOrderBy = dlg.orderBy();
-    lineEditOrderBy->setText( mOrderBy.dump() );
+    emit widgetChanged();
   }
 }
 
 void QgsRendererV2PropertiesDialog::changeOrderBy( const QgsFeatureRequest::OrderBy& orderBy, bool orderByEnabled )
 {
   mOrderBy = orderBy;
-  lineEditOrderBy->setText( mOrderBy.dump() );
   checkboxEnableOrderBy->setChecked( orderByEnabled );
 }
 

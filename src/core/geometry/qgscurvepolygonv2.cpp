@@ -110,17 +110,16 @@ bool QgsCurvePolygonV2::fromWkb( QgsConstWkbPtr wkbPtr )
   {
     QgsWKBTypes::Type curveType = wkbPtr.readHeader();
     wkbPtr -= 1 + sizeof( int );
-    if ( curveType == QgsWKBTypes::LineString || curveType == QgsWKBTypes::LineStringZ || curveType == QgsWKBTypes::LineStringM ||
-         curveType == QgsWKBTypes::LineStringZM || curveType == QgsWKBTypes::LineString25D )
+    QgsWKBTypes::Type flatCurveType = QgsWKBTypes::flatType( curveType );
+    if ( flatCurveType == QgsWKBTypes::LineString )
     {
       currentCurve = new QgsLineStringV2();
     }
-    else if ( curveType == QgsWKBTypes::CircularString || curveType == QgsWKBTypes::CircularStringZ || curveType == QgsWKBTypes::CircularStringZM ||
-              curveType == QgsWKBTypes::CircularStringM )
+    else if ( flatCurveType == QgsWKBTypes::CircularString )
     {
       currentCurve = new QgsCircularStringV2();
     }
-    else if ( curveType == QgsWKBTypes::CompoundCurve || curveType == QgsWKBTypes::CompoundCurveZ || curveType == QgsWKBTypes::CompoundCurveZM )
+    else if ( flatCurveType == QgsWKBTypes::CompoundCurve )
     {
       currentCurve = new QgsCompoundCurveV2();
     }
@@ -161,10 +160,13 @@ bool QgsCurvePolygonV2::fromWkt( const QString& wkt )
   {
     QPair<QgsWKBTypes::Type, QString> childParts = QgsGeometryUtils::wktReadBlock( childWkt );
 
-    if ( QgsWKBTypes::flatType( childParts.first ) == QgsWKBTypes::LineString )
+    QgsWKBTypes::Type flatCurveType = QgsWKBTypes::flatType( childParts.first );
+    if ( flatCurveType == QgsWKBTypes::LineString )
       mInteriorRings.append( new QgsLineStringV2() );
-    else if ( QgsWKBTypes::flatType( childParts.first ) == QgsWKBTypes::CircularString )
+    else if ( flatCurveType == QgsWKBTypes::CircularString )
       mInteriorRings.append( new QgsCircularStringV2() );
+    else if ( flatCurveType == QgsWKBTypes::CompoundCurve )
+      mInteriorRings.append( new QgsCompoundCurveV2() );
     else
     {
       clear();
@@ -559,16 +561,16 @@ void QgsCurvePolygonV2::draw( QPainter& p ) const
   }
 }
 
-void QgsCurvePolygonV2::transform( const QgsCoordinateTransform& ct, QgsCoordinateTransform::TransformDirection d )
+void QgsCurvePolygonV2::transform( const QgsCoordinateTransform& ct, QgsCoordinateTransform::TransformDirection d, bool transformZ )
 {
   if ( mExteriorRing )
   {
-    mExteriorRing->transform( ct, d );
+    mExteriorRing->transform( ct, d, transformZ );
   }
 
   Q_FOREACH ( QgsCurveV2* curve, mInteriorRings )
   {
-    curve->transform( ct, d );
+    curve->transform( ct, d, transformZ );
   }
   clearCache();
 }
@@ -739,10 +741,12 @@ bool QgsCurvePolygonV2::deleteVertex( QgsVertexId vId )
   if ( success )
   {
     // If first or last vertex is removed, re-sync the last/first vertex
+    // Do not use "n - 2", but "ring->numPoints() - 1" as more than one vertex
+    // may have been deleted (e.g. with CircularString)
     if ( vId.vertex == 0 )
-      ring->moveVertex( QgsVertexId( 0, 0, n - 2 ), ring->vertexAt( QgsVertexId( 0, 0, 0 ) ) );
+      ring->moveVertex( QgsVertexId( 0, 0, ring->numPoints() - 1 ), ring->vertexAt( QgsVertexId( 0, 0, 0 ) ) );
     else if ( vId.vertex == n - 1 )
-      ring->moveVertex( QgsVertexId( 0, 0, 0 ), ring->vertexAt( QgsVertexId( 0, 0, n - 2 ) ) );
+      ring->moveVertex( QgsVertexId( 0, 0, 0 ), ring->vertexAt( QgsVertexId( 0, 0, ring->numPoints() - 1 ) ) );
     clearCache();
   }
   return success;

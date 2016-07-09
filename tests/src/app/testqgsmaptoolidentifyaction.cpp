@@ -45,11 +45,36 @@ class TestQgsMapToolIdentifyAction : public QObject
     void areaCalculation(); //test calculation of derived area attribute
     void identifyRasterFloat32(); // test pixel identification and decimal precision
     void identifyRasterFloat64(); // test pixel identification and decimal precision
+    void identifyInvalidPolygons(); // test selecting invalid polygons
 
   private:
     QgsMapCanvas* canvas;
 
     QString testIdentifyRaster( QgsRasterLayer* layer, double xGeoref, double yGeoref );
+    QList<QgsMapToolIdentify::IdentifyResult> testIdentifyVector( QgsVectorLayer* layer, double xGeoref, double yGeoref );
+
+    // Release return with delete []
+    unsigned char *
+    hex2bytes( const char *hex, int *size )
+    {
+      QByteArray ba = QByteArray::fromHex( hex );
+      unsigned char *out = new unsigned char[ba.size()];
+      memcpy( out, ba.data(), ba.size() );
+      *size = ba.size();
+      return out;
+    }
+
+    // TODO: make this a QgsGeometry member...
+    QgsGeometry geomFromHexWKB( const char *hexwkb )
+    {
+      int wkbsize;
+      unsigned char *wkb = hex2bytes( hexwkb, &wkbsize );
+      QgsGeometry geom;
+      // NOTE: QgsGeometry takes ownership of wkb
+      geom.fromWkb( wkb, wkbsize );
+      return geom;
+    }
+
 };
 
 void TestQgsMapToolIdentifyAction::initTestCase()
@@ -248,6 +273,7 @@ void TestQgsMapToolIdentifyAction::areaCalculation()
   QVERIFY( qgsDoubleNear( area, 389.6117, 0.001 ) );
 }
 
+// private
 QString TestQgsMapToolIdentifyAction::testIdentifyRaster( QgsRasterLayer* layer, double xGeoref, double yGeoref )
 {
   QScopedPointer< QgsMapToolIdentifyAction > action( new QgsMapToolIdentifyAction( canvas ) );
@@ -256,6 +282,16 @@ QString TestQgsMapToolIdentifyAction::testIdentifyRaster( QgsRasterLayer* layer,
   if ( result.length() != 1 )
     return "";
   return result[0].mAttributes["Band 1"];
+}
+
+// private
+QList<QgsMapToolIdentify::IdentifyResult>
+TestQgsMapToolIdentifyAction::testIdentifyVector( QgsVectorLayer* layer, double xGeoref, double yGeoref )
+{
+  QScopedPointer< QgsMapToolIdentifyAction > action( new QgsMapToolIdentifyAction( canvas ) );
+  QgsPoint mapPoint = canvas->getCoordinateTransform()->transform( xGeoref, yGeoref );
+  QList<QgsMapToolIdentify::IdentifyResult> result = action->identify( mapPoint.x(), mapPoint.y(), QList<QgsMapLayer*>() << layer );
+  return result;
 }
 
 void TestQgsMapToolIdentifyAction::identifyRasterFloat32()
@@ -276,7 +312,8 @@ void TestQgsMapToolIdentifyAction::identifyRasterFloat32()
 
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 1.5, 0.5 ), QString( "-999.987" ) );
 
-  // More than 6 significant digits : precision loss in Float32
+  // More than 6 significant digits for corresponding value in .asc:
+  // precision loss in Float32
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 2.5, 0.5 ), QString( "1.234568" ) ); // in .asc file : 1.2345678
 
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 3.5, 0.5 ), QString( "123456" ) );
@@ -287,7 +324,8 @@ void TestQgsMapToolIdentifyAction::identifyRasterFloat32()
   // More than 6 significant digits: no precision loss here for that particular value
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 5.5, 0.5 ), QString( "-999.9876" ) );
 
-  // More than 6 significant digits: no precision loss here
+  // More than 6 significant digits for corresponding value in .asc:
+  // precision loss in Float32
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 6.5, 0.5 ), QString( "1.234568" ) ); // in .asc file : 1.2345678901234
 }
 
@@ -313,6 +351,33 @@ void TestQgsMapToolIdentifyAction::identifyRasterFloat64()
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 5.5, 0.5 ), QString( "-999.9876" ) );
 
   QCOMPARE( testIdentifyRaster( tempLayer.data(), 6.5, 0.5 ), QString( "1.2345678901234" ) );
+}
+
+void TestQgsMapToolIdentifyAction::identifyInvalidPolygons()
+{
+  //create a temporary layer
+  QScopedPointer< QgsVectorLayer > memoryLayer( new QgsVectorLayer( "Polygon?field=pk:int", "vl", "memory" ) );
+  QVERIFY( memoryLayer->isValid() );
+  QgsFeature f1( memoryLayer->dataProvider()->fields(), 1 );
+  f1.setAttribute( "pk", 1 );
+  // This geometry is an invalid polygon (3 distinct vertices).
+  // GEOS reported invalidity: Points of LinearRing do not form a closed linestring
+  f1.setGeometry( geomFromHexWKB(
+                    "010300000001000000030000000000000000000000000000000000000000000000000024400000000000000000000000000000244000000000000024400000000000000000"
+                  ) );
+  // TODO: check why we need the ->dataProvider() part, since
+  //       there's a QgsVectorLayer::addFeatures method too
+  //memoryLayer->addFeatures( QgsFeatureList() << f1 );
+  memoryLayer->dataProvider()->addFeatures( QgsFeatureList() << f1 );
+
+  canvas->setExtent( QgsRectangle( 0, 0, 10, 10 ) );
+  QList<QgsMapToolIdentify::IdentifyResult> identified;
+  identified = testIdentifyVector( memoryLayer.data(), 4, 6 );
+  QCOMPARE( identified.length(), 0 );
+  identified = testIdentifyVector( memoryLayer.data(), 6, 4 );
+  QCOMPARE( identified.length(), 1 );
+  QCOMPARE( identified[0].mFeature.attribute( "pk" ), QVariant( 1 ) );
+
 }
 
 

@@ -71,6 +71,22 @@ class QgsCRSCache
     */
     QgsCoordinateReferenceSystem crsByProj4( const QString& proj4 ) const;
 
+    /** Returns the CRS from a WKT spatial ref sys definition string.
+     * @param wkt WKT for the desired spatial reference system.
+     * @returns matching CRS, or an invalid CRS if string could not be matched
+     * @note added in QGIS 2.16
+     * @see QgsCoordinateReferenceSystem::createFromWkt()
+    */
+    QgsCoordinateReferenceSystem crsByWkt( const QString& wkt ) const;
+
+    /** Returns the CRS from a specified QGIS SRS ID.
+     * @param srsId internal QGIS SRS ID
+     * @returns matching CRS, or an invalid CRS if ID could not be found
+     * @note added in QGIS 2.16
+     * @see QgsCoordinateReferenceSystem::createFromSrsId()
+    */
+    QgsCoordinateReferenceSystem crsBySrsId( long srsId ) const;
+
     /** Updates the cached definition of a CRS. Should be called if the definition of a user-created
      * CRS has been changed.
      * @param authid CRS auth ID, eg "EPSG:4326" or "USER:100009"
@@ -80,4 +96,7 @@ class QgsCRSCache
   protected:
     QgsCRSCache();
 
+  private:
+
+    QgsCRSCache( const QgsCRSCache& other );
 };

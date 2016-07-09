@@ -24,7 +24,7 @@
 #include "qgslogger.h"
 #include "qgsmaplayer.h"
 #include "qgsmapcanvas.h"
-#include "qgsmapstylepanel.h"
+#include "qgsmaplayerconfigwidget.h"
 #include "qgsmaplayerstylemanager.h"
 #include "qgsvectordataprovider.h"
 #include "qgsrasterdataprovider.h"
@@ -33,7 +33,7 @@
 
 
 QgsMapLayerStyleManagerWidget::QgsMapLayerStyleManagerWidget( QgsMapLayer* layer, QgsMapCanvas *canvas, QWidget *parent )
-    : QgsMapStylingPanel( layer, canvas, parent )
+    : QgsMapLayerConfigWidget( layer, canvas, parent )
 {
   mModel = new QStandardItemModel( this );
   mStyleList = new QListView( this );
@@ -43,19 +43,23 @@ QgsMapLayerStyleManagerWidget::QgsMapLayerStyleManagerWidget( QgsMapLayer* layer
 
   QToolBar* toolbar = new QToolBar( this );
   QAction* addAction = toolbar->addAction( tr( "Add" ) );
+  addAction->setIcon( QgsApplication::getThemeIcon( "symbologyAdd.svg" ) );
   connect( addAction, SIGNAL( triggered() ), this, SLOT( addStyle() ) );
   QAction* removeAction = toolbar->addAction( tr( "Remove Current" ) );
+  removeAction->setIcon( QgsApplication::getThemeIcon( "symbologyRemove.svg" ) );
   connect( removeAction, SIGNAL( triggered() ), this, SLOT( removeStyle() ) );
+  QAction* loadFromFileAction = toolbar->addAction( tr( "Load Style" ) );
+  loadFromFileAction->setIcon( QgsApplication::getThemeIcon( "/mActionFileOpen.svg" ) );
+  connect( loadFromFileAction, SIGNAL( triggered() ), this, SLOT( loadStyle() ) );
   QAction* saveAsDefaultAction = toolbar->addAction( tr( "Save as default" ) );
   connect( saveAsDefaultAction, SIGNAL( triggered() ), this, SLOT( saveAsDefault() ) );
   QAction* loadDefaultAction = toolbar->addAction( tr( "Restore default" ) );
   connect( loadDefaultAction, SIGNAL( triggered() ), this, SLOT( loadDefault() ) );
 
-  QAction* loadFromFileAction = toolbar->addAction( tr( "Load Style" ) );
-  connect( loadFromFileAction, SIGNAL( triggered() ), this, SLOT( loadStyle() ) );
 
-  QAction* saveToFileAction = toolbar->addAction( tr( "Save Style" ) );
-  connect( saveToFileAction, SIGNAL( triggered() ), this, SLOT( saveStyle() ) );
+  // Save style doesn't work correctly yet so just disable for now.
+//  QAction* saveToFileAction = toolbar->addAction( tr( "Save Style" ) );
+//  connect( saveToFileAction, SIGNAL( triggered() ), this, SLOT( saveStyle() ) );
 
   connect( canvas, SIGNAL( mapCanvasRefreshed() ), this, SLOT( updateCurrent() ) );
 
@@ -94,6 +98,9 @@ void QgsMapLayerStyleManagerWidget::styleClicked( QModelIndex index )
     return;
 
   QString name = index.data().toString();
+  if ( name == "(default)" )
+    name = "";
+
   mLayer->styleManager()->setCurrentStyle( name );
 }
 

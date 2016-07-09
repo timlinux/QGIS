@@ -28,7 +28,7 @@ class QgsFeatureRendererV2;
 class QgsSymbolV2SelectorDialog;
 class QgsMapCanvas;
 
-/**
+/** \ingroup gui
   Base class for renderer settings widgets
 
 WORKFLOW:
@@ -76,14 +76,6 @@ class GUI_EXPORT QgsRendererV2Widget : public QgsPanelWidget
      */
     void applyChanges();
 
-    /**
-     * Set the widget in dock mode which tells the widget to emit panel
-     * widgets and not open dialogs
-     * @param dockMode True to enable dock mode.
-     */
-    virtual void setDockMode( bool dockMode ) override;
-
-
   signals:
     /**
      * Emitted when expression context variables on the associated
@@ -93,7 +85,6 @@ class GUI_EXPORT QgsRendererV2Widget : public QgsPanelWidget
     void layerVariablesChanged();
 
   protected:
-    bool mDockMode;
     QgsVectorLayer* mLayer;
     QgsStyleV2* mStyle;
     QMenu* contextMenu;
@@ -143,7 +134,7 @@ class QgsField;
 class QgsFields;
 
 
-/**
+/** \ingroup gui
 Utility class for providing GUI for data-defined rendering.
 @deprecated unused, will be removed in QGIS 3.0
 @note not available in Python bindings
@@ -188,7 +179,7 @@ class QgsRendererV2DataDefinedMenus : public QObject
 #include "ui_widget_set_dd_value.h"
 #include "qgssizescalewidget.h"
 
-/**
+/** \ingroup gui
 Utility classes for "en masse" size definition
 */
 class GUI_EXPORT QgsDataDefinedValueDialog : public QDialog, public Ui::QgsDataDefinedValueDialog
@@ -239,6 +230,9 @@ class GUI_EXPORT QgsDataDefinedValueDialog : public QDialog, public Ui::QgsDataD
     QgsMapCanvas* mMapCanvas;
 };
 
+/** \ingroup gui
+ * \class QgsDataDefinedSizeDialog
+ */
 class GUI_EXPORT QgsDataDefinedSizeDialog : public QgsDataDefinedValueDialog
 {
     Q_OBJECT
@@ -259,6 +253,9 @@ class GUI_EXPORT QgsDataDefinedSizeDialog : public QgsDataDefinedValueDialog
     void setDataDefined( QgsSymbolV2* symbol, const QgsDataDefined& dd ) override;
 };
 
+/** \ingroup gui
+ * \class QgsDataDefinedRotationDialog
+ */
 class GUI_EXPORT QgsDataDefinedRotationDialog : public QgsDataDefinedValueDialog
 {
     Q_OBJECT
@@ -277,7 +274,9 @@ class GUI_EXPORT QgsDataDefinedRotationDialog : public QgsDataDefinedValueDialog
     void setDataDefined( QgsSymbolV2* symbol, const QgsDataDefined& dd ) override;
 };
 
-
+/** \ingroup gui
+ * \class QgsDataDefinedWidthDialog
+ */
 class GUI_EXPORT QgsDataDefinedWidthDialog : public QgsDataDefinedValueDialog
 {
     Q_OBJECT

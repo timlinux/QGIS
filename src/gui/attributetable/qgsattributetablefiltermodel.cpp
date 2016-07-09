@@ -66,6 +66,7 @@ void QgsAttributeTableFilterModel::sort( int column, Qt::SortOrder order )
   int myColumn = mColumnMapping.at( column );
   masterModel()->prefetchColumnData( myColumn );
   QSortFilterProxyModel::sort( myColumn, order );
+  emit sortColumnChanged( column, order );
 }
 
 QVariant QgsAttributeTableFilterModel::data( const QModelIndex& index, int role ) const
@@ -97,8 +98,13 @@ QVariant QgsAttributeTableFilterModel::headerData( int section, Qt::Orientation 
   }
   else
   {
-    int sourceSection = mapToSource( index( section, mColumnMapping.at( 0 ) == -1 ? 1 : 0 ) ).row();
-    return sourceModel()->headerData( sourceSection, orientation, role );
+    if ( role == Qt::DisplayRole )
+      return section + 1;
+    else
+    {
+      int sourceSection = mapToSource( index( section, ( !mColumnMapping.isEmpty() && mColumnMapping.at( 0 ) == -1 ) ? 1 : 0 ) ).row();
+      return sourceModel()->headerData( sourceSection, orientation, role );
+    }
   }
 }
 
@@ -199,7 +205,7 @@ void QgsAttributeTableFilterModel::setAttributeTableConfig( const QgsAttributeTa
     }
   }
 
-  sort( config.sortExpression() );
+  sort( config.sortExpression(), config.sortOrder() );
 }
 
 void QgsAttributeTableFilterModel::sort( QString expression, Qt::SortOrder order )
@@ -497,7 +503,11 @@ QModelIndex QgsAttributeTableFilterModel::mapFromSource( const QModelIndex& sour
   if ( proxyIndex.column() < 0 )
     return QModelIndex();
 
-  return index( proxyIndex.row(), mapColumnToSource( proxyIndex.column() ), proxyIndex.parent() );
+  int col = mapColumnToSource( proxyIndex.column() );
+  if ( col == -1 )
+    col = 0;
+
+  return index( proxyIndex.row(), col , proxyIndex.parent() );
 }
 
 Qt::ItemFlags QgsAttributeTableFilterModel::flags( const QModelIndex& index ) const

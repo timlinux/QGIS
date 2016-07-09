@@ -20,14 +20,17 @@
 
 #include "ui_qgsrendererrasterpropswidgetbase.h"
 
-#include "qgsmapstylepanel.h"
+#include "qgsmaplayerconfigwidget.h"
 
 
 class QgsRasterLayer;
 class QgsMapCanvas;
 class QgsRasterRendererWidget;
 
-class GUI_EXPORT QgsRendererRasterPropertiesWidget : public QgsMapStylingPanel, private Ui::QgsRendererRasterPropsWidgetBase
+/** \ingroup gui
+ * \class QgsRendererRasterPropertiesWidget
+ */
+class GUI_EXPORT QgsRendererRasterPropertiesWidget : public QgsMapLayerConfigWidget, private Ui::QgsRendererRasterPropsWidgetBase
 {
     Q_OBJECT
 

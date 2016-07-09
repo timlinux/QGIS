@@ -20,7 +20,8 @@
 
 #include "qgssymbollayerv2.h"
 
-/** A symbol layer class for displaying displacement arrows based on point layer attributes*/
+/** \ingroup core
+ * A symbol layer class for displaying displacement arrows based on point layer attributes*/
 class CORE_EXPORT QgsVectorFieldSymbolLayer: public QgsMarkerSymbolLayerV2
 {
   public:
@@ -53,6 +54,9 @@ class CORE_EXPORT QgsVectorFieldSymbolLayer: public QgsMarkerSymbolLayerV2
 
     bool setSubSymbol( QgsSymbolV2* symbol ) override;
     QgsSymbolV2* subSymbol() override { return mLineSymbol; }
+
+    void setColor( const QColor& color ) override;
+    virtual QColor color() const override;
 
     void renderPoint( QPointF point, QgsSymbolV2RenderContext& context ) override;
     void startRender( QgsSymbolV2RenderContext& context ) override;

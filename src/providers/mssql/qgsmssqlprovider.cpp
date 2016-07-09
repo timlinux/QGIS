@@ -35,6 +35,7 @@
 
 
 #include "qgsapplication.h"
+#include "qgscrscache.h"
 #include "qgsdataprovider.h"
 #include "qgsfeature.h"
 #include "qgsfield.h"
@@ -1409,8 +1410,12 @@ QgsCoordinateReferenceSystem QgsMssqlProvider::crs()
     bool execOk = query.exec( QString( "select srtext from spatial_ref_sys where srid = %1" ).arg( QString::number( mSRId ) ) );
     if ( execOk && query.isActive() )
     {
-      if ( query.next() && mCrs.createFromWkt( query.value( 0 ).toString() ) )
-        return mCrs;
+      if ( query.next() )
+      {
+        mCrs = QgsCRSCache::instance()->crsByWkt( query.value( 0 ).toString() );
+        if ( mCrs.isValid() )
+          return mCrs;
+      }
 
       query.finish();
     }
@@ -1418,8 +1423,12 @@ QgsCoordinateReferenceSystem QgsMssqlProvider::crs()
 
     // Look in the system reference table for the data if we can't find it yet
     execOk = query.exec( QString( "select well_known_text from sys.spatial_reference_systems where spatial_reference_id = %1" ).arg( QString::number( mSRId ) ) );
-    if ( execOk && query.isActive() && query.next() && mCrs.createFromWkt( query.value( 0 ).toString() ) )
-      return mCrs;
+    if ( execOk && query.isActive() && query.next() )
+    {
+      mCrs = QgsCRSCache::instance()->crsByWkt( query.value( 0 ).toString() );
+      if ( mCrs.isValid() )
+        return mCrs;
+    }
   }
   return mCrs;
 }
@@ -1858,7 +1867,7 @@ QgsVectorLayerImport::ImportError QgsMssqlProvider::createEmptyLayer(
       QgsField fld = fields[i];
       if ( oldToNewAttrIdxMap && fld.name() == primaryKey )
       {
-        oldToNewAttrIdxMap->insert( fields.indexFromName( fld.name() ), 0 );
+        oldToNewAttrIdxMap->insert( fields.fieldNameIndex( fld.name() ), 0 );
         continue;
       }
 
@@ -1879,7 +1888,7 @@ QgsVectorLayerImport::ImportError QgsMssqlProvider::createEmptyLayer(
 
       flist.append( fld );
       if ( oldToNewAttrIdxMap )
-        oldToNewAttrIdxMap->insert( fields.indexFromName( fld.name() ), offset++ );
+        oldToNewAttrIdxMap->insert( fields.fieldNameIndex( fld.name() ), offset++ );
     }
 
     if ( !provider->addAttributes( flist ) )

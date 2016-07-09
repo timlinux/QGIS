@@ -74,6 +74,7 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
 
   QRegExp coordValidator( "[+-]?\\d+\\.?\\d*\\s*,\\s*[+-]?\\d+\\.?\\d*" );
   mCoordsEditValidator = new QRegExpValidator( coordValidator, this );
+
   mLineEdit->setWhatsThis(
         tr( "Shows the map coordinates at the "
             "current cursor position. The display is continuously updated "

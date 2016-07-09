@@ -475,24 +475,14 @@ bool QgisAppInterface::unregisterMainWindowAction( QAction* action )
   return QgsShortcutsManager::instance()->unregisterAction( action );
 }
 
-void QgisAppInterface::registerMapLayerPropertiesFactory( QgsMapLayerPropertiesFactory* factory )
+void QgisAppInterface::registerMapLayerConfigWidgetFactory( QgsMapLayerConfigWidgetFactory* factory )
 {
   qgis->registerMapLayerPropertiesFactory( factory );
 }
 
-void QgisAppInterface::unregisterMapLayerPropertiesFactory( QgsMapLayerPropertiesFactory* factory )
+void QgisAppInterface::unregisterMapLayerConfigWidgetFactory( QgsMapLayerConfigWidgetFactory* factory )
 {
   qgis->unregisterMapLayerPropertiesFactory( factory );
-}
-
-void QgisAppInterface::registerMapStylePanelFactory( QgsMapStylingPanelFactory *factory )
-{
-  qgis->registerMapStylePanelFactory( factory );
-}
-
-void QgisAppInterface::unregisterMapStylePanelFactory( QgsMapStylingPanelFactory *factory )
-{
-  qgis->unregisterMapStylePanelFactory( factory );
 }
 
 //! Menus
@@ -689,7 +679,7 @@ QgsAttributeDialog* QgisAppInterface::getFeatureForm( QgsVectorLayer *l, QgsFeat
   QgsAttributeEditorContext context;
   context.setDistanceArea( myDa );
   context.setVectorLayerTools( qgis->vectorLayerTools() );
-  QgsAttributeDialog *dialog = new QgsAttributeDialog( l, &feature, false, nullptr, true, context );
+  QgsAttributeDialog *dialog = new QgsAttributeDialog( l, &feature, false, qgis, true, context );
   if ( !feature.isValid() )
   {
     dialog->setIsAddDialog( true );

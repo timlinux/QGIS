@@ -257,8 +257,10 @@ class CORE_EXPORT QgsSimpleMarkerSymbolLayerV2 : public QgsSimpleMarkerSymbolLay
     QRectF bounds( QPointF point, QgsSymbolV2RenderContext& context ) override;
     QColor outlineColor() const override { return borderColor(); }
     void setOutlineColor( const QColor& color ) override { setBorderColor( color ); }
-    QColor fillColor() const override { return color(); }
-    void setFillColor( const QColor& color ) override { setColor( color ); }
+    QColor fillColor() const override { return mColor; }
+    void setFillColor( const QColor& color ) override { mColor = color; }
+    void setColor( const QColor& color ) override;
+    virtual QColor color() const override;
 
     // new methods
 
@@ -475,6 +477,9 @@ class CORE_EXPORT QgsFilledMarkerSymbolLayer : public QgsSimpleMarkerSymbolLayer
 #define DEFAULT_SVGMARKER_SIZE         2*DEFAULT_POINT_SIZE
 #define DEFAULT_SVGMARKER_ANGLE        0
 
+/** \ingroup core
+ * \class QgsSvgMarkerSymbolLayerV2
+ */
 class CORE_EXPORT QgsSvgMarkerSymbolLayerV2 : public QgsMarkerSymbolLayerV2
 {
   public:
@@ -562,6 +567,9 @@ class CORE_EXPORT QgsSvgMarkerSymbolLayerV2 : public QgsMarkerSymbolLayerV2
 #define DEFAULT_FONTMARKER_JOINSTYLE    Qt::MiterJoin
 #define DEFAULT_FONTMARKER_ANGLE  0
 
+/** \ingroup core
+ * \class QgsFontMarkerSymbolLayerV2
+ */
 class CORE_EXPORT QgsFontMarkerSymbolLayerV2 : public QgsMarkerSymbolLayerV2
 {
   public:

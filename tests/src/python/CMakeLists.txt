@@ -1,4 +1,5 @@
 SET (ENABLE_MSSQLTEST FALSE CACHE BOOL "Enable MsSQL provider tests")
+SET (ENABLE_ORACLETEST FALSE CACHE BOOL "Enable Oracle provider tests")
 
 INCLUDE(UsePythonTest)
 # Run one of the two server tests at the beginning so they don't run in
@@ -123,6 +124,10 @@ IF (ENABLE_MSSQLTEST)
   ADD_PYTHON_TEST(PyQgsMssqlProvider test_provider_mssql.py)
 ENDIF (ENABLE_MSSQLTEST)
 
+IF (ENABLE_ORACLETEST)
+  ADD_PYTHON_TEST(PyQgsOracleProvider test_provider_oracle.py)
+ENDIF (ENABLE_ORACLETEST)
+
 IF (WITH_APIDOC)
   ADD_PYTHON_TEST(PyQgsDocCoverage test_qgsdoccoverage.py)
   ADD_PYTHON_TEST(PyQgsSipCoverage test_qgssipcoverage.py)
@@ -132,4 +137,5 @@ IF (WITH_SERVER)
   ADD_PYTHON_TEST(PyQgsServer test_qgsserver.py)
   ADD_PYTHON_TEST(PyQgsServerAccessControl test_qgsserver_accesscontrol.py)
   ADD_PYTHON_TEST(PyQgsServerWFST test_qgsserver_wfst.py)
+  ADD_PYTHON_TEST(PyQgsOfflineEditingWFS test_offline_editing_wfs.py)
 ENDIF (WITH_SERVER)

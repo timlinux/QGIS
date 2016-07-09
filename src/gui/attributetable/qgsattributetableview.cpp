@@ -32,18 +32,16 @@
 #include "qgslogger.h"
 #include "qgsmapcanvas.h"
 #include "qgsfeatureselectionmodel.h"
+#include "qgsmaplayeractionregistry.h"
 
 QgsAttributeTableView::QgsAttributeTableView( QWidget *parent )
     : QTableView( parent )
-    , mMasterModel( nullptr )
     , mFilterModel( nullptr )
     , mFeatureSelectionModel( nullptr )
     , mFeatureSelectionManager( nullptr )
-    , mModel( nullptr )
     , mActionPopup( nullptr )
     , mRowSectionAnchor( 0 )
     , mCtrlDragSelectionFlag( QItemSelectionModel::Select )
-    , mActionWidget( nullptr )
 {
   QSettings settings;
   restoreGeometry( settings.value( "/BetterAttributeTable/geometry" ).toByteArray() );
@@ -52,8 +50,6 @@ QgsAttributeTableView::QgsAttributeTableView( QWidget *parent )
   horizontalHeader()->setHighlightSections( false );
 
   // We need mouse move events to create the action button on hover
-  setMouseTracking( true );
-
   mTableDelegate = new QgsAttributeTableDelegate( this );
   setItemDelegate( mTableDelegate );
 
@@ -70,6 +66,7 @@ QgsAttributeTableView::QgsAttributeTableView( QWidget *parent )
   connect( verticalHeader(), SIGNAL( sectionEntered( int ) ), this, SLOT( _q_selectRow( int ) ) );
   connect( horizontalHeader(), SIGNAL( sectionResized( int, int, int ) ), this, SLOT( columnSizeChanged( int, int, int ) ) );
   connect( horizontalHeader(), SIGNAL( sortIndicatorChanged( int, Qt::SortOrder ) ), this, SLOT( showHorizontalSortIndicator() ) );
+  connect( QgsMapLayerActionRegistry::instance(), SIGNAL( changed() ), this, SLOT( recreateActionWidgets() ) );
 }
 
 bool QgsAttributeTableView::eventFilter( QObject *object, QEvent *event )
@@ -121,6 +118,7 @@ void QgsAttributeTableView::setModel( QgsAttributeTableFilterModel* filterModel 
   if ( mFilterModel )
   {
     connect( mFilterModel, SIGNAL( destroyed() ), this, SLOT( modelDeleted() ) );
+    connect( mTableDelegate, SIGNAL( actionColumnItemPainted( QModelIndex ) ), this, SLOT( onActionColumnItemPainted( QModelIndex ) ) );
   }
 
   delete mFeatureSelectionModel;
@@ -138,11 +136,6 @@ void QgsAttributeTableView::setModel( QgsAttributeTableFilterModel* filterModel 
     mTableDelegate->setFeatureSelectionModel( mFeatureSelectionModel );
     connect( mFeatureSelectionModel, SIGNAL( requestRepaint( QModelIndexList ) ), this, SLOT( repaintRequested( QModelIndexList ) ) );
     connect( mFeatureSelectionModel, SIGNAL( requestRepaint() ), this, SLOT( repaintRequested() ) );
-
-    delete mActionWidget;
-    mActionWidget = createActionWidget( 0 );
-    mActionWidget->setVisible( false );
-    updateActionImage( mActionWidget );
   }
 }
 
@@ -160,24 +153,29 @@ void QgsAttributeTableView::setFeatureSelectionManager( QgsIFeatureSelectionMana
 QWidget* QgsAttributeTableView::createActionWidget( QgsFeatureId fid )
 {
   QgsAttributeTableConfig attributeTableConfig = mFilterModel->layer()->attributeTableConfig();
-  QgsActionManager* actions = mFilterModel->layer()->actions();
 
   QToolButton* toolButton = nullptr;
   QWidget* container = nullptr;
 
   if ( attributeTableConfig.actionWidgetStyle() == QgsAttributeTableConfig::DropDown )
   {
-    toolButton  = new QToolButton( this );
+    toolButton  = new QToolButton();
+    toolButton->setToolButtonStyle( Qt::ToolButtonTextBesideIcon );
     toolButton->setPopupMode( QToolButton::MenuButtonPopup );
     container = toolButton;
   }
   else
   {
-    container = new QWidget( this );
+    container = new QWidget();
     container->setLayout( new QHBoxLayout() );
     container->layout()->setMargin( 0 );
   }
 
+  QList< QAction* > actionList;
+  QAction* defaultAction = nullptr;
+
+  // first add user created layer actions
+  QgsActionManager* actions = mFilterModel->layer()->actions();
   for ( int i = 0; i < actions->size(); ++i )
   {
     const QgsAction& action = actions->at( i );
@@ -188,16 +186,44 @@ QWidget* QgsAttributeTableView::createActionWidget( QgsFeatureId fid )
     QString actionTitle = !action.shortTitle().isEmpty() ? action.shortTitle() : action.icon().isNull() ? action.name() : "";
     QAction* act = new QAction( action.icon(), actionTitle, container );
     act->setToolTip( action.name() );
-    act->setData( i );
+    act->setData( "user_action" );
+    act->setProperty( "action_id", i );
     act->setProperty( "fid", fid );
-
     connect( act, SIGNAL( triggered( bool ) ), this, SLOT( actionTriggered() ) );
+    actionList << act;
 
+    if ( actions->defaultAction() == i )
+      defaultAction = act;
+  }
+
+  // next add any registered actions for this layer
+  Q_FOREACH ( QgsMapLayerAction* mapLayerAction,
+              QgsMapLayerActionRegistry::instance()->mapLayerActions( mFilterModel->layer(),
+                  QgsMapLayerAction::SingleFeature ) )
+  {
+    QAction* action = new QAction( mapLayerAction->icon(), mapLayerAction->text(), container );
+    action->setData( "map_layer_action" );
+    action->setToolTip( mapLayerAction->text() );
+    action->setProperty( "fid", fid );
+    action->setProperty( "action", qVariantFromValue( qobject_cast<QObject *>( mapLayerAction ) ) );
+    connect( action, SIGNAL( triggered() ), this, SLOT( actionTriggered() ) );
+    actionList << action;
+
+    if ( !defaultAction &&
+         QgsMapLayerActionRegistry::instance()->defaultActionForLayer( mFilterModel->layer() ) == mapLayerAction )
+      defaultAction = action;
+  }
+
+  if ( !defaultAction && !actionList.isEmpty() )
+    defaultAction = actionList.at( 0 );
+
+  Q_FOREACH ( QAction* act, actionList )
+  {
     if ( attributeTableConfig.actionWidgetStyle() == QgsAttributeTableConfig::DropDown )
     {
       toolButton->addAction( act );
 
-      if ( actions->defaultAction() == i )
+      if ( act == defaultAction )
         toolButton->setDefaultAction( act );
 
       container = toolButton;
@@ -208,6 +234,11 @@ QWidget* QgsAttributeTableView::createActionWidget( QgsFeatureId fid )
       btn->setDefaultAction( act );
       container->layout()->addWidget( btn );
     }
+  }
+
+  if ( attributeTableConfig.actionWidgetStyle() == QgsAttributeTableConfig::ButtonList )
+  {
+    static_cast< QHBoxLayout* >( container->layout() )->addStretch();
   }
 
   if ( toolButton && !toolButton->actions().isEmpty() && actions->defaultAction() == -1 )
@@ -239,15 +270,6 @@ void QgsAttributeTableView::mouseReleaseEvent( QMouseEvent *event )
 
 void QgsAttributeTableView::mouseMoveEvent( QMouseEvent *event )
 {
-  QModelIndex index = indexAt( event->pos() );
-  if ( index.data( QgsAttributeTableFilterModel::TypeRole ) == QgsAttributeTableFilterModel::ColumnTypeActionButton )
-  {
-    Q_ASSERT( index.isValid() );
-
-    if ( !indexWidget( index ) )
-      setIndexWidget( index, createActionWidget( mFilterModel->data( index, QgsAttributeTableModel::FeatureIdRole ).toLongLong() ) );
-  }
-
   setSelectionMode( QAbstractItemView::NoSelection );
   QTableView::mouseMoveEvent( event );
   setSelectionMode( QAbstractItemView::ExtendedSelection );
@@ -391,24 +413,47 @@ void QgsAttributeTableView::actionTriggered()
   QgsFeature f;
   mFilterModel->layerCache()->getFeatures( QgsFeatureRequest( fid ) ).nextFeature( f );
 
-  mFilterModel->layer()->actions()->doAction( action->data().toInt(), f );
+  if ( action->data().toString() == "user_action" )
+  {
+    mFilterModel->layer()->actions()->doAction( action->property( "action_id" ).toInt(), f );
+  }
+  else if ( action->data().toString() == "map_layer_action" )
+  {
+    QObject* object = action->property( "action" ).value<QObject *>();
+    QgsMapLayerAction* layerAction = qobject_cast<QgsMapLayerAction *>( object );
+    if ( layerAction )
+    {
+      layerAction->triggerForFeature( mFilterModel->layer(), &f );
+    }
+  }
 }
 
 void QgsAttributeTableView::columnSizeChanged( int index, int oldWidth, int newWidth )
 {
   Q_UNUSED( oldWidth )
-  if ( mFilterModel->actionColumnIndex() == index )
-  {
-    mActionWidget->resize( newWidth, mActionWidget->height() );
-    updateActionImage( mActionWidget );
-  }
   emit columnResized( index, newWidth );
 }
 
-void QgsAttributeTableView::updateActionImage( QWidget* widget )
+void QgsAttributeTableView::onActionColumnItemPainted( const QModelIndex& index )
 {
-  QImage image( widget->size(), QImage::Format_ARGB32_Premultiplied );
-  QPainter painter( &image );
-  widget->render( &painter );
-  mTableDelegate->setActionWidgetImage( image );
+  if ( !indexWidget( index ) )
+  {
+    QWidget* widget = createActionWidget( mFilterModel->data( index, QgsAttributeTableModel::FeatureIdRole ).toLongLong() );
+    mActionWidgets.insert( index, widget );
+    setIndexWidget( index, widget );
+  }
+}
+
+void QgsAttributeTableView::recreateActionWidgets()
+{
+  QMap< QModelIndex, QWidget* > newWidgets;
+  QMap< QModelIndex, QWidget* >::const_iterator it = mActionWidgets.constBegin();
+  for ( ; it != mActionWidgets.constEnd(); ++it )
+  {
+    it.value()->deleteLater(); //?
+    QWidget* widget = createActionWidget( mFilterModel->data( it.key(), QgsAttributeTableModel::FeatureIdRole ).toLongLong() );
+    newWidgets.insert( it.key(), widget );
+    setIndexWidget( it.key(), widget );
+  }
+  mActionWidgets = newWidgets;
 }

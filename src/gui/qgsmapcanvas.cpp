@@ -66,7 +66,8 @@ email                : sherman at mrcc.com
 #include <math.h>
 
 
-/** Deprecated to be deleted, stuff from here should be moved elsewhere.
+/** \ingroup gui
+ * Deprecated to be deleted, stuff from here should be moved elsewhere.
  * @note not available in Python bindings
 */
 //TODO QGIS 3.0 - remove
@@ -558,31 +559,33 @@ void QgsMapCanvas::setDestinationCrs( const QgsCoordinateReferenceSystem &crs )
   if ( mSettings.destinationCrs() == crs )
     return;
 
-  if ( mSettings.hasCrsTransformEnabled() )
+  // try to reproject current extent to the new one
+  QgsRectangle rect;
+  if ( !mSettings.visibleExtent().isEmpty() )
   {
-    // try to reproject current extent to the new one
-    QgsRectangle rect;
-    if ( !mSettings.visibleExtent().isEmpty() )
+    QgsCoordinateTransform transform( mSettings.destinationCrs(), crs );
+    try
     {
-      QgsCoordinateTransform transform( mSettings.destinationCrs(), crs );
-      try
-      {
-        rect = transform.transformBoundingBox( mSettings.visibleExtent() );
-      }
-      catch ( QgsCsException &e )
-      {
-        Q_UNUSED( e );
-        QgsDebugMsg( QString( "Transform error caught: %1" ).arg( e.what() ) );
-      }
+      rect = transform.transformBoundingBox( mSettings.visibleExtent() );
     }
-    if ( !rect.isEmpty() )
+    catch ( QgsCsException &e )
     {
-      setExtent( rect );
+      Q_UNUSED( e );
+      QgsDebugMsg( QString( "Transform error caught: %1" ).arg( e.what() ) );
     }
-
-    QgsDebugMsg( "refreshing after destination CRS changed" );
-    refresh();
   }
+
+  if ( !mSettings.hasCrsTransformEnabled() )
+  {
+    mSettings.setMapUnits( crs.mapUnits() );
+  }
+  if ( !rect.isEmpty() )
+  {
+    setExtent( rect );
+  }
+
+  QgsDebugMsg( "refreshing after destination CRS changed" );
+  refresh();
 
   mSettings.setDestinationCrs( crs );
 
@@ -934,7 +937,7 @@ QgsRectangle QgsMapCanvas::fullExtent() const
 } // extent
 
 
-void QgsMapCanvas::setExtent( QgsRectangle const & r, bool magnified )
+void QgsMapCanvas::setExtent( const QgsRectangle& r, bool magnified )
 {
   QgsRectangle current = extent();
 
@@ -1206,8 +1209,14 @@ void QgsMapCanvas::panToSelected( QgsVectorLayer* layer )
     return;
 
   QgsRectangle rect = mapSettings().layerExtentToOutputExtent( layer, layer->boundingBoxOfSelected() );
-  setExtent( QgsRectangle( rect.center(), rect.center() ) );
-  refresh();
+  if ( !rect.isNull() )
+  {
+    setCenter( rect.center() );
+  }
+  else
+  {
+    emit messageEmitted( tr( "Cannot pan to selected feature(s)" ), tr( "Geometry is NULL" ), QgsMessageBar::WARNING );
+  }
 } // panToSelected
 
 void QgsMapCanvas::keyPressEvent( QKeyEvent * e )
@@ -1480,11 +1489,13 @@ void QgsMapCanvas::mouseReleaseEvent( QMouseEvent* e )
 
 } // mouseReleaseEvent
 
-void QgsMapCanvas::updateMapSize()
+void QgsMapCanvas::resizeEvent( QResizeEvent * e )
 {
+  QGraphicsView::resizeEvent( e );
   mResizeTimer->start( 500 );
 
   QSize lastSize = viewport()->size();
+
   mSettings.setOutputSize( lastSize );
   mMapRenderer->setOutputSize( lastSize, mSettings.outputDpi() );
 
@@ -1502,28 +1513,12 @@ void QgsMapCanvas::updateMapSize()
   emit extentsChanged();
 }
 
-
-void QgsMapCanvas::resizeEvent( QResizeEvent * e )
-{
-  QGraphicsView::resizeEvent( e );
-
-  QSize size = viewport()->size();
-  if ( size.width() > mSettings.outputSize().width() || size.height() > mSettings.outputSize().height() )
-  {
-    updateMapSize();
-  }
-  else
-  {
-    moveCanvasContents( true );
-  }
-}
-
 void QgsMapCanvas::paintEvent( QPaintEvent *e )
 {
   // no custom event handling anymore
 
   QGraphicsView::paintEvent( e );
-}
+} // paintEvent
 
 void QgsMapCanvas::updateCanvasItemPositions()
 {

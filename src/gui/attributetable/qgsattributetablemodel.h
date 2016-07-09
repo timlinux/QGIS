@@ -34,7 +34,7 @@ class QgsMapLayerAction;
 class QgsEditorWidgetFactory;
 
 
-/**
+/** \ingroup gui
  * A model backed by a {@link QgsVectorLayerCache} which is able to provide
  * feature/attribute information to a QAbstractItemView.
  *
@@ -218,6 +218,7 @@ class GUI_EXPORT QgsAttributeTableModel: public QAbstractTableModel
     /**
      * Get the the feature request
      */
+    // TODO QGIS 3: return copy instead of reference
     const QgsFeatureRequest& request() const;
 
     /**
@@ -350,6 +351,8 @@ class GUI_EXPORT QgsAttributeTableModel: public QAbstractTableModel
     /** The currently cached column */
     QgsExpression mSortCacheExpression;
     QgsAttributeList mSortCacheAttributes;
+    /** If it is set, a simple field is used for sorting, if it's -1 it's the mSortCacheExpression*/
+    int mSortFieldIndex;
     /** Allows caching of one value per column (used for sorting) */
     QHash<QgsFeatureId, QVariant> mSortCache;
 

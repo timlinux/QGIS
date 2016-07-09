@@ -33,7 +33,7 @@ class QgsComposerMap;
 class QgsLegendRenderer;
 
 
-/** \ingroup MapComposer
+/** \ingroup core
  * Item model implementation based on layer tree model for composer legend.
  * Overrides some functionality of QgsLayerTreeModel to better fit the needs of composer legend.
  *
@@ -52,7 +52,7 @@ class CORE_EXPORT QgsLegendModelV2 : public QgsLayerTreeModel
 };
 
 
-/** \ingroup MapComposer
+/** \ingroup core
  * A legend that can be placed onto a map composition
  */
 class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
@@ -255,7 +255,7 @@ class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
     void invalidateCurrentMap();
 
   private slots:
-    void updateFilterByMap();
+    void updateFilterByMap( bool redraw = true );
 
     //! update legend in case style of associated map has changed
     void mapLayerStyleOverridesChanged();

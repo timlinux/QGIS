@@ -57,8 +57,7 @@ class QgsLayerTreeMapCanvasBridge;
 class QgsLayerTreeView;
 class QgsMapCanvas;
 class QgsMapLayer;
-class QgsMapLayerPropertiesFactory;
-class QgsMapStylingPanelFactory;
+class QgsMapLayerConfigWidgetFactory;
 class QgsMapTip;
 class QgsMapTool;
 class QgsMapToolAdvancedDigitizing;
@@ -98,7 +97,7 @@ class QgsDataItem;
 class QgsTileScaleWidget;
 
 class QgsLabelingWidget;
-class QgsMapStylingWidget;
+class QgsLayerStylingWidget;
 class QgsDiagramProperties;
 
 #include <QMainWindow>
@@ -508,16 +507,10 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     void parseVersionInfo( QNetworkReply* reply, int& latestVersion, QStringList& versionInfo );
 
     /** Register a new tab in the layer properties dialog */
-    void registerMapLayerPropertiesFactory( QgsMapLayerPropertiesFactory* factory );
+    void registerMapLayerPropertiesFactory( QgsMapLayerConfigWidgetFactory* factory );
 
     /** Unregister a previously registered tab in the layer properties dialog */
-    void unregisterMapLayerPropertiesFactory( QgsMapLayerPropertiesFactory* factory );
-
-    /** Register a new tab in the layer properties dialog */
-    void registerMapStylePanelFactory( QgsMapStylingPanelFactory* factory );
-
-    /** Unregister a previously registered tab in the layer properties dialog */
-    void unregisterMapStylePanelFactory( QgsMapStylingPanelFactory* factory );
+    void unregisterMapLayerPropertiesFactory( QgsMapLayerConfigWidgetFactory* factory );
 
   public slots:
     void layerTreeViewDoubleClicked( const QModelIndex& index );
@@ -633,7 +626,6 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     //! copies features to internal clipboard
     void copyFeatures( QgsFeatureStore & featureStore );
-    void loadOGRSublayers( const QString& layertype, const QString& uri, const QStringList& list );
     void loadGDALSublayers( const QString& uri, const QStringList& list );
 
     /** Deletes the selected attributes for the currently selected vector layer*/
@@ -1737,7 +1729,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     QgsPluginManager *mPluginManager;
     QgsDockWidget *mMapStylingDock;
-    QgsMapStylingWidget* mMapStyleWidget;
+    QgsLayerStylingWidget* mMapStyleWidget;
 
     QgsComposerManager *mComposerManager;
 
@@ -1782,8 +1774,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     QgsSnappingUtils* mSnappingUtils;
 
-    QList<QgsMapLayerPropertiesFactory*> mMapLayerPropertiesFactories;
-    QList<QgsMapStylingPanelFactory*> mMapStylePanelFactories;
+    QList<QgsMapLayerConfigWidgetFactory*> mMapLayerPanelFactories;
 
     QDateTime mProjectLastModified;
 

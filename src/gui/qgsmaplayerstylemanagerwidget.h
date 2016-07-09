@@ -19,17 +19,17 @@
 #include <QListView>
 #include <QStandardItemModel>
 
-#include "qgsmapstylepanel.h"
+#include "qgsmaplayerconfigwidget.h"
 
 class QgsMapLayer;
 class QgsMapCanvas;
 
 
-/**
+/** \ingroup gui
  * @brief The QgsMapLayerStyleManagerWidget class which is used to visually manage
  * the layer styles.
  */
-class GUI_EXPORT QgsMapLayerStyleManagerWidget : public QgsMapStylingPanel
+class GUI_EXPORT QgsMapLayerStyleManagerWidget : public QgsMapLayerConfigWidget
 {
     Q_OBJECT
   public:

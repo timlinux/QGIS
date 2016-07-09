@@ -646,7 +646,7 @@ void QgsRasterLayer::setDataProvider( QString const & provider )
   // set the layer name (uppercase first character)
   if ( ! mLayerName.isEmpty() )   // XXX shouldn't this happen in parent?
   {
-    setLayerName( mLayerName );
+    setName( mLayerName );
   }
 
   //mBandCount = 0;
@@ -936,6 +936,7 @@ void QgsRasterLayer::setContrastEnhancement( QgsContrastEnhancement::ContrastEnh
   qDeleteAll( myEnhancements );
 
   emit repaintRequested();
+  emit styleChanged();
 }
 
 void QgsRasterLayer::setDefaultContrastEnhancement()
@@ -1076,6 +1077,7 @@ void QgsRasterLayer::setRenderer( QgsRasterRenderer* theRenderer )
   if ( !theRenderer ) { return; }
   mPipe.set( theRenderer );
   emit rendererChanged();
+  emit styleChanged();
 }
 
 void QgsRasterLayer::showProgress( int theValue )
@@ -1534,8 +1536,8 @@ bool QgsRasterLayer::writeXml( QDomNode & layer_node,
     {
       QDomElement noDataRange =  document.createElement( "noDataRange" );
 
-      noDataRange.setAttribute( "min", range.min() );
-      noDataRange.setAttribute( "max", range.max() );
+      noDataRange.setAttribute( "min", QgsRasterBlock::printValue( range.min() ) );
+      noDataRange.setAttribute( "max", QgsRasterBlock::printValue( range.max() ) );
       noDataRangeList.appendChild( noDataRange );
     }
 

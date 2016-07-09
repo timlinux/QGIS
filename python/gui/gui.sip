@@ -105,7 +105,8 @@
 %Include qgsmaplayeractionregistry.sip
 %Include qgsmaplayercombobox.sip
 %Include qgsmaplayermodel.sip
-%Include qgsmaplayerpropertiesfactory.sip
+%Include qgsmaplayerconfigwidget.sip
+%Include qgsmaplayerconfigwidgetfactory.sip
 %Include qgsmaplayerproxymodel.sip
 %Include qgsmapmouseevent.sip
 %Include qgsmapoverviewcanvas.sip
@@ -120,7 +121,6 @@
 %Include qgsmaptoolpan.sip
 %Include qgsmaptooltouch.sip
 %Include qgsmaptoolzoom.sip
-%Include qgsmapstylepanel.sip
 %Include qgsmaplayerstylemanagerwidget.sip
 %Include qgsmessagebar.sip
 %Include qgsmessagebaritem.sip
@@ -136,6 +136,7 @@
 %Include qgsorderbydialog.sip
 %Include qgsowssourceselect.sip
 %Include qgspanelwidget.sip
+%Include qgspanelwidgetstack.sip
 %Include qgspixmaplabel.sip
 %Include qgspluginmanagerinterface.sip
 %Include qgsprevieweffect.sip
@@ -164,7 +165,6 @@
 %Include qgsunitselectionwidget.sip
 %Include qgsuserinputdockwidget.sip
 %Include qgsvariableeditorwidget.sip
-%Include qgsvectorlayerpropertiespage.sip
 %Include qgsvectorlayertools.sip
 %Include qgsvertexmarker.sip
 

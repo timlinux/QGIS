@@ -908,11 +908,11 @@ void QgsGeorefPluginGui::createActions()
   connect( mActionGeorefConfig, SIGNAL( triggered() ), this, SLOT( showGeorefConfigDialog() ) );
 
   // Histogram stretch
-  mActionLocalHistogramStretch->setIcon( getThemeIcon( "/mActionLocalHistogramStretch.png" ) );
+  mActionLocalHistogramStretch->setIcon( getThemeIcon( "/mActionLocalHistogramStretch.svg" ) );
   connect( mActionLocalHistogramStretch, SIGNAL( triggered() ), this, SLOT( localHistogramStretch() ) );
   mActionLocalHistogramStretch->setEnabled( false );
 
-  mActionFullHistogramStretch->setIcon( getThemeIcon( "/mActionFullHistogramStretch.png" ) );
+  mActionFullHistogramStretch->setIcon( getThemeIcon( "/mActionFullHistogramStretch.svg" ) );
   connect( mActionFullHistogramStretch, SIGNAL( triggered() ), this, SLOT( fullHistogramStretch() ) );
   mActionFullHistogramStretch->setEnabled( false );
 
@@ -1825,7 +1825,7 @@ void QgsGeorefPluginGui::showGDALScript( const QStringList& commands )
 
   // create window to show gdal script
   QDialogButtonBox *bbxGdalScript = new QDialogButtonBox( QDialogButtonBox::Cancel, Qt::Horizontal, this );
-  QPushButton *pbnCopyInClipBoard = new QPushButton( getThemeIcon( "/mActionEditPaste.png" ),
+  QPushButton *pbnCopyInClipBoard = new QPushButton( getThemeIcon( "/mActionEditPaste.svg" ),
       tr( "Copy to Clipboard" ), bbxGdalScript );
   bbxGdalScript->addButton( pbnCopyInClipBoard, QDialogButtonBox::AcceptRole );
 

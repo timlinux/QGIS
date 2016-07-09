@@ -75,7 +75,7 @@ class DataDefinedRestorer: public QObject
 
 class QgsSymbolV2SelectorDialog;
 
-/**
+/** \ingroup gui
  * Symbol selector widget that cna be used to select and build a symbol
  */
 class GUI_EXPORT QgsSymbolV2SelectorWidget: public QgsPanelWidget, private Ui::QgsSymbolV2SelectorDialogBase
@@ -86,7 +86,7 @@ class GUI_EXPORT QgsSymbolV2SelectorWidget: public QgsPanelWidget, private Ui::Q
 
   public:
     /**
-       * Symbol selector widget that cna be used to select and build a symbol
+       * Symbol selector widget that can be used to select and build a symbol
        * @param symbol The symbol to load into the widget as a start point.
        * @param style The style used by the widget.
        * @param vl The vector layer for the symbol.
@@ -127,13 +127,6 @@ class GUI_EXPORT QgsSymbolV2SelectorWidget: public QgsPanelWidget, private Ui::Q
      * @return The active symbol.
      */
     QgsSymbolV2* symbol() { return mSymbol; }
-
-    /**
-     * Set the widget in dock mode which will emit showPanel when a sub widget requests
-     * to show a widget.
-     * @param dockMode True to enable dock mode.
-     */
-    void setDockMode( bool dockMode );
 
   protected:
 
@@ -255,14 +248,15 @@ class GUI_EXPORT QgsSymbolV2SelectorWidget: public QgsPanelWidget, private Ui::Q
     QWidget *mPresentWidget;
 
   private:
-    bool mDockMode;
     QScopedPointer<DataDefinedRestorer> mDataDefineRestorer;
     QScopedPointer< QgsExpressionContext > mPresetExpressionContext;
 
     QgsMapCanvas* mMapCanvas;
 };
 
-
+/** \ingroup gui
+ * \class QgsSymbolV2SelectorDialog
+ */
 class GUI_EXPORT QgsSymbolV2SelectorDialog : public QDialog
 {
     Q_OBJECT

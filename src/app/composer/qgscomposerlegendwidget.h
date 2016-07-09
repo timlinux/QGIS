@@ -26,7 +26,7 @@
 class QgsComposerLegend;
 
 
-/** \ingroup MapComposer
+/** \ingroup app
  * A widget for setting properties relating to a composer legend.
  */
 class QgsComposerLegendWidget: public QgsComposerItemBaseWidget, private Ui::QgsComposerLegendWidgetBase
@@ -98,6 +98,8 @@ class QgsComposerLegendWidget: public QgsComposerItemBaseWidget, private Ui::Qgs
 
     /** Update the enabling state of the filter by atlas button */
     void updateFilterLegendByAtlasButton();
+
+    void on_mItemTreeView_doubleClicked( const QModelIndex &index );
 
   private:
     QgsComposerLegendWidget();

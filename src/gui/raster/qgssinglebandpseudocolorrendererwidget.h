@@ -23,6 +23,9 @@
 #include "qgscolorrampshader.h"
 #include "ui_qgssinglebandpseudocolorrendererwidgetbase.h"
 
+/** \ingroup gui
+ * \class QgsSingleBandPseudoColorRendererWidget
+ */
 class GUI_EXPORT QgsSingleBandPseudoColorRendererWidget: public QgsRasterRendererWidget,
       private Ui::QgsSingleBandPseudoColorRendererWidgetBase
 {
@@ -40,6 +43,7 @@ class GUI_EXPORT QgsSingleBandPseudoColorRendererWidget: public QgsRasterRendere
 
     static QgsRasterRendererWidget* create( QgsRasterLayer* layer, const QgsRectangle &theExtent ) { return new QgsSingleBandPseudoColorRendererWidget( layer, theExtent ); }
     QgsRasterRenderer* renderer() override;
+    void setMapCanvas( QgsMapCanvas* canvas ) override;
 
     void setFromRenderer( const QgsRasterRenderer* r );
 
@@ -87,7 +91,7 @@ class GUI_EXPORT QgsSingleBandPseudoColorRendererWidget: public QgsRasterRendere
     int mMinMaxOrigin;
 };
 
-/**
+/** \ingroup gui
  * Custom QTreeWidgetItem with extra signal when item is edited and numeric sorting.
  */
 class GUI_EXPORT QgsTreeWidgetItem: public QObject, public QTreeWidgetItem

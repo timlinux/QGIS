@@ -717,7 +717,11 @@ void QgsGraduatedSymbolRendererV2Widget::updateSymbolsFromWidget()
       {
         int rangeIdx = idx.row();
         QgsSymbolV2* newRangeSymbol = mGraduatedSymbol->clone();
-        newRangeSymbol->setColor( mRenderer->ranges()[rangeIdx].symbol()->color() );
+        if ( selectedIndexes.count() > 1 )
+        {
+          //if updating multiple ranges, retain the existing range colors
+          newRangeSymbol->setColor( mRenderer->ranges().at( rangeIdx ).symbol()->color() );
+        }
         mRenderer->updateRangeSymbol( rangeIdx, newRangeSymbol );
       }
     }
@@ -832,7 +836,7 @@ void QgsGraduatedSymbolRendererV2Widget::changeGraduatedSymbol()
 
   connect( dlg, SIGNAL( widgetChanged() ), this, SLOT( updateSymbolsFromWidget() ) );
   connect( dlg, SIGNAL( accepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
-  emit showPanel( dlg );
+  openPanel( dlg );
 }
 
 void QgsGraduatedSymbolRendererV2Widget::updateGraduatedSymbolIcon()
@@ -906,12 +910,12 @@ void QgsGraduatedSymbolRendererV2Widget::changeRangeSymbol( int rangeIdx )
 {
   QgsSymbolV2* newSymbol = mRenderer->ranges()[rangeIdx].symbol()->clone();
   QgsSymbolV2SelectorWidget* dlg = new QgsSymbolV2SelectorWidget( newSymbol, mStyle, mLayer, nullptr );
-  dlg->setDockMode( true );
+  dlg->setDockMode( this->dockMode() );
   dlg->setMapCanvas( mMapCanvas );
 
   connect( dlg, SIGNAL( widgetChanged() ), this, SLOT( updateSymbolsFromWidget() ) );
   connect( dlg, SIGNAL( accepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
-  emit showPanel( dlg );
+  openPanel( dlg );
 }
 
 void QgsGraduatedSymbolRendererV2Widget::changeRange( int rangeIdx )
@@ -1078,10 +1082,14 @@ QList<QgsSymbolV2*> QgsGraduatedSymbolRendererV2Widget::selectedSymbols()
 
 QgsSymbolV2* QgsGraduatedSymbolRendererV2Widget::findSymbolForRange( double lowerBound, double upperBound, const QgsRangeList& ranges ) const
 {
+  int decimalPlaces = mRenderer->labelFormat().precision() + 2;
+  if ( decimalPlaces < 0 )
+    decimalPlaces = 0;
+  double precision = 1.0 / qPow( 10, decimalPlaces );
+
   for ( QgsRangeList::const_iterator it = ranges.begin(); it != ranges.end(); ++it )
   {
-    //range string has been created with option 'f',4
-    if ( qgsDoubleNear( lowerBound, it->lowerValue(), 0.0001 ) && qgsDoubleNear( upperBound, it->upperValue(), 0.0001 ) )
+    if ( qgsDoubleNear( lowerBound, it->lowerValue(), precision ) && qgsDoubleNear( upperBound, it->upperValue(), precision ) )
     {
       return it->symbol();
     }

@@ -3146,6 +3146,219 @@ class TestQgsGeometry(unittest.TestCase):
         self.assertEqual(QgsWKBTypes.zmType(QgsWKBTypes.MultiSurfaceZM, False, True), QgsWKBTypes.MultiSurfaceM)
         self.assertEqual(QgsWKBTypes.zmType(QgsWKBTypes.MultiSurfaceZM, True, True), QgsWKBTypes.MultiSurfaceZM)
 
+    def testDeleteVertexCircularString(self):
+
+        wkt = "CircularString ((0 0,1 1,2 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(0)
+        self.assertEqual(geom.exportToWkt(), QgsCircularStringV2().asWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(0)
+        expected_wkt = "CircularString (2 0, 3 -1, 4 0)"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        expected_wkt = "CircularString (0 0, 3 -1, 4 0)"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(2)
+        expected_wkt = "CircularString (0 0, 1 1, 4 0)"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(3)
+        expected_wkt = "CircularString (0 0, 1 1, 4 0)"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(4)
+        expected_wkt = "CircularString (0 0,1 1,2 0)"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CircularString ((0 0,1 1,2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert not geom.deleteVertex(-1)
+        assert not geom.deleteVertex(5)
+
+    def testDeleteVertexCompoundCurve(self):
+
+        wkt = "CompoundCurve ((0 0,1 1))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert not geom.deleteVertex(-1)
+        assert not geom.deleteVertex(2)
+        assert geom.deleteVertex(0)
+        self.assertEqual(geom.exportToWkt(), QgsCompoundCurveV2().asWkt())
+
+        wkt = "CompoundCurve ((0 0,1 1))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        self.assertEqual(geom.exportToWkt(), QgsCompoundCurveV2().asWkt())
+
+        wkt = "CompoundCurve ((0 0,1 1),(1 1,2 2))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(0)
+        expected_wkt = "CompoundCurve ((1 1,2 2))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve ((0 0,1 1),(1 1,2 2))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        expected_wkt = "CompoundCurve ((0 0,2 2))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve ((0 0,1 1),(1 1,2 2))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(2)
+        expected_wkt = "CompoundCurve ((0 0,1 1))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve ((0 0,1 1),CircularString(1 1,2 0,1 -1))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        expected_wkt = "CompoundCurve ((0 0,1 -1))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve (CircularString(0 0,1 1,2 0),CircularString(2 0,3 -1,4 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(2)
+        expected_wkt = "CompoundCurve ((0 0, 4 0))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(4)
+        expected_wkt = "CompoundCurve (CircularString (0 0, 1 1, 2 0),(2 0, 0 0))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve ((-1 0,0 0),CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        expected_wkt = "CompoundCurve ((-1 0, 2 0),CircularString (2 0, 1.5 -0.5, 1 -1))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CompoundCurve (CircularString(-1 -1,-1.5 -0.5,-2 0,-1 1,0 0),CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(4)
+        expected_wkt = "CompoundCurve (CircularString (-1 -1, -1.5 -0.5, -2 0),(-2 0, 2 0),CircularString (2 0, 1.5 -0.5, 1 -1))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+    def testDeleteVertexCurvePolygon(self):
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0),(2 0,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert not geom.deleteVertex(-1)
+        assert not geom.deleteVertex(4)
+        assert geom.deleteVertex(0)
+        self.assertEqual(geom.exportToWkt(), QgsCurvePolygonV2().asWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0),(2 0,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        self.assertEqual(geom.exportToWkt(), QgsCurvePolygonV2().asWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0),(2 0,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(2)
+        self.assertEqual(geom.exportToWkt(), QgsCurvePolygonV2().asWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0),(2 0,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(3)
+        self.assertEqual(geom.exportToWkt(), QgsCurvePolygonV2().asWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(0)
+        expected_wkt = "CurvePolygon (CompoundCurve (CircularString (2 0, 1.5 -0.5, 1 -1),(1 -1, 2 0)))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(1)
+        expected_wkt = "CurvePolygon (CompoundCurve (CircularString (0 0, 1.5 -0.5, 1 -1),(1 -1, 0 0)))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(2)
+        expected_wkt = "CurvePolygon (CompoundCurve (CircularString (0 0, 1 1, 1 -1),(1 -1, 0 0)))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(3)
+        expected_wkt = "CurvePolygon (CompoundCurve (CircularString (0 0, 1 1, 1 -1),(1 -1, 0 0)))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+        wkt = "CurvePolygon (CompoundCurve (CircularString(0 0,1 1,2 0,1.5 -0.5,1 -1),(1 -1,0 0)))"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom.deleteVertex(4)
+        expected_wkt = "CurvePolygon (CompoundCurve (CircularString (0 0, 1 1, 2 0),(2 0, 0 0)))"
+        self.assertEqual(geom.exportToWkt(), QgsGeometry.fromWkt(expected_wkt).exportToWkt())
+
+    def testMisc(self):
+
+        # Test that we cannot add a CurvePolygon in a MultiPolygon
+        multipolygon = QgsMultiPolygonV2()
+        cp = QgsCurvePolygonV2()
+        cp.fromWkt("CurvePolygon ((0 0,0 1,1 1,0 0))")
+        assert not multipolygon.addGeometry(cp)
+
+        # Test that importing an invalid WKB (a MultiPolygon with a CurvePolygon) fails
+        geom = QgsGeometry.fromWkt('MultiSurface(((0 0,0 1,1 1,0 0)), CurvePolygon ((0 0,0 1,1 1,0 0)))')
+        wkb = geom.asWkb()
+        wkb = bytearray(wkb)
+        if wkb[1] == QgsWKBTypes.MultiSurface:
+            wkb[1] = QgsWKBTypes.MultiPolygon
+        elif wkb[1 + 4] == QgsWKBTypes.MultiSurface:
+            wkb[1 + 4] = QgsWKBTypes.MultiPolygon
+        else:
+            self.assertTrue(False)
+        geom = QgsGeometry()
+        geom.fromWkb(wkb)
+        self.assertEqual(geom.exportToWkt(), QgsMultiPolygonV2().asWkt())
+
+        # Test that fromWkt() on a GeometryCollection works with all possible geometries
+        wkt = "GeometryCollection( "
+        wkt += "Point(0 1)"
+        wkt += ","
+        wkt += "LineString(0 0,0 1)"
+        wkt += ","
+        wkt += "Polygon ((0 0,1 1,1 0,0 0))"
+        wkt += ","
+        wkt += "CurvePolygon ((0 0,1 1,1 0,0 0))"
+        wkt += ","
+        wkt += "CircularString (0 0,1 1,2 0)"
+        wkt += ","
+        wkt += "CompoundCurve ((0 0,0 1))"
+        wkt += ","
+        wkt += "MultiPoint ((0 0))"
+        wkt += ","
+        wkt += "MultiLineString((0 0,0 1))"
+        wkt += ","
+        wkt += "MultiCurve((0 0,0 1))"
+        wkt += ","
+        wkt += "MultiPolygon (((0 0,1 1,1 0,0 0)))"
+        wkt += ","
+        wkt += "MultiSurface (((0 0,1 1,1 0,0 0)))"
+        wkt += ","
+        wkt += "GeometryCollection (Point(0 0))"
+        wkt += ")"
+        geom = QgsGeometry.fromWkt(wkt)
+        assert geom is not None
+        wkb1 = geom.asWkb()
+        geom = QgsGeometry()
+        geom.fromWkb(wkb1)
+        wkb2 = geom.asWkb()
+        self.assertEqual(wkb1, wkb2)
 
 if __name__ == '__main__':
     unittest.main()

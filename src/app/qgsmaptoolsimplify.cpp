@@ -52,6 +52,12 @@ void QgsSimplifyDialog::enableOkButton( bool enabled )
   okButton->setEnabled( enabled );
 }
 
+void QgsSimplifyDialog::closeEvent( QCloseEvent* e )
+{
+  QDialog::closeEvent( e );
+  mTool->clearSelection();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -256,6 +262,12 @@ void QgsMapToolSimplify::canvasReleaseEvent( QgsMapMouseEvent* e )
   }
 
   mDragging = false;
+
+  if ( mSelectedFeatures.isEmpty() )
+  {
+    emit messageEmitted( tr( "Could not find a nearby feature in the current layer." ) );
+    return;
+  }
 
   // count vertices, prepare rubber bands
   mOriginalVertexCount = 0;

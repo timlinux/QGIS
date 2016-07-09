@@ -572,12 +572,12 @@ void QgsCategorizedSymbolRendererV2Widget::changeCategorizedSymbol()
 {
   QgsSymbolV2* newSymbol = mCategorizedSymbol->clone();
   QgsSymbolV2SelectorWidget* dlg = new QgsSymbolV2SelectorWidget( newSymbol, mStyle, mLayer, nullptr );
-  dlg->setDockMode( true );
+  dlg->setDockMode( this->dockMode() );
   dlg->setMapCanvas( mMapCanvas );
 
   connect( dlg, SIGNAL( widgetChanged() ), this, SLOT( updateSymbolsFromWidget() ) );
-  connect( dlg, SIGNAL( accepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
-  emit showPanel( dlg );
+  connect( dlg, SIGNAL( panelAccepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
+  openPanel( dlg );
 }
 
 void QgsCategorizedSymbolRendererV2Widget::updateCategorizedSymbolIcon()
@@ -617,11 +617,11 @@ void QgsCategorizedSymbolRendererV2Widget::changeCategorySymbol()
   }
 
   QgsSymbolV2SelectorWidget* dlg = new QgsSymbolV2SelectorWidget( symbol, mStyle, mLayer, nullptr );
-  dlg->setDockMode( true );
+  dlg->setDockMode( this->dockMode() );
   dlg->setMapCanvas( mMapCanvas );
   connect( dlg, SIGNAL( widgetChanged() ), this, SLOT( updateSymbolsFromWidget() ) );
-  connect( dlg, SIGNAL( accepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
-  emit showPanel( dlg );
+  connect( dlg, SIGNAL( panelAccepted( QgsPanelWidget* ) ), this, SLOT( cleanUpSymbolSelector( QgsPanelWidget* ) ) );
+  openPanel( dlg );
 }
 
 static void _createCategories( QgsCategoryList& cats, QList<QVariant>& values, QgsSymbolV2* symbol )
@@ -915,6 +915,12 @@ QgsCategoryList QgsCategorizedSymbolRendererV2Widget::selectedCategoryList()
   return cl;
 }
 
+void QgsCategorizedSymbolRendererV2Widget::refreshSymbolView()
+{
+  populateCategories();
+  emit widgetChanged();
+}
+
 void QgsCategorizedSymbolRendererV2Widget::showSymbolLevels()
 {
   showSymbolLevelsDialog( mRenderer );
@@ -1028,10 +1034,12 @@ void QgsCategorizedSymbolRendererV2Widget::updateSymbolsFromWidget()
     {
       Q_FOREACH ( int idx, selectedCats )
       {
-        QgsRendererCategoryV2 category = mRenderer->categories().value( idx );
-
         QgsSymbolV2* newCatSymbol = mCategorizedSymbol->clone();
-//        newCatSymbol->setColor( mRenderer->categories()[idx].symbol()->color() );
+        if ( selectedCats.count() > 1 )
+        {
+          //if updating multiple categories, retain the existing category colors
+          newCatSymbol->setColor( mRenderer->categories().at( idx ).symbol()->color() );
+        }
         mRenderer->updateCategorySymbol( idx, newCatSymbol );
       }
       emit widgetChanged();

@@ -2,7 +2,7 @@
  * @brief The QgsMapLayerStyleManagerWidget class which is used to visually manage
  * the layer styles.
  */
-class QgsMapLayerStyleManagerWidget : QgsMapStylingPanel
+class QgsMapLayerStyleManagerWidget : QgsMapLayerConfigWidget
 {
 %TypeHeaderCode
 #include "qgsmaplayerstylemanagerwidget.h"

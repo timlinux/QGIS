@@ -17,13 +17,9 @@
 
 #include <QWidget>
 #include <QKeyEvent>
-#include <QStackedWidget>
 #include <QStack>
 
-#include "ui_qgsrenderercontainerbase.h"
-
-
-/**
+/** \ingroup gui
  * @brief Base class for any widget that can be shown as a inline panel
  */
 class GUI_EXPORT QgsPanelWidget : public QWidget
@@ -73,12 +69,36 @@ class GUI_EXPORT QgsPanelWidget : public QWidget
      */
     virtual void setDockMode( bool dockMode );
 
+    /**
+     * Return the dock mode state.
+     * @return True if in dock mode.  If in dock mode the widget
+     * will emit the showPanel signal to handle panel opening
+     * If false it will open dialogs when openPanel is called.
+     */
+    bool dockMode() { return mDockMode; }
+
+    /**
+     * The the auto delete property on the widget. True by default.
+     * When auto delete is enabeld when a panel is removed from the stack
+     * it will be deleted.
+     * @param autoDelete Enable or disable auto delete on the panel.
+     */
+    void setAutoDelete( bool autoDelete ) { mAutoDelete = autoDelete; }
+
+    /**
+     * The the auto delete property on the widget. True by default.
+     * When auto delete is enabeld when a panel is removed from the stack
+     * it will be deleted.
+     * @returns The auto delete value for the widget.
+     */
+    bool autoDelete() { return mAutoDelete; }
+
   signals:
 
     /**
-     * Emiited when the panel is accpeted by the user.
+     * Emitted when the panel is accepted by the user.
      * @param panel The panel widget that was accepted.
-     * @note This argument is normally raised with emit panelAccpeted(this)
+     * @note This argument is normally raised with emit panelAccepted(this)
      * so that callers can retrive the widget easier in calling code.
      */
     void panelAccepted( QgsPanelWidget* panel );
@@ -92,7 +112,7 @@ class GUI_EXPORT QgsPanelWidget : public QWidget
     void showPanel( QgsPanelWidget* panel );
 
     /**
-     * Emiited when the widget state changes.
+     * Emitted when the widget state changes.
      * Connect to this to pull any changes off the widget when needed.
      * As panels are non blocking "dialogs" you should listen to this signal
      * to give the user feedback when something changes.
@@ -100,9 +120,20 @@ class GUI_EXPORT QgsPanelWidget : public QWidget
     void widgetChanged();
 
   public slots:
+    /**
+     * Open a panel or dialog depending on dock mode setting
+     * If dock mode is true this method will emit the showPanel signal
+     * for connected slots to handle the open event.
+     *
+     * If dock mode is false this method will open a dialog
+     * and block the user.
+     *
+     * @param panel The panel widget to open.
+     */
+    void openPanel( QgsPanelWidget* panel );
 
     /**
-     * Accept the panel. Causes panelAccepted to be emiited.
+     * Accept the panel. Causes panelAccepted to be emitted.
      * Widgets are normally removed form the interface using the panel manager or the caller.
      */
     void acceptPanel();
@@ -110,102 +141,47 @@ class GUI_EXPORT QgsPanelWidget : public QWidget
   protected:
 
     /**
-     * @brief Overriden key press event to handle the esc event on the widget.
+     * @brief Overridden key press event to handle the esc event on the widget.
      * @param event The key event
      */
     void keyPressEvent( QKeyEvent* event );
 
   private:
+    bool mAutoDelete;
     QString mPanelTitle;
     bool mDockMode;
 
 };
 
 
-/**
- * A non model panel page that can get shown to the user.  Page will contain a back button and trigger the
- * internal widgets acceptPanel() on close.
+/** \ingroup gui
+ * @brief Wrapper widget for existing widgets which can't have
+ * the inheritance tree changed, e.g dialogs.
+ *
+ * @note Generally you should use the QgsPanelWidget class if you can
+ * and only use this wrapper if you can't update your code.
  */
-class GUI_EXPORT QgsPanelWidgetPage : public QgsPanelWidget, private Ui::QgsRendererWidgetContainerBase
+class GUI_EXPORT QgsPanelWidgetWrapper: public QgsPanelWidget
 {
     Q_OBJECT
   public:
+    /**
+     * @brief Wrapper widget for existing widgets which can't have
+     * the inheritance tree changed, e.g dialogs.
+     * @param widget The widget to wrap.
+     * @param parent The parent widget.
+     */
+    QgsPanelWidgetWrapper( QWidget* widget, QWidget* parent = nullptr );
 
     /**
-      * A non model panel page that can get shown to the user.
-     * @param widget The internal widget to show in the page.
-     * @param parent THe parent widget.
+     * Returns the internal widget that is wrapped in this panel.
+     * @return The internal widget. Can be nullptr.
      */
-    QgsPanelWidgetPage( QgsPanelWidget* widget, QWidget* parent = nullptr );
-
-    ~QgsPanelWidgetPage();
-
-    /**
-     * Set the current display page for the panel.
-     * @param title The title to show to the user.
-     */
-    void setTitle( QString title );
+    QWidget* widget() { return mWidget; }
 
   private:
     QWidget* mWidget;
+
 };
-
-
-/**
- * A stack widget to manage panels in the interface. Handles the open and close events
- * for added panels.
- * Any widgets that want to have a non blocking panel based interface should use this
- * class to manage the panels.
- */
-class GUI_EXPORT QgsPanelWidgetStackWidget : public QStackedWidget
-{
-    Q_OBJECT
-  public:
-
-    /**
-      * A stack widget to manage panels in the interface. Handles the open and close events
-      * for added panels.
-      * @param parent
-      */
-    QgsPanelWidgetStackWidget( QWidget* parent = nullptr );
-
-    /**
-     * Shortcut method to connect panel widgets events to this stack widget.
-     * @param panels The panels to connect.
-     */
-    void connectPanels( QList<QgsPanelWidget*> panels );
-
-    /**
-     * Shortcut method to connect panel widgets events to this stack widget.
-     * @param panel The panel to connect.
-     */
-    void connectPanel( QgsPanelWidget* panel );
-
-    /**
-     * Adds the main widget to the stack and selects it for the user
-     * The main widget can not be closed and only the showPanel signal is attached
-     * to handle children widget opening panels.
-     * @param panel The panel to set as the first widget in the stack.
-     */
-    void addMainPanel( QgsPanelWidget* panel );
-
-  public slots:
-    /**
-     * Show a panel in the stack widget. Will connect to the panels showPanel event to handle
-     * nested panels. Auto switches the the given panel for the user.
-     * @param panel The panel to show.
-     */
-    void showPanel( QgsPanelWidget* panel );
-
-    /**
-     * Closes the panel in the widget. Will also delete the widget.
-     * This slot is normally auto connected to panelAccepted when a panel is shown.
-     * @param panel The panel to close.
-     */
-    void closePanel( QgsPanelWidget* panel );
-  private:
-    QStack<QString> mTitles;
-};
-
 
 #endif // QGSPANELWIDGET_H

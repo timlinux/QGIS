@@ -67,7 +67,7 @@ class QgsFillSymbolV2;
 class QgsDataDefined;
 class QgsComposerModel;
 
-/** \ingroup MapComposer
+/** \ingroup core
  * Graphics scene for map printing. The class manages the paper item which always
  * is the item in the back (z-value 0). It maintains the z-Values of the items and stores
  * them in a list in ascending z-Order. This list can be changed to lower/raise items one position
@@ -1119,6 +1119,8 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     void composerPolylineAdded( QgsComposerPolyline* polyline );
     /** Is emitted when a new composer html has been added to the view*/
     void composerHtmlFrameAdded( QgsComposerHtml* html, QgsComposerFrame* frame );
+    /** Is emitted when a new item group has been added to the view*/
+    void composerItemGroupAdded( QgsComposerItemGroup* group );
     /** Is emitted when new composer label has been added to the view*/
     void composerLabelAdded( QgsComposerLabel* label );
     /** Is emitted when new composer map has been added to the view*/

@@ -64,7 +64,15 @@ class QgsMapLayer : QObject
     /** Set the display name of the layer
      * @param name New name for the layer
      */
-    void setLayerName( const QString & name );
+    void setLayerName( const QString & name ) /Deprecated/;
+
+    /**
+     * Set the display name of the layer
+     * @param name New name for the layer
+     *
+     * @note added in 2.16
+     */
+    void setName( const QString& name );
 
     /** Get the display name of the layer
      * @return the layer name
@@ -462,8 +470,10 @@ class QgsMapLayer : QObject
      * @param node node that will contain the style definition for this layer.
      * @param errorMessage reference to string that will be updated with any error messages
      * @return true in case of success.
+     * @note added in 2.16
+     * @note To be implemented in subclasses. Default implementation does nothing and returns false.
      */
-    virtual bool readStyle( const QDomNode& node, QString& errorMessage ) = 0;
+    virtual bool readStyle( const QDomNode& node, QString& errorMessage );
 
     /** Write the symbology for the layer into the docment provided.
      *  @param node the node that will have the style element added to it.
@@ -478,13 +488,17 @@ class QgsMapLayer : QObject
      *  @param doc the document that will have the QDomNode added.
      *  @param errorMessage reference to string that will be updated with any error messages
      *  @return true in case of success.
+     *  @note added in 2.16
+     *  @note To be implemented in subclasses. Default implementation does nothing and returns false.
      */
-    virtual bool writeStyle( QDomNode& node, QDomDocument& doc, QString& errorMessage ) const = 0;
+    virtual bool writeStyle( QDomNode& node, QDomDocument& doc, QString& errorMessage ) const;
 
     /** Return pointer to layer's undo stack */
     QUndoStack *undoStack();
 
-    /** Return pointer to layer's style undo stack */
+    /** Return pointer to layer's style undo stack
+     *  @note added in 2.16
+     */
     QUndoStack *undoStackStyles();
 
     /* Layer legendUrl information */
@@ -612,6 +626,11 @@ class QgsMapLayer : QObject
     /** Time stamp of data source in the moment when data/metadata were loaded by provider */
     virtual QDateTime timestamp() const;
 
+    /** Triggers an emission of the styleChanged() signal.
+     * @note added in QGIS 2.16
+     */
+    void emitStyleChanged();
+
   signals:
 
     //! @deprecated in 2.4 - not emitted anymore
@@ -620,8 +639,17 @@ class QgsMapLayer : QObject
     /** Emit a signal with status (e.g. to be caught by QgisApp and display a msg on status bar) */
     void statusChanged( const QString& theStatus );
 
-    /** Emit a signal that the layer name has been changed */
+    /** Emit a signal that the layer name has been changed
+     * @deprecated since 2.16 use nameChanged() instead
+     */
     void layerNameChanged();
+
+    /**
+     * Emitted when the name has been changed
+     *
+     * @note added in 2.16
+     */
+    void nameChanged();
 
     /** Emit a signal that layer's CRS has been reset */
     void layerCrsChanged();
@@ -643,8 +671,18 @@ class QgsMapLayer : QObject
     /** Signal emitted when the blend mode is changed, through QgsMapLayer::setBlendMode() */
     void blendModeChanged( QPainter::CompositionMode blendMode );
 
-    /** Signal emitted when renderer is changed */
+    /** Signal emitted when renderer is changed.
+     * @see styleChanged()
+    */
     void rendererChanged();
+
+    /** Signal emitted whenever a change affects the layer's style. Ie this may be triggered
+     * by renderer changes, label style changes, or other style changes such as blend
+     * mode or layer opacity changes.
+     * @note added in QGIS 2.16
+     * @see rendererChanged()
+    */
+    void styleChanged();
 
     /**
      * Signal emitted when legend of the layer has changed

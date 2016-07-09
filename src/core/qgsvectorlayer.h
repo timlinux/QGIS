@@ -223,6 +223,7 @@ protected:
  * - maxNumFeatures=number
  * - IgnoreAxisOrientation=1: to ignore EPSG axis order for WFS 1.1 or 2.0
  * - InvertAxisOrientation=1: to invert axis order
+ * - hideDownloadProgressDialog=1: to hide the download progress dialog
  *
  * The ‘FILTER’ query string parameter can be used to filter
  * the WFS feature type. The ‘FILTER’ key value can either be a QGIS expression
@@ -1981,18 +1982,40 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer
      */
     void layerDeleted();
 
-    void attributeValueChanged( QgsFeatureId fid, int idx, const QVariant & );
-    void geometryChanged( QgsFeatureId fid, QgsGeometry &geom );
+    /**
+     * Is emitted whenever an attribute value change is done in the edit buffer.
+     * Note that at this point the attribute change is not yet saved to the provider.
+     *
+     * @param fid The id of the changed feature
+     * @param idx The attribute index of the changed attribute
+     * @param value The new value of the attribute
+     */
+    void attributeValueChanged( QgsFeatureId fid, int idx, const QVariant& value );
 
-    /** Signals emitted after committing changes */
+    /**
+     * Is emitted whenever a geometry change is done in the edit buffer.
+     * Note that at this point the geometry change is not yet saved to the provider.
+     *
+     * @param fid The id of the changed feature
+     * @param geometry The new geometry
+     */
+    void geometryChanged( QgsFeatureId fid, QgsGeometry& geometry );
+
+    /** This signal is emitted, when attributes are deleted from the provider */
     void committedAttributesDeleted( const QString& layerId, const QgsAttributeList& deletedAttributes );
+    /** This signal is emitted, when attributes are added to the provider */
     void committedAttributesAdded( const QString& layerId, const QList<QgsField>& addedAttributes );
+    /** This signal is emitted, when features are added to the provider */
     void committedFeaturesAdded( const QString& layerId, const QgsFeatureList& addedFeatures );
+    /** This signal is emitted, when features are deleted from the provider */
     void committedFeaturesRemoved( const QString& layerId, const QgsFeatureIds& deletedFeatureIds );
+    /** This signal is emitted, when attribute value changes are saved to the provider */
     void committedAttributeValuesChanges( const QString& layerId, const QgsChangedAttributesMap& changedAttributesValues );
+    /** This signal is emitted, when geometry changes are saved to the provider */
     void committedGeometriesChanges( const QString& layerId, const QgsGeometryMap& changedGeometries );
 
-    void saveLayerToProject();
+    /** Deprecated: This signal has never been emitted */
+    Q_DECL_DEPRECATED void saveLayerToProject();
 
     /** Emitted when the font family defined for labeling layer is not found on system */
     void labelingFontNotFound( QgsVectorLayer* layer, const QString& fontfamily );
@@ -2210,6 +2233,8 @@ class CORE_EXPORT QgsVectorLayer : public QgsMapLayer
     QgsFeatureIds mDeletedFids;
 
     QgsAttributeTableConfig mAttributeTableConfig;
+
+    QMutex mFeatureSourceConstructorMutex;
 
     friend class QgsVectorLayerFeatureSource;
 };

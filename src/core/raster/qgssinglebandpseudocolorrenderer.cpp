@@ -69,10 +69,7 @@ QgsSingleBandPseudoColorRenderer* QgsSingleBandPseudoColorRenderer::clone() cons
     }
   }
   QgsSingleBandPseudoColorRenderer * renderer = new QgsSingleBandPseudoColorRenderer( nullptr, mBand, shader );
-
-  renderer->setOpacity( mOpacity );
-  renderer->setAlphaBand( mAlphaBand );
-  renderer->setRasterTransparency( mRasterTransparency ? new QgsRasterTransparency( *mRasterTransparency ) : nullptr );
+  renderer->copyCommonProperties( this );
 
   return renderer;
 }
@@ -224,8 +221,8 @@ void QgsSingleBandPseudoColorRenderer::writeXML( QDomDocument& doc, QDomElement&
   {
     mShader->writeXML( doc, rasterRendererElem ); //todo: include color ramp items directly in this renderer
   }
-  rasterRendererElem.setAttribute( "classificationMin", QString::number( mClassificationMin ) );
-  rasterRendererElem.setAttribute( "classificationMax", QString::number( mClassificationMax ) );
+  rasterRendererElem.setAttribute( "classificationMin", QgsRasterBlock::printValue( mClassificationMin ) );
+  rasterRendererElem.setAttribute( "classificationMax", QgsRasterBlock::printValue( mClassificationMax ) );
   rasterRendererElem.setAttribute( "classificationMinMaxOrigin", QgsRasterRenderer::minMaxOriginName( mClassificationMinMaxOrigin ) );
 
   parentElem.appendChild( rasterRendererElem );

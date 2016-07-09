@@ -494,6 +494,7 @@ void QgsAppLayerTreeViewMenuProvider::editVectorSymbol()
 
   QScopedPointer< QgsSymbolV2 > symbol( singleRenderer->symbol() ? singleRenderer->symbol()->clone() : nullptr );
   QgsSymbolV2SelectorDialog dlg( symbol.data(), QgsStyleV2::defaultStyle(), layer, mView->window() );
+  dlg.setWindowTitle( tr( "Symbol selector" ) );
   dlg.setMapCanvas( mCanvas );
   if ( dlg.exec() )
   {
@@ -510,7 +511,7 @@ void QgsAppLayerTreeViewMenuProvider::setVectorSymbolColor( const QColor& color 
     return;
 
   QString layerId = action->property( "layerId" ).toString();
-  QgsVectorLayer* layer = dynamic_cast<QgsVectorLayer*>( QgsMapLayerRegistry::instance()->mapLayer( layerId ) );
+  QgsVectorLayer* layer = qobject_cast<QgsVectorLayer*>( QgsMapLayerRegistry::instance()->mapLayer( layerId ) );
   if ( !layer )
     return;
 
@@ -544,6 +545,7 @@ void QgsAppLayerTreeViewMenuProvider::setVectorSymbolColor( const QColor& color 
   }
 
   layer->triggerRepaint();
+  layer->emitStyleChanged();
   mView->refreshLayerSymbology( layer->id() );
 }
 
@@ -567,10 +569,15 @@ void QgsAppLayerTreeViewMenuProvider::editSymbolLegendNodeSymbol()
   QScopedPointer< QgsSymbolV2 > symbol( originalSymbol->clone() );
   QgsVectorLayer* vlayer = qobject_cast<QgsVectorLayer*>( node->layerNode()->layer() );
   QgsSymbolV2SelectorDialog dlg( symbol.data(), QgsStyleV2::defaultStyle(), vlayer, mView->window() );
+  dlg.setWindowTitle( tr( "Symbol selector" ) );
   dlg.setMapCanvas( mCanvas );
   if ( dlg.exec() )
   {
     node->setSymbol( symbol.take() );
+    if ( vlayer )
+    {
+      vlayer->emitStyleChanged();
+    }
   }
 }
 
@@ -594,4 +601,8 @@ void QgsAppLayerTreeViewMenuProvider::setSymbolLegendNodeColor( const QColor &co
   QgsSymbolV2* newSymbol = originalSymbol->clone();
   newSymbol->setColor( color );
   node->setSymbol( newSymbol );
+  if ( QgsVectorLayer* layer = qobject_cast<QgsVectorLayer*>( QgsMapLayerRegistry::instance()->mapLayer( layerId ) ) )
+  {
+    layer->emitStyleChanged();
+  }
 }

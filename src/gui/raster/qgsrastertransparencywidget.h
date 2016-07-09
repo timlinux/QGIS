@@ -19,6 +19,7 @@
 
 #include "ui_qgsrastertransparencywidget.h"
 
+#include "qgsmaplayerconfigwidget.h"
 
 class QgsRasterLayer;
 class QgsRasterRenderer;
@@ -27,10 +28,10 @@ class QgsMapToolEmitPoint;
 class QgsPoint;
 
 
-/**
+/** \ingroup gui
  * @brief Widget to control a layers transparency and related options
  */
-class GUI_EXPORT QgsRasterTransparencyWidget : public QWidget, private Ui::QgsRasterTransparencyWidget
+class GUI_EXPORT QgsRasterTransparencyWidget : public QgsMapLayerConfigWidget, private Ui::QgsRasterTransparencyWidget
 {
     Q_OBJECT
   public:
@@ -39,14 +40,6 @@ class GUI_EXPORT QgsRasterTransparencyWidget : public QWidget, private Ui::QgsRa
      */
     QgsRasterTransparencyWidget( QgsRasterLayer* layer, QgsMapCanvas *canvas, QWidget *parent = 0 );
     ~QgsRasterTransparencyWidget();
-
-  signals:
-
-    /**
-     * Emitted when something on the widget has changed.
-     * All widgets will fire this event to notify of an internal change.
-     */
-    void widgetChanged();
 
   public slots:
     /**

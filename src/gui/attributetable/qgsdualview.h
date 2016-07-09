@@ -33,7 +33,7 @@ class QSignalMapper;
 class QgsMapLayerAction;
 class QScrollArea;
 
-/**
+/** \ingroup gui
  * This widget is used to show the attributes of a set of features of a {@link QgsVectorLayer}.
  * The attributes can be edited.
  * It supports two different layouts: the table layout, in which the attributes for the features
@@ -185,7 +185,7 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
     /**
      * Set the expression used for sorting the table and feature list.
      */
-    void setSortExpression( const QString& sortExpression );
+    void setSortExpression( const QString& sortExpression , Qt::SortOrder sortOrder = Qt::AscendingOrder );
 
     /**
      * Get the expression used for sorting the table and feature list.
@@ -290,6 +290,8 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
 
     void previewExpressionChanged( const QString& expression );
 
+    void onSortColumnChanged();
+
     void sortByPreviewExpression();
 
     /**
@@ -339,6 +341,9 @@ class GUI_EXPORT QgsDualView : public QStackedWidget, private Ui::QgsDualViewBas
     friend class TestQgsDualView;
 };
 
+/** \ingroup gui
+ * \class QgsAttributeTableAction
+ */
 class GUI_EXPORT QgsAttributeTableAction : public QAction
 {
     Q_OBJECT
@@ -361,6 +366,9 @@ class GUI_EXPORT QgsAttributeTableAction : public QAction
     QModelIndex mFieldIdx;
 };
 
+/** \ingroup gui
+ * \class QgsAttributeTableMapLayerAction
+ */
 class GUI_EXPORT QgsAttributeTableMapLayerAction : public QAction
 {
     Q_OBJECT

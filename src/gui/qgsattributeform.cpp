@@ -1064,7 +1064,8 @@ void QgsAttributeForm::init()
   setContentsMargins( 0, 0, 0, 0 );
 
   // Try to load Ui-File for layout
-  if ( mLayer->editFormConfig()->layout() == QgsEditFormConfig::UiFileLayout && !mLayer->editFormConfig()->uiForm().isEmpty() )
+  if ( mContext.allowCustomUi() && mLayer->editFormConfig()->layout() == QgsEditFormConfig::UiFileLayout &&
+       !mLayer->editFormConfig()->uiForm().isEmpty() )
   {
     QFile file( mLayer->editFormConfig()->uiForm() );
 
@@ -1099,25 +1100,35 @@ void QgsAttributeForm::init()
     {
       if ( widgDef->type() == QgsAttributeEditorElement::AeTypeContainer )
       {
-        if ( !tabWidget )
-        {
-          tabWidget = new QTabWidget();
-          layout->addWidget( tabWidget, row, column, 1, 2 );
-        }
-
-        QWidget* tabPage = new QWidget( tabWidget );
-
-        tabWidget->addTab( tabPage, widgDef->name() );
-        QGridLayout* tabPageLayout = new QGridLayout();
-        tabPage->setLayout( tabPageLayout );
-
         QgsAttributeEditorContainer* containerDef = dynamic_cast<QgsAttributeEditorContainer*>( widgDef );
         if ( !containerDef )
           continue;
 
-        containerDef->setIsGroupBox( false ); // Toplevel widgets are tabs not groupboxes
-        WidgetInfo widgetInfo = createWidgetFromDef( widgDef, tabPage, mLayer, mContext );
-        tabPageLayout->addWidget( widgetInfo.widget );
+        if ( containerDef->isGroupBox() )
+        {
+          tabWidget = nullptr;
+          WidgetInfo widgetInfo = createWidgetFromDef( widgDef, formWidget, mLayer, mContext );
+          layout->addWidget( widgetInfo.widget, row, column, 1, 2 );
+          column += 2;
+        }
+        else
+        {
+          if ( !tabWidget )
+          {
+            tabWidget = new QTabWidget();
+            layout->addWidget( tabWidget, row, column, 1, 2 );
+            column += 2;
+          }
+
+          QWidget* tabPage = new QWidget( tabWidget );
+
+          tabWidget->addTab( tabPage, widgDef->name() );
+          QGridLayout* tabPageLayout = new QGridLayout();
+          tabPage->setLayout( tabPageLayout );
+
+          WidgetInfo widgetInfo = createWidgetFromDef( widgDef, tabPage, mLayer, mContext );
+          tabPageLayout->addWidget( widgetInfo.widget );
+        }
       }
       else
       {
@@ -1135,8 +1146,8 @@ void QgsAttributeForm::init()
         {
           QVBoxLayout* c = new QVBoxLayout();
           label->setSizePolicy( QSizePolicy::Preferred, QSizePolicy::Fixed );
-          c->layout()->addWidget( label );
-          c->layout()->addWidget( widgetInfo.widget );
+          c->addWidget( label );
+          c->addWidget( widgetInfo.widget );
           layout->addLayout( c, row, column, 1, 2 );
           column += 2;
         }

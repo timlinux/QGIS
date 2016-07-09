@@ -38,12 +38,10 @@ QgsHillshadeRenderer::QgsHillshadeRenderer( QgsRasterInterface *input, int band,
 QgsHillshadeRenderer *QgsHillshadeRenderer::clone() const
 {
   QgsHillshadeRenderer* r = new QgsHillshadeRenderer( nullptr, mBand, mLightAzimuth, mLightAngle );
+  r->copyCommonProperties( this );
+
   r->setZFactor( mZFactor );
   r->setMultiDirectional( mMultiDirectional );
-  // "Effects"
-  r->setOpacity( mOpacity );
-  r->setAlphaBand( mAlphaBand );
-  r->setRasterTransparency( mRasterTransparency ? new QgsRasterTransparency( *mRasterTransparency ) : nullptr );
   return r;
 }
 
@@ -60,6 +58,8 @@ QgsRasterRenderer *QgsHillshadeRenderer::create( const QDomElement &elem, QgsRas
   double zFactor = elem.attribute( "zfactor", "1" ).toDouble();
   bool multiDirectional = elem.attribute( "multidirection", "0" ).toInt();
   QgsHillshadeRenderer* r = new QgsHillshadeRenderer( input, band, azimuth , angle );
+  r->readXML( elem );
+
   r->setZFactor( zFactor );
   r->setMultiDirectional( multiDirectional );
   return r;

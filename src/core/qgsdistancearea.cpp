@@ -106,8 +106,7 @@ bool QgsDistanceArea::willUseEllipsoid() const
 
 void QgsDistanceArea::setSourceCrs( long srsid )
 {
-  QgsCoordinateReferenceSystem srcCRS;
-  srcCRS.createFromSrsId( srsid );
+  QgsCoordinateReferenceSystem srcCRS = QgsCRSCache::instance()->crsBySrsId( srsid );
   mCoordTransform->setSourceCrs( srcCRS );
 }
 
@@ -930,7 +929,8 @@ double QgsDistanceArea::computePolygonArea( const QList<QgsPoint>& points ) cons
     dx = x2 - x1;
     area += dx * ( m_Qp - getQ( y2 ) );
 
-    if (( dy = y2 - y1 ) != 0.0 )
+    dy = y2 - y1;
+    if ( !qgsDoubleNear( dy, 0.0 ) )
       area += dx * getQ( y2 ) - ( dx / dy ) * ( Qbar2 - Qbar1 );
   }
   if (( area *= m_AE ) < 0.0 )

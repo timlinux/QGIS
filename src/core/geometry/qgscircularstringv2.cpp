@@ -629,7 +629,7 @@ void QgsCircularStringV2::draw( QPainter& p ) const
   p.drawPath( path );
 }
 
-void QgsCircularStringV2::transform( const QgsCoordinateTransform& ct, QgsCoordinateTransform::TransformDirection d )
+void QgsCircularStringV2::transform( const QgsCoordinateTransform& ct, QgsCoordinateTransform::TransformDirection d, bool transformZ )
 {
   clearCache();
 
@@ -637,7 +637,8 @@ void QgsCircularStringV2::transform( const QgsCoordinateTransform& ct, QgsCoordi
 
   bool hasZ = is3D();
   int nPoints = numPoints();
-  if ( !hasZ )
+  bool useDummyZ = !hasZ || !transformZ;
+  if ( useDummyZ )
   {
     zArray = new double[nPoints];
     for ( int i = 0; i < nPoints; ++i )
@@ -646,7 +647,7 @@ void QgsCircularStringV2::transform( const QgsCoordinateTransform& ct, QgsCoordi
     }
   }
   ct.transformCoords( nPoints, mX.data(), mY.data(), zArray, d );
-  if ( !hasZ )
+  if ( useDummyZ )
   {
     delete[] zArray;
   }
@@ -779,9 +780,10 @@ bool QgsCircularStringV2::deleteVertex( QgsVertexId position )
   int nVertices = this->numPoints();
   if ( nVertices < 4 ) //circular string must have at least 3 vertices
   {
-    return false;
+    clear();
+    return true;
   }
-  if ( position.vertex < 1 || position.vertex > ( nVertices - 2 ) )
+  if ( position.vertex < 0 || position.vertex > ( nVertices - 1 ) )
   {
     return false;
   }
@@ -878,7 +880,7 @@ void QgsCircularStringV2::sumUpArea( double& sum ) const
     //segment is a full circle, p2 is the center point
     if ( p1 == p3 )
     {
-      double r2 = QgsGeometryUtils::sqrDistance2D( p1, p2 );
+      double r2 = QgsGeometryUtils::sqrDistance2D( p1, p2 ) / 4.0;
       sum += M_PI * r2;
       continue;
     }
