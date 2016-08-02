@@ -220,7 +220,6 @@ void QgsStatusBarCoordinatesWidget::extentsViewToggled( )
   }
   else
   {
-    assert( mExtentsIcon );
     //mouse cursor pos view mode so switching to extents
     mToggleExtentsViewLabel->setPixmap( mExtentsIcon.scaled(
         mToggleExtentsViewLabel->size(),
