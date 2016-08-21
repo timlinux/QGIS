@@ -19,8 +19,9 @@
 #include <QString>
 #include <QVector>
 #include <QDomNode>
+#include <QVariant>
 
-#include "qgsfield.h"
+class QgsFields;
 
 /** \ingroup core
  * This is a container for configuration of the attribute table.

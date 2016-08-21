@@ -20,7 +20,6 @@
 #include <QMap>
 #include <QExplicitlySharedDataPointer>
 #include "qgis.h"
-#include "qgsfield.h"
 #include "qgsexpressioncontext.h"
 
 class QgsExpression;
@@ -136,12 +135,6 @@ class CORE_EXPORT QgsDataDefined
      * @note added in 2.12
      */
     QString expressionOrField() const;
-
-    //! @note not available in python bindings
-    QMap<QString, QVariant> expressionParams() const;
-    //! @note not available in python bindings
-    void setExpressionParams( const QMap<QString, QVariant>& params );
-    void insertExpressionParam( const QString& key, const QVariant& param );
 
     /** Prepares the expression using a vector layer
      * @param layer vector layer

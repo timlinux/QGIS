@@ -28,7 +28,7 @@ class QgsComposition;
 class QgsComposerItem;
 class QgsAtlasComposition;
 class QgsMapSettings;
-class QgsSymbolV2;
+class QgsSymbol;
 
 /** \ingroup core
  * \class QgsScopedExpressionFunction
@@ -259,6 +259,8 @@ class CORE_EXPORT QgsExpressionContext
 
     QgsExpressionContext& operator=( const QgsExpressionContext& other );
 
+    QgsExpressionContext& operator=( QgsExpressionContext && other );
+
     ~QgsExpressionContext();
 
     /** Check whether a variable is specified by any scope within the context.
@@ -333,6 +335,13 @@ class CORE_EXPORT QgsExpressionContext
      * @returns index of scope, or -1 if scope was not found within the context.
      */
     int indexOfScope( QgsExpressionContextScope* scope ) const;
+
+    /** Returns the index of the first scope with a matching name within the context.
+     * @param scopeName name of scope to find
+     * @returns index of scope, or -1 if scope was not found within the context.
+     * @note added in QGIS 3.0
+     */
+    int indexOfScope( const QString& scopeName ) const;
 
     /** Returns a list of variables names set by all scopes in the context.
      * @returns list of unique variable names
@@ -590,12 +599,12 @@ class CORE_EXPORT QgsExpressionContextUtils
     static QgsExpressionContextScope* mapSettingsScope( const QgsMapSettings &mapSettings );
 
     /**
-     * Updates a symbol scope related to a QgsSymbolV2 to an expression context.
+     * Updates a symbol scope related to a QgsSymbol to an expression context.
      * @param symbol symbol to extract properties from
      * @param symbolScope pointer to an existing scope to update
      * @note added in QGIS 2.14
      */
-    static QgsExpressionContextScope* updateSymbolScope( const QgsSymbolV2* symbol, QgsExpressionContextScope* symbolScope = nullptr );
+    static QgsExpressionContextScope* updateSymbolScope( const QgsSymbol* symbol, QgsExpressionContextScope* symbolScope = nullptr );
 
     /** Creates a new scope which contains variables and functions relating to a QgsComposition.
      * For instance, number of pages and page sizes.

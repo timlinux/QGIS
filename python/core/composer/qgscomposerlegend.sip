@@ -46,12 +46,22 @@ class QgsComposerLegend : QgsComposerItem
     /** Sets item box to the whole content*/
     void adjustBoxSize();
 
-    /** Returns pointer to the legend model*/
-    //! @deprecated in 2.6 - use modelV2()
-    QgsLegendModel* model() /Deprecated/;
+    /** Sets whether the legend should automatically resize to fit its contents.
+     * @param enabled set to false to disable automatic resizing. The legend frame will not
+     * be expanded to fit legend items, and items may be cropped from display.
+     * @see resizeToContents()
+     * @note added in QGIS 3.0
+     */
+    void setResizeToContents( bool enabled );
+
+    /** Returns whether the legend should automatically resize to fit its contents.
+     * @see setResizeToContents()
+     * @note added in QGIS 3.0
+     */
+    bool resizeToContents() const;
 
     //! @note added in 2.6
-    QgsLegendModelV2* modelV2();
+    QgsLegendModelV2* model();
 
     //! @note added in 2.6
     void setAutoUpdateModel( bool autoUpdate );
@@ -208,13 +218,13 @@ class QgsComposerLegend : QgsComposerItem
        * @param elem is Dom element corresponding to 'Composer' tag
        * @param doc Dom document
        */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const;
 
     /** Sets state from Dom document
        * @param itemElem is Dom node corresponding to item tag
        * @param doc is Dom document
        */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc );
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc );
 
     //Overridden to show legend title
     virtual QString displayName() const;

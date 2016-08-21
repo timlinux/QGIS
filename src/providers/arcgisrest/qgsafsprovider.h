@@ -22,6 +22,7 @@
 #include "qgsdatasourceuri.h"
 #include "qgscoordinatereferencesystem.h"
 #include "geometry/qgswkbtypes.h"
+#include "qgsfield.h"
 
 /**
  * @brief A provider reading features from a ArcGIS Feature Service
@@ -40,10 +41,10 @@ class QgsAfsProvider : public QgsVectorDataProvider
     /* Inherited from QgsVectorDataProvider */
     QgsAbstractFeatureSource* featureSource() const override;
     QString storageType() const override { return "ESRI ArcGIS Feature Server"; }
-    QgsFeatureIterator getFeatures( const QgsFeatureRequest& request = QgsFeatureRequest() ) override;
-    QGis::WkbType geometryType() const override { return static_cast<QGis::WkbType>( mGeometryType ); }
+    QgsFeatureIterator getFeatures( const QgsFeatureRequest& request = QgsFeatureRequest() ) const override;
+    QgsWkbTypes::Type wkbType() const override { return static_cast<QgsWkbTypes::Type>( mGeometryType ); }
     long featureCount() const override { return mObjectIds.size(); }
-    const QgsFields &fields() const override { return mFields; }
+    QgsFields fields() const override { return mFields; }
     /* Read only for the moment
     bool addFeatures( QgsFeatureList &flist ) override{ return false; }
     bool deleteFeatures( const QgsFeatureIds &id ) override{ return false; }
@@ -52,15 +53,15 @@ class QgsAfsProvider : public QgsVectorDataProvider
     bool changeAttributeValues( const QgsChangedAttributesMap &attr_map ) override{ return false; }
     bool changeGeometryValues( QgsGeometryMap & geometry_map ) override{ return false; }
     */
-    int capabilities() const override { return QgsVectorDataProvider::NoCapabilities; }
-    QgsAttributeList pkAttributeIndexes() override { return QgsAttributeList() << mObjectIdFieldIdx; }
+    QgsVectorDataProvider::Capabilities capabilities() const override { return QgsVectorDataProvider::NoCapabilities; }
+    QgsAttributeList pkAttributeIndexes() const override { return QgsAttributeList() << mObjectIdFieldIdx; }
     QgsAttrPalIndexNameHash palAttributeIndexNames() const override { return QgsAttrPalIndexNameHash(); }
 
     /* Inherited from QgsDataProvider */
-    QgsCoordinateReferenceSystem crs() override { return mSourceCRS; }
+    QgsCoordinateReferenceSystem crs() const override { return mSourceCRS; }
     void setDataSourceUri( const QString & uri ) override;
-    QgsRectangle extent() override { return mExtent; }
-    bool isValid() override { return mValid; }
+    QgsRectangle extent() const override { return mExtent; }
+    bool isValid() const override { return mValid; }
     /* Read only for the moment
     void updateExtents() override{}
     */
@@ -70,9 +71,9 @@ class QgsAfsProvider : public QgsVectorDataProvider
 
   private:
     bool mValid;
-    QgsDataSourceURI mDataSource;
+    QgsDataSourceUri mDataSource;
     QgsRectangle mExtent;
-    QgsWKBTypes::Type mGeometryType;
+    QgsWkbTypes::Type mGeometryType;
     QgsFields mFields;
     int mObjectIdFieldIdx;
     QString mObjectIdFieldName;

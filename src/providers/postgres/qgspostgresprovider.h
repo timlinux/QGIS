@@ -22,7 +22,8 @@
 #include "qgsrectangle.h"
 #include "qgsvectorlayerimport.h"
 #include "qgspostgresconn.h"
-
+#include "qgsfield.h"
+#include <QSharedPointer>
 
 class QgsFeature;
 class QgsField;
@@ -57,8 +58,8 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     static QgsVectorLayerImport::ImportError createEmptyLayer(
       const QString& uri,
       const QgsFields &fields,
-      QGis::WkbType wkbType,
-      const QgsCoordinateReferenceSystem *srs,
+      QgsWkbTypes::Type wkbType,
+      const QgsCoordinateReferenceSystem &srs,
       bool overwrite,
       QMap<int, int> *oldToNewAttrIdxMap,
       QString *errorMessage = nullptr,
@@ -83,14 +84,9 @@ class QgsPostgresProvider : public QgsVectorDataProvider
       */
     virtual QString storageType() const override;
 
-    /** Get the QgsCoordinateReferenceSystem for this layer
-     * @note Must be reimplemented by each provider.
-     * If the provider isn't capable of returning
-     * its projection an empty srs will be returned
-     */
-    virtual QgsCoordinateReferenceSystem crs() override;
+    virtual QgsCoordinateReferenceSystem crs() const override;
 
-    virtual QgsFeatureIterator getFeatures( const QgsFeatureRequest& request ) override;
+    virtual QgsFeatureIterator getFeatures( const QgsFeatureRequest& request ) const override;
 
     /** Get the feature type. This corresponds to
      * WKBPoint,
@@ -101,7 +97,7 @@ class QgsPostgresProvider : public QgsVectorDataProvider
      * WKBMultiPolygon
      * as defined in qgis.h
      */
-    QGis::WkbType geometryType() const override;
+    QgsWkbTypes::Type wkbType() const override;
 
     /** Return the number of layers for the current data source
      * @note Should this be subLayerCount() instead?
@@ -124,9 +120,7 @@ class QgsPostgresProvider : public QgsVectorDataProvider
      */
     void setExtent( QgsRectangle& newExtent );
 
-    /** Return the extent for this data layer
-     */
-    virtual QgsRectangle extent() override;
+    virtual QgsRectangle extent() const override;
 
     /** Update the extent
      */
@@ -140,11 +134,7 @@ class QgsPostgresProvider : public QgsVectorDataProvider
      */
     void determinePrimaryKeyFromUriKeyColumn();
 
-    /**
-     * Get the field information for the layer
-     * @return vector of QgsField objects
-     */
-    const QgsFields &fields() const override;
+    QgsFields fields() const override;
 
     /**
      * Return a short comment for the data that this provider is
@@ -152,40 +142,15 @@ class QgsPostgresProvider : public QgsVectorDataProvider
      */
     QString dataComment() const override;
 
-    /** Returns the minimum value of an attribute
-     *  @param index the index of the attribute */
-    QVariant minimumValue( int index ) override;
-
-    /** Returns the maximum value of an attribute
-     *  @param index the index of the attribute */
-    QVariant maximumValue( int index ) override;
-
-    /** Return the unique values of an attribute
-     *  @param index the index of the attribute
-     *  @param values reference to the list of unique values */
-    virtual void uniqueValues( int index, QList<QVariant> &uniqueValues, int limit = -1 ) override;
-
-    /** Returns the possible enum values of an attribute. Returns an empty stringlist if a provider does not support enum types
-      or if the given attribute is not an enum type.
-     * @param index the index of the attribute
-     * @param enumList reference to the list to fill */
-    virtual void enumValues( int index, QStringList& enumList ) override;
-
-    /** Returns true if layer is valid
-     */
-    bool isValid() override;
-
-    /**
-     * It returns true. Saving style to db is supported by this provider
-     */
-    virtual bool isSaveAndLoadStyleToDBSupported() override { return true; }
-
-    QgsAttributeList attributeIndexes() override;
-
-    QgsAttributeList pkAttributeIndexes() override { return mPrimaryKeyAttrs; }
-
-    /** Returns the default value for field specified by @c fieldId */
-    QVariant defaultValue( int fieldId ) override;
+    QVariant minimumValue( int index ) const override;
+    QVariant maximumValue( int index ) const override;
+    virtual void uniqueValues( int index, QList<QVariant> &uniqueValues, int limit = -1 ) const override;
+    virtual void enumValues( int index, QStringList& enumList ) const override;
+    bool isValid() const override;
+    virtual bool isSaveAndLoadStyleToDBSupported() const override { return true; }
+    QgsAttributeList attributeIndexes() const override;
+    QgsAttributeList pkAttributeIndexes() const override { return mPrimaryKeyAttrs; }
+    QVariant defaultValue( int fieldId ) const override;
 
     /** Adds a list of features
       @return true in case of success and false in case of failure*/
@@ -230,16 +195,15 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     //! Get the table name associated with this provider instance
     QString getTableName();
 
-    /** Accessor for sql where clause used to limit dataset */
-    QString subsetString() override;
+    QString subsetString() const override;
 
     /** Mutator for sql where clause used to limit dataset size */
     bool setSubsetString( const QString& theSQL, bool updateFeatureCount = true ) override;
 
-    virtual bool supportsSubsetString() override { return true; }
+    virtual bool supportsSubsetString() const override { return true; }
 
     /** Returns a bitmask containing the supported capabilities*/
-    int capabilities() const override;
+    QgsVectorDataProvider::Capabilities capabilities() const override;
 
     /** The Postgres provider does its own transforms so we return
      * true for the following three functions to indicate that transforms
@@ -330,7 +294,7 @@ class QgsPostgresProvider : public QgsVectorDataProvider
 
     bool hasSufficientPermsAndCapabilities();
 
-    const QgsField &field( int index ) const;
+    QgsField field( int index ) const;
 
     /** Load the field list
      */
@@ -367,7 +331,7 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     QString mDataComment;
 
     //! Data source URI struct for this layer
-    QgsDataSourceURI mUri;
+    QgsDataSourceUri mUri;
 
     /**
      * Flag indicating if the layer data source is a valid PostgreSQL layer
@@ -413,11 +377,11 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     QString mPrimaryKeyDefault;
 
     QString mGeometryColumn;          //! name of the geometry column
-    QgsRectangle mLayerExtent;        //! Rectangle that contains the extent (bounding box) of the layer
+    mutable QgsRectangle mLayerExtent;        //! Rectangle that contains the extent (bounding box) of the layer
 
-    QGis::WkbType mDetectedGeomType;  //! geometry type detected in the database
+    QgsWkbTypes::Type mDetectedGeomType;  //! geometry type detected in the database
     bool mForce2d;                    //! geometry type needs to be forced to 2d (eg. ZM)
-    QGis::WkbType mRequestedGeomType; //! geometry type requested in the uri
+    QgsWkbTypes::Type mRequestedGeomType; //! geometry type requested in the uri
     QString mDetectedSrid;            //! Spatial reference detected in the database
     QString mRequestedSrid;           //! Spatial reference requested in the uri
 
@@ -466,9 +430,9 @@ class QgsPostgresProvider : public QgsVectorDataProvider
     // A function that determines if the given columns contain unique entries
     bool uniqueData( const QString& quotedColNames );
 
-    int mEnabledCapabilities;
+    QgsVectorDataProvider::Capabilities mEnabledCapabilities;
 
-    void appendGeomParam( const QgsGeometry *geom, QStringList &param ) const;
+    void appendGeomParam( const QgsGeometry& geom, QStringList &param ) const;
     void appendPkParams( QgsFeatureId fid, QStringList &param ) const;
 
     QString paramValue( const QString& fieldvalue, const QString &defaultValue ) const;
@@ -544,10 +508,10 @@ class QgsPostgresSharedData
     void ensureFeaturesCountedAtLeast( long fetched );
 
     // FID lookups
-    QgsFeatureId lookupFid( const QVariant &v ); // lookup existing mapping or add a new one
-    QVariant removeFid( QgsFeatureId fid );
-    void insertFid( QgsFeatureId fid, const QVariant& k );
-    QVariant lookupKey( QgsFeatureId featureId );
+    QgsFeatureId lookupFid( const QVariantList& v ); // lookup existing mapping or add a new one
+    QVariantList removeFid( QgsFeatureId fid );
+    void insertFid( QgsFeatureId fid, const QVariantList& k );
+    QVariantList lookupKey( QgsFeatureId featureId );
 
   protected:
     QMutex mMutex; //!< Access to all data members is guarded by the mutex
@@ -555,8 +519,8 @@ class QgsPostgresSharedData
     long mFeaturesCounted;    //! Number of features in the layer
 
     QgsFeatureId mFidCounter;                    // next feature id if map is used
-    QMap<QVariant, QgsFeatureId> mKeyToFid;      // map key values to feature id
-    QMap<QgsFeatureId, QVariant> mFidToKey;      // map feature back to fea
+    QMap<QVariantList, QgsFeatureId> mKeyToFid;      // map key values to feature id
+    QMap<QgsFeatureId, QVariantList> mFidToKey;      // map feature id back to key values
 };
 
 #endif

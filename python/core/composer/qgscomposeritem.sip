@@ -282,10 +282,10 @@ class QgsComposerItem : QgsComposerObject, QGraphicsRectItem
     virtual void setSceneRect( const QRectF& rectangle );
 
     /** Writes parameter that are not subclass specific in document. Usually called from writeXML methods of subclasses*/
-    bool _writeXML( QDomElement& itemElem, QDomDocument& doc ) const;
+    bool _writeXml( QDomElement& itemElem, QDomDocument& doc ) const;
 
     /** Reads parameter that are not subclass specific in document. Usually called from readXML methods of subclasses*/
-    bool _readXML( const QDomElement& itemElem, const QDomDocument& doc );
+    bool _readXml( const QDomElement& itemElem, const QDomDocument& doc );
 
     /** Whether this item has a frame or not.
      * @returns true if there is a frame around this item, otherwise false.
@@ -645,7 +645,7 @@ class QgsComposerItem : QgsComposerObject, QGraphicsRectItem
      * scopes for global, project, composition, atlas and item properties.
      * @note added in QGIS 2.12
      */
-    QgsExpressionContext* createExpressionContext() const /Factory/;
+    QgsExpressionContext createExpressionContext() const;
 
   public slots:
     /** Sets the item rotation

@@ -126,55 +126,10 @@ void QgsDualView::columnBoxInit()
   // default expression: saved value
   QString displayExpression = mLayerCache->layer()->displayExpression();
 
-  // if no display expression is saved: use display field instead
   if ( displayExpression.isEmpty() )
   {
-    if ( !mLayerCache->layer()->displayField().isEmpty() )
-    {
-      defaultField = mLayerCache->layer()->displayField();
-      displayExpression = QString( "COALESCE(\"%1\", '<NULL>')" ).arg( defaultField );
-    }
-  }
-
-  // if neither display expression nor display field is saved...
-  if ( displayExpression.isEmpty() )
-  {
-    QgsAttributeList pkAttrs = mLayerCache->layer()->pkAttributeList();
-
-    if ( !pkAttrs.isEmpty() )
-    {
-      if ( pkAttrs.size() == 1 )
-        defaultField = pkAttrs.at( 0 );
-
-      // ... If there are primary key(s) defined
-      QStringList pkFields;
-
-      Q_FOREACH ( int attr, pkAttrs )
-      {
-        pkFields.append( "COALESCE(\"" + fields[attr].name() + "\", '<NULL>')" );
-      }
-
-      displayExpression = pkFields.join( "||', '||" );
-    }
-    else if ( !fields.isEmpty() )
-    {
-      if ( fields.size() == 1 )
-        defaultField = fields.at( 0 ).name();
-
-      // ... concat all fields
-      QStringList fieldNames;
-      Q_FOREACH ( const QgsField& field, fields )
-      {
-        fieldNames.append( "COALESCE(\"" + field.name() + "\", '<NULL>')" );
-      }
-
-      displayExpression = fieldNames.join( "||', '||" );
-    }
-    else
-    {
-      // ... there isn't really much to display
-      displayExpression = "'[Please define preview text]'";
-    }
+    // ... there isn't really much to display
+    displayExpression = "'[Please define preview text]'";
   }
 
   mFeatureListPreviewButton->addAction( mActionExpressionPreview );
@@ -186,7 +141,7 @@ void QgsDualView::columnBoxInit()
     if ( fieldIndex == -1 )
       continue;
 
-    if ( mLayerCache->layer()->editFormConfig()->widgetType( fieldIndex ) != "Hidden" )
+    if ( mLayerCache->layer()->editFormConfig().widgetType( fieldIndex ) != "Hidden" )
     {
       QIcon icon = mLayerCache->layer()->fields().iconForField( fieldIndex );
       QString text = field.name();
@@ -427,9 +382,10 @@ void QgsDualView::viewWillShowContextMenu( QMenu* menu, const QModelIndex& atInd
 
   QgsVectorLayer* vl = mFilterModel->layer();
   QgsMapCanvas* canvas = mFilterModel->mapCanvas();
-  if ( canvas && vl && vl->geometryType() != QGis::NoGeometry )
+  if ( canvas && vl && vl->geometryType() != QgsWkbTypes::NullGeometry )
   {
     menu->addAction( tr( "Zoom to feature" ), this, SLOT( zoomToCurrentFeature() ) );
+    menu->addAction( tr( "Pan to feature" ), this, SLOT( panToCurrentFeature() ) );
   }
 
   //add user-defined actions to context menu
@@ -648,6 +604,23 @@ void QgsDualView::zoomToCurrentFeature()
   if ( canvas )
   {
     canvas->zoomToFeatureIds( mLayerCache->layer(), ids );
+  }
+}
+
+void QgsDualView::panToCurrentFeature()
+{
+  QModelIndex currentIndex = mTableView->currentIndex();
+  if ( !currentIndex.isValid() )
+  {
+    return;
+  }
+
+  QgsFeatureIds ids;
+  ids.insert( mFilterModel->rowToId( currentIndex ) );
+  QgsMapCanvas* canvas = mFilterModel->mapCanvas();
+  if ( canvas )
+  {
+    canvas->panToFeatureIds( mLayerCache->layer(), ids );
   }
 }
 

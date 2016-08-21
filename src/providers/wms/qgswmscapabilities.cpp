@@ -27,8 +27,7 @@
 #include "qgsmessagelog.h"
 #include "qgsnetworkaccessmanager.h"
 #include "qgsunittypes.h"
-#include "qgscrscache.h"
-
+#include "qgscsexception.h"
 
 // %%% copied from qgswmsprovider.cpp
 static QString DEFAULT_LATLON_CRS = "CRS:84";
@@ -38,7 +37,7 @@ static QString DEFAULT_LATLON_CRS = "CRS:84";
 bool QgsWmsSettings::parseUri( const QString& uriString )
 {
   QgsDebugMsg( "uriString = " + uriString );
-  QgsDataSourceURI uri;
+  QgsDataSourceUri uri;
   uri.setEncodedUri( uriString );
 
   mTiled = false;
@@ -802,9 +801,9 @@ void QgsWmsCapabilities::parseLayer( QDomElement const & e, QgsWmsLayerProperty&
         {
           try
           {
-            QgsCoordinateReferenceSystem src = QgsCRSCache::instance()->crsByOgcWmsCrs( e1.attribute( "SRS" ) );
+            QgsCoordinateReferenceSystem src = QgsCoordinateReferenceSystem::fromOgcWmsCrs( e1.attribute( "SRS" ) );
 
-            QgsCoordinateReferenceSystem dst =  QgsCRSCache::instance()->crsByOgcWmsCrs( DEFAULT_LATLON_CRS );
+            QgsCoordinateReferenceSystem dst =  QgsCoordinateReferenceSystem::fromOgcWmsCrs( DEFAULT_LATLON_CRS );
 
             QgsCoordinateTransform ct( src, dst );
             layerProperty.ex_GeographicBoundingBox = ct.transformBoundingBox( layerProperty.ex_GeographicBoundingBox );
@@ -1218,7 +1217,7 @@ void QgsWmsCapabilities::parseTileSetProfile( QDomElement const &e )
 
         if ( !bb.crs.isEmpty() )
         {
-          QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsByOgcWmsCrs( bb.crs );
+          QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( bb.crs );
           if ( crs.isValid() )
             bb.crs = crs.authid();
 
@@ -1285,15 +1284,15 @@ void QgsWmsCapabilities::parseWMTSContents( QDomElement const &e )
 
     QString supportedCRS = e0.firstChildElement( "ows:SupportedCRS" ).text();
 
-    QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsByOgcWmsCrs( supportedCRS );
+    QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( supportedCRS );
 
     s.wkScaleSet = e0.firstChildElement( "WellKnownScaleSet" ).text();
 
-    double metersPerUnit = QgsUnitTypes::fromUnitToUnitFactor( crs.mapUnits(), QGis::Meters );
+    double metersPerUnit = QgsUnitTypes::fromUnitToUnitFactor( crs.mapUnits(), QgsUnitTypes::DistanceMeters );
 
     s.crs = crs.authid();
 
-    bool invert = !mParserSettings.ignoreAxisOrientation && crs.axisInverted();
+    bool invert = !mParserSettings.ignoreAxisOrientation && crs.hasAxisInverted();
     if ( mParserSettings.invertAxisOrientation )
       invert = !invert;
 
@@ -1423,12 +1422,12 @@ void QgsWmsCapabilities::parseWMTSContents( QDomElement const &e )
 
         if ( !bb.crs.isEmpty() )
         {
-          QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsByOgcWmsCrs( bb.crs );
+          QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( bb.crs );
           if ( crs.isValid() )
           {
             bb.crs = crs.authid();
 
-            bool invert = !mParserSettings.ignoreAxisOrientation && crs.axisInverted();
+            bool invert = !mParserSettings.ignoreAxisOrientation && crs.hasAxisInverted();
             if ( mParserSettings.invertAxisOrientation )
               invert = !invert;
 
@@ -1787,7 +1786,7 @@ bool QgsWmsCapabilities::detectTileLayerBoundingBox( QgsWmtsTileLayer& l )
   if ( tmsIt == mTileMatrixSets.constEnd() )
     return false;
 
-  QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsByOgcWmsCrs( tmsIt->crs );
+  QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( tmsIt->crs );
   if ( !crs.isValid() )
     return false;
 
@@ -1797,7 +1796,7 @@ bool QgsWmsCapabilities::detectTileLayerBoundingBox( QgsWmtsTileLayer& l )
     return false;
 
   const QgsWmtsTileMatrix& tm = *tmIt;
-  double metersPerUnit = QgsUnitTypes::fromUnitToUnitFactor( crs.mapUnits(), QGis::Meters );
+  double metersPerUnit = QgsUnitTypes::fromUnitToUnitFactor( crs.mapUnits(), QgsUnitTypes::DistanceMeters );
   double res = tm.scaleDenom * 0.00028 / metersPerUnit;
   QgsPoint bottomRight( tm.topLeft.x() + res * tm.tileWidth * tm.matrixWidth,
                         tm.topLeft.y() - res * tm.tileHeight * tm.matrixHeight );
@@ -1831,8 +1830,8 @@ bool QgsWmsCapabilities::shouldInvertAxisOrientation( const QString& ogcCrs )
     }
 
     //create CRS from string
-    QgsCoordinateReferenceSystem theSrs = QgsCRSCache::instance()->crsByOgcWmsCrs( ogcCrs );
-    if ( theSrs.isValid() && theSrs.axisInverted() )
+    QgsCoordinateReferenceSystem theSrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( ogcCrs );
+    if ( theSrs.isValid() && theSrs.hasAxisInverted() )
     {
       changeXY = true;
     }

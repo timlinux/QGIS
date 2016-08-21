@@ -19,10 +19,11 @@
 #include "qgscomposition.h"
 #include "qgscomposermap.h"
 #include "qgscomposeritem.h"
-#include "qgsstylev2.h"
-#include "qgssymbolv2selectordialog.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgsstyle.h"
+#include "qgssymbolselectordialog.h"
+#include "qgssymbollayerutils.h"
 #include "qgsexpressioncontext.h"
+#include "qgsproject.h"
 #include <QColorDialog>
 #include <QWidget>
 #include <QPrinter> //for screen resolution
@@ -45,13 +46,15 @@ QgsCompositionWidget::QgsCompositionWidget( QWidget* parent, QgsComposition* c )
   //read with/height from composition and find suitable entries to display
   displayCompositionWidthHeight();
 
-  mVariableEditor->context()->appendScope( QgsExpressionContextUtils::globalScope() );
-  mVariableEditor->context()->appendScope( QgsExpressionContextUtils::projectScope() );
-  mVariableEditor->context()->appendScope( QgsExpressionContextUtils::compositionScope( mComposition ) );
-  mVariableEditor->reloadContext();
-  mVariableEditor->setEditableScopeIndex( 2 );
-
+  updateVariables();
   connect( mVariableEditor, SIGNAL( scopeChanged() ), this, SLOT( variablesChanged() ) );
+  // listen out for variable edits
+  QgsApplication* app = qobject_cast<QgsApplication*>( QgsApplication::instance() );
+  if ( app )
+  {
+    connect( app, SIGNAL( settingsChanged() ), this, SLOT( updateVariables() ) );
+  }
+  connect( QgsProject::instance(), SIGNAL( variablesChanged() ), this, SLOT( updateVariables() ) );
 
   if ( mComposition )
   {
@@ -140,18 +143,6 @@ QgsCompositionWidget::~QgsCompositionWidget()
 
 }
 
-static QgsExpressionContext _getExpressionContext( const void* context )
-{
-  const QgsComposition* composition = ( const QgsComposition* ) context;
-  if ( !composition )
-  {
-    return QgsExpressionContext();
-  }
-
-  QScopedPointer< QgsExpressionContext > expContext( composition->createExpressionContext() );
-  return QgsExpressionContext( *expContext );
-}
-
 void QgsCompositionWidget::populateDataDefinedButtons()
 {
   if ( !mComposition )
@@ -170,7 +161,7 @@ void QgsCompositionWidget::populateDataDefinedButtons()
   Q_FOREACH ( QgsDataDefinedButton* button, findChildren< QgsDataDefinedButton* >() )
   {
     button->blockSignals( true );
-    button->registerGetExpressionContextCallback( &_getExpressionContext, mComposition );
+    button->registerExpressionContextGenerator( mComposition );
   }
 
   mPaperSizeDDBtn->init( vl, mComposition->dataDefinedProperty( QgsComposerObject::PresetPaperSize ),
@@ -207,6 +198,16 @@ void QgsCompositionWidget::resizeMarginsChanged()
       mRightMarginSpinBox->value(),
       mBottomMarginSpinBox->value(),
       mLeftMarginSpinBox->value() );
+}
+
+void QgsCompositionWidget::updateVariables()
+{
+  QgsExpressionContext context;
+  context << QgsExpressionContextUtils::globalScope()
+  << QgsExpressionContextUtils::projectScope()
+  << QgsExpressionContextUtils::compositionScope( mComposition );
+  mVariableEditor->setContext( &context );
+  mVariableEditor->setEditableScopeIndex( 2 );
 }
 
 void QgsCompositionWidget::setDataDefinedProperty( const QgsDataDefinedButton* ddBtn, QgsComposerObject::DataDefinedProperty property )
@@ -565,13 +566,14 @@ void QgsCompositionWidget::on_mPageStyleButton_clicked()
     coverageLayer = mComposition->atlasComposition().coverageLayer();
   }
 
-  QgsFillSymbolV2* newSymbol = mComposition->pageStyleSymbol()->clone();
+  QgsFillSymbol* newSymbol = mComposition->pageStyleSymbol()->clone();
   if ( !newSymbol )
   {
-    newSymbol = new QgsFillSymbolV2();
+    newSymbol = new QgsFillSymbol();
   }
-  QgsSymbolV2SelectorDialog d( newSymbol, QgsStyleV2::defaultStyle(), coverageLayer, this );
-  d.setExpressionContext( mComposition->createExpressionContext() );
+  QgsExpressionContext context = mComposition->createExpressionContext();
+  QgsSymbolSelectorDialog d( newSymbol, QgsStyle::defaultStyle(), coverageLayer, this );
+  d.setExpressionContext( &context );
 
   if ( d.exec() == QDialog::Accepted )
   {
@@ -598,7 +600,7 @@ void QgsCompositionWidget::updatePageStyle()
 {
   if ( mComposition )
   {
-    QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( mComposition->pageStyleSymbol(), mPageStyleButton->iconSize() );
+    QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( mComposition->pageStyleSymbol(), mPageStyleButton->iconSize() );
     mPageStyleButton->setIcon( icon );
   }
 }

@@ -20,7 +20,7 @@
 #include "qgspainteffectpropertieswidget.h"
 #include "qgspainteffectwidget.h"
 #include "qgsapplication.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgspanelwidget.h"
 
 #include <QPicture>
@@ -202,7 +202,7 @@ void QgsEffectStackPropertiesWidget::updatePreview()
   previewImage.fill( Qt::transparent );
   painter.begin( &previewImage );
   painter.setRenderHint( QPainter::Antialiasing );
-  QgsRenderContext context = QgsSymbolLayerV2Utils::createRenderContext( &painter );
+  QgsRenderContext context = QgsSymbolLayerUtils::createRenderContext( &painter );
   if ( !mPreviewPicture )
   {
     QPicture previewPic;
@@ -352,7 +352,7 @@ void QgsEffectStackPropertiesWidget::changeEffect( QgsPaintEffect* newEffect )
 // QgsEffectStackPropertiesDialog
 //
 
-QgsEffectStackPropertiesDialog::QgsEffectStackPropertiesDialog( QgsEffectStack *stack, QWidget *parent, const Qt::WindowFlags& f )
+QgsEffectStackPropertiesDialog::QgsEffectStackPropertiesDialog( QgsEffectStack *stack, QWidget *parent, Qt::WindowFlags f )
     : QgsDialog( parent, f, QDialogButtonBox::Ok | QDialogButtonBox::Cancel )
     , mPropertiesWidget( nullptr )
 {
@@ -437,6 +437,11 @@ void QgsEffectStackCompactWidget::setPaintEffect( QgsPaintEffect *effect )
   mEnabledCheckBox->setChecked( mStack->enabled() );
   mEnabledCheckBox->setEnabled( true );
   mButton->setEnabled( mStack->enabled() );
+}
+
+QgsPaintEffect* QgsEffectStackCompactWidget::paintEffect() const
+{
+  return mStack;
 }
 
 void QgsEffectStackCompactWidget::setPreviewPicture( const QPicture &picture )

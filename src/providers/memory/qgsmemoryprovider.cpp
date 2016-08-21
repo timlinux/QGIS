@@ -49,21 +49,21 @@ QgsMemoryProvider::QgsMemoryProvider( const QString& uri )
 
   geometry = geometry.toLower();
   if ( geometry == "point" )
-    mWkbType = QGis::WKBPoint;
+    mWkbType = QgsWkbTypes::Point;
   else if ( geometry == "linestring" )
-    mWkbType = QGis::WKBLineString;
+    mWkbType = QgsWkbTypes::LineString;
   else if ( geometry == "polygon" )
-    mWkbType = QGis::WKBPolygon;
+    mWkbType = QgsWkbTypes::Polygon;
   else if ( geometry == "multipoint" )
-    mWkbType = QGis::WKBMultiPoint;
+    mWkbType = QgsWkbTypes::MultiPoint;
   else if ( geometry == "multilinestring" )
-    mWkbType = QGis::WKBMultiLineString;
+    mWkbType = QgsWkbTypes::MultiLineString;
   else if ( geometry == "multipolygon" )
-    mWkbType = QGis::WKBMultiPolygon;
+    mWkbType = QgsWkbTypes::MultiPolygon;
   else if ( geometry == "none" )
-    mWkbType = QGis::WKBNoGeometry;
+    mWkbType = QgsWkbTypes::NoGeometry;
   else
-    mWkbType = QGis::WKBUnknown;
+    mWkbType = QgsWkbTypes::Unknown;
 
   if ( url.hasQueryItem( "crs" ) )
   {
@@ -205,25 +205,25 @@ QString QgsMemoryProvider::dataSourceUri( bool expandAuthConfig ) const
   QString geometry;
   switch ( mWkbType )
   {
-    case QGis::WKBPoint :
+    case QgsWkbTypes::Point :
       geometry = "Point";
       break;
-    case QGis::WKBLineString :
+    case QgsWkbTypes::LineString :
       geometry = "LineString";
       break;
-    case QGis::WKBPolygon :
+    case QgsWkbTypes::Polygon :
       geometry = "Polygon";
       break;
-    case QGis::WKBMultiPoint :
+    case QgsWkbTypes::MultiPoint :
       geometry = "MultiPoint";
       break;
-    case QGis::WKBMultiLineString :
+    case QgsWkbTypes::MultiLineString :
       geometry = "MultiLineString";
       break;
-    case QGis::WKBMultiPolygon :
+    case QgsWkbTypes::MultiPolygon :
       geometry = "MultiPolygon";
       break;
-    case QGis::WKBNoGeometry :
+    case QgsWkbTypes::NoGeometry :
       geometry = "None";
       break;
     default:
@@ -262,7 +262,7 @@ QString QgsMemoryProvider::dataSourceUri( bool expandAuthConfig ) const
   QgsAttributeList attrs = const_cast<QgsMemoryProvider *>( this )->attributeIndexes();
   for ( int i = 0; i < attrs.size(); i++ )
   {
-    QgsField field = mFields[attrs[i]];
+    QgsField field = mFields.at( attrs[i] );
     QString fieldDef = field.name();
     fieldDef.append( QString( ":%2(%3,%4)" ).arg( field.typeName() ).arg( field.length() ).arg( field.precision() ) );
     uri.addQueryItem( "field", fieldDef );
@@ -277,18 +277,18 @@ QString QgsMemoryProvider::storageType() const
   return "Memory storage";
 }
 
-QgsFeatureIterator QgsMemoryProvider::getFeatures( const QgsFeatureRequest& request )
+QgsFeatureIterator QgsMemoryProvider::getFeatures( const QgsFeatureRequest& request ) const
 {
   return QgsFeatureIterator( new QgsMemoryFeatureIterator( new QgsMemoryFeatureSource( this ), true, request ) );
 }
 
 
-QgsRectangle QgsMemoryProvider::extent()
+QgsRectangle QgsMemoryProvider::extent() const
 {
   return mExtent;
 }
 
-QGis::WkbType QgsMemoryProvider::geometryType() const
+QgsWkbTypes::Type QgsMemoryProvider::wkbType() const
 {
   return mWkbType;
 }
@@ -309,17 +309,17 @@ long QgsMemoryProvider::featureCount() const
   return count;
 }
 
-const QgsFields & QgsMemoryProvider::fields() const
+QgsFields QgsMemoryProvider::fields() const
 {
   return mFields;
 }
 
-bool QgsMemoryProvider::isValid()
+bool QgsMemoryProvider::isValid() const
 {
-  return ( mWkbType != QGis::WKBUnknown );
+  return ( mWkbType != QgsWkbTypes::Unknown );
 }
 
-QgsCoordinateReferenceSystem QgsMemoryProvider::crs()
+QgsCoordinateReferenceSystem QgsMemoryProvider::crs() const
 {
   // TODO: make provider projection-aware
   return mCrs; // return default CRS
@@ -488,7 +488,7 @@ bool QgsMemoryProvider::changeGeometryValues( const QgsGeometryMap &geometry_map
   return true;
 }
 
-QString QgsMemoryProvider::subsetString()
+QString QgsMemoryProvider::subsetString() const
 {
   return mSubsetString;
 }
@@ -526,11 +526,11 @@ bool QgsMemoryProvider::createSpatialIndex()
   return true;
 }
 
-int QgsMemoryProvider::capabilities() const
+QgsVectorDataProvider::Capabilities QgsMemoryProvider::capabilities() const
 {
   return AddFeatures | DeleteFeatures | ChangeGeometries |
          ChangeAttributeValues | AddAttributes | DeleteAttributes | RenameAttributes | CreateSpatialIndex |
-         SelectAtId | SelectGeometryAtId | CircularGeometries;
+         SelectAtId | CircularGeometries;
 }
 
 
@@ -545,8 +545,8 @@ void QgsMemoryProvider::updateExtent()
     mExtent.setMinimal();
     Q_FOREACH ( const QgsFeature& feat, mFeatures )
     {
-      if ( feat.constGeometry() )
-        mExtent.unionRect( feat.constGeometry()->boundingBox() );
+      if ( feat.hasGeometry() )
+        mExtent.unionRect( feat.geometry().boundingBox() );
     }
   }
 }

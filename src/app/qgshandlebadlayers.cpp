@@ -18,6 +18,7 @@
 #include "qgshandlebadlayers.h"
 #include "qgisapp.h"
 #include "qgsauthconfigselect.h"
+#include "qgsdataprovider.h"
 #include "qgisgui.h"
 #include "qgsdatasourceuri.h"
 #include "qgslogger.h"
@@ -126,7 +127,7 @@ QgsHandleBadLayers::QgsHandleBadLayers( const QList<QDomNode> &layers, const QDo
     item->setFlags( item->flags() & ~Qt::ItemIsEditable );
     mLayerList->setItem( j, 2, item );
 
-    if ( QgsAuthConfigUriEdit::hasConfigID( datasource ) )
+    if ( QgsAuthConfigUriEdit::hasConfigId( datasource ) )
     {
       QToolButton *btn = new QToolButton( this );
       btn->setMaximumWidth( 75 );
@@ -185,7 +186,7 @@ QString QgsHandleBadLayers::filename( int row )
   {
     if ( provider == "spatialite" )
     {
-      QgsDataSourceURI uri( datasource );
+      QgsDataSourceUri uri( datasource );
       return uri.database();
     }
     else if ( provider == "ogr" )
@@ -195,7 +196,7 @@ QString QgsHandleBadLayers::filename( int row )
     }
     else if ( provider == "delimitedtext" )
     {
-      return QUrl::fromEncoded( datasource.toAscii() ).toLocalFile();
+      return QUrl::fromEncoded( datasource.toLatin1() ).toLocalFile();
     }
   }
   else
@@ -221,7 +222,7 @@ void QgsHandleBadLayers::setFilename( int row, const QString& filename )
   {
     if ( provider == "spatialite" )
     {
-      QgsDataSourceURI uri( datasource );
+      QgsDataSourceUri uri( datasource );
       uri.setDatabase( filename );
       datasource = uri.uri();
     }
@@ -233,7 +234,7 @@ void QgsHandleBadLayers::setFilename( int row, const QString& filename )
     }
     else if ( provider == "delimitedtext" )
     {
-      QUrl uriSource = QUrl::fromEncoded( datasource.toAscii() );
+      QUrl uriSource = QUrl::fromEncoded( datasource.toLatin1() );
       QUrl uriDest = QUrl::fromLocalFile( filename );
       uriDest.setQueryItems( uriSource.queryItems() );
       datasource = QString::fromAscii( uriDest.toEncoded() );

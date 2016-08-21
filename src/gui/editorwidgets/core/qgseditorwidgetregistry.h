@@ -18,13 +18,19 @@
 
 #include <QObject>
 #include <QMap>
-
+#include "qgseditorwidgetconfig.h"
 #include "qgseditorwidgetfactory.h"
+#include "qgsattributeeditorcontext.h"
 
 class QgsMapLayer;
 class QDomNode;
 class QgsMapCanvas;
 class QgsMessageBar;
+class QgsSearchWidgetWrapper;
+class QgsEditorWidgetWrapper;
+class QgsEditorConfigWidget;
+class QgsVectorLayer;
+
 
 /** \ingroup gui
  * This class manages all known edit widget factories
@@ -145,17 +151,6 @@ class GUI_EXPORT QgsEditorWidgetRegistry : public QObject
      * @param layerElem
      */
     void readMapLayer( QgsMapLayer* mapLayer, const QDomElement& layerElem );
-
-    /**
-     * Read all old-style editor widget configuration from a map node. Will update
-     * a project file to the new version on next save
-     * @param vl         The layer in question
-     * @param layerElem  The layer element from the project file
-     * @param cfg        Writable config element
-     *
-     * @deprecated
-     */
-    Q_DECL_DEPRECATED const QString readLegacyConfig( QgsVectorLayer* vl, const QDomElement& layerElem, QgsEditorWidgetConfig& cfg );
 
     /**
      * Write all the widget config to a layer XML node

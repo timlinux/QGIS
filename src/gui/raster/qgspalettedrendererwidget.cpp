@@ -17,6 +17,7 @@
 
 #include "qgspalettedrendererwidget.h"
 #include "qgspalettedrasterrenderer.h"
+#include "qgsrasterdataprovider.h"
 #include "qgsrasterlayer.h"
 #include "qgscolordialog.h"
 #include <QColorDialog>
@@ -74,7 +75,7 @@ void QgsPalettedRendererWidget::on_mTreeWidget_itemDoubleClicked( QTreeWidgetIte
   if ( column == 1 && item ) //change item color
   {
     item->setFlags( Qt::ItemIsEnabled | Qt::ItemIsSelectable );
-    QColor c = QgsColorDialogV2::getColor( item->background( column ).color(), nullptr );
+    QColor c = QgsColorDialog::getColor( item->background( column ).color(), nullptr );
     if ( c.isValid() )
     {
       item->setBackground( column, QBrush( c ) );

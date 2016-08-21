@@ -15,7 +15,6 @@
 
 #include "qgsapplication.h"
 #include "qgsauthmanager.h"
-#include "qgscrscache.h"
 #include "qgsdataitemproviderregistry.h"
 #include "qgsexception.h"
 #include "qgsgeometry.h"
@@ -117,7 +116,10 @@ void QgsApplication::init( QString customConfigPath )
     }
     else
     {
-      customConfigPath = QString( "%1/.qgis%2/" ).arg( QDir::homePath() ).arg( QGis::QGIS_VERSION_INT / 10000 );
+      // TODO Switch to this for release.
+      //customConfigPath = QString( "%1/.qgis%2/" ).arg( QDir::homePath() ).arg( Qgis::QGIS_VERSION_INT / 10000 );
+      // Use qgis-dev for dev versions of QGIS to avoid mixing 2 and 3 API plugins.
+      customConfigPath = QString( "%1/.qgis%2/" ).arg( QDir::homePath() ).arg( "-dev" );
     }
   }
 
@@ -734,7 +736,7 @@ QStringList QgsApplication::composerTemplatePaths()
   return myPathList;
 }
 
-QString QgsApplication::userStyleV2Path()
+QString QgsApplication::userStylePath()
 {
   return qgisSettingsDirPath() + QLatin1String( "symbology-ng-style.db" );
 }
@@ -838,7 +840,7 @@ QString QgsApplication::userThemesFolder()
   return qgisSettingsDirPath() + QLatin1String( "/themes" );
 }
 
-QString QgsApplication::defaultStyleV2Path()
+QString QgsApplication::defaultStylePath()
 {
   return ABISYM( mPkgDataPath ) + QLatin1String( "/resources/symbology-ng-style.db" );
 }
@@ -1369,5 +1371,10 @@ void QgsApplication::setMaxThreads( int maxThreads )
   // set max thread count in QThreadPool
   QThreadPool::globalInstance()->setMaxThreadCount( maxThreads );
   QgsDebugMsg( QString( "set QThreadPool max thread count to %1" ).arg( QThreadPool::globalInstance()->maxThreadCount() ) );
+}
+
+void QgsApplication::emitSettingsChanged()
+{
+  emit settingsChanged();
 }
 

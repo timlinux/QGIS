@@ -23,7 +23,6 @@
 #include "qgsdataitem.h"
 #include "qgsbrowser.h"
 #include "qgsbrowsermodel.h"
-#include "qgscrscache.h"
 #include "qgsencodingfiledialog.h"
 #include "qgsgenericprojectionselector.h"
 #include "qgslogger.h"
@@ -36,6 +35,7 @@
 #include "qgsattributetablemodel.h"
 #include "qgsattributetablefiltermodel.h"
 #include "qgscredentialdialog.h"
+#include "qgsrasterdataprovider.h"
 
 #ifdef ANDROID
 #define QGIS_ICON_SIZE 32
@@ -43,7 +43,7 @@
 #define QGIS_ICON_SIZE 24
 #endif
 
-QgsBrowser::QgsBrowser( QWidget *parent, const Qt::WindowFlags& flags )
+QgsBrowser::QgsBrowser( QWidget *parent, Qt::WindowFlags flags )
     : QMainWindow( parent, flags )
     , mDirtyMetadata( true )
     , mDirtyPreview( true )
@@ -303,7 +303,7 @@ void QgsBrowser::on_mActionSetProjection_triggered()
   mySelector->setSelectedCrsId( mLayer->crs().srsid() );
   if ( mySelector->exec() )
   {
-    QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( mySelector->selectedCrsId() );
+    QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( mySelector->selectedCrsId() );
 
     // TODO: open data source in write mode set crs and save
 #if 0

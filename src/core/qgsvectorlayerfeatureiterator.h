@@ -16,6 +16,7 @@
 #define QGSVECTORLAYERFEATUREITERATOR_H
 
 #include "qgsfeatureiterator.h"
+#include "qgsfield.h"
 
 #include <QSet>
 
@@ -37,7 +38,12 @@ class QgsVectorLayerFeatureIterator;
 class QgsVectorLayerFeatureSource : public QgsAbstractFeatureSource
 {
   public:
-    explicit QgsVectorLayerFeatureSource( QgsVectorLayer* layer );
+
+    /** Constructor for QgsVectorLayerFeatureSource.
+     * @param layer source layer
+     */
+    explicit QgsVectorLayerFeatureSource( const QgsVectorLayer* layer );
+
     ~QgsVectorLayerFeatureSource();
 
     virtual QgsFeatureIterator getFeatures( const QgsFeatureRequest& request ) override;

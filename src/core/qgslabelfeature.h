@@ -1,9 +1,8 @@
 #ifndef QGSLABELFEATURE_H
 #define QGSLABELFEATURE_H
 
-#include "qgsgeometry.h"
-
 #include "qgspallabeling.h"
+#include "geos_c.h"
 
 namespace pal
 {
@@ -27,7 +26,7 @@ class QgsGeometry;
  * Individual label providers may create subclasses of QgsLabelFeature in order to add
  * more data to the instances that will be later used for drawing of labels.
  *
- * @note this class is not a part of public API yet. See notes in QgsLabelingEngineV2
+ * @note this class is not a part of public API yet. See notes in QgsLabelingEngine
  * @note added in QGIS 2.12
  * @note not available in Python bindings
  */
@@ -106,6 +105,32 @@ class CORE_EXPORT QgsLabelFeature
      * @see setObstacleGeometry()
      */
     GEOSGeometry* obstacleGeometry() const { return mObstacleGeometry; }
+
+    /** Sets the label's permissible zone geometry. If set, the feature's label MUST be fully contained
+     * within this zone, and the feature will not be labeled if no candidates can be generated which
+     * are not contained within the zone.
+     * @param geometry permissible zone geometry. If an invalid QgsGeometry is passed then no zone limit
+     * will be applied to the label candidates (this is the default behaviour).
+     * @note added in QGIS 3.0
+     * @see permissibleZone()
+     */
+    void setPermissibleZone( const QgsGeometry& geometry );
+
+    /** Returns the label's permissible zone geometry. If a valid geometry is returned, the feature's label
+     * MUST be fully contained within this zone, and the feature will not be labeled if no candidates can be
+     * generated which are not contained within the zone.
+     * @note added in QGIS 3.0
+     * @see setPermissibleZone()
+     * @see permissibleZonePrepared()
+     */
+    QgsGeometry permissibleZone() const { return mPermissibleZone; }
+
+    /** Returns a GEOS prepared geometry representing the label's permissibleZone().
+     * @see permissibleZone()
+     * @note added in QGIS 3.0
+     */
+    //TODO - remove when QgsGeometry caches GEOS preparedness
+    const GEOSPreparedGeometry* permissibleZonePrepared() const { return mPermissibleZoneGeosPrepared; }
 
     //! Size of the label (in map units)
     QSizeF size() const { return mSize; }
@@ -316,6 +341,8 @@ class CORE_EXPORT QgsLabelFeature
     GEOSGeometry* mGeometry;
     //! Optional geometry to use for label obstacles, if different to mGeometry
     GEOSGeometry* mObstacleGeometry;
+    //! Optional geometry to use for label's permissible zone
+    QgsGeometry mPermissibleZone;
     //! Width and height of the label
     QSizeF mSize;
     //! Visual margin of label contents
@@ -358,6 +385,12 @@ class CORE_EXPORT QgsLabelFeature
     QString mLabelText;
     //! extra information for curved labels (may be null)
     pal::LabelInfo* mInfo;
+
+  private:
+
+    // TODO - not required when QgsGeometry caches geos preparedness
+    const GEOSPreparedGeometry* mPermissibleZoneGeosPrepared;
+
 };
 
 #endif // QGSLABELFEATURE_H

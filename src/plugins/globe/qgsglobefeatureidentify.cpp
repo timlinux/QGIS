@@ -25,7 +25,8 @@
 #include <osgEarth/Registry>
 
 QgsGlobeFeatureIdentifyCallback::QgsGlobeFeatureIdentifyCallback( QgsMapCanvas* mapCanvas )
-    : mCanvas( mapCanvas ), mRubberBand( new QgsRubberBand( mapCanvas, QGis::Polygon ) )
+    : mCanvas( mapCanvas )
+    , mRubberBand( new QgsRubberBand( mapCanvas, QgsWkbTypes::PolygonGeometry ) )
 {
   QColor color( Qt::green );
   color.setAlpha( 190 );
@@ -66,7 +67,7 @@ void QgsGlobeFeatureIdentifyCallback::onHit( osgEarth::ObjectID id )
       if ( feat.isValid() )
         mRubberBand->setToGeometry( feat.geometry(), lyr );
       else
-        mRubberBand->reset( QGis::Polygon );
+        mRubberBand->reset( QgsWkbTypes::PolygonGeometry );
     }
   }
   else
@@ -82,5 +83,5 @@ void QgsGlobeFeatureIdentifyCallback::onMiss( const EventArgs &/*args*/ )
 void QgsGlobeFeatureIdentifyCallback::onMiss()
 #endif
 {
-  mRubberBand->reset( QGis::Polygon );
+  mRubberBand->reset( QgsWkbTypes::PolygonGeometry );
 }

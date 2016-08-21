@@ -21,9 +21,9 @@
 #include "qgslayertreemodellegendnode.h"
 #include "qgspluginlayer.h"
 #include "qgsrasterlayer.h"
-#include "qgsrendererv2.h"
+#include "qgsrenderer.h"
 #include "qgsvectorlayer.h"
-#include "qgsdiagramrendererv2.h"
+#include "qgsdiagramrenderer.h"
 
 
 QgsMapLayerLegend::QgsMapLayerLegend( QObject *parent )
@@ -187,7 +187,7 @@ QList<QgsLayerTreeModelLegendNode*> QgsDefaultVectorLayerLegend::createLayerTree
 {
   QList<QgsLayerTreeModelLegendNode*> nodes;
 
-  QgsFeatureRendererV2* r = mLayer->rendererV2();
+  QgsFeatureRenderer* r = mLayer->renderer();
   if ( !r )
     return nodes;
 
@@ -200,9 +200,9 @@ QList<QgsLayerTreeModelLegendNode*> QgsDefaultVectorLayerLegend::createLayerTree
     nodes.append( new QgsSimpleLegendNode( nodeLayer, r->legendClassificationAttribute() ) );
   }
 
-  Q_FOREACH ( const QgsLegendSymbolItemV2& i, r->legendSymbolItemsV2() )
+  Q_FOREACH ( const QgsLegendSymbolItem& i, r->legendSymbolItemsV2() )
   {
-    QgsSymbolV2LegendNode * n = new QgsSymbolV2LegendNode( nodeLayer, i );
+    QgsSymbolLegendNode * n = new QgsSymbolLegendNode( nodeLayer, i );
     nodes.append( n );
   }
 
@@ -240,7 +240,7 @@ QList<QgsLayerTreeModelLegendNode*> QgsDefaultRasterLayerLegend::createLayerTree
   // temporary solution for WMS. Ideally should be done with a delegate.
   if ( mLayer->dataProvider()->supportsLegendGraphic() )
   {
-    nodes << new QgsWMSLegendNode( nodeLayer );
+    nodes << new QgsWmsLegendNode( nodeLayer );
   }
 
   QgsLegendColorList rasterItemList = mLayer->legendSymbologyItems();

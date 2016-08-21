@@ -21,14 +21,15 @@
 #include "qgsgeometry.h"
 #include "qgscomposermap.h"
 #include "qgscomposition.h"
-#include "qgsmaprenderer.h"
+#include "qgsmapsettings.h"
 #include "qgsrendercontext.h"
-#include "qgssymbollayerv2utils.h"
-#include "qgssymbolv2.h"
+#include "qgssymbollayerutils.h"
+#include "qgssymbol.h"
 #include "qgscoordinatereferencesystem.h"
 #include "qgslogger.h"
 #include "qgsfontutils.h"
 #include "qgsexpressioncontext.h"
+#include "qgscsexception.h"
 
 #include <QPainter>
 #include <QPen>
@@ -105,7 +106,7 @@ QgsComposerMapGrid &QgsComposerMapGridStack::operator[]( int idx )
   return *grid;
 }
 
-bool QgsComposerMapGridStack::readXML( const QDomElement &elem, const QDomDocument &doc )
+bool QgsComposerMapGridStack::readXml( const QDomElement &elem, const QDomDocument &doc )
 {
   removeItems();
 
@@ -115,7 +116,7 @@ bool QgsComposerMapGridStack::readXML( const QDomElement &elem, const QDomDocume
   {
     QDomElement mapGridElem = mapGridNodeList.at( i ).toElement();
     QgsComposerMapGrid* mapGrid = new QgsComposerMapGrid( mapGridElem.attribute( "name" ), mComposerMap );
-    mapGrid->readXML( mapGridElem, doc );
+    mapGrid->readXml( mapGridElem, doc );
     mItems.append( mapGrid );
   }
 
@@ -243,7 +244,7 @@ void QgsComposerMapGrid::createDefaultGridLineSymbol()
   properties.insert( "color", "0,0,0,255" );
   properties.insert( "width", "0.3" );
   properties.insert( "capstyle", "flat" );
-  mGridLineSymbol = QgsLineSymbolV2::createSimple( properties );
+  mGridLineSymbol = QgsLineSymbol::createSimple( properties );
 }
 
 void QgsComposerMapGrid::createDefaultGridMarkerSymbol()
@@ -253,7 +254,7 @@ void QgsComposerMapGrid::createDefaultGridMarkerSymbol()
   properties.insert( "name", "circle" );
   properties.insert( "size", "2.0" );
   properties.insert( "color", "0,0,0,255" );
-  mGridMarkerSymbol = QgsMarkerSymbolV2::createSimple( properties );
+  mGridMarkerSymbol = QgsMarkerSymbol::createSimple( properties );
 }
 
 void QgsComposerMapGrid::setGridLineWidth( const double width )
@@ -272,7 +273,7 @@ void QgsComposerMapGrid::setGridLineColor( const QColor& c )
   }
 }
 
-bool QgsComposerMapGrid::writeXML( QDomElement& elem, QDomDocument& doc ) const
+bool QgsComposerMapGrid::writeXml( QDomElement& elem, QDomDocument& doc ) const
 {
   if ( elem.isNull() )
   {
@@ -288,12 +289,12 @@ bool QgsComposerMapGrid::writeXML( QDomElement& elem, QDomDocument& doc ) const
   mapGridElem.setAttribute( "crossLength", qgsDoubleToString( mCrossLength ) );
 
   QDomElement lineStyleElem = doc.createElement( "lineStyle" );
-  QDomElement gridLineStyleElem = QgsSymbolLayerV2Utils::saveSymbol( QString(), mGridLineSymbol, doc );
+  QDomElement gridLineStyleElem = QgsSymbolLayerUtils::saveSymbol( QString(), mGridLineSymbol, doc );
   lineStyleElem.appendChild( gridLineStyleElem );
   mapGridElem.appendChild( lineStyleElem );
 
   QDomElement markerStyleElem = doc.createElement( "markerStyle" );
-  QDomElement gridMarkerStyleElem = QgsSymbolLayerV2Utils::saveSymbol( QString(), mGridMarkerSymbol, doc );
+  QDomElement gridMarkerStyleElem = QgsSymbolLayerUtils::saveSymbol( QString(), mGridMarkerSymbol, doc );
   markerStyleElem.appendChild( gridMarkerStyleElem );
   mapGridElem.appendChild( markerStyleElem );
 
@@ -301,16 +302,16 @@ bool QgsComposerMapGrid::writeXML( QDomElement& elem, QDomDocument& doc ) const
   mapGridElem.setAttribute( "gridFrameSideFlags", mGridFrameSides );
   mapGridElem.setAttribute( "gridFrameWidth", qgsDoubleToString( mGridFrameWidth ) );
   mapGridElem.setAttribute( "gridFramePenThickness", qgsDoubleToString( mGridFramePenThickness ) );
-  mapGridElem.setAttribute( "gridFramePenColor", QgsSymbolLayerV2Utils::encodeColor( mGridFramePenColor ) );
-  mapGridElem.setAttribute( "frameFillColor1", QgsSymbolLayerV2Utils::encodeColor( mGridFrameFillColor1 ) );
-  mapGridElem.setAttribute( "frameFillColor2", QgsSymbolLayerV2Utils::encodeColor( mGridFrameFillColor2 ) );
+  mapGridElem.setAttribute( "gridFramePenColor", QgsSymbolLayerUtils::encodeColor( mGridFramePenColor ) );
+  mapGridElem.setAttribute( "frameFillColor1", QgsSymbolLayerUtils::encodeColor( mGridFrameFillColor1 ) );
+  mapGridElem.setAttribute( "frameFillColor2", QgsSymbolLayerUtils::encodeColor( mGridFrameFillColor2 ) );
   mapGridElem.setAttribute( "leftFrameDivisions", mLeftFrameDivisions );
   mapGridElem.setAttribute( "rightFrameDivisions", mRightFrameDivisions );
   mapGridElem.setAttribute( "topFrameDivisions", mTopFrameDivisions );
   mapGridElem.setAttribute( "bottomFrameDivisions", mBottomFrameDivisions );
   if ( mCRS.isValid() )
   {
-    mCRS.writeXML( mapGridElem, doc );
+    mCRS.writeXml( mapGridElem, doc );
   }
 
   mapGridElem.setAttribute( "annotationFormat", mGridAnnotationFormat );
@@ -330,17 +331,17 @@ bool QgsComposerMapGrid::writeXML( QDomElement& elem, QDomDocument& doc ) const
   mapGridElem.setAttribute( "bottomAnnotationDirection", mBottomGridAnnotationDirection );
   mapGridElem.setAttribute( "frameAnnotationDistance", QString::number( mAnnotationFrameDistance ) );
   mapGridElem.appendChild( QgsFontUtils::toXmlElement( mGridAnnotationFont, doc, "annotationFontProperties" ) );
-  mapGridElem.setAttribute( "annotationFontColor", QgsSymbolLayerV2Utils::encodeColor( mGridAnnotationFontColor ) );
+  mapGridElem.setAttribute( "annotationFontColor", QgsSymbolLayerUtils::encodeColor( mGridAnnotationFontColor ) );
   mapGridElem.setAttribute( "annotationPrecision", mGridAnnotationPrecision );
   mapGridElem.setAttribute( "unit", mGridUnit );
   mapGridElem.setAttribute( "blendMode", mBlendMode );
 
-  bool ok = QgsComposerMapItem::writeXML( mapGridElem, doc );
+  bool ok = QgsComposerMapItem::writeXml( mapGridElem, doc );
   elem.appendChild( mapGridElem );
   return ok;
 }
 
-bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocument& doc )
+bool QgsComposerMapGrid::readXml( const QDomElement& itemElem, const QDomDocument& doc )
 {
   Q_UNUSED( doc );
   if ( itemElem.isNull() )
@@ -348,7 +349,7 @@ bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocumen
     return false;
   }
 
-  bool ok = QgsComposerMapItem::readXML( itemElem, doc );
+  bool ok = QgsComposerMapItem::readXml( itemElem, doc );
 
   //grid
   mGridStyle = QgsComposerMapGrid::GridStyle( itemElem.attribute( "gridStyle", "0" ).toInt() );
@@ -361,9 +362,9 @@ bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocumen
   mGridFrameSides = static_cast< QgsComposerMapGrid::FrameSideFlags >( itemElem.attribute( "gridFrameSideFlags", "15" ).toInt() );
   mGridFrameWidth = itemElem.attribute( "gridFrameWidth", "2.0" ).toDouble();
   mGridFramePenThickness = itemElem.attribute( "gridFramePenThickness", "0.3" ).toDouble();
-  mGridFramePenColor = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "gridFramePenColor", "0,0,0" ) );
-  mGridFrameFillColor1 = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "frameFillColor1", "255,255,255,255" ) );
-  mGridFrameFillColor2 = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "frameFillColor2", "0,0,0,255" ) );
+  mGridFramePenColor = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "gridFramePenColor", "0,0,0" ) );
+  mGridFrameFillColor1 = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "frameFillColor1", "255,255,255,255" ) );
+  mGridFrameFillColor2 = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "frameFillColor2", "0,0,0,255" ) );
   mLeftFrameDivisions = QgsComposerMapGrid::DisplayMode( itemElem.attribute( "leftFrameDivisions", "0" ).toInt() );
   mRightFrameDivisions = QgsComposerMapGrid::DisplayMode( itemElem.attribute( "rightFrameDivisions", "0" ).toInt() );
   mTopFrameDivisions = QgsComposerMapGrid::DisplayMode( itemElem.attribute( "topFrameDivisions", "0" ).toInt() );
@@ -376,13 +377,13 @@ bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocumen
     if ( !symbolElem.isNull() )
     {
       delete mGridLineSymbol;
-      mGridLineSymbol = QgsSymbolLayerV2Utils::loadSymbol<QgsLineSymbolV2>( symbolElem );
+      mGridLineSymbol = QgsSymbolLayerUtils::loadSymbol<QgsLineSymbol>( symbolElem );
     }
   }
   else
   {
     //old project file, read penWidth /penColorRed, penColorGreen, penColorBlue
-    mGridLineSymbol = QgsLineSymbolV2::createSimple( QgsStringMap() );
+    mGridLineSymbol = QgsLineSymbol::createSimple( QgsStringMap() );
     mGridLineSymbol->setWidth( itemElem.attribute( "penWidth", "0" ).toDouble() );
     mGridLineSymbol->setColor( QColor( itemElem.attribute( "penColorRed", "0" ).toInt(),
                                        itemElem.attribute( "penColorGreen", "0" ).toInt(),
@@ -396,11 +397,11 @@ bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocumen
     if ( !symbolElem.isNull() )
     {
       delete mGridMarkerSymbol;
-      mGridMarkerSymbol = QgsSymbolLayerV2Utils::loadSymbol<QgsMarkerSymbolV2>( symbolElem );
+      mGridMarkerSymbol = QgsSymbolLayerUtils::loadSymbol<QgsMarkerSymbol>( symbolElem );
     }
   }
 
-  if ( !mCRS.readXML( itemElem ) )
+  if ( !mCRS.readXml( itemElem ) )
     mCRS = QgsCoordinateReferenceSystem();
 
   mBlendMode = static_cast< QPainter::CompositionMode >( itemElem.attribute( "blendMode", "0" ).toUInt() );
@@ -449,7 +450,7 @@ bool QgsComposerMapGrid::readXML( const QDomElement& itemElem, const QDomDocumen
   {
     mGridAnnotationFont.fromString( itemElem.attribute( "annotationFont", "" ) );
   }
-  mGridAnnotationFontColor = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "annotationFontColor", "0,0,0,255" ) );
+  mGridAnnotationFontColor = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "annotationFontColor", "0,0,0,255" ) );
   mGridAnnotationPrecision = itemElem.attribute( "annotationPrecision", "3" ).toInt();
   int gridUnitInt =  itemElem.attribute( "unit", QString::number( MapUnit ) ).toInt();
   mGridUnit = ( gridUnitInt <= static_cast< int >( CM ) ) ? static_cast< GridUnit >( gridUnitInt ) : MapUnit;
@@ -473,7 +474,7 @@ QPolygonF QgsComposerMapGrid::scalePolygon( const QPolygonF &polygon, const doub
   return t.map( polygon );
 }
 
-void QgsComposerMapGrid::drawGridCRSTransform( QgsRenderContext &context, double dotsPerMM, QList< QPair< double, QLineF > > &horizontalLines,
+void QgsComposerMapGrid::drawGridCrsTransform( QgsRenderContext &context, double dotsPerMM, QList< QPair< double, QLineF > > &horizontalLines,
     QList< QPair< double, QLineF > > &verticalLines, bool calculateLinesOnly )
 {
   if ( !mComposerMap || !mEnabled )
@@ -491,7 +492,7 @@ void QgsComposerMapGrid::drawGridCRSTransform( QgsRenderContext &context, double
 
   if ( mTransformDirty )
   {
-    calculateCRSTransformLines();
+    calculateCrsTransformLines();
   }
 
   //draw lines
@@ -556,7 +557,7 @@ void QgsComposerMapGrid::drawGridCRSTransform( QgsRenderContext &context, double
   }
 }
 
-void QgsComposerMapGrid::calculateCRSTransformLines()
+void QgsComposerMapGrid::calculateCrsTransformLines()
 {
   QgsRectangle crsBoundingRect;
   QgsCoordinateTransform inverseTr;
@@ -567,18 +568,18 @@ void QgsComposerMapGrid::calculateCRSTransformLines()
 
   //calculate x grid lines
   mTransformedXLines.clear();
-  xGridLinesCRSTransform( crsBoundingRect, inverseTr, mTransformedXLines );
+  xGridLinesCrsTransform( crsBoundingRect, inverseTr, mTransformedXLines );
 
   //calculate y grid lines
   mTransformedYLines.clear();
-  yGridLinesCRSTransform( crsBoundingRect, inverseTr, mTransformedYLines );
+  yGridLinesCrsTransform( crsBoundingRect, inverseTr, mTransformedYLines );
 
   if ( mGridStyle == QgsComposerMapGrid::Cross || mGridStyle == QgsComposerMapGrid::Markers )
   {
     //cross or markers style - we also need to calculate intersections of lines
 
     //first convert lines to QgsGeometry
-    QList< QgsGeometry* > yLines;
+    QList< QgsGeometry > yLines;
     QList< QPair< double, QPolygonF > >::const_iterator yGridIt = mTransformedYLines.constBegin();
     for ( ; yGridIt != mTransformedYLines.constEnd(); ++yGridIt )
     {
@@ -589,7 +590,7 @@ void QgsComposerMapGrid::calculateCRSTransformLines()
       }
       yLines << QgsGeometry::fromPolyline( yLine );
     }
-    QList< QgsGeometry* > xLines;
+    QList< QgsGeometry > xLines;
     QList< QPair< double, QPolygonF > >::const_iterator xGridIt = mTransformedXLines.constBegin();
     for ( ; xGridIt != mTransformedXLines.constEnd(); ++xGridIt )
     {
@@ -603,34 +604,28 @@ void QgsComposerMapGrid::calculateCRSTransformLines()
 
     //now, loop through geometries and calculate intersection points
     mTransformedIntersections.clear();
-    QList< QgsGeometry* >::const_iterator yLineIt = yLines.constBegin();
+    QList< QgsGeometry >::const_iterator yLineIt = yLines.constBegin();
     for ( ; yLineIt != yLines.constEnd(); ++yLineIt )
     {
-      QList< QgsGeometry* >::const_iterator xLineIt = xLines.constBegin();
+      QList< QgsGeometry >::const_iterator xLineIt = xLines.constBegin();
       for ( ; xLineIt != xLines.constEnd(); ++xLineIt )
       {
         //look for intersections between lines
-        QgsGeometry* intersects = ( *yLineIt )->intersection(( *xLineIt ) );
-        if ( !intersects )
+        QgsGeometry intersects = ( *yLineIt ).intersection(( *xLineIt ) );
+        if ( intersects.isEmpty() )
           continue;
 
         //go through all intersections and draw grid markers/crosses
         int i = 0;
-        QgsPoint vertex = intersects->vertexAt( i );
+        QgsPoint vertex = intersects.vertexAt( i );
         while ( vertex != QgsPoint( 0, 0 ) )
         {
           mTransformedIntersections << vertex;
           i = i + 1;
-          vertex = intersects->vertexAt( i );
+          vertex = intersects.vertexAt( i );
         }
-        delete intersects;
       }
     }
-    //clean up
-    qDeleteAll( yLines );
-    yLines.clear();
-    qDeleteAll( xLines );
-    xLines.clear();
   }
 
   mTransformDirty = false;
@@ -674,9 +669,8 @@ void QgsComposerMapGrid::draw( QPainter* p )
   QgsRenderContext context = QgsRenderContext::fromMapSettings( ms );
   context.setForceVectorOutput( true );
   context.setPainter( p );
-  QgsExpressionContext* expressionContext = createExpressionContext();
-  context.setExpressionContext( *expressionContext );
-  delete expressionContext;
+  QgsExpressionContext expressionContext = createExpressionContext();
+  context.setExpressionContext( expressionContext );
 
   QList< QPair< double, QLineF > > verticalLines;
   QList< QPair< double, QLineF > > horizontalLines;
@@ -684,7 +678,7 @@ void QgsComposerMapGrid::draw( QPainter* p )
   //is grid in a different crs than map?
   if ( mGridUnit == MapUnit && mCRS.isValid() && mCRS != ms.destinationCrs() )
   {
-    drawGridCRSTransform( context, dotsPerMM, horizontalLines, verticalLines );
+    drawGridCrsTransform( context, dotsPerMM, horizontalLines, verticalLines );
   }
   else
   {
@@ -757,9 +751,9 @@ void QgsComposerMapGrid::drawGridNoTransform( QgsRenderContext &context, double 
           {
             //apply a threshold to avoid calculate point if the two points are very close together (can lead to artifacts)
             crossEnd1 = (( intersectionPoint - vIt->second.p1() ).manhattanLength() > 0.01 ) ?
-                        QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, vIt->second.p1(), mCrossLength ) : intersectionPoint;
+                        QgsSymbolLayerUtils::pointOnLineWithDistance( intersectionPoint, vIt->second.p1(), mCrossLength ) : intersectionPoint;
             crossEnd2 = (( intersectionPoint - vIt->second.p2() ).manhattanLength() > 0.01 ) ?
-                        QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, vIt->second.p2(), mCrossLength ) : intersectionPoint;
+                        QgsSymbolLayerUtils::pointOnLineWithDistance( intersectionPoint, vIt->second.p2(), mCrossLength ) : intersectionPoint;
             //draw line using coordinates scaled to dots
             drawGridLine( QLineF( crossEnd1  * dotsPerMM, crossEnd2  * dotsPerMM ), context );
           }
@@ -787,9 +781,9 @@ void QgsComposerMapGrid::drawGridNoTransform( QgsRenderContext &context, double 
         {
           //apply a threshold to avoid calculate point if the two points are very close together (can lead to artifacts)
           crossEnd1 = (( intersectionPoint - hIt->second.p1() ).manhattanLength() > 0.01 ) ?
-                      QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, hIt->second.p1(), mCrossLength ) : intersectionPoint;
+                      QgsSymbolLayerUtils::pointOnLineWithDistance( intersectionPoint, hIt->second.p1(), mCrossLength ) : intersectionPoint;
           crossEnd2 = (( intersectionPoint - hIt->second.p2() ).manhattanLength() > 0.01 )  ?
-                      QgsSymbolLayerV2Utils::pointOnLineWithDistance( intersectionPoint, hIt->second.p2(), mCrossLength ) : intersectionPoint;
+                      QgsSymbolLayerUtils::pointOnLineWithDistance( intersectionPoint, hIt->second.p2(), mCrossLength ) : intersectionPoint;
           //draw line using coordinates scaled to dots
           drawGridLine( QLineF( crossEnd1  * dotsPerMM, crossEnd2  * dotsPerMM ), context );
         }
@@ -1441,13 +1435,13 @@ QString QgsComposerMapGrid::gridAnnotationString( double value, QgsComposerMapGr
 {
   //check if we are using degrees (ie, geographic crs)
   bool geographic = false;
-  if ( mCRS.isValid() && mCRS.geographicFlag() )
+  if ( mCRS.isValid() && mCRS.isGeographic() )
   {
     geographic = true;
   }
   else if ( mComposerMap && mComposerMap->composition() )
   {
-    geographic = mComposerMap->composition()->mapSettings().destinationCrs().geographicFlag();
+    geographic = mComposerMap->composition()->mapSettings().destinationCrs().isGeographic();
   }
 
   if ( geographic && coord == QgsComposerMapGrid::Longitude &&
@@ -1726,7 +1720,7 @@ int QgsComposerMapGrid::yGridLines( QList< QPair< double, QLineF > >& lines ) co
   return 0;
 }
 
-int QgsComposerMapGrid::xGridLinesCRSTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const
+int QgsComposerMapGrid::xGridLinesCrsTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const
 {
   lines.clear();
   if ( !mComposerMap || mGridIntervalY <= 0.0 )
@@ -1743,7 +1737,7 @@ int QgsComposerMapGrid::xGridLinesCRSTransform( const QgsRectangle& bbox, const 
 
   bool crosses180 = false;
   bool crossed180 = false;
-  if ( mCRS.geographicFlag() && ( minX > maxX ) )
+  if ( mCRS.isGeographic() && ( minX > maxX ) )
   {
     //handle 180 degree longitude crossover
     crosses180 = true;
@@ -1802,7 +1796,7 @@ int QgsComposerMapGrid::xGridLinesCRSTransform( const QgsRectangle& bbox, const 
   return 0;
 }
 
-int QgsComposerMapGrid::yGridLinesCRSTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const
+int QgsComposerMapGrid::yGridLinesCrsTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const
 {
   lines.clear();
   if ( !mComposerMap || mGridIntervalX <= 0.0 )
@@ -1822,7 +1816,7 @@ int QgsComposerMapGrid::yGridLinesCRSTransform( const QgsRectangle& bbox, const 
 
   bool crosses180 = false;
   bool crossed180 = false;
-  if ( mCRS.geographicFlag() && ( bbox.xMinimum() > bbox.xMaximum() ) )
+  if ( mCRS.isGeographic() && ( bbox.xMinimum() > bbox.xMaximum() ) )
   {
     //handle 180 degree longitude crossover
     crosses180 = true;
@@ -2015,13 +2009,13 @@ QgsComposerMapGrid::BorderSide QgsComposerMapGrid::borderForLineCoord( QPointF p
   return distanceToSide.at( 0 ).second;
 }
 
-void QgsComposerMapGrid::setLineSymbol( QgsLineSymbolV2* symbol )
+void QgsComposerMapGrid::setLineSymbol( QgsLineSymbol* symbol )
 {
   delete mGridLineSymbol;
   mGridLineSymbol = symbol;
 }
 
-void QgsComposerMapGrid::setMarkerSymbol( QgsMarkerSymbolV2 *symbol )
+void QgsComposerMapGrid::setMarkerSymbol( QgsMarkerSymbol *symbol )
 {
   delete mGridMarkerSymbol;
   mGridMarkerSymbol = symbol;
@@ -2095,9 +2089,8 @@ void QgsComposerMapGrid::calculateMaxExtension( double& top, double& right, doub
   //setup render context
   QgsMapSettings ms = mComposerMap->composition()->mapSettings();
   QgsRenderContext context = QgsRenderContext::fromMapSettings( ms );
-  QgsExpressionContext* expressionContext = createExpressionContext();
-  context.setExpressionContext( *expressionContext );
-  delete expressionContext;
+  QgsExpressionContext expressionContext = createExpressionContext();
+  context.setExpressionContext( expressionContext );
 
   GridExtension extension;
 
@@ -2106,7 +2099,7 @@ void QgsComposerMapGrid::calculateMaxExtension( double& top, double& right, doub
   QList< QPair< double, QLineF > > horizontalLines;
   if ( mGridUnit == MapUnit && mCRS.isValid() && mCRS != ms.destinationCrs() )
   {
-    drawGridCRSTransform( context, 0, horizontalLines, verticalLines, false );
+    drawGridCrsTransform( context, 0, horizontalLines, verticalLines, false );
   }
   else
   {
@@ -2234,13 +2227,13 @@ QgsComposerMapGrid::FrameSideFlags QgsComposerMapGrid::frameSideFlags() const
   return mGridFrameSides;
 }
 
-QgsExpressionContext* QgsComposerMapGrid::createExpressionContext() const
+QgsExpressionContext QgsComposerMapGrid::createExpressionContext() const
 {
-  QgsExpressionContext* context = QgsComposerObject::createExpressionContext();
-  context->appendScope( new QgsExpressionContextScope( tr( "Grid" ) ) );
-  context->lastScope()->setVariable( "grid_number", 0 );
-  context->lastScope()->setVariable( "grid_axis", "x" );
-  context->setHighlightedVariables( QStringList() << "grid_number" << "grid_axis" );
+  QgsExpressionContext context = QgsComposerObject::createExpressionContext();
+  context.appendScope( new QgsExpressionContextScope( tr( "Grid" ) ) );
+  context.lastScope()->setVariable( "grid_number", 0 );
+  context.lastScope()->setVariable( "grid_axis", "x" );
+  context.setHighlightedVariables( QStringList() << "grid_number" << "grid_axis" );
   return context;
 }
 
@@ -2378,7 +2371,7 @@ int QgsComposerMapGrid::crsGridParams( QgsRectangle& crsRect, QgsCoordinateTrans
     QgsRectangle mapBoundingRect( mbr.left(), mbr.bottom(), mbr.right(), mbr.top() );
 
 
-    if ( mCRS.geographicFlag() )
+    if ( mCRS.isGeographic() )
     {
       //handle crossing the 180 degree longitude line
       QgsPoint lowerLeft( mapBoundingRect.xMinimum(), mapBoundingRect.yMinimum() );
@@ -2404,7 +2397,7 @@ int QgsComposerMapGrid::crsGridParams( QgsRectangle& crsRect, QgsCoordinateTrans
     }
 
     inverseTransform.setSourceCrs( mCRS );
-    inverseTransform.setDestCRS( mComposerMap->composition()->mapSettings().destinationCrs() );
+    inverseTransform.setDestinationCrs( mComposerMap->composition()->mapSettings().destinationCrs() );
   }
   catch ( QgsCsException & cse )
   {
@@ -2417,23 +2410,17 @@ int QgsComposerMapGrid::crsGridParams( QgsRectangle& crsRect, QgsCoordinateTrans
 
 QList<QPolygonF> QgsComposerMapGrid::trimLinesToMap( const QPolygonF& line, const QgsRectangle& rect )
 {
-  QgsGeometry* lineGeom = QgsGeometry::fromQPolygonF( line );
-  QgsGeometry* rectGeom = QgsGeometry::fromRect( rect );
+  QgsGeometry lineGeom = QgsGeometry::fromQPolygonF( line );
+  QgsGeometry rectGeom = QgsGeometry::fromRect( rect );
 
-  QgsGeometry* intersected = lineGeom->intersection( rectGeom );
-  QList<QgsGeometry*> intersectedParts = intersected->asGeometryCollection();
+  QgsGeometry intersected = lineGeom.intersection( rectGeom );
+  QList<QgsGeometry> intersectedParts = intersected.asGeometryCollection();
 
   QList<QPolygonF> trimmedLines;
-  QList<QgsGeometry*>::const_iterator geomIt = intersectedParts.constBegin();
+  QList<QgsGeometry>::const_iterator geomIt = intersectedParts.constBegin();
   for ( ; geomIt != intersectedParts.constEnd(); ++geomIt )
   {
-    trimmedLines << ( *geomIt )->asQPolygonF();
+    trimmedLines << ( *geomIt ).asQPolygonF();
   }
-
-  qDeleteAll( intersectedParts );
-  intersectedParts.clear();
-  delete intersected;
-  delete lineGeom;
-  delete rectGeom;
   return trimmedLines;
 }

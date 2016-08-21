@@ -62,6 +62,7 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
   mScale->setWhatsThis( tr( "Displays the current map scale" ) );
   mScale->setToolTip( tr( "Current map scale (formatted as x:y)" ) );
 
+<<<<<<< HEAD
   mLockLabel = new QLabel( this );
   mLockLabel->setFixedSize(16,16);
   mLockIcon = QgsApplication::getThemePixmap("mActionStatusLock.svg" );
@@ -70,6 +71,14 @@ QgsStatusBarScaleWidget::QgsStatusBarScaleWidget( QgsMapCanvas *canvas, QWidget 
         mLockLabel->size(),
         Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
   mLockLabel->setToolTip( tr( "Lock the scale to use magnifier tnd scroll wheel to zoom in or out." ) );
+=======
+  mLockButton = new QToolButton();
+  mLockButton->setIcon( QIcon( QgsApplication::getThemeIcon( "/lockedGray.svg" ) ) );
+  mLockButton->setToolTip( tr( "Lock the scale to use magnifier to zoom in or out." ) );
+  mLockButton->setCheckable( true );
+  mLockButton->setChecked( false );
+  mLockButton->setAutoRaise( true );
+>>>>>>> upstream/master
 
   // layout
   mLayout = new QHBoxLayout( this );

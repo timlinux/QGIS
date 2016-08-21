@@ -44,6 +44,7 @@ class QgsClipboard;
 class QgsComposer;
 class QgsComposerManager;
 class QgsComposerView;
+class QgsCustomDropHandler;
 class QgsStatusBarCoordinatesWidget;
 class QgsStatusBarMagnifierWidget;
 class QgsStatusBarScaleWidget;
@@ -74,7 +75,14 @@ class QgsUserInputDockWidget;
 class QgsVectorLayer;
 class QgsVectorLayerTools;
 class QgsWelcomePage;
-
+class QgsRasterLayer;
+class QgsPluginLayer;
+class QgsCoordinateReferenceSystem;
+class QgsFeatureStore;
+class QgsAuthManager;
+class QgsPluginManager;
+class QgsRuntimeProfiler;
+class QgsBookmarks;
 
 class QDomDocument;
 class QNetworkReply;
@@ -106,20 +114,16 @@ class QgsDiagramProperties;
 #include <QPointer>
 #include <QSslError>
 #include <QDateTime>
+#include <QStackedWidget>
 
 #include "qgsauthmanager.h"
 #include "qgsconfig.h"
 #include "qgsfeature.h"
-#include "qgsfeaturestore.h"
 #include "qgspoint.h"
-#include "qgsrasterlayer.h"
-#include "qgssnappingdialog.h"
-#include "qgspluginmanager.h"
 #include "qgsmessagebar.h"
-#include "qgsbookmarks.h"
+#include "qgsmimedatautils.h"
 #include "qgswelcomepageitemsmodel.h"
-#include "qgsruntimeprofiler.h"
-
+#include "qgsraster.h"
 
 #include "ui_qgisapp.h"
 
@@ -382,8 +386,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QAction *actionDuplicateLayer() { return mActionDuplicateLayer; }
     /** @note added in 2.4 */
     QAction *actionSetLayerScaleVisibility() { return mActionSetLayerScaleVisibility; }
-    QAction *actionSetLayerCRS() { return mActionSetLayerCRS; }
-    QAction *actionSetProjectCRSFromLayer() { return mActionSetProjectCRSFromLayer; }
+    QAction *actionSetLayerCrs() { return mActionSetLayerCRS; }
+    QAction *actionSetProjectCrsFromLayer() { return mActionSetProjectCRSFromLayer; }
     QAction *actionLayerProperties() { return mActionLayerProperties; }
     QAction *actionLayerSubsetString() { return mActionLayerSubsetString; }
     QAction *actionAddToOverview() { return mActionAddToOverview; }
@@ -421,7 +425,6 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QAction *actionShowPinnedLabels() { return mActionShowPinnedLabels; }
 
     //! Menus
-    Q_DECL_DEPRECATED QMenu *fileMenu() { return mProjectMenu; }
     QMenu *projectMenu() { return mProjectMenu; }
     QMenu *editMenu() { return mEditMenu; }
     QMenu *viewMenu() { return mViewMenu; }
@@ -492,7 +495,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! emit initializationCompleted signal
     void completeInitialization();
 
-    void emitCustomSrsValidation( QgsCoordinateReferenceSystem &crs );
+    void emitCustomCrsValidation( QgsCoordinateReferenceSystem &crs );
 
     QList<QgsDecorationItem*> decorationItems() { return mDecorationItems; }
     void addDecorationItem( QgsDecorationItem *item ) { mDecorationItems.append( item ); }
@@ -511,6 +514,15 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     /** Unregister a previously registered tab in the layer properties dialog */
     void unregisterMapLayerPropertiesFactory( QgsMapLayerConfigWidgetFactory* factory );
+
+    /** Register a new custom drop handler. */
+    void registerCustomDropHandler( QgsCustomDropHandler* handler );
+
+    /** Unregister a previously registered custom drop handler. */
+    void unregisterCustomDropHandler( QgsCustomDropHandler* handler );
+
+    /** Process the list of URIs that have been dropped in QGIS */
+    void handleDropUriList( const QgsMimeDataUtils::UriList& lst );
 
   public slots:
     void layerTreeViewDoubleClicked( const QModelIndex& index );
@@ -711,7 +723,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
   private slots:
     //! validate a SRS
-    void validateSrs( QgsCoordinateReferenceSystem &crs );
+    void validateCrs( QgsCoordinateReferenceSystem &crs );
 
     //! QGis Sponsors
     void sponsors();
@@ -761,9 +773,9 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! Zoom to nearest scale such that current layer is visible
     void zoomToLayerScale();
     //! Set CRS of a layer
-    void setLayerCRS();
+    void setLayerCrs();
     //! Assign layer CRS to project
-    void setProjectCRSFromLayer();
+    void setProjectCrsFromLayer();
 
     /** Zooms so that the pixels of the raster layer occupies exactly one screen pixel.
         Only works on raster layers*/
@@ -777,9 +789,9 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     void applyStyleToGroup();
 
     /** Set the CRS of the current legend group*/
-    void legendGroupSetCRS();
+    void legendGroupSetCrs();
     /** Set the WMS data of the current legend group*/
-    void legendGroupSetWMSData();
+    void legendGroupSetWmsData();
 
     //! zoom to extent of layer
     void zoomToLayerExtent();
@@ -1204,9 +1216,6 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! set the CAD dock widget visible
     void setCadDockVisible( bool visible );
 
-    /** Check if deprecated labels are used in project, and flag projects that use them */
-    void checkForDeprecatedLabelsInProject();
-
     //! save current vector layer
     void saveAsFile();
 
@@ -1245,7 +1254,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! Stops rendering of the main map
     void stopRendering();
 
-    void showStyleManagerV2();
+    void showStyleManager();
 
     void writeAnnotationItemsToProject( QDomDocument& doc );
 
@@ -1363,7 +1372,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     /** This signal is emitted when QGIS' initialization is complete */
     void initializationCompleted();
 
-    void customSrsValidation( QgsCoordinateReferenceSystem &crs );
+    void customCrsValidation( QgsCoordinateReferenceSystem &crs );
 
     /** This signal is emitted when a layer has been saved using save as
        @note added in version 2.7
@@ -1416,8 +1425,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! check to see if file is dirty and if so, prompt the user th save it
     bool saveDirty();
     /** Helper function to union several geometries together (used in function mergeSelectedFeatures)
-      @return 0 in case of error or if canceled */
-    QgsGeometry* unionGeometries( const QgsVectorLayer* vl, QgsFeatureList& featureList, bool &canceled );
+      @return empty geometry in case of error or if canceled */
+    QgsGeometry unionGeometries( const QgsVectorLayer* vl, QgsFeatureList& featureList, bool &canceled );
 
     /** Deletes all the composer objects and clears mPrintComposers*/
     void deletePrintComposers();
@@ -1455,7 +1464,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     void createOverview();
     void createCanvasTools();
     void createMapTips();
-    void updateCRSStatusBar();
+    void updateCrsStatusBar();
     void createDecorations();
 
     /** Do histogram stretch for singleband gray / multiband color rasters*/
@@ -1775,6 +1784,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QgsSnappingUtils* mSnappingUtils;
 
     QList<QgsMapLayerConfigWidgetFactory*> mMapLayerPanelFactories;
+
+    QList<QgsCustomDropHandler*> mCustomDropHandlers;
 
     QDateTime mProjectLastModified;
 

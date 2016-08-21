@@ -18,17 +18,17 @@
 #include "qgisapp.h"
 #include "qgsapplication.h"
 #include "qgsmapcanvas.h"
+#include "qgscomposermap.h"
 #include "qgscomposermapgrid.h"
 #include "qgscomposermapoverview.h"
 #include "qgscomposermapwidget.h"
 #include "qgscomposeritemwidget.h"
 #include "qgscomposition.h"
 #include "qgsmaplayerstylemanager.h"
-#include "qgsmaprenderer.h"
-#include "qgsstylev2.h"
-#include "qgssymbolv2.h"
-#include "qgssymbolv2selectordialog.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgsstyle.h"
+#include "qgssymbol.h"
+#include "qgssymbolselectordialog.h"
+#include "qgssymbollayerutils.h"
 #include "qgsvectorlayer.h"
 #include "qgsvectordataprovider.h"
 #include "qgsmaplayerregistry.h"
@@ -37,8 +37,8 @@
 #include "qgsexpressionbuilderdialog.h"
 #include "qgsgenericprojectionselector.h"
 #include "qgsproject.h"
-#include "qgsvisibilitypresetcollection.h"
-#include "qgsvisibilitypresets.h"
+#include "qgsmapthemecollection.h"
+#include "qgsmapthemes.h"
 #include "qgisgui.h"
 
 #include <QMessageBox>
@@ -128,7 +128,7 @@ QgsComposerMapWidget::QgsComposerMapWidget( QgsComposerMap* composerMap )
   // follow preset combo
   mFollowVisibilityPresetCombo->setModel( new QStringListModel( mFollowVisibilityPresetCombo ) );
   connect( mFollowVisibilityPresetCombo, SIGNAL( currentIndexChanged( int ) ), this, SLOT( followVisibilityPresetSelected( int ) ) );
-  connect( QgsProject::instance()->visibilityPresetCollection(), SIGNAL( presetsChanged() ),
+  connect( QgsProject::instance()->mapThemeCollection(), SIGNAL( presetsChanged() ),
            this, SLOT( onPresetsChanged() ) );
   onPresetsChanged();
 
@@ -136,7 +136,7 @@ QgsComposerMapWidget::QgsComposerMapWidget( QgsComposerMap* composerMap )
   QMenu* menuKeepLayers = new QMenu( this );
   mLayerListFromPresetButton->setMenu( menuKeepLayers );
   mLayerListFromPresetButton->setIcon( QgsApplication::getThemeIcon( "/mActionShowAllLayers.png" ) );
-  mLayerListFromPresetButton->setToolTip( tr( "Set layer list from a visibility preset" ) );
+  mLayerListFromPresetButton->setToolTip( tr( "Set layer list from a map theme" ) );
   connect( menuKeepLayers, SIGNAL( aboutToShow() ), this, SLOT( aboutToShowKeepLayersVisibilityPresetsMenu() ) );
 
   if ( composerMap )
@@ -152,11 +152,6 @@ QgsComposerMapWidget::QgsComposerMapWidget( QgsComposerMap* composerMap )
                this, SLOT( atlasLayerChanged( QgsVectorLayer* ) ) );
       connect( atlas, SIGNAL( toggled( bool ) ), this, SLOT( compositionAtlasToggled( bool ) ) );
 
-      // repopulate data defined buttons if atlas layer changes
-      connect( atlas, SIGNAL( coverageLayerChanged( QgsVectorLayer* ) ),
-               this, SLOT( populateDataDefinedButtons() ) );
-      connect( atlas, SIGNAL( toggled( bool ) ), this, SLOT( populateDataDefinedButtons() ) );
-
       compositionAtlasToggled( atlas->enabled() );
     }
 
@@ -166,37 +161,10 @@ QgsComposerMapWidget::QgsComposerMapWidget( QgsComposerMap* composerMap )
     connect( mOverviewFrameMapComboBox, SIGNAL( itemChanged( QgsComposerItem* ) ), this, SLOT( overviewMapChanged( QgsComposerItem* ) ) );
   }
 
-  //connections for data defined buttons
-  connect( mScaleDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mScaleDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mMapRotationDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mMapRotationDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mXMinDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mXMinDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mYMinDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mYMinDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mXMaxDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mXMaxDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mYMaxDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mYMaxDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mAtlasMarginDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mAtlasMarginDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mLayersDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mLayersDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
-  connect( mStylePresetsDDBtn, SIGNAL( dataDefinedChanged( const QString& ) ), this, SLOT( updateDataDefinedProperty() ) );
-  connect( mStylePresetsDDBtn, SIGNAL( dataDefinedActivated( bool ) ), this, SLOT( updateDataDefinedProperty() ) );
-
   updateGuiElements();
   loadGridEntries();
   loadOverviewEntries();
+  populateDataDefinedButtons();
   blockAllSignals( false );
 }
 
@@ -204,100 +172,33 @@ QgsComposerMapWidget::~QgsComposerMapWidget()
 {
 }
 
-static QgsExpressionContext _getExpressionContext( const void* context )
-{
-  const QgsComposerObject* composerObject = ( const QgsComposerObject* ) context;
-  if ( !composerObject )
-  {
-    return QgsExpressionContext();
-  }
-
-  QScopedPointer< QgsExpressionContext > expContext( composerObject->createExpressionContext() );
-  return QgsExpressionContext( *expContext );
-}
-
 void QgsComposerMapWidget::populateDataDefinedButtons()
 {
-  QgsVectorLayer* vl = atlasCoverageLayer();
-
-  Q_FOREACH ( QgsDataDefinedButton* button, findChildren< QgsDataDefinedButton* >() )
-  {
-    button->blockSignals( true );
-    button->registerGetExpressionContextCallback( &_getExpressionContext, mComposerMap );
-  }
-
-  //initialise buttons to use atlas coverage layer
-  mScaleDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapScale ),
-                     QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mMapRotationDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapRotation ),
-                           QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mXMinDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapXMin ),
-                    QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mYMinDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapYMin ),
-                    QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mXMaxDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapXMax ),
-                    QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mYMaxDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapYMax ),
-                    QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mAtlasMarginDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapAtlasMargin ),
-                           QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
-  mStylePresetsDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapStylePreset ),
-                            QgsDataDefinedButton::String, tr( "string matching a style preset name" ) );
-  mLayersDDBtn->init( vl, mComposerMap->dataDefinedProperty( QgsComposerObject::MapLayers ),
-                      QgsDataDefinedButton::String, tr( "list of map layer names separated by | characters" ) );
-
-  Q_FOREACH ( QgsDataDefinedButton* button, findChildren< QgsDataDefinedButton* >() )
-  {
-    button->blockSignals( false );
-  }
-}
-
-QgsComposerObject::DataDefinedProperty QgsComposerMapWidget::ddPropertyForWidget( QgsDataDefinedButton* widget )
-{
-  if ( widget == mScaleDDBtn )
-  {
-    return QgsComposerObject::MapScale;
-  }
-  else if ( widget == mMapRotationDDBtn )
-  {
-    return QgsComposerObject::MapRotation;
-  }
-  else if ( widget == mXMinDDBtn )
-  {
-    return QgsComposerObject::MapXMin;
-  }
-  else if ( widget == mYMinDDBtn )
-  {
-    return QgsComposerObject::MapYMin;
-  }
-  else if ( widget == mXMaxDDBtn )
-  {
-    return QgsComposerObject::MapXMax;
-  }
-  else if ( widget == mYMaxDDBtn )
-  {
-    return QgsComposerObject::MapYMax;
-  }
-  else if ( widget == mAtlasMarginDDBtn )
-  {
-    return QgsComposerObject::MapAtlasMargin;
-  }
-  else if ( widget == mStylePresetsDDBtn )
-  {
-    return QgsComposerObject::MapStylePreset;
-  }
-  else if ( widget == mLayersDDBtn )
-  {
-    return QgsComposerObject::MapLayers;
-  }
-  return QgsComposerObject::NoProperty;
+  registerDataDefinedButton( mScaleDDBtn, QgsComposerObject::MapScale,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mMapRotationDDBtn, QgsComposerObject::MapRotation,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mXMinDDBtn, QgsComposerObject::MapXMin,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mYMinDDBtn, QgsComposerObject::MapYMin,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mXMaxDDBtn, QgsComposerObject::MapXMax,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mYMaxDDBtn, QgsComposerObject::MapYMax,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mAtlasMarginDDBtn, QgsComposerObject::MapAtlasMargin,
+                             QgsDataDefinedButton::AnyType, QgsDataDefinedButton::doubleDesc() );
+  registerDataDefinedButton( mStylePresetsDDBtn, QgsComposerObject::MapStylePreset,
+                             QgsDataDefinedButton::String, tr( "string matching a style preset name" ) );
+  registerDataDefinedButton( mLayersDDBtn, QgsComposerObject::MapLayers,
+                             QgsDataDefinedButton::String, tr( "list of map layer names separated by | characters" ) );
 }
 
 void QgsComposerMapWidget::compositionAtlasToggled( bool atlasEnabled )
 {
   if ( atlasEnabled &&
        mComposerMap && mComposerMap->composition() && mComposerMap->composition()->atlasComposition().coverageLayer()
-       && mComposerMap->composition()->atlasComposition().coverageLayer()->wkbType() != QGis::WKBNoGeometry )
+       && mComposerMap->composition()->atlasComposition().coverageLayer()->wkbType() != QgsWkbTypes::NoGeometry )
   {
     mAtlasCheckBox->setEnabled( true );
   }
@@ -318,7 +219,7 @@ void QgsComposerMapWidget::aboutToShowKeepLayersVisibilityPresetsMenu()
     return;
 
   menu->clear();
-  Q_FOREACH ( const QString& presetName, QgsProject::instance()->visibilityPresetCollection()->presets() )
+  Q_FOREACH ( const QString& presetName, QgsProject::instance()->mapThemeCollection()->presets() )
   {
     menu->addAction( presetName, this, SLOT( keepLayersVisibilityPresetSelected() ) );
   }
@@ -358,7 +259,7 @@ void QgsComposerMapWidget::keepLayersVisibilityPresetSelected()
     return;
 
   QString presetName = action->text();
-  QStringList lst = QgsVisibilityPresets::instance()->orderedPresetVisibleLayers( presetName );
+  QStringList lst = QgsMapThemes::instance()->orderedPresetVisibleLayers( presetName );
   if ( mComposerMap )
   {
     mKeepLayerListCheckBox->setChecked( true );
@@ -366,7 +267,7 @@ void QgsComposerMapWidget::keepLayersVisibilityPresetSelected()
 
     mKeepLayerStylesCheckBox->setChecked( true );
 
-    mComposerMap->setLayerStyleOverrides( QgsProject::instance()->visibilityPresetCollection()->presetStyleOverrides( presetName ) );
+    mComposerMap->setLayerStyleOverrides( QgsProject::instance()->mapThemeCollection()->presetStyleOverrides( presetName ) );
 
     mComposerMap->cache();
     mComposerMap->update();
@@ -379,7 +280,7 @@ void QgsComposerMapWidget::onPresetsChanged()
   {
     QStringList lst;
     lst.append( tr( "(none)" ) );
-    lst += QgsProject::instance()->visibilityPresetCollection()->presets();
+    lst += QgsProject::instance()->mapThemeCollection()->presets();
     model->setStringList( lst );
 
     // select the previously selected item again
@@ -787,10 +688,10 @@ void QgsComposerMapWidget::toggleAtlasScalingOptionsByLayerType()
 
   switch ( coverageLayer->wkbType() )
   {
-    case QGis::WKBPoint:
-    case QGis::WKBPoint25D:
-    case QGis::WKBMultiPoint:
-    case QGis::WKBMultiPoint25D:
+    case QgsWkbTypes::Point:
+    case QgsWkbTypes::Point25D:
+    case QgsWkbTypes::MultiPoint:
+    case QgsWkbTypes::MultiPoint25D:
       //For point layers buffer setting makes no sense, so set "fixed scale" on and disable margin control
       mAtlasFixedScaleRadio->setChecked( true );
       mAtlasMarginRadio->setEnabled( false );
@@ -1177,7 +1078,7 @@ void QgsComposerMapWidget::initAnnotationDirectionBox( QComboBox* c, QgsComposer
 
 void QgsComposerMapWidget::atlasLayerChanged( QgsVectorLayer* layer )
 {
-  if ( !layer || layer->wkbType() == QGis::WKBNoGeometry )
+  if ( !layer || layer->wkbType() == QgsWkbTypes::NoGeometry )
   {
     //geometryless layer, disable atlas control
     mAtlasCheckBox->setChecked( false );
@@ -1574,8 +1475,8 @@ void QgsComposerMapWidget::updateGridLineSymbolMarker( const QgsComposerMapGrid*
 {
   if ( grid )
   {
-    QgsLineSymbolV2* nonConstSymbol = const_cast<QgsLineSymbolV2*>( grid->lineSymbol() ); //bad
-    QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( nonConstSymbol, mGridLineStyleButton->iconSize() );
+    QgsLineSymbol* nonConstSymbol = const_cast<QgsLineSymbol*>( grid->lineSymbol() ); //bad
+    QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( nonConstSymbol, mGridLineStyleButton->iconSize() );
     mGridLineStyleButton->setIcon( icon );
   }
 }
@@ -1584,8 +1485,8 @@ void QgsComposerMapWidget::updateGridMarkerSymbolMarker( const QgsComposerMapGri
 {
   if ( grid )
   {
-    QgsMarkerSymbolV2* nonConstSymbol = const_cast<QgsMarkerSymbolV2*>( grid->markerSymbol() ); //bad
-    QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( nonConstSymbol, mGridMarkerStyleButton->iconSize() );
+    QgsMarkerSymbol* nonConstSymbol = const_cast<QgsMarkerSymbol*>( grid->markerSymbol() ); //bad
+    QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( nonConstSymbol, mGridMarkerStyleButton->iconSize() );
     mGridMarkerStyleButton->setIcon( icon );
   }
 }
@@ -1598,8 +1499,8 @@ void QgsComposerMapWidget::on_mGridLineStyleButton_clicked()
     return;
   }
 
-  QgsLineSymbolV2* newSymbol = static_cast<QgsLineSymbolV2*>( grid->lineSymbol()->clone() );
-  QgsSymbolV2SelectorDialog d( newSymbol, QgsStyleV2::defaultStyle(), nullptr, this );
+  QgsLineSymbol* newSymbol = static_cast<QgsLineSymbol*>( grid->lineSymbol()->clone() );
+  QgsSymbolSelectorDialog d( newSymbol, QgsStyle::defaultStyle(), nullptr, this );
 
   if ( d.exec() == QDialog::Accepted )
   {
@@ -1623,8 +1524,8 @@ void QgsComposerMapWidget::on_mGridMarkerStyleButton_clicked()
     return;
   }
 
-  QgsMarkerSymbolV2* newSymbol = static_cast<QgsMarkerSymbolV2*>( grid->markerSymbol()->clone() );
-  QgsSymbolV2SelectorDialog d( newSymbol, QgsStyleV2::defaultStyle(), nullptr, this );
+  QgsMarkerSymbol* newSymbol = static_cast<QgsMarkerSymbol*>( grid->markerSymbol()->clone() );
+  QgsSymbolSelectorDialog d( newSymbol, QgsStyle::defaultStyle(), nullptr, this );
 
   if ( d.exec() == QDialog::Accepted )
   {
@@ -2060,9 +1961,9 @@ void QgsComposerMapWidget::on_mAnnotationFormatButton_clicked()
     return;
   }
 
-  QScopedPointer< QgsExpressionContext> expressionContext( grid->createExpressionContext() );
+  QgsExpressionContext expressionContext = grid->createExpressionContext();
 
-  QgsExpressionBuilderDialog exprDlg( nullptr, grid->annotationExpression(), this, "generic", *expressionContext );
+  QgsExpressionBuilderDialog exprDlg( nullptr, grid->annotationExpression(), this, "generic", expressionContext );
   exprDlg.setWindowTitle( tr( "Expression based annotation" ) );
 
   if ( exprDlg.exec() == QDialog::Accepted )
@@ -2463,8 +2364,8 @@ void QgsComposerMapWidget::updateOverviewFrameSymbolMarker( const QgsComposerMap
 {
   if ( overview )
   {
-    QgsFillSymbolV2* nonConstSymbol = const_cast<QgsFillSymbolV2*>( overview->frameSymbol() ); //bad
-    QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( nonConstSymbol, mOverviewFrameStyleButton->iconSize() );
+    QgsFillSymbol* nonConstSymbol = const_cast<QgsFillSymbol*>( overview->frameSymbol() ); //bad
+    QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( nonConstSymbol, mOverviewFrameStyleButton->iconSize() );
     mOverviewFrameStyleButton->setIcon( icon );
   }
 }
@@ -2565,8 +2466,8 @@ void QgsComposerMapWidget::on_mOverviewFrameStyleButton_clicked()
     return;
   }
 
-  QgsFillSymbolV2* newSymbol = static_cast<QgsFillSymbolV2*>( overview->frameSymbol()->clone() );
-  QgsSymbolV2SelectorDialog d( newSymbol, QgsStyleV2::defaultStyle(), nullptr, this );
+  QgsFillSymbol* newSymbol = static_cast<QgsFillSymbol*>( overview->frameSymbol()->clone() );
+  QgsSymbolSelectorDialog d( newSymbol, QgsStyle::defaultStyle(), nullptr, this );
 
   if ( d.exec() == QDialog::Accepted )
   {

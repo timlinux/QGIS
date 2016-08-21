@@ -24,6 +24,7 @@
 #include <QStandardItem>
 #include <QTextStream>
 #include "qgsfeature.h"
+#include "qgsfeatureiterator.h"
 #include "qgsfield.h"
 #include "qgssearchquerybuilder.h"
 #include "qgsexpression.h"
@@ -31,7 +32,7 @@
 #include "qgslogger.h"
 
 QgsSearchQueryBuilder::QgsSearchQueryBuilder( QgsVectorLayer* layer,
-    QWidget *parent, const Qt::WindowFlags& fl )
+    QWidget *parent, Qt::WindowFlags fl )
     : QDialog( parent, fl )
     , mLayer( layer )
 {
@@ -76,7 +77,7 @@ void QgsSearchQueryBuilder::populateFields()
   const QgsFields& fields = mLayer->fields();
   for ( int idx = 0; idx < fields.count(); ++idx )
   {
-    QString fieldName = fields[idx].name();
+    QString fieldName = fields.at( idx ).name();
     mFieldMap[fieldName] = idx;
     QStandardItem *myItem = new QStandardItem( fieldName );
     myItem->setEditable( false );

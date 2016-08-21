@@ -15,38 +15,37 @@ SET(QGIS_GUI_SRCS
   symbology-ng/characterwidget.cpp
   symbology-ng/qgsarrowsymbollayerwidget.cpp
   symbology-ng/qgsbrushstylecombobox.cpp
-  symbology-ng/qgscategorizedsymbolrendererv2widget.cpp
+  symbology-ng/qgscategorizedsymbolrendererwidget.cpp
   symbology-ng/qgscolorrampcombobox.cpp
-  symbology-ng/qgscptcitycolorrampv2dialog.cpp
+  symbology-ng/qgscptcitycolorrampdialog.cpp
   symbology-ng/qgsdashspacedialog.cpp
-  symbology-ng/qgsdatadefinedsymboldialog.cpp
-  symbology-ng/qgsellipsesymbollayerv2widget.cpp
+  symbology-ng/qgsellipsesymbollayerwidget.cpp
   symbology-ng/qgsgraduatedhistogramwidget.cpp
-  symbology-ng/qgsgraduatedsymbolrendererv2widget.cpp
+  symbology-ng/qgsgraduatedsymbolrendererwidget.cpp
   symbology-ng/qgsheatmaprendererwidget.cpp
   symbology-ng/qgsinvertedpolygonrendererwidget.cpp
   symbology-ng/qgslayerpropertieswidget.cpp
   symbology-ng/qgsnullsymbolrendererwidget.cpp
   symbology-ng/qgspenstylecombobox.cpp
   symbology-ng/qgspointdisplacementrendererwidget.cpp
-  symbology-ng/qgsrendererv2propertiesdialog.cpp
-  symbology-ng/qgsrendererv2widget.cpp
-  symbology-ng/qgsrulebasedrendererv2widget.cpp
-  symbology-ng/qgssinglesymbolrendererv2widget.cpp
+  symbology-ng/qgsrendererpropertiesdialog.cpp
+  symbology-ng/qgsrendererwidget.cpp
+  symbology-ng/qgsrulebasedrendererwidget.cpp
+  symbology-ng/qgssinglesymbolrendererwidget.cpp
   symbology-ng/qgssizescalewidget.cpp
   symbology-ng/qgssmartgroupeditordialog.cpp
-  symbology-ng/qgsstylev2exportimportdialog.cpp
-  symbology-ng/qgsstylev2groupselectiondialog.cpp
-  symbology-ng/qgsstylev2managerdialog.cpp
+  symbology-ng/qgsstyleexportimportdialog.cpp
+  symbology-ng/qgsstylegroupselectiondialog.cpp
+  symbology-ng/qgsstylemanagerdialog.cpp
   symbology-ng/qgssvgselectorwidget.cpp
-  symbology-ng/qgssymbollayerv2widget.cpp
-  symbology-ng/qgssymbollevelsv2dialog.cpp
+  symbology-ng/qgssymbollayerwidget.cpp
+  symbology-ng/qgssymbollevelsdialog.cpp
   symbology-ng/qgssymbolslistwidget.cpp
-  symbology-ng/qgssymbolv2selectordialog.cpp
-  symbology-ng/qgsvectorcolorbrewercolorrampv2dialog.cpp
+  symbology-ng/qgssymbolselectordialog.cpp
+  symbology-ng/qgsvectorcolorbrewercolorrampdialog.cpp
   symbology-ng/qgsvectorfieldsymbollayerwidget.cpp
-  symbology-ng/qgsvectorgradientcolorrampv2dialog.cpp
-  symbology-ng/qgsvectorrandomcolorrampv2dialog.cpp
+  symbology-ng/qgsvectorgradientcolorrampdialog.cpp
+  symbology-ng/qgsvectorrandomcolorrampdialog.cpp
 
   effects/qgseffectdrawmodecombobox.cpp
   effects/qgseffectstackpropertieswidget.cpp
@@ -184,7 +183,6 @@ SET(QGIS_GUI_SRCS
   qgscodeeditorsql.cpp
   qgscollapsiblegroupbox.cpp
   qgscolorbutton.cpp
-  qgscolorbuttonv2.cpp
   qgscolordialog.cpp
   qgscolorschemelist.cpp
   qgscolorswatchgrid.cpp
@@ -196,6 +194,7 @@ SET(QGIS_GUI_SRCS
   qgsconfigureshortcutsdialog.cpp
   qgscredentialdialog.cpp
   qgscursors.cpp
+  qgscustomdrophandler.cpp
   qgsdatadefinedbutton.cpp
   qgsdatumtransformdialog.cpp
   qgsdetaileditemdata.cpp
@@ -269,7 +268,6 @@ SET(QGIS_GUI_SRCS
   qgsnewnamedialog.cpp
   qgsnewvectorlayerdialog.cpp
   qgsnewgeopackagelayerdialog.cpp
-  qgsnumericsortlistviewitem.cpp
   qgsoptionsdialogbase.cpp
   qgsorderbydialog.cpp
   qgsowssourceselect.cpp
@@ -301,6 +299,7 @@ SET(QGIS_GUI_SRCS
   qgstablewidgetitem.cpp
   qgstextannotationitem.cpp
   qgstrackedvectorlayertools.cpp
+  qgstreewidgetitem.cpp
   qgsunitselectionwidget.cpp
   qgsuserinputdockwidget.cpp
   qgsvariableeditorwidget.cpp
@@ -344,7 +343,6 @@ SET(QGIS_GUI_MOC_HDRS
   qgscodeeditorsql.h
   qgscollapsiblegroupbox.h
   qgscolorbutton.h
-  qgscolorbuttonv2.h
   qgscolordialog.h
   qgscolorschemelist.h
   qgscolorswatchgrid.h
@@ -447,6 +445,7 @@ SET(QGIS_GUI_MOC_HDRS
   qgsslider.h
   qgssqlcomposerdialog.h
   qgssublayersdialog.h
+  qgstreewidgetitem.h
   qgsunitselectionwidget.h
   qgsuserinputdockwidget.h
   qgsvariableeditorwidget.h
@@ -466,38 +465,37 @@ SET(QGIS_GUI_MOC_HDRS
   symbology-ng/characterwidget.h
   symbology-ng/qgsarrowsymbollayerwidget.h
   symbology-ng/qgsbrushstylecombobox.h
-  symbology-ng/qgscategorizedsymbolrendererv2widget.h
+  symbology-ng/qgscategorizedsymbolrendererwidget.h
   symbology-ng/qgscolorrampcombobox.h
-  symbology-ng/qgscptcitycolorrampv2dialog.h
+  symbology-ng/qgscptcitycolorrampdialog.h
   symbology-ng/qgsdashspacedialog.h
-  symbology-ng/qgsdatadefinedsymboldialog.h
-  symbology-ng/qgsellipsesymbollayerv2widget.h
+  symbology-ng/qgsellipsesymbollayerwidget.h
   symbology-ng/qgsgraduatedhistogramwidget.h
-  symbology-ng/qgsgraduatedsymbolrendererv2widget.h
+  symbology-ng/qgsgraduatedsymbolrendererwidget.h
   symbology-ng/qgsheatmaprendererwidget.h
   symbology-ng/qgsinvertedpolygonrendererwidget.h
   symbology-ng/qgslayerpropertieswidget.h
   symbology-ng/qgsnullsymbolrendererwidget.h
   symbology-ng/qgspenstylecombobox.h
   symbology-ng/qgspointdisplacementrendererwidget.h
-  symbology-ng/qgsrendererv2propertiesdialog.h
-  symbology-ng/qgsrendererv2widget.h
-  symbology-ng/qgsrulebasedrendererv2widget.h
-  symbology-ng/qgssinglesymbolrendererv2widget.h
+  symbology-ng/qgsrendererpropertiesdialog.h
+  symbology-ng/qgsrendererwidget.h
+  symbology-ng/qgsrulebasedrendererwidget.h
+  symbology-ng/qgssinglesymbolrendererwidget.h
   symbology-ng/qgssizescalewidget.h
   symbology-ng/qgssmartgroupeditordialog.h
-  symbology-ng/qgsstylev2exportimportdialog.h
-  symbology-ng/qgsstylev2groupselectiondialog.h
-  symbology-ng/qgsstylev2managerdialog.h
+  symbology-ng/qgsstyleexportimportdialog.h
+  symbology-ng/qgsstylegroupselectiondialog.h
+  symbology-ng/qgsstylemanagerdialog.h
   symbology-ng/qgssvgselectorwidget.h
-  symbology-ng/qgssymbollayerv2widget.h
-  symbology-ng/qgssymbollevelsv2dialog.h
+  symbology-ng/qgssymbollayerwidget.h
+  symbology-ng/qgssymbollevelsdialog.h
   symbology-ng/qgssymbolslistwidget.h
-  symbology-ng/qgssymbolv2selectordialog.h
-  symbology-ng/qgsvectorcolorbrewercolorrampv2dialog.h
+  symbology-ng/qgssymbolselectordialog.h
+  symbology-ng/qgsvectorcolorbrewercolorrampdialog.h
   symbology-ng/qgsvectorfieldsymbollayerwidget.h
-  symbology-ng/qgsvectorgradientcolorrampv2dialog.h
-  symbology-ng/qgsvectorrandomcolorrampv2dialog.h
+  symbology-ng/qgsvectorgradientcolorrampdialog.h
+  symbology-ng/qgsvectorrandomcolorrampdialog.h
 
   attributetable/qgsattributetabledelegate.h
   attributetable/qgsattributetablefiltermodel.h
@@ -622,6 +620,7 @@ SET(QGIS_GUI_HDRS
   qgsattributeforminterface.h
   qgsattributeformlegacyinterface.h
   qgscursors.h
+  qgscustomdrophandler.h
   qgsdetaileditemdata.h
   qgsexpressionbuilderdialog.h
   qgsfiledropedit.h
@@ -634,7 +633,6 @@ SET(QGIS_GUI_HDRS
   qgsmaplayerconfigwidgetfactory.h
   qgsmapmouseevent.h
   qgsmaptip.h
-  qgsnumericsortlistviewitem.h
   qgsrubberband.h
   qgssqlcomposerdialog.h
   qgssvgannotationitem.h
@@ -708,6 +706,25 @@ IF (WITH_TOUCH)
 ENDIF (WITH_TOUCH)
 
 SET(QGIS_GUI_UI_HDRS
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthauthoritieseditor.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthcertificateinfo.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthcertificatemanager.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthconfigedit.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthconfigeditor.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthconfigidedit.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthconfigselect.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthconfiguriedit.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsautheditorwidgets.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthidentitieseditor.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthimportcertdialog.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthimportidentitydialog.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthmethodplugins.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthserverseditor.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthsslconfigwidget.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthsslerrorsdialog.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthsslimportdialog.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthsslimporterrors.h
+  ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsauthtrustedcasdialog.h
   ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgscredentialdialog.h
   ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsdetaileditemwidgetbase.h
   ${CMAKE_CURRENT_BINARY_DIR}/../ui/ui_qgsexpressionbuilderdialogbase.h

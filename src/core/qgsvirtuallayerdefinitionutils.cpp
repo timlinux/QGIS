@@ -18,6 +18,7 @@ email                : hugo dot mercier at oslandia dot com
 #include "qgsvectorlayer.h"
 #include "qgsvectordataprovider.h"
 #include "qgsmaplayerregistry.h"
+#include "qgsvirtuallayerdefinition.h"
 
 QgsVirtualLayerDefinition QgsVirtualLayerDefinitionUtils::fromJoinedLayer( QgsVectorLayer* layer )
 {
@@ -27,7 +28,7 @@ QgsVirtualLayerDefinition QgsVirtualLayerDefinitionUtils::fromJoinedLayer( QgsVe
   QStringList columns;
 
   // look for the uid
-  const QgsFields& fields = layer->dataProvider()->fields();
+  QgsFields fields = layer->dataProvider()->fields();
   {
     QgsAttributeList pk = layer->dataProvider()->pkAttributeIndexes();
     if ( pk.size() == 1 )

@@ -74,6 +74,14 @@ class QgsField
     QString comment() const;
 
     /**
+     * Returns if this field is numeric. Any integer or floating point type
+     * will return true for this.
+     *
+     * @note added in QGIS 2.18
+     */
+    bool isNumeric() const;
+
+    /**
      * Set the field name.
      * @param name Name of the field
      */
@@ -262,7 +270,7 @@ class QgsFields
 %End
 
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& at( int i ) const /Factory/;
+    QgsField at( int i ) const /Factory/;
 %MethodCode
   if ( a0 < 0 || a0 >= sipCpp->count() )
   {
@@ -276,7 +284,7 @@ class QgsFields
 %End
 
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& field( int fieldIdx ) const /Factory/;
+    QgsField field( int fieldIdx ) const /Factory/;
 %MethodCode
   if ( a0 < 0 || a0 >= sipCpp->count() )
   {
@@ -290,7 +298,7 @@ class QgsFields
 %End
 
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& field( const QString& name ) const /Factory/;
+    QgsField field( const QString& name ) const /Factory/;
 %MethodCode
   int fieldIdx = sipCpp->indexFromName(*a0);
   if (fieldIdx == -1)

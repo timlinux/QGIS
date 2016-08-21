@@ -86,11 +86,11 @@ class CORE_EXPORT QgsAggregateCalculator
     /** Constructor for QgsAggregateCalculator.
      * @param layer vector layer to calculate aggregate from
      */
-    QgsAggregateCalculator( QgsVectorLayer* layer );
+    QgsAggregateCalculator( const QgsVectorLayer* layer );
 
     /** Returns the associated vector layer.
      */
-    QgsVectorLayer* layer() const;
+    const QgsVectorLayer* layer() const;
 
     /** Sets all aggregate parameters from a parameter bundle.
      * @param parameters aggregate parameters
@@ -140,7 +140,7 @@ class CORE_EXPORT QgsAggregateCalculator
   private:
 
     //! Source layer
-    QgsVectorLayer* mLayer;
+    const QgsVectorLayer* mLayer;
 
     //! Filter expression, or empty for no filter
     QString mFilterExpression;
@@ -160,8 +160,6 @@ class CORE_EXPORT QgsAggregateCalculator
 
     static QVariant calculateDateTimeAggregate( QgsFeatureIterator& fit, int attr, QgsExpression* expression,
         QgsExpressionContext* context, QgsDateTimeStatisticalSummary::Statistic stat );
-
-    QgsExpressionContext* createContext() const;
 
     static QVariant calculate( Aggregate aggregate, QgsFeatureIterator& fit, QVariant::Type resultType,
                                int attr, QgsExpression* expression,

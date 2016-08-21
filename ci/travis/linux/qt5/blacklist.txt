@@ -1,10 +1,8 @@
 PyQgsComposerPicture
-PyQgsGeometryTest
 PyQgsJSONUtils
 PyQgsLocalServer
 PyQgsMapUnitScale
 PyQgsPalLabelingServer
-PyQgsRelationEditWidget
 PyQgsServer
 PyQgsServerAccessControl
 PyQgsSipCoverage

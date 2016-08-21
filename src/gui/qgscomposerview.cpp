@@ -47,11 +47,12 @@
 #include "qgsmapcanvas.h" //for QgsMapCanvas::WheelAction
 #include "qgscursors.h"
 #include "qgscomposerutils.h"
+#include "qgscomposerattributetable.h"
 
 #define MIN_VIEW_SCALE 0.05
 #define MAX_VIEW_SCALE 1000.0
 
-QgsComposerView::QgsComposerView( QWidget* parent, const char* name, const Qt::WindowFlags& f )
+QgsComposerView::QgsComposerView( QWidget* parent, const char* name, Qt::WindowFlags f )
     : QGraphicsView( parent )
     , mCurrentTool( Select )
     , mPreviousTool( Select )
@@ -554,7 +555,7 @@ void QgsComposerView::addShape( Tool currentTool )
     QgsComposerShape* composerShape = new QgsComposerShape( mRubberBandItem->transform().dx(), mRubberBandItem->transform().dy(), mRubberBandItem->rect().width(), mRubberBandItem->rect().height(), composition() );
     composerShape->setShapeType( shape );
     //new shapes use symbol v2 by default
-    composerShape->setUseSymbolV2( true );
+    composerShape->setUseSymbol( true );
     composition()->addComposerShape( composerShape );
     removeRubberBand();
 
@@ -1504,10 +1505,10 @@ void QgsComposerView::copyItems( ClipboardMode mode )
       QSet<QgsComposerItem*>::iterator it = groupedItems.begin();
       for ( ; it != groupedItems.end(); ++it )
       {
-        ( *it )->writeXML( documentElement, doc );
+        ( *it )->writeXml( documentElement, doc );
       }
     }
-    ( *itemIt )->writeXML( documentElement, doc );
+    ( *itemIt )->writeXml( documentElement, doc );
     if ( mode == ClipboardModeCut )
     {
       composition()->removeComposerItem( *itemIt );
@@ -1564,7 +1565,7 @@ void QgsComposerView::pasteItems( PasteMode mode )
           pt = mapToScene( viewport()->rect().center() );
         }
         bool pasteInPlace = ( mode == PasteModeInPlace );
-        composition()->addItemsFromXML( docElem, doc, nullptr, true, &pt, pasteInPlace );
+        composition()->addItemsFromXml( docElem, doc, nullptr, true, &pt, pasteInPlace );
       }
     }
   }

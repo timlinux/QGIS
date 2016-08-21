@@ -166,7 +166,7 @@ class QgsCptCityColorRampItem : QgsCptCityDataItem
     virtual int leafCount() const;
 
     // --- New virtual methods for layer item derived classes ---
-    const QgsCptCityColorRampV2& ramp() const;
+    const QgsCptCityColorRamp& ramp() const;
     QIcon icon();
     QIcon icon( QSize size );
     void init();
@@ -231,7 +231,7 @@ class QgsCptCitySelectionItem : QgsCptCityCollectionItem
     QStringList selectionsList() const;
 
   protected:
-    void parseXML();
+    void parseXml();
 };
 
 /** An "All ramps item", which contains all items in a flat hierarchy */

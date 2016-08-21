@@ -20,12 +20,13 @@
 #include "qgsfield.h"
 #include "qgsvectorlayer.h"
 #include "qgsproject.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgsgeometry.h"
 #include "qgscomposition.h"
 #include "qgscomposeritem.h"
 #include "qgsatlascomposition.h"
 #include "qgsapplication.h"
+#include "qgsmapsettings.h"
 #include <QSettings>
 #include <QDir>
 
@@ -216,6 +217,21 @@ QgsExpressionContext::QgsExpressionContext( const QgsExpressionContext& other )
   mCachedValues = other.mCachedValues;
 }
 
+QgsExpressionContext& QgsExpressionContext::operator=( QgsExpressionContext && other )
+{
+  if ( this != &other )
+  {
+    qDeleteAll( mStack );
+    // move the stack over
+    mStack = other.mStack;
+    other.mStack.clear();
+
+    mHighlightedVariables = other.mHighlightedVariables;
+    mCachedValues = other.mCachedValues;
+  }
+  return *this;
+}
+
 QgsExpressionContext& QgsExpressionContext::operator=( const QgsExpressionContext & other )
 {
   qDeleteAll( mStack );
@@ -309,6 +325,19 @@ int QgsExpressionContext::indexOfScope( QgsExpressionContextScope* scope ) const
     return -1;
 
   return mStack.indexOf( scope );
+}
+
+int QgsExpressionContext::indexOfScope( const QString& scopeName ) const
+{
+  int index = 0;
+  Q_FOREACH ( const QgsExpressionContextScope* scope, mStack )
+  {
+    if ( scope->name() == scopeName )
+      return index;
+
+    index++;
+  }
+  return -1;
 }
 
 QStringList QgsExpressionContext::variableNames() const
@@ -496,9 +525,9 @@ QgsExpressionContextScope* QgsExpressionContextUtils::globalScope()
   }
 
   //add some extra global variables
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_version", QGis::QGIS_VERSION, true ) );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_version_no", QGis::QGIS_VERSION_INT, true ) );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_release_name", QGis::QGIS_RELEASE_NAME, true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_version", Qgis::QGIS_VERSION, true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_version_no", Qgis::QGIS_VERSION_INT, true ) );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_release_name", Qgis::QGIS_RELEASE_NAME, true ) );
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_platform", QgsApplication::platform(), true ) );
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "qgis_os_name", QgsApplication::osName(), true ) );
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "user_account_name", QgsApplication::userLoginName(), true ) );
@@ -557,7 +586,7 @@ class GetNamedProjectColor : public QgsScopedExpressionFunction
       for ( QStringList::iterator it = colorStrings.begin();
             it != colorStrings.end(); ++it )
       {
-        QColor color = QgsSymbolLayerV2Utils::decodeColor( *it );
+        QColor color = QgsSymbolLayerUtils::decodeColor( *it );
         QString label;
         if ( colorLabels.length() > colorIndex )
         {
@@ -748,14 +777,13 @@ QgsExpressionContextScope* QgsExpressionContextUtils::mapSettingsScope( const Qg
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "map_scale", mapSettings.scale(), true ) );
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "map_extent_width", mapSettings.extent().width(), true ) );
   scope->addVariable( QgsExpressionContextScope::StaticVariable( "map_extent_height", mapSettings.extent().height(), true ) );
-  QgsGeometry* centerPoint = QgsGeometry::fromPoint( mapSettings.visibleExtent().center() );
-  scope->addVariable( QgsExpressionContextScope::StaticVariable( "map_extent_center", QVariant::fromValue( *centerPoint ), true ) );
-  delete centerPoint;
+  QgsGeometry centerPoint = QgsGeometry::fromPoint( mapSettings.visibleExtent().center() );
+  scope->addVariable( QgsExpressionContextScope::StaticVariable( "map_extent_center", QVariant::fromValue( centerPoint ), true ) );
 
   return scope;
 }
 
-QgsExpressionContextScope* QgsExpressionContextUtils::updateSymbolScope( const QgsSymbolV2* symbol, QgsExpressionContextScope* symbolScope )
+QgsExpressionContextScope* QgsExpressionContextUtils::updateSymbolScope( const QgsSymbol* symbol, QgsExpressionContextScope* symbolScope )
 {
   if ( !symbolScope )
     return nullptr;
@@ -763,7 +791,7 @@ QgsExpressionContextScope* QgsExpressionContextUtils::updateSymbolScope( const Q
   symbolScope->addVariable( QgsExpressionContextScope::StaticVariable( QgsExpressionContext::EXPR_SYMBOL_COLOR, symbol ? symbol->color() : QColor(), true ) );
 
   double angle = 0.0;
-  const QgsMarkerSymbolV2* markerSymbol = dynamic_cast< const QgsMarkerSymbolV2* >( symbol );
+  const QgsMarkerSymbol* markerSymbol = dynamic_cast< const QgsMarkerSymbol* >( symbol );
   if ( markerSymbol )
   {
     angle = markerSymbol->angle();
@@ -871,7 +899,7 @@ QgsExpressionContextScope* QgsExpressionContextUtils::atlasScope( const QgsAtlas
     scope->setFeature( atlasFeature );
     scope->addVariable( QgsExpressionContextScope::StaticVariable( "atlas_feature", QVariant::fromValue( atlasFeature ), true ) );
     scope->addVariable( QgsExpressionContextScope::StaticVariable( "atlas_featureid", atlasFeature.id(), true ) );
-    scope->addVariable( QgsExpressionContextScope::StaticVariable( "atlas_geometry", QVariant::fromValue( *atlasFeature.constGeometry() ), true ) );
+    scope->addVariable( QgsExpressionContextScope::StaticVariable( "atlas_geometry", QVariant::fromValue( atlasFeature.geometry() ), true ) );
   }
 
   return scope;

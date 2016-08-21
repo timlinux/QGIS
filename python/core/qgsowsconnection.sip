@@ -1,4 +1,4 @@
-class QgsOWSConnection : QObject
+class QgsOwsConnection : QObject
 {
 %TypeHeaderCode
 #include <qgsowsconnection.h>
@@ -10,10 +10,10 @@ class QgsOWSConnection : QObject
      * @param theService service name: WMS,WFS,WCS
      * @param theConnName connection name
      */
-    QgsOWSConnection( const QString & theService, const QString & theConnName );
+    QgsOwsConnection( const QString & theService, const QString & theConnName );
 
     //! Destructor
-    ~QgsOWSConnection();
+    ~QgsOwsConnection();
 
     /** Returns the list of connections for the specified service */
     static QStringList connectionList( const QString & theService );
@@ -28,7 +28,7 @@ class QgsOWSConnection : QObject
 
     QString mConnName;
     /** Returns the connection uri */
-    QgsDataSourceURI uri() const;
+    QgsDataSourceUri uri() const;
     QString mConnectionInfo;
 
     //! @deprecated use mConnectionInfo instead

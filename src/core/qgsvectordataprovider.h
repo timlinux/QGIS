@@ -26,8 +26,6 @@ class QTextCodec;
 #include "qgis.h"
 #include "qgsdataprovider.h"
 #include "qgsfeature.h"
-#include "qgsfield.h"
-#include "qgsrectangle.h"
 #include "qgsaggregatecalculator.h"
 
 typedef QList<int> QgsAttributeList;
@@ -73,24 +71,16 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
       AddAttributes =                               1 <<  3,
       /** Allows deletion of attributes (fields) */
       DeleteAttributes =                            1 <<  4,
-      /** DEPRECATED - do not use */
-      SaveAsShapefile =                             1 <<  5,
       /** Allows creation of spatial index */
       CreateSpatialIndex =                          1 <<  6,
       /** Fast access to features using their ID */
       SelectAtId =                                  1 <<  7,
       /** Allows modifications of geometries */
       ChangeGeometries =                            1 <<  8,
-      /** DEPRECATED - do not use */
-      SelectGeometryAtId =                          1 <<  9,
-      /** DEPRECATED - do not use */
-      RandomSelectGeometryAtId =                    1 << 10,
-      /** DEPRECATED - do not use */
-      SequentialSelectGeometryAtId =                1 << 11,
-      /** DEPRECATED - do not use */
-      CreateAttributeIndex =                        1 << 12,
       /** Allows user to select encoding */
       SelectEncoding =                              1 << 13,
+      /** DEPRECATED - do not use */
+      CreateAttributeIndex =                        1 << 12,
       /** Supports simplification of geometries on provider side according to a distance tolerance */
       SimplifyGeometries =                          1 << 14,
       /** Supports topological simplification of geometries on provider side according to a distance tolerance */
@@ -106,6 +96,8 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
       /** Supports renaming attributes (fields). Added in QGIS 2.16 */
       RenameAttributes =                            1 << 19,
     };
+
+    Q_DECLARE_FLAGS( Capabilities, Capability )
 
     /** Bitmask of all provider's editing capabilities */
     const static int EditingCapabilities = AddFeatures | DeleteFeatures |
@@ -148,14 +140,15 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
 
     /**
      * Query the provider for features specified in request.
+     * @param request feature request describing parameters of features to return
+     * @returns iterator for matching features from provider
      */
-    virtual QgsFeatureIterator getFeatures( const QgsFeatureRequest& request = QgsFeatureRequest() ) = 0;
+    virtual QgsFeatureIterator getFeatures( const QgsFeatureRequest& request = QgsFeatureRequest() ) const = 0;
 
     /**
-     * Get feature type.
-     * @return int representing the feature type
+     * Returns the geometry type which is returned by this layer
      */
-    virtual QGis::WkbType geometryType() const = 0;
+    virtual QgsWkbTypes::Type wkbType() const = 0;
 
     /**
      * Number of features in the layer
@@ -164,12 +157,9 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     virtual long featureCount() const = 0;
 
     /**
-     * Return a map of indexes with field names for this layer
-     * @return map of fields
-     * @see QgsFields
+     * Returns the fields associated with this data provider.
      */
-    // TODO QGIS 3: return by value
-    virtual const QgsFields &fields() const = 0;
+    virtual QgsFields fields() const = 0;
 
     /**
      * Return a short comment for the data that this provider is
@@ -185,7 +175,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * and maximal values. If provider has facilities to retrieve minimal
      * value directly, override this function.
      */
-    virtual QVariant minimumValue( int index );
+    virtual QVariant minimumValue( int index ) const;
 
     /**
      * Returns the maximum value of an attribute
@@ -195,7 +185,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * and maximal values. If provider has facilities to retrieve maximal
      * value directly, override this function.
      */
-    virtual QVariant maximumValue( int index );
+    virtual QVariant maximumValue( int index ) const;
 
     /**
      * Return unique values of an attribute
@@ -205,7 +195,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      *
      * Default implementation simply iterates the features
      */
-    virtual void uniqueValues( int index, QList<QVariant> &uniqueValues, int limit = -1 );
+    virtual void uniqueValues( int index, QList<QVariant> &uniqueValues, int limit = -1 ) const;
 
     /** Calculates an aggregated value from the layer's features. The base implementation does nothing,
      * but subclasses can override this method to handoff calculation of aggregates to the provider.
@@ -221,7 +211,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
                                 int index,
                                 const QgsAggregateCalculator::AggregateParameters& parameters,
                                 QgsExpressionContext* context,
-                                bool& ok );
+                                bool& ok ) const;
 
     /**
      * Returns the possible enum values of an attribute. Returns an empty stringlist if a provider does not support enum types
@@ -229,7 +219,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
      * @param index the index of the attribute
      * @param enumList reference to the list to fill
      */
-    virtual void enumValues( int index, QStringList& enumList ) { Q_UNUSED( index ); enumList.clear(); }
+    virtual void enumValues( int index, QStringList& enumList ) const { Q_UNUSED( index ); enumList.clear(); }
 
     /**
      * Adds a list of features
@@ -287,7 +277,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     /**
      * Returns the default value for field specified by @c fieldId
      */
-    virtual QVariant defaultValue( int fieldId );
+    virtual QVariant defaultValue( int fieldId ) const;
 
     /**
      * Changes geometries of existing features
@@ -307,12 +297,12 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     /** Create an attribute index on the datasource*/
     virtual bool createAttributeIndex( int field );
 
-    /** Returns a bitmask containing the supported capabilities
-        Note, some capabilities may change depending on whether
+    /** Returns flags containing the supported capabilities
+        @note, some capabilities may change depending on whether
         a spatial filter is active on this provider, so it may
         be prudent to check this value per intended operation.
      */
-    virtual int capabilities() const;
+    virtual Capabilities capabilities() const;
 
     /**
      *  Returns the above in friendly format.
@@ -342,12 +332,12 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     /**
      * Return list of indexes to fetch all attributes in nextFeature()
      */
-    virtual QgsAttributeList attributeIndexes();
+    virtual QgsAttributeList attributeIndexes() const;
 
     /**
      * Return list of indexes of fields that make up the primary key
      */
-    virtual QgsAttributeList pkAttributeIndexes() { return QgsAttributeList(); }
+    virtual QgsAttributeList pkAttributeIndexes() const { return QgsAttributeList(); }
 
     /**
      * Return list of indexes to names for QgsPalLabeling fix
@@ -392,12 +382,12 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     virtual bool doesStrictFeatureTypeCheck() const { return true;}
 
     /** Returns a list of available encodings */
-    static const QStringList &availableEncodings();
+    static QStringList availableEncodings();
 
     /**
      * Provider has errors to report
      */
-    bool hasErrors();
+    bool hasErrors() const;
 
     /**
      * Clear recorded errors
@@ -407,14 +397,14 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     /**
      * Get recorded errors
      */
-    QStringList errors();
+    QStringList errors() const;
 
 
     /**
      * It returns false by default.
      * Must be implemented by providers that support saving and loading styles to db returning true
      */
-    virtual bool isSaveAndLoadStyleToDBSupported() { return false; }
+    virtual bool isSaveAndLoadStyleToDBSupported() const { return false; }
 
     static QVariant convertValue( QVariant::Type type, const QString& value );
 
@@ -446,10 +436,12 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
 
   protected:
     void clearMinMaxCache();
-    void fillMinMaxCache();
 
-    bool mCacheMinMaxDirty;
-    QMap<int, QVariant> mCacheMinValues, mCacheMaxValues;
+    //! Populates the cache of minimum and maximum attribute values.
+    void fillMinMaxCache() const;
+
+    mutable bool mCacheMinMaxDirty;
+    mutable QMap<int, QVariant> mCacheMinValues, mCacheMaxValues;
 
     /** Encoding */
     QTextCodec* mEncoding;
@@ -467,7 +459,7 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
 
     /** Converts the geometry to the provider type if possible / necessary
     @return the converted geometry or nullptr if no conversion was necessary or possible*/
-    QgsGeometry* convertToProviderType( const QgsGeometry* geom ) const;
+    QgsGeometry* convertToProviderType( const QgsGeometry& geom ) const;
 
   private:
     /** Old notation **/
@@ -484,6 +476,8 @@ class CORE_EXPORT QgsVectorDataProvider : public QgsDataProvider
     virtual void setTransaction( QgsTransaction* /*transaction*/ ) {}
 
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS( QgsVectorDataProvider::Capabilities )
 
 
 #endif

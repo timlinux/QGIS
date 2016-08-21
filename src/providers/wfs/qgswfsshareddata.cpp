@@ -27,6 +27,7 @@
 #include "qgsvectorfilewriter.h"
 #include "qgsproviderregistry.h"
 #include "qgsslconnect.h"
+#include "qgslogger.h"
 
 #include <cpl_vsi.h>
 #include <cpl_conv.h>
@@ -273,7 +274,7 @@ bool QgsWFSSharedData::createCache()
     mCacheTablename = CPLGetBasename( vsimemFilename.toStdString().c_str() );
     VSIUnlink( vsimemFilename.toStdString().c_str() );
     QgsVectorFileWriter* writer = new QgsVectorFileWriter( vsimemFilename, "",
-        cacheFields, QGis::WKBPolygon, nullptr, "SpatiaLite", datasourceOptions, layerOptions );
+        cacheFields, QgsWkbTypes::Polygon, QgsCoordinateReferenceSystem(), "SpatiaLite", datasourceOptions, layerOptions );
     if ( writer->hasError() == QgsVectorFileWriter::NoError )
     {
       delete writer;
@@ -455,7 +456,7 @@ bool QgsWFSSharedData::createCache()
 
   // Some pragmas to speed-up writing. We don't need much integrity guarantee
   // regarding crashes, since this is a temporary DB
-  QgsDataSourceURI dsURI;
+  QgsDataSourceUri dsURI;
   dsURI.setDatabase( mCacheDbname );
   dsURI.setDataSource( "", mCacheTablename, geometryFieldname, "", fidName );
   QStringList pragmas;
@@ -516,7 +517,7 @@ int QgsWFSSharedData::registerToCache( QgsWFSFeatureIterator* iterator, QgsRecta
       // If the requested bbox is inside an already cached rect that didn't
       // hit the download limit, then we can reuse the cached features without
       // issuing a new request.
-      if ( mRegions[id].geometry()->boundingBox().contains( rect ) &&
+      if ( mRegions[id].geometry().boundingBox().contains( rect ) &&
            !mRegions[id].attributes().value( 0 ).toBool() )
       {
         QgsDebugMsg( "Cached features already cover this area of interest" );
@@ -527,7 +528,7 @@ int QgsWFSSharedData::registerToCache( QgsWFSFeatureIterator* iterator, QgsRecta
       // On the other hand, if the requested bbox is inside an already cached rect,
       // that hit the download limit, our larger bbox will hit it too, so no need
       // to re-issue a new request either.
-      if ( rect.contains( mRegions[id].geometry()->boundingBox() ) &&
+      if ( rect.contains( mRegions[id].geometry().boundingBox() ) &&
            mRegions[id].attributes().value( 0 ).toBool() )
       {
         QgsDebugMsg( "Current request is larger than a smaller request that hit the download limit, so no server download needed." );
@@ -581,7 +582,7 @@ QSet<QString> QgsWFSSharedData::getExistingCachedGmlIds( const QVector<QgsWFSFea
   bool first = true;
   QSet<QString> setExistingGmlIds;
 
-  const QgsFields & dataProviderFields = mCacheDataProvider->fields();
+  QgsFields dataProviderFields = mCacheDataProvider->fields();
   const int gmlidIdx = dataProviderFields.indexFromName( QgsWFSConstants::FIELD_GMLID );
 
   // To avoid excessive memory consumption in expression building, do not
@@ -632,7 +633,7 @@ QSet<QString> QgsWFSSharedData::getExistingCachedMD5( const QVector<QgsWFSFeatur
   bool first = true;
   QSet<QString> setExistingMD5;
 
-  const QgsFields & dataProviderFields = mCacheDataProvider->fields();
+  QgsFields dataProviderFields = mCacheDataProvider->fields();
   const int md5Idx = dataProviderFields.indexFromName( QgsWFSConstants::FIELD_MD5 );
 
   // To avoid excessive memory consumption in expression building, do not
@@ -685,7 +686,7 @@ QString QgsWFSSharedData::findGmlId( QgsFeatureId fid )
   QgsFeatureRequest request;
   request.setFilterFid( fid );
 
-  const QgsFields & dataProviderFields = mCacheDataProvider->fields();
+  QgsFields dataProviderFields = mCacheDataProvider->fields();
   int gmlidIdx = dataProviderFields.indexFromName( QgsWFSConstants::FIELD_GMLID );
 
   QgsAttributeList attList;
@@ -742,9 +743,8 @@ bool QgsWFSSharedData::changeGeometryValues( const QgsGeometryMap &geometry_map 
       newAttrMap[idx] = QString( array.toHex().data() );
       newChangedAttrMap[ iter.key()] = newAttrMap;
 
-      QgsGeometry* polyBoudingBox = QgsGeometry::fromRect( iter.value().boundingBox() );
-      newGeometryMap[ iter.key()] = *polyBoudingBox;
-      delete polyBoudingBox;
+      QgsGeometry polyBoudingBox = QgsGeometry::fromRect( iter.value().boundingBox() );
+      newGeometryMap[ iter.key()] = polyBoudingBox;
     }
     else
     {
@@ -765,7 +765,7 @@ bool QgsWFSSharedData::changeAttributeValues( const QgsChangedAttributesMap &att
   if ( !mCacheDataProvider )
     return false;
 
-  const QgsFields & dataProviderFields = mCacheDataProvider->fields();
+  QgsFields dataProviderFields = mCacheDataProvider->fields();
   QgsChangedAttributesMap newMap;
   for ( QgsChangedAttributesMap::const_iterator iter = attr_map.begin(); iter != attr_map.end(); ++iter )
   {
@@ -812,7 +812,7 @@ void QgsWFSSharedData::serializeFeatures( QVector<QgsWFSFeatureGmlIdPair>& featu
   }
 
   QgsFeatureList featureListToCache;
-  const QgsFields & dataProviderFields = mCacheDataProvider->fields();
+  QgsFields dataProviderFields = mCacheDataProvider->fields();
   int gmlidIdx = dataProviderFields.indexFromName( QgsWFSConstants::FIELD_GMLID );
   Q_ASSERT( gmlidIdx >= 0 );
   int genCounterIdx = dataProviderFields.indexFromName( QgsWFSConstants::FIELD_GEN_COUNTER );
@@ -869,21 +869,21 @@ void QgsWFSSharedData::serializeFeatures( QVector<QgsWFSFeatureGmlIdPair>& featu
     cachedFeature.initAttributes( dataProviderFields.size() );
 
     //copy the geometry
-    const QgsGeometry* geometry = gmlFeature.constGeometry();
-    if ( !mGeometryAttribute.isEmpty() && geometry )
+    QgsGeometry geometry = gmlFeature.geometry();
+    if ( !mGeometryAttribute.isEmpty() && !geometry.isEmpty() )
     {
-      const unsigned char *geom = geometry->asWkb();
-      int geomSize = geometry->wkbSize();
+      const unsigned char *geom = geometry.asWkb();
+      int geomSize = geometry.wkbSize();
       QByteArray array(( const char* )geom, geomSize );
 
       cachedFeature.setAttribute( hexwkbGeomIdx, QVariant( QString( array.toHex().data() ) ) );
 
-      QgsRectangle bBox( geometry->boundingBox() );
+      QgsRectangle bBox( geometry.boundingBox() );
       if ( localComputedExtent.isNull() )
         localComputedExtent = bBox;
       else
         localComputedExtent.combineExtentWith( bBox );
-      QgsGeometry* polyBoundingBox = QgsGeometry::fromRect( bBox );
+      QgsGeometry polyBoundingBox = QgsGeometry::fromRect( bBox );
       cachedFeature.setGeometry( polyBoundingBox );
     }
     else
@@ -1009,9 +1009,9 @@ void QgsWFSSharedData::endOfDownload( bool success, int featureCount,
       {
         // Grow the extent by ~ 50 km (completely arbitrary number if you wonder!)
         // so that it is sufficiently zoomed out
-        if ( mSourceCRS.mapUnits() == QGis::Meters )
+        if ( mSourceCRS.mapUnits() == QgsUnitTypes::DistanceMeters )
           mComputedExtent.grow( 50. * 1000. );
-        else if ( mSourceCRS.mapUnits() == QGis::Degrees )
+        else if ( mSourceCRS.mapUnits() == QgsUnitTypes::DistanceDegrees )
           mComputedExtent.grow( 50. / 110 );
         QgsMessageLog::logMessage( tr( "Layer extent reported by the server is not correct. "
                                        "You may need to zoom on layer and then zoom out to see all features" ), tr( "WFS" ) );
@@ -1194,7 +1194,7 @@ QgsGmlStreamingParser* QgsWFSSharedData::createParser()
 
 
 QgsWFSFeatureHitsRequest::QgsWFSFeatureHitsRequest( QgsWFSDataSourceURI& uri )
-    : QgsWFSRequest( uri.uri() )
+    : QgsWfsRequest( uri.uri() )
 {
 }
 
@@ -1260,7 +1260,7 @@ QString QgsWFSFeatureHitsRequest::errorMessageWithReason( const QString& reason 
 
 
 QgsWFSSingleFeatureRequest::QgsWFSSingleFeatureRequest( QgsWFSSharedData* shared )
-    : QgsWFSRequest( shared->mURI.uri() ), mShared( shared )
+    : QgsWfsRequest( shared->mURI.uri() ), mShared( shared )
 {
 }
 
@@ -1302,10 +1302,10 @@ QgsRectangle QgsWFSSingleFeatureRequest::getExtent()
     {
       QgsGmlStreamingParser::QgsGmlFeaturePtrGmlIdPair& featPair = featurePtrList[i];
       QgsFeature f( *( featPair.first ) );
-      const QgsGeometry* geometry = f.constGeometry();
-      if ( geometry )
+      QgsGeometry geometry = f.geometry();
+      if ( !geometry.isEmpty() )
       {
-        extent = geometry->boundingBox();
+        extent = geometry.boundingBox();
       }
       delete featPair.first;
     }

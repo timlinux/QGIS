@@ -19,27 +19,26 @@
 #define QGSPOINTDISPLACEMENTRENDERERWIDGET_H
 
 #include "ui_qgspointdisplacementrendererwidgetbase.h"
-#include "qgsrendererv2widget.h"
+#include "qgsrendererwidget.h"
 
 class QgsPointDisplacementRenderer;
 
 /** \ingroup gui
  * \class QgsPointDisplacementRendererWidget
  */
-class GUI_EXPORT QgsPointDisplacementRendererWidget: public QgsRendererV2Widget, private Ui::QgsPointDisplacementRendererWidgetBase
+class GUI_EXPORT QgsPointDisplacementRendererWidget: public QgsRendererWidget, private Ui::QgsPointDisplacementRendererWidgetBase
 {
     Q_OBJECT
   public:
-    static QgsRendererV2Widget* create( QgsVectorLayer* layer, QgsStyleV2* style, QgsFeatureRendererV2* renderer );
-    QgsPointDisplacementRendererWidget( QgsVectorLayer* layer, QgsStyleV2* style, QgsFeatureRendererV2* renderer );
+    static QgsRendererWidget* create( QgsVectorLayer* layer, QgsStyle* style, QgsFeatureRenderer* renderer );
+    QgsPointDisplacementRendererWidget( QgsVectorLayer* layer, QgsStyle* style, QgsFeatureRenderer* renderer );
     ~QgsPointDisplacementRendererWidget();
 
-    QgsFeatureRendererV2* renderer() override;
+    QgsFeatureRenderer* renderer() override;
     void setMapCanvas( QgsMapCanvas* canvas ) override;
 
   private:
     QgsPointDisplacementRenderer* mRenderer;
-    QgsRendererV2Widget* mEmbeddedRendererWidget;
 
     void blockAllSignals( bool block );
     void updateCenterIcon();
@@ -60,6 +59,9 @@ class GUI_EXPORT QgsPointDisplacementRendererWidget: public QgsRendererV2Widget,
     void on_mMaxScaleDenominatorEdit_textChanged( const QString & text );
     void on_mCenterSymbolPushButton_clicked();
     void on_mRendererSettingsButton_clicked();
+    void updateCenterSymbolFromWidget();
+    void cleanUpSymbolSelector( QgsPanelWidget* container );
+    void updateRendererFromWidget();
 };
 
 #endif // QGSPOINTDISPLACEMENTRENDERERWIDGET_H

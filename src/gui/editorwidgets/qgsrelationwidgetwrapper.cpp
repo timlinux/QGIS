@@ -18,6 +18,7 @@
 #include "qgsrelationeditorwidget.h"
 #include "qgsattributeeditorcontext.h"
 #include "qgsproject.h"
+#include "qgsrelationmanager.h"
 
 #include <QWidget>
 
@@ -43,6 +44,20 @@ void QgsRelationWidgetWrapper::setVisible( bool visible )
 {
   if ( mWidget )
     mWidget->setVisible( visible );
+}
+
+bool QgsRelationWidgetWrapper::showLabel() const
+{
+  if ( mWidget )
+    return mWidget->showLabel();
+  else
+    return false;
+}
+
+void QgsRelationWidgetWrapper::setShowLabel( bool showLabel )
+{
+  if ( mWidget )
+    mWidget->setShowLabel( showLabel );
 }
 
 void QgsRelationWidgetWrapper::initWidget( QWidget* editor )

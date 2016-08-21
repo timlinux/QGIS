@@ -21,6 +21,7 @@
 #include "qgsexpressionbuilderdialog.h"
 #include "qgsowsconnection.h"
 #include "qgsnetworkaccessmanager.h"
+#include "qgslogger.h"
 
 #include <QMessageBox>
 
@@ -34,7 +35,7 @@ QgsAfsSourceSelect::QgsAfsSourceSelect( QWidget* parent, Qt::WindowFlags fl, boo
   }
 }
 
-bool QgsAfsSourceSelect::connectToService( const QgsOWSConnection &connection )
+bool QgsAfsSourceSelect::connectToService( const QgsOwsConnection &connection )
 {
   QString errorTitle, errorMessage;
   QVariantMap serviceInfoMap = QgsArcGisRestUtils::getServiceInfo( connection.uri().param( "url" ), errorTitle, errorMessage );
@@ -87,7 +88,7 @@ bool QgsAfsSourceSelect::connectToService( const QgsOWSConnection &connection )
   return true;
 }
 
-void QgsAfsSourceSelect::buildQuery( const QgsOWSConnection &connection, const QModelIndex& index )
+void QgsAfsSourceSelect::buildQuery( const QgsOwsConnection &connection, const QModelIndex& index )
 {
   if ( !index.isValid() )
   {
@@ -97,7 +98,7 @@ void QgsAfsSourceSelect::buildQuery( const QgsOWSConnection &connection, const Q
   QString id = index.sibling( index.row(), 0 ).data().toString();
 
   // Query available fields
-  QgsDataSourceURI ds = connection.uri();
+  QgsDataSourceUri ds = connection.uri();
   QString url = ds.param( "url" ) + "/" + id;
   ds.removeParam( "url" );
   ds.setParam( "url", url );
@@ -121,13 +122,13 @@ void QgsAfsSourceSelect::buildQuery( const QgsOWSConnection &connection, const Q
   }
 }
 
-QString QgsAfsSourceSelect::getLayerURI( const QgsOWSConnection& connection,
+QString QgsAfsSourceSelect::getLayerURI( const QgsOwsConnection& connection,
     const QString& layerTitle, const QString& /*layerName*/,
     const QString& crs,
     const QString& filter,
     const QgsRectangle& bBox ) const
 {
-  QgsDataSourceURI ds = connection.uri();
+  QgsDataSourceUri ds = connection.uri();
   QString url = ds.param( "url" ) + "/" + layerTitle;
   ds.removeParam( "url" );
   ds.setParam( "url", url );

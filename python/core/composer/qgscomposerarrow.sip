@@ -149,14 +149,14 @@ class QgsComposerArrow: QgsComposerItem
      * @see lineSymbol
      * @note added in 2.5
      */
-    void setLineSymbol( QgsLineSymbolV2* symbol /Transfer/ );
+    void setLineSymbol( QgsLineSymbol* symbol /Transfer/ );
 
     /** Returns the line symbol used for drawing the line portion of the arrow
      * @returns line symbol
      * @see setLineSymbol
      * @note added in 2.5
      */
-    QgsLineSymbolV2* lineSymbol();
+    QgsLineSymbol* lineSymbol();
 
     /** Returns marker mode, which controls how the arrow endpoints are drawn
      * @returns marker mode
@@ -174,11 +174,11 @@ class QgsComposerArrow: QgsComposerItem
      * @param elem is DOM element corresponding to 'Composer' tag
      * @param doc document
      */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const;
 
     /** Sets state from DOM document
      * @param itemElem is DOM node corresponding to item tag
      * @param doc is the document to read
      */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc );
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc );
 };

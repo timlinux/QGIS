@@ -18,14 +18,13 @@
 #ifndef QGSDIAGRAMPROPERTIES_H
 #define QGSDIAGRAMPROPERTIES_H
 
-#include "qgssymbolv2.h"
 #include <QDialog>
 #include <ui_qgsdiagrampropertiesbase.h>
 
 class QgsVectorLayer;
 class QgsMapCanvas;
 
-class APP_EXPORT QgsDiagramProperties : public QWidget, private Ui::QgsDiagramPropertiesBase
+class APP_EXPORT QgsDiagramProperties : public QWidget, private Ui::QgsDiagramPropertiesBase, private QgsExpressionContextGenerator
 {
     Q_OBJECT
 
@@ -61,10 +60,12 @@ class APP_EXPORT QgsDiagramProperties : public QWidget, private Ui::QgsDiagramPr
   private:
     // Keeps track of the diagram type to properly save / restore settings when the diagram type combo box is set to no diagram.
     QString mDiagramType;
-    QScopedPointer< QgsMarkerSymbolV2 > mSizeLegendSymbol;
+    QScopedPointer< QgsMarkerSymbol > mSizeLegendSymbol;
 
     QString guessLegendText( const QString &expression );
     QgsMapCanvas *mMapCanvas;
+
+    QgsExpressionContext createExpressionContext() const override;
 };
 
 #endif // QGSDIAGRAMPROPERTIES_H

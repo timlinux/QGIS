@@ -17,6 +17,7 @@
 #include "qgsfieldcalculator.h"
 #include "qgsdistancearea.h"
 #include "qgsexpression.h"
+#include "qgsfeatureiterator.h"
 #include "qgsmapcanvas.h"
 #include "qgsproject.h"
 #include "qgsvectordataprovider.h"
@@ -163,7 +164,7 @@ void QgsFieldCalculator::accept()
 
   QString calcString = builder->expressionText();
   QgsExpression exp( calcString );
-  exp.setGeomCalculator( myDa );
+  exp.setGeomCalculator( &myDa );
   exp.setDistanceUnits( QgsProject::instance()->distanceUnits() );
   exp.setAreaUnits( QgsProject::instance()->areaUnits() );
 
@@ -233,7 +234,7 @@ void QgsFieldCalculator::accept()
 
       for ( int idx = 0; idx < fields.count(); ++idx )
       {
-        if ( fields[idx].name() == mOutputFieldNameLineEdit->text() )
+        if ( fields.at( idx ).name() == mOutputFieldNameLineEdit->text() )
         {
           mAttributeId = idx;
           break;
@@ -295,7 +296,7 @@ void QgsFieldCalculator::accept()
         if ( value.canConvert< QgsGeometry >() )
         {
           QgsGeometry geom = value.value< QgsGeometry >();
-          mVectorLayer->changeGeometry( feature.id(), &geom );
+          mVectorLayer->changeGeometry( feature.id(), geom );
         }
       }
       else
@@ -445,7 +446,7 @@ void QgsFieldCalculator::populateFields()
     }
   }
 
-  if ( mVectorLayer->geometryType() != QGis::NoGeometry )
+  if ( mVectorLayer->geometryType() != QgsWkbTypes::NullGeometry )
   {
     mExistingFieldComboBox->addItem( tr( "<geometry>" ), "geom" );
 

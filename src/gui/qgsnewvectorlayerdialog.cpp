@@ -23,7 +23,6 @@
 #include "qgsproviderregistry.h"
 #include "qgsvectordataprovider.h"
 #include "qgsvectorfilewriter.h"
-#include "qgscrscache.h"
 
 #include <QPushButton>
 #include <QComboBox>
@@ -32,7 +31,7 @@
 #include <QFileDialog>
 
 
-QgsNewVectorLayerDialog::QgsNewVectorLayerDialog( QWidget *parent, const Qt::WindowFlags& fl )
+QgsNewVectorLayerDialog::QgsNewVectorLayerDialog( QWidget *parent, Qt::WindowFlags fl )
     : QDialog( parent, fl )
 {
   setupUi( this );
@@ -86,7 +85,7 @@ QgsNewVectorLayerDialog::QgsNewVectorLayerDialog( QWidget *parent, const Qt::Win
 
   mAttributeView->addTopLevelItem( new QTreeWidgetItem( QStringList() << "id" << "Integer" << "10" << "" ) );
 
-  QgsCoordinateReferenceSystem defaultCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( settings.value( "/Projections/layerDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString() );
+  QgsCoordinateReferenceSystem defaultCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( settings.value( "/Projections/layerDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString() );
   defaultCrs.validate();
   mCrsSelector->setCrs( defaultCrs );
 
@@ -144,21 +143,21 @@ void QgsNewVectorLayerDialog::on_mTypeBox_currentIndexChanged( int index )
   }
 }
 
-QGis::WkbType QgsNewVectorLayerDialog::selectedType() const
+QgsWkbTypes::Type QgsNewVectorLayerDialog::selectedType() const
 {
   if ( mPointRadioButton->isChecked() )
   {
-    return QGis::WKBPoint;
+    return QgsWkbTypes::Point;
   }
   else if ( mLineRadioButton->isChecked() )
   {
-    return QGis::WKBLineString;
+    return QgsWkbTypes::LineString;
   }
   else if ( mPolygonRadioButton->isChecked() )
   {
-    return QGis::WKBPolygon;
+    return QgsWkbTypes::Polygon;
   }
-  return QGis::WKBUnknown;
+  return QgsWkbTypes::Unknown;
 }
 
 int QgsNewVectorLayerDialog::selectedCrsId() const
@@ -235,7 +234,7 @@ QString QgsNewVectorLayerDialog::runAndCreateLayer( QWidget* parent, QString* pE
     return "";
   }
 
-  QGis::WkbType geometrytype = geomDialog.selectedType();
+  QgsWkbTypes::Type geometrytype = geomDialog.selectedType();
   QString fileformat = geomDialog.selectedFileFormat();
   QString enc = geomDialog.selectedFileEncoding();
   int crsId = geomDialog.selectedCrsId();
@@ -269,15 +268,15 @@ QString QgsNewVectorLayerDialog::runAndCreateLayer( QWidget* parent, QString* pE
   {
     QgsDebugMsg( "ogr provider loaded" );
 
-    typedef bool ( *createEmptyDataSourceProc )( const QString&, const QString&, const QString&, QGis::WkbType,
-        const QList< QPair<QString, QString> >&, const QgsCoordinateReferenceSystem * );
+    typedef bool ( *createEmptyDataSourceProc )( const QString&, const QString&, const QString&, QgsWkbTypes::Type,
+        const QList< QPair<QString, QString> >&, const QgsCoordinateReferenceSystem & );
     createEmptyDataSourceProc createEmptyDataSource = ( createEmptyDataSourceProc ) cast_to_fptr( myLib->resolve( "createEmptyDataSource" ) );
     if ( createEmptyDataSource )
     {
-      if ( geometrytype != QGis::WKBUnknown )
+      if ( geometrytype != QgsWkbTypes::Unknown )
       {
-        QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( crsId );
-        if ( !createEmptyDataSource( fileName, fileformat, enc, geometrytype, attributes, &srs ) )
+        QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( crsId );
+        if ( !createEmptyDataSource( fileName, fileformat, enc, geometrytype, attributes, srs ) )
         {
           return QString::null;
         }

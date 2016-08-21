@@ -35,6 +35,7 @@
 #include "qgslegendinterface.h"
 #include "qgsapplication.h"
 
+#include "qgscomposition.h"
 #include "qgscomposerlabel.h"
 #include "qgscomposermap.h"
 #include "qgscomposertexttable.h"
@@ -43,7 +44,6 @@
 #include "qgsmapcanvas.h"
 #include "qgsmapcoordsdialog.h"
 #include "qgsmaplayerregistry.h"
-#include "qgsmaprenderer.h"
 #include "qgsmaptoolzoom.h"
 #include "qgsmaptoolpan.h"
 
@@ -947,7 +947,8 @@ void QgsGeorefPluginGui::createActionGroups()
 void QgsGeorefPluginGui::createMapCanvas()
 {
   // set up the canvas
-  mCanvas = new QgsMapCanvas( this->centralWidget(), "georefCanvas" );
+  mCanvas = new QgsMapCanvas( this->centralWidget() );
+  mCanvas->setObjectName( "georefCanvas" );
   mCanvas->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
   mCanvas->setCanvasColor( Qt::white );
   mCanvas->setMinimumWidth( 400 );

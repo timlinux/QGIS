@@ -19,7 +19,8 @@
 #include "ui_qgsnewhttpconnectionbase.h"
 #include "qgisgui.h"
 #include "qgscontexthelp.h"
-#include "qgsauthconfigselect.h"
+
+class QgsAuthConfigSelect;
 
 /** \ingroup gui
  * \brief Dialog to allow the user to configure and save connection
@@ -31,7 +32,7 @@ class GUI_EXPORT QgsNewHttpConnection : public QDialog, private Ui::QgsNewHttpCo
 
   public:
     //! Constructor
-    QgsNewHttpConnection( QWidget *parent = nullptr, const QString& baseKey = "/Qgis/connections-wms/", const QString& connName = QString::null, const Qt::WindowFlags& fl = QgisGui::ModalDialogFlags );
+    QgsNewHttpConnection( QWidget *parent = nullptr, const QString& baseKey = "/Qgis/connections-wms/", const QString& connName = QString::null, Qt::WindowFlags fl = QgisGui::ModalDialogFlags );
     //! Destructor
     ~QgsNewHttpConnection();
   public slots:

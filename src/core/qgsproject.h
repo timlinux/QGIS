@@ -22,19 +22,18 @@
 #define QGSPROJECT_H
 
 #include <memory>
-#include "qgsprojectversion.h"
 #include <QHash>
 #include <QList>
 #include <QObject>
 #include <QPair>
 #include <QFileInfo>
-
-//for the snap settings
-#include "qgssnapper.h"
-#include "qgstolerance.h"
-#include "qgsunittypes.h"
+#include <QStringList>
 
 //#include <QDomDocument>
+#include "qgssnapper.h"
+#include "qgsunittypes.h"
+#include "qgsprojectversion.h"
+#include "qgsexpressioncontextgenerator.h"
 
 class QFileInfo;
 class QDomDocument;
@@ -47,8 +46,9 @@ class QgsMapLayer;
 class QgsProjectBadLayerHandler;
 class QgsRelationManager;
 class QgsVectorLayer;
-class QgsVisibilityPresetCollection;
+class QgsMapThemeCollection;
 class QgsTransactionGroup;
+class QgsTolerance;
 
 /** \ingroup core
  * Reads and writes project states.
@@ -68,10 +68,12 @@ class QgsTransactionGroup;
 // project.  Just as the GIMP can have simultaneous multiple images, perhaps
 // QGIS can one day have simultaneous multiple projects.
 
-class CORE_EXPORT QgsProject : public QObject
+class CORE_EXPORT QgsProject : public QObject, public QgsExpressionContextGenerator
 {
     Q_OBJECT
     Q_PROPERTY( QStringList nonIdentifiableLayers READ nonIdentifiableLayers WRITE setNonIdentifiableLayers NOTIFY nonIdentifiableLayersChanged )
+    Q_PROPERTY( QString fileName READ fileName WRITE setFileName NOTIFY fileNameChanged )
+    Q_PROPERTY( QString homePath READ homePath NOTIFY homePathChanged )
 
   public:
 
@@ -199,20 +201,57 @@ class CORE_EXPORT QgsProject : public QObject
     Q_DECL_DEPRECATED void clearProperties();
 
 
-    /* key value mutators
+    /**
+     * Write a boolean entry to the project file.
      *
-     * keys would be the familiar QSettings-like '/' delimited entries, implying
+     * Keys are '/'-delimited entries, implying
+     * a hierarchy of keys and corresponding values
+     *
+     * @note The key string must be valid xml tag names in order to be saved to the file.
+     * @note available in python bindings as writeEntryBool
+     */
+    bool writeEntry( const QString & scope, const QString & key, bool value );
+
+    /**
+     * Write a double entry to the project file.
+     *
+     * Keys are '/'-delimited entries, implying
+     * a hierarchy of keys and corresponding values
+     *
+     * @note The key string must be valid xml tag names in order to be saved to the file.
+     * @note available in python bindings as writeEntryDouble
+     */
+    bool writeEntry( const QString& scope, const QString& key, double value );
+
+    /**
+     * Write an integer entry to the project file.
+     *
+     * Keys are '/'-delimited entries, implying
      * a hierarchy of keys and corresponding values
      *
      * @note The key string must be valid xml tag names in order to be saved to the file.
      */
-    //! @note available in python bindings as writeEntryBool
-    bool writeEntry( const QString & scope, const QString & key, bool value );
-    //! @note available in python bindings as writeEntryDouble
-    bool writeEntry( const QString & scope, const QString & key, double value );
-    bool writeEntry( const QString & scope, const QString & key, int value );
-    bool writeEntry( const QString & scope, const QString & key, const QString & value );
-    bool writeEntry( const QString & scope, const QString & key, const QStringList & value );
+    bool writeEntry( const QString& scope, const QString& key, int value );
+
+    /**
+     * Write a string entry to the project file.
+     *
+     * Keys are '/'-delimited entries, implying
+     * a hierarchy of keys and corresponding values
+     *
+     * @note The key string must be valid xml tag names in order to be saved to the file.
+     */
+    bool writeEntry( const QString& scope, const QString& key, const QString& value );
+
+    /**
+     * Write a string list entry to the project file.
+     *
+     * Keys are '/'-delimited entries, implying
+     * a hierarchy of keys and corresponding values
+     *
+     * @note The key string must be valid xml tag names in order to be saved to the file.
+     */
+    bool writeEntry( const QString& scope, const QString& key, const QStringList& value );
 
     /** Key value accessors
      *
@@ -300,7 +339,7 @@ class CORE_EXPORT QgsProject : public QObject
      * @note added in QGIS 2.14
      * @see areaUnits()
      */
-    QGis::UnitType distanceUnits() const;
+    QgsUnitTypes::DistanceUnit distanceUnits() const;
 
     /** Convenience function to query default area measurement units for project.
      * @note added in QGIS 2.14
@@ -324,10 +363,11 @@ class CORE_EXPORT QgsProject : public QObject
      */
     QgsLayerTreeRegistryBridge* layerTreeRegistryBridge() const { return mLayerTreeRegistryBridge; }
 
-    /** Returns pointer to the project's visibility preset collection.
+    /** Returns pointer to the project's map theme collection.
      * @note added in QGIS 2.12
+     * @note renamed in QGIS 3.0, formerly QgsVisibilityPresetCollection
      */
-    QgsVisibilityPresetCollection* visibilityPresetCollection();
+    QgsMapThemeCollection* mapThemeCollection();
 
     /**
      * Set a list of layers which should not be taken into account on map identification
@@ -388,6 +428,8 @@ class CORE_EXPORT QgsProject : public QObject
      * @note added in 2.16
      */
     void setEvaluateDefaultValues( bool evaluateDefaultValues );
+
+    QgsExpressionContext createExpressionContext() const override;
 
   protected:
     /** Set error message from read/write operation
@@ -455,6 +497,17 @@ class CORE_EXPORT QgsProject : public QObject
     //! Emitted when the list of layer which are excluded from map identification changes
     void nonIdentifiableLayersChanged( QStringList nonIdentifiableLayers );
 
+    //! Emitted when the file name of the project changes
+    void fileNameChanged();
+
+    //! Emitted when the home path of the project changes
+    void homePathChanged();
+
+    /** Emitted whenever the expression variables stored in the project have been changed.
+     * @note added in QGIS 3.0
+     */
+    void variablesChanged();
+
   public slots:
 
     /**
@@ -465,6 +518,13 @@ class CORE_EXPORT QgsProject : public QObject
      * @note promoted to public slot in 2.16
      */
     void setDirty( bool b = true );
+
+    /** Causes the project to emit the variablesChanged() signal. This should
+     * be called whenever expression variables related to the project are changed.
+     * @see variablesChanged()
+     * @note added in QGIS 3.0
+     */
+    void emitVariablesChanged();
 
   private slots:
     void onMapLayersAdded( const QList<QgsMapLayer*>& layers );
@@ -518,7 +578,7 @@ class CORE_EXPORT QgsProject : public QObject
     //! map of transaction group: QPair( providerKey, connString ) -> transactionGroup
     QMap< QPair< QString, QString>, QgsTransactionGroup*> mTransactionGroups;
 
-    QScopedPointer<QgsVisibilityPresetCollection> mVisibilityPresetCollection;
+    QScopedPointer<QgsMapThemeCollection> mVisibilityPresetCollection;
 };
 
 

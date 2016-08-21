@@ -22,8 +22,8 @@
 #include "qgsgloweffect.h"
 #include "qgstransformeffect.h"
 #include "qgscoloreffect.h"
-#include "qgsstylev2.h"
-#include "qgsvectorcolorrampv2.h"
+#include "qgsstyle.h"
+#include "qgsvectorcolorramp.h"
 
 //
 // draw source
@@ -254,7 +254,7 @@ QgsShadowEffectWidget::QgsShadowEffectWidget( QWidget *parent )
   mShadowColorBtn->setColorDialogTitle( tr( "Select shadow color" ) );
   mShadowColorBtn->setContext( "symbology" );
 
-  mOffsetUnitWidget->setUnits( QgsSymbolV2::OutputUnitList() << QgsSymbolV2::MM << QgsSymbolV2::Pixel << QgsSymbolV2::MapUnit );
+  mOffsetUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << QgsUnitTypes::RenderMillimeters << QgsUnitTypes::RenderPixels << QgsUnitTypes::RenderMapUnits );
 
   initGui();
 }
@@ -419,9 +419,9 @@ QgsGlowWidget::QgsGlowWidget( QWidget *parent )
   mColorBtn->setColorDialogTitle( tr( "Select glow color" ) );
   mColorBtn->setContext( "symbology" );
 
-  mSpreadUnitWidget->setUnits( QgsSymbolV2::OutputUnitList() << QgsSymbolV2::MM << QgsSymbolV2::Pixel << QgsSymbolV2::MapUnit );
+  mSpreadUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << QgsUnitTypes::RenderMillimeters << QgsUnitTypes::RenderPixels << QgsUnitTypes::RenderMapUnits );
 
-  mRampComboBox->populate( QgsStyleV2::defaultStyle() );
+  mRampComboBox->populate( QgsStyle::defaultStyle() );
   mRampComboBox->setShowGradientOnly( true );
   connect( mRampComboBox, SIGNAL( currentIndexChanged( int ) ), this, SLOT( applyColorRamp() ) );
   connect( mRampComboBox, SIGNAL( sourceRampEdited() ), this, SLOT( applyColorRamp() ) );
@@ -594,7 +594,7 @@ void QgsGlowWidget::applyColorRamp()
     return;
   }
 
-  QgsVectorColorRampV2* ramp = mRampComboBox->currentColorRamp();
+  QgsVectorColorRamp* ramp = mRampComboBox->currentColorRamp();
   if ( !ramp )
     return;
 
@@ -612,7 +612,7 @@ QgsTransformWidget::QgsTransformWidget( QWidget *parent )
 {
   setupUi( this );
 
-  mTranslateUnitWidget->setUnits( QgsSymbolV2::OutputUnitList() << QgsSymbolV2::MM << QgsSymbolV2::Pixel << QgsSymbolV2::MapUnit );
+  mTranslateUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << QgsUnitTypes::RenderMillimeters << QgsUnitTypes::RenderPixels << QgsUnitTypes::RenderMapUnits );
   mSpinTranslateX->setClearValue( 0 );
   mSpinTranslateY->setClearValue( 0 );
   mSpinShearX->setClearValue( 0 );

@@ -109,16 +109,16 @@ void QgsEditorWidgetWrapper::updateConstraint( const QgsFeature &ft )
 {
   bool toEmit( false );
   QString errStr( tr( "predicate is True" ) );
-  QString expression = layer()->editFormConfig()->expression( mFieldIdx );
+  QString expression = layer()->editFormConfig().expression( mFieldIdx );
   QString description;
   QVariant value = ft.attribute( mFieldIdx );
 
   if ( ! expression.isEmpty() )
   {
-    description = layer()->editFormConfig()->expressionDescription( mFieldIdx );
+    description = layer()->editFormConfig().expressionDescription( mFieldIdx );
 
     QgsExpressionContext context =
-      QgsExpressionContextUtils::createFeatureBasedContext( ft, *ft.fields() );
+      QgsExpressionContextUtils::createFeatureBasedContext( ft, ft.fields() );
     context << QgsExpressionContextUtils::layerScope( layer() );
 
     context.setFeature( ft );
@@ -138,11 +138,11 @@ void QgsEditorWidgetWrapper::updateConstraint( const QgsFeature &ft )
   else
     mValidConstraint = true;
 
-  if ( layer()->editFormConfig()->notNull( mFieldIdx ) )
+  if ( layer()->editFormConfig().notNull( mFieldIdx ) )
   {
     if ( !expression.isEmpty() )
     {
-      QString fieldName = ft.fields()->field( mFieldIdx ).name();
+      QString fieldName = ft.fields().field( mFieldIdx ).name();
       expression = "( " + expression + " ) AND ( " + fieldName + " IS NOT NULL)";
       description = "( " + description + " ) AND NotNull";
     }

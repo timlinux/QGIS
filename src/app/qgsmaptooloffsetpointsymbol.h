@@ -17,9 +17,9 @@
 #define QGSMAPTOOLOFFSETPOINTSYMBOL_H
 
 #include "qgsmaptoolpointsymbol.h"
-#include "qgssymbolv2.h"
+#include "qgssymbol.h"
 
-class QgsMarkerSymbolV2;
+class QgsMarkerSymbol;
 class QgsPointMarkerItem;
 
 /** \ingroup app
@@ -47,7 +47,7 @@ class APP_EXPORT QgsMapToolOffsetPointSymbol: public QgsMapToolPointSymbol
   protected:
 
     virtual void canvasPressOnFeature( QgsMapMouseEvent* e, const QgsFeature& feature, const QgsPoint& snappedPoint ) override;
-    virtual bool checkSymbolCompatibility( QgsMarkerSymbolV2* markerSymbol, QgsRenderContext& context ) override;
+    virtual bool checkSymbolCompatibility( QgsMarkerSymbol* markerSymbol, QgsRenderContext& context ) override;
     virtual void noCompatibleSymbols() override;
 
   private:
@@ -59,7 +59,7 @@ class APP_EXPORT QgsMapToolOffsetPointSymbol: public QgsMapToolPointSymbol
     QgsPointMarkerItem* mOffsetItem;
 
     //! Clone of first found marker symbol for feature with offset attribute set
-    QScopedPointer< QgsMarkerSymbolV2 > mMarkerSymbol;
+    QScopedPointer< QgsMarkerSymbol > mMarkerSymbol;
 
     //! Feature which was clicked on
     QgsFeature mClickedFeature;
@@ -71,7 +71,7 @@ class APP_EXPORT QgsMapToolOffsetPointSymbol: public QgsMapToolPointSymbol
     double mSymbolRotation;
 
     //! Create item with the point symbol for a specific feature. This will be used to show the offset to the user.
-    void createPreviewItem( QgsMarkerSymbolV2 *markerSymbol );
+    void createPreviewItem( QgsMarkerSymbol *markerSymbol );
 
     //! Calculates the new values for offset attributes, respecting the symbol's offset units
     //! @note start and end point are in map units
@@ -84,7 +84,7 @@ class APP_EXPORT QgsMapToolOffsetPointSymbol: public QgsMapToolPointSymbol
 
     //! Calculates the required offset from the start to end points, in the specified unit
     //! @note start and end points are in map units
-    QPointF calculateOffset( const QgsPoint& startPoint, const QgsPoint& endPoint, QgsSymbolV2::OutputUnit unit ) const;
+    QPointF calculateOffset( const QgsPoint& startPoint, const QgsPoint& endPoint, QgsUnitTypes::RenderUnit unit ) const;
 
     //! Adjusts the calculated offset to account for the symbol's rotation
     QPointF rotatedOffset( QPointF offset, double angle ) const;

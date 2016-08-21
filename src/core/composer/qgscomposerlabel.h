@@ -53,16 +53,6 @@ class CORE_EXPORT QgsComposerLabel: public QgsComposerItem
     /** Returns the text as it appears on screen (with replaced data field) */
     QString displayText() const;
 
-    /** Sets the current feature, the current layer and a list of local variable substitutions for evaluating expressions.
-      * @deprecated use atlas features and setSubstitutions() instead
-      */
-    Q_DECL_DEPRECATED void setExpressionContext( QgsFeature* feature, QgsVectorLayer* layer, const QMap<QString, QVariant>& substitutions = ( QMap<QString, QVariant>() ) );
-
-    /** Sets the list of local variable substitutions for evaluating expressions in label text.
-     * @note added in QGIS 2.12
-     */
-    void setSubstitutions( const QMap<QString, QVariant>& substitutions = ( QMap<QString, QVariant>() ) );
-
     QFont font() const;
     void setFont( const QFont& f );
     /** Accessor for the vertical alignment of the label
@@ -141,13 +131,13 @@ class CORE_EXPORT QgsComposerLabel: public QgsComposerItem
      * @param elem is Dom element corresponding to 'Composer' tag
      * @param doc document
      */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const override;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const override;
 
     /** Sets state from Dom document
      * @param itemElem is Dom element corresponding to 'ComposerLabel' tag
      * @param doc document
      */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc ) override;
 
     //Overridden to contain part of label's text
     virtual QString displayName() const override;
@@ -213,7 +203,6 @@ class CORE_EXPORT QgsComposerLabel: public QgsComposerItem
 
     QScopedPointer<QgsFeature> mExpressionFeature;
     QgsVectorLayer* mExpressionLayer;
-    QMap<QString, QVariant> mSubstitutions;
     QgsDistanceArea* mDistanceArea;
 
     QgsWebPage* mWebPage;

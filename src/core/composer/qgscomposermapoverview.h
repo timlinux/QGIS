@@ -25,7 +25,7 @@
 
 class QDomDocument;
 class QDomElement;
-class QgsFillSymbolV2;
+class QgsFillSymbol;
 class QgsComposerMapOverview;
 
 /** \ingroup core
@@ -119,9 +119,9 @@ class CORE_EXPORT QgsComposerMapOverviewStack : public QgsComposerMapItemStack
      * @param elem is DOM node corresponding to a 'ComposerMap' tag
      * @param doc DOM document
      * @returns true if read was successful
-     * @see writeXML
+     * @see writeXml
      */
-    bool readXML( const QDomElement& elem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& elem, const QDomDocument& doc ) override;
 
 };
 
@@ -154,16 +154,16 @@ class CORE_EXPORT QgsComposerMapOverview : public QgsComposerMapItem
     /** Stores overview state in DOM element
      * @param elem is DOM element corresponding to a 'ComposerMap' tag
      * @param doc DOM document
-     * @see readXML
+     * @see readXml
      */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const override;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const override;
 
     /** Sets overview state from a DOM document
      * @param itemElem is DOM node corresponding to a 'ComposerMapOverview' tag
      * @param doc is DOM document
-     * @see writeXML
+     * @see writeXml
      */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc ) override;
 
     bool usesAdvancedEffects() const override;
 
@@ -182,20 +182,20 @@ class CORE_EXPORT QgsComposerMapOverview : public QgsComposerMapItem
      * @param symbol fill symbol for overview
      * @see frameSymbol
      */
-    void setFrameSymbol( QgsFillSymbolV2* symbol );
+    void setFrameSymbol( QgsFillSymbol* symbol );
 
     /** Gets the fill symbol used for drawing the overview extent.
      * @returns fill symbol for overview
      * @see setFrameSymbol
      */
-    QgsFillSymbolV2* frameSymbol() { return mFrameSymbol; }
+    QgsFillSymbol* frameSymbol() { return mFrameSymbol; }
 
     /** Gets the fill symbol used for drawing the overview extent.
      * @returns fill symbol for overview
      * @see setFrameSymbol
      * @note not available in python bindings
      */
-    const QgsFillSymbolV2* frameSymbol() const { return mFrameSymbol; }
+    const QgsFillSymbol* frameSymbol() const { return mFrameSymbol; }
 
     /** Retrieves the blending mode used for drawing the overview.
      * @returns blending mode for overview
@@ -254,7 +254,7 @@ class CORE_EXPORT QgsComposerMapOverview : public QgsComposerMapItem
     int mFrameMapId;
 
     /** Drawing style for overview farme*/
-    QgsFillSymbolV2* mFrameSymbol;
+    QgsFillSymbol* mFrameSymbol;
 
     /** Blend mode for overview*/
     QPainter::CompositionMode mBlendMode;

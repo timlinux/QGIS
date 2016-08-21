@@ -19,6 +19,7 @@
 #include "qgscomposertablecolumn.h"
 #include "qgscomposermap.h"
 #include "qgscomposerutils.h"
+#include "qgsfeatureiterator.h"
 #include "qgsmaplayerregistry.h"
 #include "qgsvectorlayer.h"
 #include "qgscomposerframe.h"
@@ -26,6 +27,8 @@
 #include "qgsproject.h"
 #include "qgsrelationmanager.h"
 #include "qgsgeometry.h"
+#include "qgscsexception.h"
+#include "qgsmapsettings.h"
 
 //QgsComposerAttributeTableCompareV2
 
@@ -335,7 +338,7 @@ void QgsComposerAttributeTableV2::setDisplayAttributes( const QSet<int>& attr, b
       }
       QString currentAlias = source->attributeDisplayName( attrIdx );
       QgsComposerTableColumn* col = new QgsComposerTableColumn;
-      col->setAttribute( fields[attrIdx].name() );
+      col->setAttribute( fields.at( attrIdx ).name() );
       col->setHeading( currentAlias );
       mColumns.append( col );
     }
@@ -453,8 +456,8 @@ bool QgsComposerAttributeTableV2::getTableContents( QgsComposerTableContents &co
     return false;
   }
 
-  QScopedPointer< QgsExpressionContext > context( createExpressionContext() );
-  context->setFields( layer->fields() );
+  QgsExpressionContext context = createExpressionContext();
+  context.setFields( layer->fields() );
 
   //prepare filter expression
   QScopedPointer<QgsExpression> filterExpression;
@@ -516,11 +519,11 @@ bool QgsComposerAttributeTableV2::getTableContents( QgsComposerTableContents &co
 
   while ( fit.nextFeature( f ) && counter < mMaximumNumberOfFeatures )
   {
-    context->setFeature( f );
+    context.setFeature( f );
     //check feature against filter
     if ( activeFilter && !filterExpression.isNull() )
     {
-      QVariant result = filterExpression->evaluate( context.data() );
+      QVariant result = filterExpression->evaluate( &context );
       // skip this feature if the filter evaluation is false
       if ( !result.toBool() )
       {
@@ -530,13 +533,13 @@ bool QgsComposerAttributeTableV2::getTableContents( QgsComposerTableContents &co
     //check against atlas feature intersection
     if ( mFilterToAtlasIntersection )
     {
-      if ( !f.constGeometry() || ! mComposition->atlasComposition().enabled() )
+      if ( !f.hasGeometry() || ! mComposition->atlasComposition().enabled() )
       {
         continue;
       }
       QgsFeature atlasFeature = mComposition->atlasComposition().feature();
-      if ( !atlasFeature.constGeometry() ||
-           !f.constGeometry()->intersects( atlasFeature.constGeometry() ) )
+      if ( !atlasFeature.hasGeometry() ||
+           !f.geometry().intersects( atlasFeature.geometry() ) )
       {
         //feature falls outside current atlas feature
         continue;
@@ -557,9 +560,9 @@ bool QgsComposerAttributeTableV2::getTableContents( QgsComposerTableContents &co
       {
         // Lets assume it's an expression
         QgsExpression* expression = new QgsExpression(( *columnIt )->attribute() );
-        context->lastScope()->setVariable( QString( "row_number" ), counter + 1 );
-        expression->prepare( context.data() );
-        QVariant value = expression->evaluate( context.data() );
+        context.lastScope()->setVariable( QString( "row_number" ), counter + 1 );
+        expression->prepare( &context );
+        QVariant value = expression->evaluate( &context );
         currentRow << value;
       }
     }
@@ -585,13 +588,13 @@ bool QgsComposerAttributeTableV2::getTableContents( QgsComposerTableContents &co
   return true;
 }
 
-QgsExpressionContext *QgsComposerAttributeTableV2::createExpressionContext() const
+QgsExpressionContext QgsComposerAttributeTableV2::createExpressionContext() const
 {
-  QgsExpressionContext* context = QgsComposerTableV2::createExpressionContext();
+  QgsExpressionContext context = QgsComposerTableV2::createExpressionContext();
 
   if ( mSource == LayerAttributes )
   {
-    context->appendScope( QgsExpressionContextUtils::layerScope( mVectorLayer ) );
+    context.appendScope( QgsExpressionContextUtils::layerScope( mVectorLayer ) );
   }
 
   return context;
@@ -686,7 +689,7 @@ void QgsComposerAttributeTableV2::setWrapString( const QString &wrapString )
   emit changed();
 }
 
-bool QgsComposerAttributeTableV2::writeXML( QDomElement& elem, QDomDocument & doc, bool ignoreFrames ) const
+bool QgsComposerAttributeTableV2::writeXml( QDomElement& elem, QDomDocument & doc, bool ignoreFrames ) const
 {
   QDomElement composerTableElem = doc.createElement( "ComposerAttributeTableV2" );
   composerTableElem.setAttribute( "source", QString::number( static_cast< int >( mSource ) ) );
@@ -712,14 +715,14 @@ bool QgsComposerAttributeTableV2::writeXML( QDomElement& elem, QDomDocument & do
     composerTableElem.setAttribute( "vectorLayer", mVectorLayer->id() );
   }
 
-  bool ok = QgsComposerTableV2::writeXML( composerTableElem, doc, ignoreFrames );
+  bool ok = QgsComposerTableV2::writeXml( composerTableElem, doc, ignoreFrames );
 
   elem.appendChild( composerTableElem );
 
   return ok;
 }
 
-bool QgsComposerAttributeTableV2::readXML( const QDomElement& itemElem, const QDomDocument& doc, bool ignoreFrames )
+bool QgsComposerAttributeTableV2::readXml( const QDomElement& itemElem, const QDomDocument& doc, bool ignoreFrames )
 {
   if ( itemElem.isNull() )
   {
@@ -727,7 +730,7 @@ bool QgsComposerAttributeTableV2::readXML( const QDomElement& itemElem, const QD
   }
 
   //read general table properties
-  if ( !QgsComposerTableV2::readXML( itemElem, doc, ignoreFrames ) )
+  if ( !QgsComposerTableV2::readXml( itemElem, doc, ignoreFrames ) )
   {
     return false;
   }

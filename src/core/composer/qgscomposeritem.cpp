@@ -33,13 +33,14 @@
 #include "qgsdatadefined.h"
 #include "qgscomposerutils.h"
 #include "qgscomposermodel.h"
+#include "qgscomposereffect.h"
 
 #include <limits>
 #include "qgsapplication.h"
 #include "qgsrectangle.h" //just for debugging
 #include "qgslogger.h"
-#include "qgssymbollayerv2utils.h" //for pointOnLineWithDistance
-#include "qgsmaprenderer.h" //for getCompositionMode
+#include "qgssymbollayerutils.h" //for pointOnLineWithDistance
+#include "qgspainting.h"
 #include "qgsexpressioncontext.h"
 
 #include <cmath>
@@ -163,7 +164,7 @@ void QgsComposerItem::setSelected( bool s )
   update(); //to draw selection boxes
 }
 
-bool QgsComposerItem::_writeXML( QDomElement& itemElem, QDomDocument& doc ) const
+bool QgsComposerItem::_writeXml( QDomElement& itemElem, QDomDocument& doc ) const
 {
   if ( itemElem.isNull() )
   {
@@ -204,7 +205,7 @@ bool QgsComposerItem::_writeXML( QDomElement& itemElem, QDomDocument& doc ) cons
   composerItemElem.setAttribute( "positionMode", QString::number( static_cast< int >( mLastUsedPositionMode ) ) );
   composerItemElem.setAttribute( "zValue", QString::number( zValue() ) );
   composerItemElem.setAttribute( "outlineWidth", QString::number( pen().widthF() ) );
-  composerItemElem.setAttribute( "frameJoinStyle", QgsSymbolLayerV2Utils::encodePenJoinStyle( mFrameJoinStyle ) );
+  composerItemElem.setAttribute( "frameJoinStyle", QgsSymbolLayerUtils::encodePenJoinStyle( mFrameJoinStyle ) );
   composerItemElem.setAttribute( "itemRotation", QString::number( mItemRotation ) );
   composerItemElem.setAttribute( "uuid", mUuid );
   composerItemElem.setAttribute( "id", mId );
@@ -240,20 +241,20 @@ bool QgsComposerItem::_writeXML( QDomElement& itemElem, QDomDocument& doc ) cons
   composerItemElem.appendChild( bgColorElem );
 
   //blend mode
-  composerItemElem.setAttribute( "blendMode", QgsMapRenderer::getBlendModeEnum( mBlendMode ) );
+  composerItemElem.setAttribute( "blendMode", QgsPainting::getBlendModeEnum( mBlendMode ) );
 
   //transparency
   composerItemElem.setAttribute( "transparency", QString::number( mTransparency ) );
 
   composerItemElem.setAttribute( "excludeFromExports", mExcludeFromExports );
 
-  QgsComposerObject::writeXML( composerItemElem, doc );
+  QgsComposerObject::writeXml( composerItemElem, doc );
   itemElem.appendChild( composerItemElem );
 
   return true;
 }
 
-bool QgsComposerItem::_readXML( const QDomElement& itemElem, const QDomDocument& doc )
+bool QgsComposerItem::_readXml( const QDomElement& itemElem, const QDomDocument& doc )
 {
   Q_UNUSED( doc );
   if ( itemElem.isNull() )
@@ -261,7 +262,7 @@ bool QgsComposerItem::_readXML( const QDomElement& itemElem, const QDomDocument&
     return false;
   }
 
-  QgsComposerObject::readXML( itemElem, doc );
+  QgsComposerObject::readXml( itemElem, doc );
 
   //rotation
   setItemRotation( itemElem.attribute( "itemRotation", "0" ).toDouble() );
@@ -360,7 +361,7 @@ bool QgsComposerItem::_readXML( const QDomElement& itemElem, const QDomDocument&
     penGreen = frameColorElem.attribute( "green" ).toDouble( &greenOk );
     penBlue = frameColorElem.attribute( "blue" ).toDouble( &blueOk );
     penAlpha = frameColorElem.attribute( "alpha" ).toDouble( &alphaOk );
-    mFrameJoinStyle = QgsSymbolLayerV2Utils::decodePenJoinStyle( itemElem.attribute( "frameJoinStyle", "miter" ) );
+    mFrameJoinStyle = QgsSymbolLayerUtils::decodePenJoinStyle( itemElem.attribute( "frameJoinStyle", "miter" ) );
 
     if ( redOk && greenOk && blueOk && alphaOk && widthOk )
     {
@@ -390,7 +391,7 @@ bool QgsComposerItem::_readXML( const QDomElement& itemElem, const QDomDocument&
   }
 
   //blend mode
-  setBlendMode( QgsMapRenderer::getCompositionMode( static_cast< QgsMapRenderer::BlendMode >( itemElem.attribute( "blendMode", "0" ).toUInt() ) ) );
+  setBlendMode( QgsPainting::getCompositionMode( static_cast< QgsPainting::BlendMode >( itemElem.attribute( "blendMode", "0" ).toUInt() ) ) );
 
   //transparency
   setTransparency( itemElem.attribute( "transparency", "0" ).toInt() );
@@ -708,13 +709,8 @@ QRectF QgsComposerItem::evalItemRect( const QRectF &newRect, const bool resizeOn
 
   //TODO QGIS 3.0
   //maintain pre 2.12 API. remove when API break allowed
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  const QgsExpressionContext* evalContext = context;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
 
   //data defined position or size set? if so, update rect with data defined values
   QVariant exprVal;
@@ -850,10 +846,10 @@ bool QgsComposerItem::shouldDrawItem() const
   return !mEvaluatedExcludeFromExports;
 }
 
-QgsExpressionContext* QgsComposerItem::createExpressionContext() const
+QgsExpressionContext QgsComposerItem::createExpressionContext() const
 {
-  QgsExpressionContext* context = QgsComposerObject::createExpressionContext();
-  context->appendScope( QgsExpressionContextUtils::composerItemScope( this ) );
+  QgsExpressionContext context = QgsComposerObject::createExpressionContext();
+  context.appendScope( QgsExpressionContextUtils::composerItemScope( this ) );
   return context;
 }
 
@@ -890,8 +886,8 @@ void QgsComposerItem::setBlendMode( const QPainter::CompositionMode blendMode )
 {
   mBlendMode = blendMode;
   // Update the composer effect to use the new blend mode
-  QScopedPointer< QgsExpressionContext > context( createExpressionContext() );
-  refreshBlendMode( *context.data() );
+  QgsExpressionContext context = createExpressionContext();
+  refreshBlendMode( context );
 }
 
 void QgsComposerItem::refreshBlendMode( const QgsExpressionContext& context )
@@ -903,7 +899,7 @@ void QgsComposerItem::refreshBlendMode( const QgsExpressionContext& context )
   if ( dataDefinedEvaluate( QgsComposerObject::BlendMode, exprVal, context ) && !exprVal.isNull() )
   {
     QString blendstr = exprVal.toString().trimmed();
-    QPainter::CompositionMode blendModeD = QgsSymbolLayerV2Utils::decodeBlendMode( blendstr );
+    QPainter::CompositionMode blendModeD = QgsSymbolLayerUtils::decodeBlendMode( blendstr );
 
     QgsDebugMsg( QString( "exprVal BlendMode:%1" ).arg( blendModeD ) );
     blendMode = blendModeD;
@@ -916,8 +912,8 @@ void QgsComposerItem::refreshBlendMode( const QgsExpressionContext& context )
 void QgsComposerItem::setTransparency( const int transparency )
 {
   mTransparency = transparency;
-  QScopedPointer< QgsExpressionContext > context( createExpressionContext() );
-  refreshTransparency( true, *context.data() );
+  QgsExpressionContext context = createExpressionContext();
+  refreshTransparency( true, context );
 }
 
 void QgsComposerItem::refreshTransparency( const bool updateItem, const QgsExpressionContext& context )
@@ -1067,8 +1063,8 @@ void QgsComposerItem::setItemRotation( const double r, const bool adjustPosition
     mItemRotation = r;
   }
 
-  QScopedPointer< QgsExpressionContext > context( createExpressionContext() );
-  refreshRotation( true, adjustPosition, *context.data() );
+  QgsExpressionContext context = createExpressionContext();
+  refreshRotation( true, adjustPosition, context );
 }
 
 void QgsComposerItem::refreshRotation( const bool updateItem, const bool adjustPosition, const QgsExpressionContext& context )
@@ -1178,7 +1174,7 @@ bool QgsComposerItem::imageSizeConsideringRotation( double& width, double& heigh
 
   //assume points 1 and 3 are on the rectangle boundaries. Calculate 2 and 4.
   double distM1 = sqrt(( x1 - midX ) * ( x1 - midX ) + ( y1 - midY ) * ( y1 - midY ) );
-  QPointF p2 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x2, y2 ), distM1 );
+  QPointF p2 = QgsSymbolLayerUtils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x2, y2 ), distM1 );
 
   if ( p2.x() < width && p2.x() > 0 && p2.y() < height && p2.y() > 0 )
   {
@@ -1189,8 +1185,8 @@ bool QgsComposerItem::imageSizeConsideringRotation( double& width, double& heigh
 
   //else assume that points 2 and 4 are on the rectangle boundaries. Calculate 1 and 3
   double distM2 = sqrt(( x2 - midX ) * ( x2 - midX ) + ( y2 - midY ) * ( y2 - midY ) );
-  QPointF p1 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x1, y1 ), distM2 );
-  QPointF p3 = QgsSymbolLayerV2Utils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x3, y3 ), distM2 );
+  QPointF p1 = QgsSymbolLayerUtils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x1, y1 ), distM2 );
+  QPointF p3 = QgsSymbolLayerUtils::pointOnLineWithDistance( QPointF( midX, midY ), QPointF( x3, y3 ), distM2 );
   width = sqrt(( x2 - p1.x() ) * ( x2 - p1.x() ) + ( y2 - p1.y() ) * ( y2 - p1.y() ) );
   height = sqrt(( p3.x() - x2 ) * ( p3.x() - x2 ) + ( p3.y() - y2 ) * ( p3.y() - y2 ) );
   return true;
@@ -1301,7 +1297,9 @@ QGraphicsLineItem* QgsComposerItem::hAlignSnapItem()
   if ( !mHAlignSnapItem )
   {
     mHAlignSnapItem = new QGraphicsLineItem( nullptr );
-    mHAlignSnapItem->setPen( QPen( QColor( Qt::red ) ) );
+    QPen pen = QPen( QColor( Qt::red ) );
+    pen.setWidthF( 0.0 );
+    mHAlignSnapItem->setPen( pen );
     scene()->addItem( mHAlignSnapItem );
     mHAlignSnapItem->setZValue( 90 );
   }
@@ -1313,7 +1311,9 @@ QGraphicsLineItem* QgsComposerItem::vAlignSnapItem()
   if ( !mVAlignSnapItem )
   {
     mVAlignSnapItem = new QGraphicsLineItem( nullptr );
-    mVAlignSnapItem->setPen( QPen( QColor( Qt::red ) ) );
+    QPen pen = QPen( QColor( Qt::red ) );
+    pen.setWidthF( 0.0 );
+    mVAlignSnapItem->setPen( pen );
     scene()->addItem( mVAlignSnapItem );
     mVAlignSnapItem->setZValue( 90 );
   }
@@ -1355,13 +1355,8 @@ void QgsComposerItem::refreshDataDefinedProperty( const QgsComposerObject::DataD
 {
   //maintain 2.10 API
   //TODO QGIS 3.0 - remove this
-  const QgsExpressionContext* evalContext = context;
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
 
   //update data defined properties and redraw item to match
   if ( property == QgsComposerObject::PositionX || property == QgsComposerObject::PositionY ||

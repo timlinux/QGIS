@@ -14,18 +14,19 @@
  *                                                                         *
  ***************************************************************************/
 #include "qgs25drendererwidget.h"
-
+#include "qgs25drenderer.h"
+#include "qgsvectorlayer.h"
 #include "qgsmaplayerstylemanager.h"
 
-Qgs25DRendererWidget::Qgs25DRendererWidget( QgsVectorLayer* layer, QgsStyleV2* style, QgsFeatureRendererV2* renderer )
-    : QgsRendererV2Widget( layer, style )
+Qgs25DRendererWidget::Qgs25DRendererWidget( QgsVectorLayer* layer, QgsStyle* style, QgsFeatureRenderer* renderer )
+    : QgsRendererWidget( layer, style )
     , mRenderer( nullptr )
 {
   if ( !layer )
     return;
 
   // the renderer only applies to point vector layers
-  if ( layer->geometryType() != QGis::Polygon )
+  if ( layer->geometryType() != QgsWkbTypes::PolygonGeometry )
   {
     //setup blank dialog
     QGridLayout* layout = new QGridLayout( this );
@@ -79,7 +80,7 @@ Qgs25DRendererWidget::Qgs25DRendererWidget( QgsVectorLayer* layer, QgsStyleV2* s
   connect( mWallExpositionShading, SIGNAL( toggled( bool ) ), this, SLOT( updateRenderer() ) );
 }
 
-QgsFeatureRendererV2* Qgs25DRendererWidget::renderer()
+QgsFeatureRenderer* Qgs25DRendererWidget::renderer()
 {
   return mRenderer;
 }
@@ -106,7 +107,7 @@ void Qgs25DRendererWidget::apply()
   }
 }
 
-QgsRendererV2Widget* Qgs25DRendererWidget::create( QgsVectorLayer* layer, QgsStyleV2* style, QgsFeatureRendererV2* renderer )
+QgsRendererWidget* Qgs25DRendererWidget::create( QgsVectorLayer* layer, QgsStyle* style, QgsFeatureRenderer* renderer )
 {
   return new Qgs25DRendererWidget( layer, style, renderer );
 }

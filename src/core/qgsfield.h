@@ -43,6 +43,14 @@ class QgsFieldsPrivate;
 
 class CORE_EXPORT QgsField
 {
+    Q_GADGET
+
+    Q_PROPERTY( bool isNumeric READ isNumeric )
+    Q_PROPERTY( int length READ length )
+    Q_PROPERTY( int precision READ precision )
+    Q_PROPERTY( QString comment READ comment )
+    Q_PROPERTY( QString name READ name )
+
   public:
     /** Constructor. Constructs a new QgsField object.
      * @param name Field name
@@ -106,6 +114,14 @@ class CORE_EXPORT QgsField
      * Returns the field comment
      */
     QString comment() const;
+
+    /**
+     * Returns if this field is numeric. Any integer or floating point type
+     * will return true for this.
+     *
+     * @note added in QGIS 2.18
+     */
+    bool isNumeric() const;
 
     /**
      * Set the field name.
@@ -255,15 +271,15 @@ class CORE_EXPORT QgsFields
     bool exists( int i ) const;
 
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& operator[]( int i ) const;
+    QgsField operator[]( int i ) const;
     //! Get field at particular index (must be in range 0..N-1)
     QgsField& operator[]( int i );
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& at( int i ) const;
+    QgsField at( int i ) const;
     //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& field( int fieldIdx ) const;
-    //! Get field at particular index (must be in range 0..N-1)
-    const QgsField& field( const QString& name ) const;
+    QgsField field( int fieldIdx ) const;
+    //! Get field with matching name
+    QgsField field( const QString& name ) const;
 
     //! Get field's origin (value from an enumeration)
     FieldOrigin fieldOrigin( int fieldIdx ) const;

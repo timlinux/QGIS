@@ -21,7 +21,6 @@
 #include <qgsmapcanvas.h>
 #include <qgsproject.h>
 #include <qgsmaptoolemitpoint.h>
-#include <qgsmaprenderer.h>
 
 #include <qgsmaplayerregistry.h>
 #include <qgsvectorlayer.h>
@@ -206,8 +205,8 @@ const QgsGraphDirector* RoadGraphPlugin::director() const
   if ( !layer )
     return nullptr;
 
-  if ( layer->wkbType() == QGis::WKBLineString
-       || layer->wkbType() == QGis::WKBMultiLineString )
+  if ( layer->wkbType() == QgsWkbTypes::LineString
+       || layer->wkbType() == QgsWkbTypes::MultiLineString )
   {
     SpeedUnit speedUnit = SpeedUnit::byName( mSettings->mSpeedUnitName );
 

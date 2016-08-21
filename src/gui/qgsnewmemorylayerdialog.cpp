@@ -21,7 +21,7 @@
 #include "qgscoordinatereferencesystem.h"
 #include "qgsproviderregistry.h"
 #include "qgsvectordataprovider.h"
-#include "qgscrscache.h"
+#include "qgsvectorlayer.h"
 
 #include <QPushButton>
 #include <QComboBox>
@@ -38,30 +38,30 @@ QgsVectorLayer *QgsNewMemoryLayerDialog::runAndCreateLayer( QWidget *parent )
     return nullptr;
   }
 
-  QGis::WkbType geometrytype = dialog.selectedType();
+  QgsWkbTypes::Type geometrytype = dialog.selectedType();
 
   QString geomType;
   switch ( geometrytype )
   {
-    case QGis::WKBPoint:
+    case QgsWkbTypes::Point:
       geomType = "point";
       break;
-    case QGis::WKBLineString:
+    case QgsWkbTypes::LineString:
       geomType = "linestring";
       break;
-    case QGis::WKBPolygon:
+    case QgsWkbTypes::Polygon:
       geomType = "polygon";
       break;
-    case QGis::WKBMultiPoint:
+    case QgsWkbTypes::MultiPoint:
       geomType = "multipoint";
       break;
-    case QGis::WKBMultiLineString:
+    case QgsWkbTypes::MultiLineString:
       geomType = "multilinestring";
       break;
-    case QGis::WKBMultiPolygon:
+    case QgsWkbTypes::MultiPolygon:
       geomType = "multipolygon";
       break;
-    case QGis::WKBNoGeometry:
+    case QgsWkbTypes::NoGeometry:
       geomType = "none";
       break;
     default:
@@ -69,7 +69,7 @@ QgsVectorLayer *QgsNewMemoryLayerDialog::runAndCreateLayer( QWidget *parent )
   }
 
   QString layerProperties = QString( "%1?" ).arg( geomType );
-  if ( QGis::WKBNoGeometry != geometrytype )
+  if ( QgsWkbTypes::NoGeometry != geometrytype )
     layerProperties.append( QString( "crs=%1&" ).arg( dialog.crs().authid() ) );
   layerProperties.append( QString( "memoryid=%1" ).arg( QUuid::createUuid().toString() ) );
 
@@ -78,7 +78,7 @@ QgsVectorLayer *QgsNewMemoryLayerDialog::runAndCreateLayer( QWidget *parent )
   return newLayer;
 }
 
-QgsNewMemoryLayerDialog::QgsNewMemoryLayerDialog( QWidget *parent, const Qt::WindowFlags& fl )
+QgsNewMemoryLayerDialog::QgsNewMemoryLayerDialog( QWidget *parent, Qt::WindowFlags fl )
     : QDialog( parent, fl )
 {
   setupUi( this );
@@ -88,7 +88,7 @@ QgsNewMemoryLayerDialog::QgsNewMemoryLayerDialog( QWidget *parent, const Qt::Win
 
   mPointRadioButton->setChecked( true );
 
-  QgsCoordinateReferenceSystem defaultCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( settings.value( "/Projections/layerDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString() );
+  QgsCoordinateReferenceSystem defaultCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( settings.value( "/Projections/layerDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString() );
   defaultCrs.validate();
   mCrsSelector->setCrs( defaultCrs );
 
@@ -101,37 +101,37 @@ QgsNewMemoryLayerDialog::~QgsNewMemoryLayerDialog()
   settings.setValue( "/Windows/NewMemoryLayer/geometry", saveGeometry() );
 }
 
-QGis::WkbType QgsNewMemoryLayerDialog::selectedType() const
+QgsWkbTypes::Type QgsNewMemoryLayerDialog::selectedType() const
 {
   if ( !buttonGroupGeometry->isChecked() )
   {
-    return QGis::WKBNoGeometry;
+    return QgsWkbTypes::NoGeometry;
   }
   else if ( mPointRadioButton->isChecked() )
   {
-    return QGis::WKBPoint;
+    return QgsWkbTypes::Point;
   }
   else if ( mLineRadioButton->isChecked() )
   {
-    return QGis::WKBLineString;
+    return QgsWkbTypes::LineString;
   }
   else if ( mPolygonRadioButton->isChecked() )
   {
-    return QGis::WKBPolygon;
+    return QgsWkbTypes::Polygon;
   }
   else if ( mMultiPointRadioButton->isChecked() )
   {
-    return QGis::WKBMultiPoint;
+    return QgsWkbTypes::MultiPoint;
   }
   else if ( mMultiLineRadioButton->isChecked() )
   {
-    return QGis::WKBMultiLineString;
+    return QgsWkbTypes::MultiLineString;
   }
   else if ( mMultiPolygonRadioButton->isChecked() )
   {
-    return QGis::WKBMultiPolygon;
+    return QgsWkbTypes::MultiPolygon;
   }
-  return QGis::WKBUnknown;
+  return QgsWkbTypes::Unknown;
 }
 
 QgsCoordinateReferenceSystem QgsNewMemoryLayerDialog::crs() const

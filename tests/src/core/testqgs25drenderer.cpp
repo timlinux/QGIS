@@ -28,7 +28,7 @@
 #include <qgsapplication.h>
 #include <qgsproviderregistry.h>
 #include <qgsmaplayerregistry.h>
-#include <qgssymbolv2.h>
+#include <qgssymbol.h>
 #include <qgs25drenderer.h>
 #include "qgscomposition.h"
 #include "qgscomposermap.h"
@@ -121,7 +121,7 @@ void TestQgs25DRenderer::render()
   renderer->setShadowEnabled( false );
   renderer->setWallShadingEnabled( false );
   renderer->setRoofColor( QColor( "#fdbf6f" ) );
-  mpPolysLayer->setRendererV2( renderer );
+  mpPolysLayer->setRenderer( renderer );
 
   QVERIFY( imageCheck( "25d_render" ) );
 }

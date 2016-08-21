@@ -17,11 +17,11 @@
 #include "qgsapplication.h"
 #include "qgsmapcanvas.h"
 #include "qgspointmarkeritem.h"
-#include "qgsrendererv2.h"
+#include "qgsrenderer.h"
 #include "qgssnappingutils.h"
-#include "qgssymbolv2.h"
+#include "qgssymbol.h"
 #include "qgsvectorlayer.h"
-#include "qgssymbollayerv2.h"
+#include "qgssymbollayer.h"
 #include "qgsdatadefined.h"
 #include "qgisapp.h"
 
@@ -55,7 +55,7 @@ bool QgsMapToolOffsetPointSymbol::layerIsOffsetable( QgsMapLayer* ml )
   }
 
   //does it have point or multipoint type?
-  if ( vLayer->geometryType() != QGis::Point )
+  if ( vLayer->geometryType() != QgsWkbTypes::PointGeometry )
   {
     return false;
   }
@@ -83,11 +83,11 @@ void QgsMapToolOffsetPointSymbol::canvasPressOnFeature( QgsMapMouseEvent *e, con
   mOffsetting = true;
 }
 
-bool QgsMapToolOffsetPointSymbol::checkSymbolCompatibility( QgsMarkerSymbolV2* markerSymbol, QgsRenderContext &context )
+bool QgsMapToolOffsetPointSymbol::checkSymbolCompatibility( QgsMarkerSymbol* markerSymbol, QgsRenderContext &context )
 {
   bool ok = false;
 
-  Q_FOREACH ( QgsSymbolLayerV2* layer, markerSymbol->symbolLayers() )
+  Q_FOREACH ( QgsSymbolLayer* layer, markerSymbol->symbolLayers() )
   {
     if ( !layer->hasDataDefinedProperty( "offset" ) )
       continue;
@@ -168,7 +168,7 @@ void QgsMapToolOffsetPointSymbol::canvasReleaseEvent( QgsMapMouseEvent* e )
     mActiveLayer->triggerRepaint();
 }
 
-void QgsMapToolOffsetPointSymbol::createPreviewItem( QgsMarkerSymbolV2* markerSymbol )
+void QgsMapToolOffsetPointSymbol::createPreviewItem( QgsMarkerSymbol* markerSymbol )
 {
   delete mOffsetItem;
   mOffsetItem = nullptr;
@@ -186,7 +186,7 @@ void QgsMapToolOffsetPointSymbol::createPreviewItem( QgsMarkerSymbolV2* markerSy
 QMap<int, QVariant> QgsMapToolOffsetPointSymbol::calculateNewOffsetAttributes( const QgsPoint& startPoint, const QgsPoint& endPoint ) const
 {
   QMap<int, QVariant> newAttrValues;
-  Q_FOREACH ( QgsSymbolLayerV2* layer, mMarkerSymbol->symbolLayers() )
+  Q_FOREACH ( QgsSymbolLayer* layer, mMarkerSymbol->symbolLayers() )
   {
     if ( !layer->hasDataDefinedProperty( "offset" ) )
       continue;
@@ -194,14 +194,14 @@ QMap<int, QVariant> QgsMapToolOffsetPointSymbol::calculateNewOffsetAttributes( c
     if ( layer->getDataDefinedProperty( "offset" )->useExpression() )
       continue;
 
-    QgsMarkerSymbolLayerV2* ml = dynamic_cast< QgsMarkerSymbolLayerV2* >( layer );
+    QgsMarkerSymbolLayer* ml = dynamic_cast< QgsMarkerSymbolLayer* >( layer );
     if ( !ml )
       continue;
 
     QPointF offset = calculateOffset( startPoint, endPoint, ml->offsetUnit() );
     int fieldIdx = mActiveLayer->fields().indexFromName( layer->getDataDefinedProperty( "offset" )->field() );
     if ( fieldIdx >= 0 )
-      newAttrValues[ fieldIdx ] = QgsSymbolLayerV2Utils::encodePoint( offset );
+      newAttrValues[ fieldIdx ] = QgsSymbolLayerUtils::encodePoint( offset );
   }
   return newAttrValues;
 }
@@ -223,7 +223,7 @@ void QgsMapToolOffsetPointSymbol::updateOffsetPreviewItem( const QgsPoint& start
   mOffsetItem->updateSize();
 }
 
-QPointF QgsMapToolOffsetPointSymbol::calculateOffset( const QgsPoint& startPoint, const QgsPoint& endPoint, QgsSymbolV2::OutputUnit unit ) const
+QPointF QgsMapToolOffsetPointSymbol::calculateOffset( const QgsPoint& startPoint, const QgsPoint& endPoint, QgsUnitTypes::RenderUnit unit ) const
 {
   double dx = endPoint.x() - startPoint.x();
   double dy = -( endPoint.y() - startPoint.y() );
@@ -232,20 +232,20 @@ QPointF QgsMapToolOffsetPointSymbol::calculateOffset( const QgsPoint& startPoint
 
   switch ( unit )
   {
-    case QgsSymbolV2::MM:
+    case QgsUnitTypes::RenderMillimeters:
       factor = 25.4 / mCanvas->mapSettings().outputDpi() / mCanvas->mapSettings().mapUnitsPerPixel() ;
       break;
 
-    case QgsSymbolV2::Pixel:
+    case QgsUnitTypes::RenderPixels:
       factor = 1.0 / mCanvas->mapSettings().mapUnitsPerPixel();
       break;
 
-    case QgsSymbolV2::MapUnit:
+    case QgsUnitTypes::RenderMapUnits:
       factor = 1.0;
       break;
 
-    case QgsSymbolV2::Mixed:
-    case QgsSymbolV2::Percentage:
+    case QgsUnitTypes::RenderUnknownUnit:
+    case QgsUnitTypes::RenderPercentage:
       //no sensible value
       factor = 1.0;
       break;

@@ -16,12 +16,12 @@
 #include "qgsdistancearea.h"
 #include "qgslogger.h"
 #include "qgsmapcanvas.h"
-#include "qgsmaprenderer.h"
 #include "qgsmaptopixel.h"
 #include "qgsrubberband.h"
 #include "qgsvectorlayer.h"
 #include "qgssnappingutils.h"
 #include "qgstolerance.h"
+#include "qgscsexception.h"
 
 #include "qgsmeasuredialog.h"
 #include "qgsmeasuretool.h"
@@ -38,8 +38,8 @@ QgsMeasureTool::QgsMeasureTool( QgsMapCanvas* canvas, bool measureArea )
 {
   mMeasureArea = measureArea;
 
-  mRubberBand = new QgsRubberBand( canvas, mMeasureArea ? QGis::Polygon : QGis::Line );
-  mRubberBandPoints = new QgsRubberBand( canvas, QGis::Point );
+  mRubberBand = new QgsRubberBand( canvas, mMeasureArea ? QgsWkbTypes::PolygonGeometry : QgsWkbTypes::LineGeometry );
+  mRubberBandPoints = new QgsRubberBand( canvas, QgsWkbTypes::PointGeometry );
 
   QPixmap myCrossHairQPixmap = QPixmap(( const char ** ) cross_hair_cursor );
   mCursor = QCursor( myCrossHairQPixmap, 8, 8 );
@@ -81,7 +81,7 @@ void QgsMeasureTool::activate()
 
   // If we suspect that they have data that is projected, yet the
   // map CRS is set to a geographic one, warn them.
-  if ( mCanvas->mapSettings().destinationCrs().geographicFlag() &&
+  if ( mCanvas->mapSettings().destinationCrs().isGeographic() &&
        ( mCanvas->extent().height() > 360 ||
          mCanvas->extent().width() > 720 ) )
   {
@@ -108,8 +108,8 @@ void QgsMeasureTool::restart()
 {
   mPoints.clear();
 
-  mRubberBand->reset( mMeasureArea ? QGis::Polygon : QGis::Line );
-  mRubberBandPoints->reset( QGis::Point );
+  mRubberBand->reset( mMeasureArea ? QgsWkbTypes::PolygonGeometry : QgsWkbTypes::LineGeometry );
+  mRubberBandPoints->reset( QgsWkbTypes::PointGeometry );
 
   mDone = true;
   mWrongProjectProjection = false;

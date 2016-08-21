@@ -3,7 +3,7 @@
  * \brief Point geometry type, with support for z-dimension and m-values.
  * \note added in QGIS 2.10
  */
-class QgsPointV2: public QgsAbstractGeometryV2
+class QgsPointV2: public QgsAbstractGeometry
 {
 %TypeHeaderCode
 #include <qgspointv2.h>
@@ -32,12 +32,12 @@ class QgsPointV2: public QgsAbstractGeometryV2
      * @param z z-coordinate of point, for PointZ or PointZM types
      * @param m m-value of point, for PointM or PointZM types
      */
-    QgsPointV2( QgsWKBTypes::Type type, double x = 0.0, double y = 0.0, double z = 0.0, double m = 0.0 );
+    QgsPointV2( QgsWkbTypes::Type type, double x = 0.0, double y = 0.0, double z = 0.0, double m = 0.0 );
 %MethodCode
-  if ( QgsWKBTypes::flatType( a0 ) != QgsWKBTypes::Point )
+  if ( QgsWkbTypes::flatType( a0 ) != QgsWkbTypes::Point )
   {
     PyErr_SetString(PyExc_ValueError,
-            QString( "%1 is not a valid WKB type for point geometries" ).arg( QgsWKBTypes::displayString( a0 ) ).toUtf8().constData() );
+            QString( "%1 is not a valid WKB type for point geometries" ).arg( QgsWkbTypes::displayString( a0 ) ).toUtf8().constData() );
     sipIsErr = 1;
   }
   else
@@ -157,6 +157,7 @@ class QgsPointV2: public QgsAbstractGeometryV2
                     bool transformZ = false );
     void transform( const QTransform& t );
     virtual QList< QList< QList< QgsPointV2 > > > coordinateSequence() const;
+    virtual QgsAbstractGeometry* boundary() const /Factory/;
 
     //low-level editing
     virtual bool insertVertex( QgsVertexId position, const QgsPointV2& vertex );
@@ -180,6 +181,6 @@ class QgsPointV2: public QgsAbstractGeometryV2
     virtual bool addMValue( double mValue = 0 );
     virtual bool dropZValue();
     virtual bool dropMValue();
-    virtual bool convertTo( QgsWKBTypes::Type type );
+    virtual bool convertTo( QgsWkbTypes::Type type );
 
 };

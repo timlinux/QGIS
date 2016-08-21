@@ -20,12 +20,13 @@
 #include "qgsoptionsdialogbase.h"
 #include "ui_qgsprojectpropertiesbase.h"
 #include "qgis.h"
+#include "qgsunittypes.h"
 #include "qgisgui.h"
 #include "qgscontexthelp.h"
 
 class QgsMapCanvas;
 class QgsRelationManagerDialog;
-class QgsStyleV2;
+class QgsStyle;
 class QgsExpressionContext;
 class QgsLayerTreeGroup;
 
@@ -47,12 +48,12 @@ class APP_EXPORT QgsProjectProperties : public QgsOptionsDialogBase, private Ui:
 
     /** Gets the currently select map units
      */
-    QGis::UnitType mapUnits() const;
+    QgsUnitTypes::DistanceUnit mapUnits() const;
 
     /*!
      * Set the map units
      */
-    void setMapUnits( QGis::UnitType );
+    void setMapUnits( QgsUnitTypes::DistanceUnit );
 
     /*!
        Every project has a title
@@ -192,7 +193,7 @@ class APP_EXPORT QgsProjectProperties : public QgsOptionsDialogBase, private Ui:
 
     QgsRelationManagerDialog *mRelationManagerDlg;
     QgsMapCanvas* mMapCanvas;
-    QgsStyleV2* mStyle;
+    QgsStyle* mStyle;
 
     void populateStyles();
     void editSymbol( QComboBox* cbo );
@@ -240,5 +241,5 @@ class APP_EXPORT QgsProjectProperties : public QgsOptionsDialogBase, private Ui:
 
     static const char * GEO_NONE_DESC;
 
-    void updateGuiForMapUnits( QGis::UnitType units );
+    void updateGuiForMapUnits( QgsUnitTypes::DistanceUnit units );
 };

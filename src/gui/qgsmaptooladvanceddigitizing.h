@@ -17,11 +17,10 @@
 #ifndef QGSMAPTOOLADVANCEDDIGITIZE_H
 #define QGSMAPTOOLADVANCEDDIGITIZE_H
 
-#include "qgsmaptool.h"
 #include "qgsmaptooledit.h"
-#include "qgsadvanceddigitizingdockwidget.h"
 
 class QgsMapMouseEvent;
+class QgsAdvancedDigitizingDockWidget;
 
 /** \ingroup gui
  * @brief The QgsMapToolAdvancedDigitizing class is a QgsMapTool whcih gives event directly in map coordinates and allows filtering its events.
@@ -40,6 +39,7 @@ class GUI_EXPORT QgsMapToolAdvancedDigitizing : public QgsMapToolEdit
     {
       CaptureNone,    //!< Do not capture
       CapturePoint,   //!< Capture points
+      CaptureSegment, //!< Capture a segment (i.e. 2 points)
       CaptureLine,    //!< Capture lines
       CapturePolygon  //!< Capture polygons
     };
@@ -86,6 +86,7 @@ class GUI_EXPORT QgsMapToolAdvancedDigitizing : public QgsMapToolEdit
     virtual void deactivate() override;
 
     QgsAdvancedDigitizingDockWidget* cadDockWidget() const { return mCadDockWidget; }
+
 
   protected:
     /**

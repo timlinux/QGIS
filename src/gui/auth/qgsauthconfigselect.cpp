@@ -217,7 +217,7 @@ void QgsAuthConfigSelect::on_btnConfigEdit_clicked()
   ace->setWindowModality( Qt::WindowModal );
   if ( ace->exec() )
   {
-    //qDebug( "Edit returned config Id: %s", ace->configId().toAscii().constData() );
+    //qDebug( "Edit returned config Id: %s", ace->configId().toLatin1().constData() );
     setConfigId( ace->configId() );
   }
   ace->deleteLater();
@@ -331,7 +331,7 @@ QString QgsAuthConfigUriEdit::dataSourceUri()
   return mDataUri;
 }
 
-bool QgsAuthConfigUriEdit::hasConfigID( const QString &txt )
+bool QgsAuthConfigUriEdit::hasConfigId( const QString &txt )
 {
   if ( QgsAuthManager::instance()->isDisabled() )
   {

@@ -16,15 +16,15 @@
  ***************************************************************************/
 
 #include "qgsgloweffect.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgsimageoperation.h"
-#include "qgsvectorcolorrampv2.h"
+#include "qgsvectorcolorramp.h"
 #include "qgsunittypes.h"
 
 QgsGlowEffect::QgsGlowEffect()
     : QgsPaintEffect()
     , mSpread( 2.0 )
-    , mSpreadUnit( QgsSymbolV2::MM )
+    , mSpreadUnit( QgsUnitTypes::RenderMillimeters )
     , mRamp( nullptr )
     , mBlurLevel( 3 )
     , mTransparency( 0.5 )
@@ -65,7 +65,7 @@ void QgsGlowEffect::draw( QgsRenderContext &context )
 
   QImage im = sourceAsImage( context )->copy();
 
-  QgsVectorColorRampV2* ramp = nullptr;
+  QgsVectorColorRamp* ramp = nullptr;
   if ( mColorType == ColorRamp && mRamp )
   {
     ramp = mRamp;
@@ -75,11 +75,11 @@ void QgsGlowEffect::draw( QgsRenderContext &context )
     //create a temporary ramp
     QColor transparentColor = mColor;
     transparentColor.setAlpha( 0 );
-    ramp = new QgsVectorGradientColorRampV2( mColor, transparentColor );
+    ramp = new QgsVectorGradientColorRamp( mColor, transparentColor );
   }
 
   QgsImageOperation::DistanceTransformProperties dtProps;
-  dtProps.spread = mSpread * QgsSymbolLayerV2Utils::pixelSizeScaleFactor( context, mSpreadUnit, mSpreadMapUnitScale );
+  dtProps.spread = mSpread * QgsSymbolLayerUtils::pixelSizeScaleFactor( context, mSpreadUnit, mSpreadMapUnitScale );
   dtProps.useMaxDistance = false;
   dtProps.shadeExterior = shadeExterior();
   dtProps.ramp = ramp;
@@ -124,10 +124,10 @@ QgsStringMap QgsGlowEffect::properties() const
   props.insert( "transparency", QString::number( mTransparency ) );
   props.insert( "blur_level", QString::number( mBlurLevel ) );
   props.insert( "spread", QString::number( mSpread ) );
-  props.insert( "spread_unit", QgsSymbolLayerV2Utils::encodeOutputUnit( mSpreadUnit ) );
-  props.insert( "spread_unit_scale", QgsSymbolLayerV2Utils::encodeMapUnitScale( mSpreadMapUnitScale ) );
+  props.insert( "spread_unit", QgsUnitTypes::encodeUnit( mSpreadUnit ) );
+  props.insert( "spread_unit_scale", QgsSymbolLayerUtils::encodeMapUnitScale( mSpreadMapUnitScale ) );
   props.insert( "color_type", QString::number( static_cast< int >( mColorType ) ) );
-  props.insert( "single_color", QgsSymbolLayerV2Utils::encodeColor( mColor ) );
+  props.insert( "single_color", QgsSymbolLayerUtils::encodeColor( mColor ) );
 
   if ( mRamp )
   {
@@ -162,8 +162,8 @@ void QgsGlowEffect::readProperties( const QgsStringMap &props )
   {
     mSpread = spread;
   }
-  mSpreadUnit = QgsSymbolLayerV2Utils::decodeOutputUnit( props.value( "spread_unit" ) );
-  mSpreadMapUnitScale = QgsSymbolLayerV2Utils::decodeMapUnitScale( props.value( "spread_unit_scale" ) );
+  mSpreadUnit = QgsUnitTypes::decodeRenderUnit( props.value( "spread_unit" ) );
+  mSpreadMapUnitScale = QgsSymbolLayerUtils::decodeMapUnitScale( props.value( "spread_unit_scale" ) );
   QgsGlowEffect::GlowColorType type = static_cast< QgsGlowEffect::GlowColorType >( props.value( "color_type" ).toInt( &ok ) );
   if ( ok )
   {
@@ -171,15 +171,15 @@ void QgsGlowEffect::readProperties( const QgsStringMap &props )
   }
   if ( props.contains( "single_color" ) )
   {
-    mColor = QgsSymbolLayerV2Utils::decodeColor( props.value( "single_color" ) );
+    mColor = QgsSymbolLayerUtils::decodeColor( props.value( "single_color" ) );
   }
 
   //attempt to create color ramp from props
   delete mRamp;
-  mRamp = QgsVectorGradientColorRampV2::create( props );
+  mRamp = QgsVectorGradientColorRamp::create( props );
 }
 
-void QgsGlowEffect::setRamp( QgsVectorColorRampV2 *ramp )
+void QgsGlowEffect::setRamp( QgsVectorColorRamp *ramp )
 {
   delete mRamp;
   mRamp = ramp;
@@ -206,7 +206,7 @@ QgsGlowEffect &QgsGlowEffect::operator=( const QgsGlowEffect & rhs )
 QRectF QgsGlowEffect::boundingRect( const QRectF &rect, const QgsRenderContext& context ) const
 {
   //spread size
-  double spread = mSpread * QgsSymbolLayerV2Utils::pixelSizeScaleFactor( context, mSpreadUnit, mSpreadMapUnitScale );
+  double spread = mSpread * QgsSymbolLayerUtils::pixelSizeScaleFactor( context, mSpreadUnit, mSpreadMapUnitScale );
   //plus possible extension due to blur, with a couple of extra pixels thrown in for safety
   spread += mBlurLevel * 2 + 10;
   return rect.adjusted( -spread, -spread, spread, spread );

@@ -28,7 +28,7 @@ class QgsLayerTreeLayer;
 class QgsLayerTreeModel;
 class QgsLegendSettings;
 class QgsMapSettings;
-class QgsSymbolV2;
+class QgsSymbol;
 class QgsRenderContext;
 
 /** \ingroup core
@@ -49,7 +49,7 @@ class CORE_EXPORT QgsLayerTreeModelLegendNode : public QObject
     enum LegendNodeRoles
     {
       RuleKeyRole = Qt::UserRole,     //!< rule key of the node (QString)
-      SymbolV2LegacyRuleKeyRole,      //!< for QgsSymbolV2LegendNode only - legacy rule key (void ptr, to be cast to QgsSymbolV2 ptr)
+      SymbolLegacyRuleKeyRole,      //!< for QgsSymbolLegendNode only - legacy rule key (void ptr, to be cast to QgsSymbol ptr)
       ParentRuleKeyRole               //!< rule key of the parent legend node - for legends with tree hierarchy (QString). Added in 2.8
     };
 
@@ -135,7 +135,7 @@ class CORE_EXPORT QgsLayerTreeModelLegendNode : public QObject
     QString mUserLabel;
 };
 
-#include "qgslegendsymbolitemv2.h"
+#include "qgslegendsymbolitem.h"
 
 /** \ingroup core
  * Implementation of legend node interface for displaying preview of vector symbols and their labels
@@ -143,13 +143,13 @@ class CORE_EXPORT QgsLayerTreeModelLegendNode : public QObject
  *
  * @note added in 2.6
  */
-class CORE_EXPORT QgsSymbolV2LegendNode : public QgsLayerTreeModelLegendNode
+class CORE_EXPORT QgsSymbolLegendNode : public QgsLayerTreeModelLegendNode
 {
     Q_OBJECT
 
   public:
-    QgsSymbolV2LegendNode( QgsLayerTreeLayer* nodeLayer, const QgsLegendSymbolItemV2& item, QObject* parent = nullptr );
-    ~QgsSymbolV2LegendNode();
+    QgsSymbolLegendNode( QgsLayerTreeLayer* nodeLayer, const QgsLegendSymbolItem& item, QObject* parent = nullptr );
+    ~QgsSymbolLegendNode();
 
     virtual Qt::ItemFlags flags() const override;
     virtual QVariant data( int role ) const override;
@@ -179,7 +179,7 @@ class CORE_EXPORT QgsSymbolV2LegendNode : public QgsLayerTreeModelLegendNode
      * @see setSymbol()
      * @note added in QGIS 2.14
      */
-    const QgsSymbolV2* symbol() const;
+    const QgsSymbol* symbol() const;
 
     /** Sets the symbol to be used by the legend node. The symbol change is also propagated
      * to the associated vector layer's renderer.
@@ -187,7 +187,7 @@ class CORE_EXPORT QgsSymbolV2LegendNode : public QgsLayerTreeModelLegendNode
      * @see symbol()
      * @note added in QGIS 2.14
      */
-    void setSymbol( QgsSymbolV2* symbol );
+    void setSymbol( QgsSymbol* symbol );
 
   public slots:
 
@@ -207,7 +207,7 @@ class CORE_EXPORT QgsSymbolV2LegendNode : public QgsLayerTreeModelLegendNode
     void updateLabel();
 
   private:
-    QgsLegendSymbolItemV2 mItem;
+    QgsLegendSymbolItem mItem;
     mutable QPixmap mPixmap; // cached symbol preview
     QString mLabel;
     bool mSymbolUsesMapUnits;
@@ -296,12 +296,17 @@ class QgsImageFetcher;
  *
  * @note added in 2.8
  */
-class CORE_EXPORT QgsWMSLegendNode : public QgsLayerTreeModelLegendNode
+class CORE_EXPORT QgsWmsLegendNode : public QgsLayerTreeModelLegendNode
 {
     Q_OBJECT
 
   public:
-    QgsWMSLegendNode( QgsLayerTreeLayer* nodeLayer, QObject* parent = nullptr );
+
+    /** Constructor for QgsWmsLegendNode.
+     * @param nodeLayer layer node
+     * @param parent parent object
+     */
+    QgsWmsLegendNode( QgsLayerTreeLayer* nodeLayer, QObject* parent = nullptr );
 
     virtual QVariant data( int role ) const override;
 

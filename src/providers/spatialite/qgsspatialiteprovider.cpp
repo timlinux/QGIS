@@ -29,7 +29,6 @@ email                : a.furieri@lqt.it
 #include "qgsspatialiteprovider.h"
 #include "qgsspatialiteconnpool.h"
 #include "qgsspatialitefeatureiterator.h"
-#include "qgscrscache.h"
 
 #include <QMessageBox>
 #include <QFileInfo>
@@ -93,20 +92,19 @@ bool QgsSpatiaLiteProvider::convertField( QgsField &field )
 
 
 QgsVectorLayerImport::ImportError
-QgsSpatiaLiteProvider::createEmptyLayer(
-  const QString& uri,
-  const QgsFields &fields,
-  QGis::WkbType wkbType,
-  const QgsCoordinateReferenceSystem *srs,
-  bool overwrite,
-  QMap<int, int> *oldToNewAttrIdxMap,
-  QString *errorMessage,
-  const QMap<QString, QVariant> *options )
+QgsSpatiaLiteProvider::createEmptyLayer( const QString& uri,
+    const QgsFields &fields,
+    QgsWkbTypes::Type wkbType,
+    const QgsCoordinateReferenceSystem& srs,
+    bool overwrite,
+    QMap<int, int> *oldToNewAttrIdxMap,
+    QString *errorMessage,
+    const QMap<QString, QVariant> *options )
 {
   Q_UNUSED( options );
 
   // populate members from the uri structure
-  QgsDataSourceURI dsUri( uri );
+  QgsDataSourceUri dsUri( uri );
   QString sqlitePath = dsUri.database();
   QString tableName = dsUri.table();
 
@@ -146,7 +144,7 @@ QgsSpatiaLiteProvider::createEmptyLayer(
       QString pk = primaryKey = "pk";
       for ( int fldIdx = 0; fldIdx < fields.count(); ++fldIdx )
       {
-        if ( fields[fldIdx].name() == primaryKey )
+        if ( fields.at( fldIdx ).name() == primaryKey )
         {
           // it already exists, try again with a new name
           primaryKey = QString( "%1_%2" ).arg( pk ).arg( index++ );
@@ -159,10 +157,10 @@ QgsSpatiaLiteProvider::createEmptyLayer(
       // search for the passed field
       for ( int fldIdx = 0; fldIdx < fields.count(); ++fldIdx )
       {
-        if ( fields[fldIdx].name() == primaryKey )
+        if ( fields.at( fldIdx ).name() == primaryKey )
         {
           // found, get the field type
-          QgsField fld = fields[fldIdx];
+          QgsField fld = fields.at( fldIdx );
           if ( convertField( fld ) )
           {
             primaryKeyType = fld.typeName();
@@ -224,57 +222,57 @@ QgsSpatiaLiteProvider::createEmptyLayer(
 
       // get geometry type, dim and srid
       int dim = 2;
-      long srid = srs->postgisSrid();
+      long srid = srs.postgisSrid();
 
       switch ( wkbType )
       {
-        case QGis::WKBPoint25D:
+        case QgsWkbTypes::Point25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBPoint:
+        case QgsWkbTypes::Point:
           geometryType = "POINT";
           break;
 
-        case QGis::WKBLineString25D:
+        case QgsWkbTypes::LineString25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBLineString:
+        case QgsWkbTypes::LineString:
           geometryType = "LINESTRING";
           break;
 
-        case QGis::WKBPolygon25D:
+        case QgsWkbTypes::Polygon25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBPolygon:
+        case QgsWkbTypes::Polygon:
           geometryType = "POLYGON";
           break;
 
-        case QGis::WKBMultiPoint25D:
+        case QgsWkbTypes::MultiPoint25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBMultiPoint:
+        case QgsWkbTypes::MultiPoint:
           geometryType = "MULTIPOINT";
           break;
 
-        case QGis::WKBMultiLineString25D:
+        case QgsWkbTypes::MultiLineString25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBMultiLineString:
+        case QgsWkbTypes::MultiLineString:
           geometryType = "MULTILINESTRING";
           break;
 
-        case QGis::WKBMultiPolygon25D:
+        case QgsWkbTypes::MultiPolygon25D:
           dim = 3;
           FALLTHROUGH;
-        case QGis::WKBMultiPolygon:
+        case QgsWkbTypes::MultiPolygon:
           geometryType = "MULTIPOLYGON";
           break;
 
-        case QGis::WKBUnknown:
+        case QgsWkbTypes::Unknown:
           geometryType = "GEOMETRY";
           break;
 
-        case QGis::WKBNoGeometry:
+        case QgsWkbTypes::NoGeometry:
         default:
           dim = 0;
           break;
@@ -359,7 +357,7 @@ QgsSpatiaLiteProvider::createEmptyLayer(
     QList<QgsField> flist;
     for ( int fldIdx = 0; fldIdx < fields.count(); ++fldIdx )
     {
-      QgsField fld = fields[fldIdx];
+      QgsField fld = fields.at( fldIdx );
       if ( fld.name() == primaryKey )
         continue;
 
@@ -419,7 +417,7 @@ QgsSpatiaLiteProvider::QgsSpatiaLiteProvider( QString const &uri )
     , mViewBased( false )
     , mVShapeBased( false )
     , mReadOnly( false )
-    , mGeomType( QGis::WKBUnknown )
+    , mGeomType( QgsWkbTypes::Unknown )
     , mSqliteHandle( nullptr )
     , mSrid( -1 )
     , mNumberFeatures( 0 )
@@ -431,7 +429,7 @@ QgsSpatiaLiteProvider::QgsSpatiaLiteProvider( QString const &uri )
     , mSpatialiteVersionMinor( 0 )
 {
   nDims = GAIA_XY;
-  QgsDataSourceURI anUri = QgsDataSourceURI( uri );
+  QgsDataSourceUri anUri = QgsDataSourceUri( uri );
 
   // parsing members from the uri structure
   mTableName = anUri.table();
@@ -510,7 +508,7 @@ QgsSpatiaLiteProvider::QgsSpatiaLiteProvider( QString const &uri )
     closeDb();
     return;
   }
-  mEnabledCapabilities = mPrimaryKey.isEmpty() ? 0 : ( QgsVectorDataProvider::SelectAtId | QgsVectorDataProvider::SelectGeometryAtId );
+  mEnabledCapabilities = mPrimaryKey.isEmpty() ? QgsVectorDataProvider::Capabilities() : ( QgsVectorDataProvider::SelectAtId );
   if (( mTableBased || mViewBased ) &&  !mReadOnly )
   {
     // enabling editing only for Tables [excluding Views and VirtualShapes]
@@ -613,12 +611,10 @@ void QgsSpatiaLiteProvider::updatePrimaryKeyCapabilities()
   if ( mPrimaryKey.isEmpty() )
   {
     mEnabledCapabilities &= ~QgsVectorDataProvider::SelectAtId;
-    mEnabledCapabilities &= ~QgsVectorDataProvider::SelectGeometryAtId;
   }
   else
   {
     mEnabledCapabilities |= QgsVectorDataProvider::SelectAtId;
-    mEnabledCapabilities |= QgsVectorDataProvider::SelectGeometryAtId;
   }
 }
 
@@ -978,7 +974,7 @@ QString QgsSpatiaLiteProvider::storageType() const
   return "SQLite database with SpatiaLite extension";
 }
 
-QgsFeatureIterator QgsSpatiaLiteProvider::getFeatures( const QgsFeatureRequest& request )
+QgsFeatureIterator QgsSpatiaLiteProvider::getFeatures( const QgsFeatureRequest& request ) const
 {
   if ( !mValid )
   {
@@ -3256,7 +3252,7 @@ int QgsSpatiaLiteProvider::computeMultiWKB3Dsize( const unsigned char *p_in, int
   return size;
 }
 
-QString QgsSpatiaLiteProvider::subsetString()
+QString QgsSpatiaLiteProvider::subsetString() const
 {
   return mSubsetString;
 }
@@ -3267,7 +3263,7 @@ bool QgsSpatiaLiteProvider::setSubsetString( const QString& theSQL, bool updateF
   mSubsetString = theSQL;
 
   // update URI
-  QgsDataSourceURI uri = QgsDataSourceURI( dataSourceUri() );
+  QgsDataSourceUri uri = QgsDataSourceUri( dataSourceUri() );
   uri.setSql( mSubsetString );
   setDataSourceUri( uri.uri() );
 
@@ -3280,7 +3276,7 @@ bool QgsSpatiaLiteProvider::setSubsetString( const QString& theSQL, bool updateF
   mSubsetString = prevSubsetString;
 
   // restore URI
-  uri = QgsDataSourceURI( dataSourceUri() );
+  uri = QgsDataSourceUri( dataSourceUri() );
   uri.setSql( mSubsetString );
   setDataSourceUri( uri.uri() );
 
@@ -3292,7 +3288,7 @@ bool QgsSpatiaLiteProvider::setSubsetString( const QString& theSQL, bool updateF
 }
 
 
-QgsRectangle QgsSpatiaLiteProvider::extent()
+QgsRectangle QgsSpatiaLiteProvider::extent() const
 {
   return mLayerExtent;
 }
@@ -3311,7 +3307,7 @@ size_t QgsSpatiaLiteProvider::layerCount() const
 /**
  * Return the feature type
  */
-QGis::WkbType QgsSpatiaLiteProvider::geometryType() const
+QgsWkbTypes::Type QgsSpatiaLiteProvider::wkbType() const
 {
   return mGeomType;
 }
@@ -3325,12 +3321,12 @@ long QgsSpatiaLiteProvider::featureCount() const
 }
 
 
-QgsCoordinateReferenceSystem QgsSpatiaLiteProvider::crs()
+QgsCoordinateReferenceSystem QgsSpatiaLiteProvider::crs() const
 {
-  QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsByOgcWmsCrs( mAuthId );
+  QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( mAuthId );
   if ( !srs.isValid() )
   {
-    srs = QgsCRSCache::instance()->crsByProj4( mProj4text );
+    srs = QgsCoordinateReferenceSystem::fromProj4( mProj4text );
     //TODO: createFromProj4 used to save to the user database any new CRS
     // this behavior was changed in order to separate creation and saving.
     // Not sure if it necessary to save it here, should be checked by someone
@@ -3340,7 +3336,7 @@ QgsCoordinateReferenceSystem QgsSpatiaLiteProvider::crs()
       QString myName = QString( " * %1 (%2)" )
                        .arg( QObject::tr( "Generated CRS", "A CRS automatically generated from layer info get this prefix for description" ),
                              srs.toProj4() );
-      srs.saveAsUserCRS( myName );
+      srs.saveAsUserCrs( myName );
     }
 
   }
@@ -3348,7 +3344,7 @@ QgsCoordinateReferenceSystem QgsSpatiaLiteProvider::crs()
 }
 
 
-bool QgsSpatiaLiteProvider::isValid()
+bool QgsSpatiaLiteProvider::isValid() const
 {
   return mValid;
 }
@@ -3365,13 +3361,13 @@ QString QgsSpatiaLiteProvider::description() const
   return SPATIALITE_DESCRIPTION;
 }                               //  QgsSpatiaLiteProvider::description()
 
-const QgsFields& QgsSpatiaLiteProvider::fields() const
+QgsFields QgsSpatiaLiteProvider::fields() const
 {
   return mAttributeFields;
 }
 
 // Returns the minimum value of an attribute
-QVariant QgsSpatiaLiteProvider::minimumValue( int index )
+QVariant QgsSpatiaLiteProvider::minimumValue( int index ) const
 {
   int ret;
   int i;
@@ -3385,7 +3381,7 @@ QVariant QgsSpatiaLiteProvider::minimumValue( int index )
   try
   {
     // get the field name
-    const QgsField& fld = field( index );
+    QgsField fld = field( index );
 
     sql = QString( "SELECT Min(%1) FROM %2" ).arg( quotedIdentifier( fld.name() ), mQuery );
 
@@ -3434,7 +3430,7 @@ QVariant QgsSpatiaLiteProvider::minimumValue( int index )
 }
 
 // Returns the maximum value of an attribute
-QVariant QgsSpatiaLiteProvider::maximumValue( int index )
+QVariant QgsSpatiaLiteProvider::maximumValue( int index ) const
 {
   int ret;
   int i;
@@ -3448,7 +3444,7 @@ QVariant QgsSpatiaLiteProvider::maximumValue( int index )
   try
   {
     // get the field name
-    const QgsField & fld = field( index );
+    QgsField fld = field( index );
 
     sql = QString( "SELECT Max(%1) FROM %2" ).arg( quotedIdentifier( fld.name() ), mQuery );
 
@@ -3498,7 +3494,7 @@ QVariant QgsSpatiaLiteProvider::maximumValue( int index )
 }
 
 // Returns the list of unique values of an attribute
-void QgsSpatiaLiteProvider::uniqueValues( int index, QList < QVariant > &uniqueValues, int limit )
+void QgsSpatiaLiteProvider::uniqueValues( int index, QList < QVariant > &uniqueValues, int limit ) const
 {
   sqlite3_stmt *stmt = nullptr;
   QString sql;
@@ -3510,7 +3506,7 @@ void QgsSpatiaLiteProvider::uniqueValues( int index, QList < QVariant > &uniqueV
   {
     return; //invalid field
   }
-  const QgsField& fld = mAttributeFields.at( index );
+  QgsField fld = mAttributeFields.at( index );
 
   sql = QString( "SELECT DISTINCT %1 FROM %2" ).arg( quotedIdentifier( fld.name() ), mQuery );
 
@@ -3581,30 +3577,7 @@ QString QgsSpatiaLiteProvider::geomParam() const
 {
   QString geometry;
 
-  bool forceMulti = false;
-
-  switch ( geometryType() )
-  {
-    case QGis::WKBPoint:
-    case QGis::WKBLineString:
-    case QGis::WKBPolygon:
-    case QGis::WKBPoint25D:
-    case QGis::WKBLineString25D:
-    case QGis::WKBPolygon25D:
-    case QGis::WKBUnknown:
-    case QGis::WKBNoGeometry:
-      forceMulti = false;
-      break;
-
-    case QGis::WKBMultiPoint:
-    case QGis::WKBMultiLineString:
-    case QGis::WKBMultiPolygon:
-    case QGis::WKBMultiPoint25D:
-    case QGis::WKBMultiLineString25D:
-    case QGis::WKBMultiPolygon25D:
-      forceMulti = true;
-      break;
-  }
+  bool forceMulti = QgsWkbTypes::isMultiType( wkbType() );
 
   // ST_Multi function is available from QGIS >= 2.4
   bool hasMultiFunction = mSpatialiteVersionMajor > 2 ||
@@ -3699,7 +3672,7 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
         if ( !mGeometryColumn.isEmpty() )
         {
           // binding GEOMETRY to Prepared Statement
-          if ( !feature->constGeometry() )
+          if ( !feature->hasGeometry() )
           {
             sqlite3_bind_null( stmt, ++ia );
           }
@@ -3707,8 +3680,8 @@ bool QgsSpatiaLiteProvider::addFeatures( QgsFeatureList & flist )
           {
             unsigned char *wkb = nullptr;
             int wkb_size;
-            convertFromGeosWKB( feature->constGeometry()->asWkb(),
-                                feature->constGeometry()->wkbSize(),
+            convertFromGeosWKB( feature->geometry().asWkb(),
+                                feature->geometry().wkbSize(),
                                 &wkb, &wkb_size, nDims );
             if ( !wkb )
               sqlite3_bind_null( stmt, ++ia );
@@ -3998,7 +3971,7 @@ bool QgsSpatiaLiteProvider::changeAttributeValues( const QgsChangedAttributesMap
       // Loop over all changed attributes
       try
       {
-        const QgsField& fld = field( siter.key() );
+        QgsField fld = field( siter.key() );
         const QVariant& val = siter.value();
 
         if ( !first )
@@ -4149,7 +4122,7 @@ abort:
   return false;
 }
 
-int QgsSpatiaLiteProvider::capabilities() const
+QgsVectorDataProvider::Capabilities QgsSpatiaLiteProvider::capabilities() const
 {
   return mEnabledCapabilities;
 }
@@ -4419,25 +4392,25 @@ bool QgsSpatiaLiteProvider::getGeometryDetailsAbstractInterface( gaiaVectorLayer
   switch ( lyr->GeometryType )
   {
     case GAIA_VECTOR_POINT:
-      mGeomType = QGis::WKBPoint;
+      mGeomType = QgsWkbTypes::Point;
       break;
     case GAIA_VECTOR_LINESTRING:
-      mGeomType = QGis::WKBLineString;
+      mGeomType = QgsWkbTypes::LineString;
       break;
     case GAIA_VECTOR_POLYGON:
-      mGeomType = QGis::WKBPolygon;
+      mGeomType = QgsWkbTypes::Polygon;
       break;
     case GAIA_VECTOR_MULTIPOINT:
-      mGeomType = QGis::WKBMultiPoint;
+      mGeomType = QgsWkbTypes::MultiPoint;
       break;
     case GAIA_VECTOR_MULTILINESTRING:
-      mGeomType = QGis::WKBMultiLineString;
+      mGeomType = QgsWkbTypes::MultiLineString;
       break;
     case GAIA_VECTOR_MULTIPOLYGON:
-      mGeomType = QGis::WKBMultiPolygon;
+      mGeomType = QgsWkbTypes::MultiPolygon;
       break;
     default:
-      mGeomType = QGis::WKBUnknown;
+      mGeomType = QgsWkbTypes::Unknown;
       break;
   }
 
@@ -4520,7 +4493,7 @@ bool QgsSpatiaLiteProvider::getGeometryDetails()
   bool ret = false;
   if ( mGeometryColumn.isEmpty() )
   {
-    mGeomType = QGis::WKBNoGeometry;
+    mGeomType = QgsWkbTypes::NoGeometry;
     return true;
   }
 
@@ -4567,27 +4540,27 @@ bool QgsSpatiaLiteProvider::getTableGeometryDetails()
 
       if ( fType == "POINT" )
       {
-        mGeomType = QGis::WKBPoint;
+        mGeomType = QgsWkbTypes::Point;
       }
       else if ( fType == "MULTIPOINT" )
       {
-        mGeomType = QGis::WKBMultiPoint;
+        mGeomType = QgsWkbTypes::MultiPoint;
       }
       else if ( fType == "LINESTRING" )
       {
-        mGeomType = QGis::WKBLineString;
+        mGeomType = QgsWkbTypes::LineString;
       }
       else if ( fType == "MULTILINESTRING" )
       {
-        mGeomType = QGis::WKBMultiLineString;
+        mGeomType = QgsWkbTypes::MultiLineString;
       }
       else if ( fType == "POLYGON" )
       {
-        mGeomType = QGis::WKBPolygon;
+        mGeomType = QgsWkbTypes::Polygon;
       }
       else if ( fType == "MULTIPOLYGON" )
       {
-        mGeomType = QGis::WKBMultiPolygon;
+        mGeomType = QgsWkbTypes::MultiPolygon;
       }
       mSrid = xSrid.toInt();
       if ( spatialIndex.toInt() == 1 )
@@ -4619,7 +4592,7 @@ bool QgsSpatiaLiteProvider::getTableGeometryDetails()
   }
   sqlite3_free_table( results );
 
-  if ( mGeomType == QGis::WKBUnknown || mSrid < 0 )
+  if ( mGeomType == QgsWkbTypes::Unknown || mSrid < 0 )
     goto error;
 
   return getSridDetails();
@@ -4666,27 +4639,27 @@ bool QgsSpatiaLiteProvider::getViewGeometryDetails()
 
       if ( fType == "POINT" )
       {
-        mGeomType = QGis::WKBPoint;
+        mGeomType = QgsWkbTypes::Point;
       }
       else if ( fType == "MULTIPOINT" )
       {
-        mGeomType = QGis::WKBMultiPoint;
+        mGeomType = QgsWkbTypes::MultiPoint;
       }
       else if ( fType == "LINESTRING" )
       {
-        mGeomType = QGis::WKBLineString;
+        mGeomType = QgsWkbTypes::LineString;
       }
       else if ( fType == "MULTILINESTRING" )
       {
-        mGeomType = QGis::WKBMultiLineString;
+        mGeomType = QgsWkbTypes::MultiLineString;
       }
       else if ( fType == "POLYGON" )
       {
-        mGeomType = QGis::WKBPolygon;
+        mGeomType = QgsWkbTypes::Polygon;
       }
       else if ( fType == "MULTIPOLYGON" )
       {
-        mGeomType = QGis::WKBMultiPolygon;
+        mGeomType = QgsWkbTypes::MultiPolygon;
       }
       mSrid = xSrid.toInt();
       if ( spatialIndex.toInt() == 1 )
@@ -4702,7 +4675,7 @@ bool QgsSpatiaLiteProvider::getViewGeometryDetails()
   }
   sqlite3_free_table( results );
 
-  if ( mGeomType == QGis::WKBUnknown || mSrid < 0 )
+  if ( mGeomType == QgsWkbTypes::Unknown || mSrid < 0 )
     goto error;
 
   return getSridDetails();
@@ -4744,27 +4717,27 @@ bool QgsSpatiaLiteProvider::getVShapeGeometryDetails()
 
       if ( fType == "POINT" )
       {
-        mGeomType = QGis::WKBPoint;
+        mGeomType = QgsWkbTypes::Point;
       }
       else if ( fType == "MULTIPOINT" )
       {
-        mGeomType = QGis::WKBMultiPoint;
+        mGeomType = QgsWkbTypes::MultiPoint;
       }
       else if ( fType == "LINESTRING" )
       {
-        mGeomType = QGis::WKBLineString;
+        mGeomType = QgsWkbTypes::LineString;
       }
       else if ( fType == "MULTILINESTRING" )
       {
-        mGeomType = QGis::WKBMultiLineString;
+        mGeomType = QgsWkbTypes::MultiLineString;
       }
       else if ( fType == "POLYGON" )
       {
-        mGeomType = QGis::WKBPolygon;
+        mGeomType = QgsWkbTypes::Polygon;
       }
       else if ( fType == "MULTIPOLYGON" )
       {
-        mGeomType = QGis::WKBMultiPolygon;
+        mGeomType = QgsWkbTypes::MultiPolygon;
       }
       mSrid = xSrid.toInt();
 
@@ -4772,7 +4745,7 @@ bool QgsSpatiaLiteProvider::getVShapeGeometryDetails()
   }
   sqlite3_free_table( results );
 
-  if ( mGeomType == QGis::WKBUnknown || mSrid < 0 )
+  if ( mGeomType == QgsWkbTypes::Unknown || mSrid < 0 )
     goto error;
 
   return getSridDetails();
@@ -4863,32 +4836,32 @@ bool QgsSpatiaLiteProvider::getQueryGeometryDetails()
 
     if ( fType == "POINT" )
     {
-      mGeomType = QGis::WKBPoint;
+      mGeomType = QgsWkbTypes::Point;
     }
     else if ( fType == "MULTIPOINT" )
     {
-      mGeomType = QGis::WKBMultiPoint;
+      mGeomType = QgsWkbTypes::MultiPoint;
     }
     else if ( fType == "LINESTRING" )
     {
-      mGeomType = QGis::WKBLineString;
+      mGeomType = QgsWkbTypes::LineString;
     }
     else if ( fType == "MULTILINESTRING" )
     {
-      mGeomType = QGis::WKBMultiLineString;
+      mGeomType = QgsWkbTypes::MultiLineString;
     }
     else if ( fType == "POLYGON" )
     {
-      mGeomType = QGis::WKBPolygon;
+      mGeomType = QgsWkbTypes::Polygon;
     }
     else if ( fType == "MULTIPOLYGON" )
     {
-      mGeomType = QGis::WKBMultiPolygon;
+      mGeomType = QgsWkbTypes::MultiPolygon;
     }
     mSrid = xSrid.toInt();
   }
 
-  if ( mGeomType == QGis::WKBUnknown || mSrid < 0 )
+  if ( mGeomType == QgsWkbTypes::Unknown || mSrid < 0 )
     goto error;
 
   return getSridDetails();
@@ -5022,7 +4995,7 @@ error:
   return false;
 }
 
-const QgsField & QgsSpatiaLiteProvider::field( int index ) const
+QgsField QgsSpatiaLiteProvider::field( int index ) const
 {
   if ( index < 0 || index >= mAttributeFields.count() )
   {
@@ -5030,7 +5003,7 @@ const QgsField & QgsSpatiaLiteProvider::field( int index ) const
     throw SLFieldNotFound();
   }
 
-  return mAttributeFields[index];
+  return mAttributeFields.at( index );
 }
 
 void QgsSpatiaLiteProvider::invalidateConnections( const QString& connection )
@@ -5074,8 +5047,8 @@ QGISEXTERN bool isProvider()
 QGISEXTERN QgsVectorLayerImport::ImportError createEmptyLayer(
   const QString& uri,
   const QgsFields &fields,
-  QGis::WkbType wkbType,
-  const QgsCoordinateReferenceSystem *srs,
+  QgsWkbTypes::Type wkbType,
+  const QgsCoordinateReferenceSystem& srs,
   bool overwrite,
   QMap<int, int> *oldToNewAttrIdxMap,
   QString *errorMessage,
@@ -5246,7 +5219,7 @@ QGISEXTERN bool deleteLayer( const QString& dbPath, const QString& tableName, QS
   return true;
 }
 
-QgsAttributeList QgsSpatiaLiteProvider::pkAttributeIndexes()
+QgsAttributeList QgsSpatiaLiteProvider::pkAttributeIndexes() const
 {
   return mPrimaryKeyAttrs;
 }
@@ -5257,7 +5230,7 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
                            const QString& styleName, const QString& styleDescription,
                            const QString& uiFileContent, bool useAsDefault, QString& errCause )
 {
-  QgsDataSourceURI dsUri( uri );
+  QgsDataSourceUri dsUri( uri );
   QString sqlitePath = dsUri.database();
   QgsDebugMsg( "Database is: " + sqlitePath );
 
@@ -5337,7 +5310,7 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
                          ") VALUES ("
                          "%1,%2,%3,%4,%5,%6,%7,%8,%9,%10%12"
                          ")" )
-                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
+                .arg( QgsSpatiaLiteProvider::quotedValue( QString() ) )
                 .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                 .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                 .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) )
@@ -5352,12 +5325,10 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
 
   QString checkQuery = QString( "SELECT styleName"
                                 " FROM layer_styles"
-                                " WHERE f_table_catalog=%1"
-                                " AND f_table_schema=%2"
-                                " AND f_table_name=%3"
-                                " AND f_geometry_column=%4"
-                                " AND styleName=%5" )
-                       .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
+                                " WHERE f_table_schema=%1"
+                                " AND f_table_name=%2"
+                                " AND f_geometry_column=%3"
+                                " AND styleName=%4" )
                        .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                        .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                        .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) )
@@ -5391,17 +5362,15 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
                    ",styleSLD=%3"
                    ",description=%4"
                    ",owner=%5"
-                   " WHERE f_table_catalog=%6"
-                   " AND f_table_schema=%7"
-                   " AND f_table_name=%8"
-                   " AND f_geometry_column=%9"
-                   " AND styleName=%10" )
+                   " WHERE f_table_schema=%6"
+                   " AND f_table_name=%7"
+                   " AND f_geometry_column=%8"
+                   " AND styleName=%9" )
           .arg( useAsDefault ? "1" : "0" )
           .arg( QgsSpatiaLiteProvider::quotedValue( qmlStyle ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( sldStyle ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( styleDescription.isEmpty() ? QDateTime::currentDateTime().toString() : styleDescription ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.username() ) )
-          .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
           .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) )
@@ -5412,11 +5381,9 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
   {
     QString removeDefaultSql = QString( "UPDATE layer_styles"
                                         " SET useAsDefault=0"
-                                        " WHERE f_table_catalog=%1"
-                                        " AND f_table_schema=%2"
-                                        " AND f_table_name=%3"
-                                        " AND f_geometry_column=%4" )
-                               .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
+                                        " WHERE f_table_schema=%1"
+                                        " AND f_table_name=%2"
+                                        " AND f_geometry_column=%3" )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) );
@@ -5442,7 +5409,7 @@ QGISEXTERN bool saveStyle( const QString& uri, const QString& qmlStyle, const QS
 
 QGISEXTERN QString loadStyle( const QString& uri, QString& errCause )
 {
-  QgsDataSourceURI dsUri( uri );
+  QgsDataSourceUri dsUri( uri );
   QString sqlitePath = dsUri.database();
   QgsDebugMsg( "Database is: " + sqlitePath );
 
@@ -5459,13 +5426,11 @@ QGISEXTERN QString loadStyle( const QString& uri, QString& errCause )
 
   QString selectQmlQuery = QString( "SELECT styleQML"
                                     " FROM layer_styles"
-                                    " WHERE f_table_catalog=%1"
-                                    " AND f_table_schema=%2"
-                                    " AND f_table_name=%3"
-                                    " AND f_geometry_column=%4"
+                                    " WHERE f_table_schema=%1"
+                                    " AND f_table_name=%2"
+                                    " AND f_geometry_column=%3"
                                     " ORDER BY CASE WHEN useAsDefault THEN 1 ELSE 2 END"
                                     ",update_time DESC LIMIT 1" )
-                           .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
                            .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                            .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                            .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) );
@@ -5493,7 +5458,7 @@ QGISEXTERN QString loadStyle( const QString& uri, QString& errCause )
 QGISEXTERN int listStyles( const QString &uri, QStringList &ids, QStringList &names,
                            QStringList &descriptions, QString& errCause )
 {
-  QgsDataSourceURI dsUri( uri );
+  QgsDataSourceUri dsUri( uri );
   QString sqlitePath = dsUri.database();
   QgsDebugMsg( "Database is: " + sqlitePath );
 
@@ -5542,11 +5507,9 @@ QGISEXTERN int listStyles( const QString &uri, QStringList &ids, QStringList &na
   // get them
   QString selectRelatedQuery = QString( "SELECT id,styleName,description"
                                         " FROM layer_styles"
-                                        " WHERE f_table_catalog=%1"
-                                        " AND f_table_schema=%2"
-                                        " AND f_table_name=%3"
-                                        " AND f_geometry_column=%4" )
-                               .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
+                                        " WHERE f_table_schema=%1"
+                                        " AND f_table_name=%2"
+                                        " AND f_geometry_column=%3" )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                                .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) );
@@ -5571,9 +5534,8 @@ QGISEXTERN int listStyles( const QString &uri, QStringList &ids, QStringList &na
 
   QString selectOthersQuery = QString( "SELECT id,styleName,description"
                                        " FROM layer_styles"
-                                       " WHERE NOT (f_table_catalog=%1 AND f_table_schema=%2 AND f_table_name=%3 AND f_geometry_column=%4)"
+                                       " WHERE NOT (f_table_schema=%1 AND f_table_name=%2 AND f_geometry_column=%3)"
                                        " ORDER BY update_time DESC" )
-                              .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.database() ) )
                               .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.schema() ) )
                               .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.table() ) )
                               .arg( QgsSpatiaLiteProvider::quotedValue( dsUri.geometryColumn() ) );
@@ -5601,7 +5563,7 @@ QGISEXTERN int listStyles( const QString &uri, QStringList &ids, QStringList &na
 
 QGISEXTERN QString getStyleById( const QString& uri, QString styleId, QString& errCause )
 {
-  QgsDataSourceURI dsUri( uri );
+  QgsDataSourceUri dsUri( uri );
   QString sqlitePath = dsUri.database();
   QgsDebugMsg( "Database is: " + sqlitePath );
 

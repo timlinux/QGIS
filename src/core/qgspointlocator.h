@@ -21,10 +21,8 @@ class QgsVectorLayer;
 
 #include "qgsfeature.h"
 #include "qgspoint.h"
-#include "qgsrectangle.h"
-
-class QgsCoordinateTransform;
-class QgsCoordinateReferenceSystem;
+#include "qgscoordinatereferencesystem.h"
+#include "qgscoordinatetransform.h"
 
 class QgsPointLocator_VisitorNearestVertex;
 class QgsPointLocator_VisitorNearestEdge;
@@ -52,19 +50,21 @@ class CORE_EXPORT QgsPointLocator : public QObject
     Q_OBJECT
   public:
     /** Construct point locator for a layer.
-     *  @arg destCRS if not null, will do the searches on data reprojected to the given CRS
+     *  @arg destinationCrs if a valid QgsCoordinateReferenceSystem is passed then the locator will
+     *  do the searches on data reprojected to the given CRS
      *  @arg extent  if not null, will index only a subset of the layer
      */
-    explicit QgsPointLocator( QgsVectorLayer* layer, const QgsCoordinateReferenceSystem* destCRS = nullptr, const QgsRectangle* extent = nullptr );
+    explicit QgsPointLocator( QgsVectorLayer* layer, const QgsCoordinateReferenceSystem& destinationCrs = QgsCoordinateReferenceSystem(),
+                              const QgsRectangle* extent = nullptr );
 
     ~QgsPointLocator();
 
     //! Get associated layer
     //! @note added in QGIS 2.14
     QgsVectorLayer* layer() const { return mLayer; }
-    //! Get destination CRS - may be null if not doing OTF reprojection
+    //! Get destination CRS - may be an invalid QgsCoordinateReferenceSystem if not doing OTF reprojection
     //! @note added in QGIS 2.14
-    const QgsCoordinateReferenceSystem* destCRS() const;
+    QgsCoordinateReferenceSystem destinationCrs() const;
     //! Get extent of the area point locator covers - if null then it caches the whole layer
     //! @note added in QGIS 2.14
     const QgsRectangle* extent() const { return mExtent; }
@@ -212,7 +212,7 @@ class CORE_EXPORT QgsPointLocator : public QObject
   private slots:
     void onFeatureAdded( QgsFeatureId fid );
     void onFeatureDeleted( QgsFeatureId fid );
-    void onGeometryChanged( QgsFeatureId fid, QgsGeometry& geom );
+    void onGeometryChanged( QgsFeatureId fid, const QgsGeometry& geom );
 
   private:
     /** Storage manager */
@@ -225,7 +225,7 @@ class CORE_EXPORT QgsPointLocator : public QObject
     bool mIsEmptyLayer;
 
     /** R-tree containing spatial index */
-    QgsCoordinateTransform* mTransform;
+    QgsCoordinateTransform mTransform;
     QgsVectorLayer* mLayer;
     QgsRectangle* mExtent;
 

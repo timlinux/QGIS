@@ -19,7 +19,8 @@ import os
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QPainter
 
-from qgis.core import (QGis,
+from qgis.core import (Qgis,
+                       QgsWkbTypes,
                        QgsVectorLayer,
                        QgsRectangle,
                        QgsFeature,
@@ -30,8 +31,8 @@ from qgis.core import (QGis,
                        QgsFields,
                        QgsMapLayerRegistry,
                        QgsVectorJoinInfo,
-                       QgsSymbolV2,
-                       QgsSingleSymbolRendererV2,
+                       QgsSymbol,
+                       QgsSingleSymbolRenderer,
                        QgsCoordinateReferenceSystem,
                        QgsProject,
                        QgsUnitTypes,
@@ -71,6 +72,30 @@ def createLayerWithTwoPoints():
     f2.setGeometry(QgsGeometry.fromPoint(QgsPoint(100, 200)))
     assert pr.addFeatures([f, f2])
     assert layer.pendingFeatureCount() == 2
+    return layer
+
+
+def createLayerWithFivePoints():
+    layer = QgsVectorLayer("Point?field=fldtxt:string&field=fldint:integer",
+                           "addfeat", "memory")
+    pr = layer.dataProvider()
+    f = QgsFeature()
+    f.setAttributes(["test", 123])
+    f.setGeometry(QgsGeometry.fromPoint(QgsPoint(100, 200)))
+    f2 = QgsFeature()
+    f2.setAttributes(["test2", 457])
+    f2.setGeometry(QgsGeometry.fromPoint(QgsPoint(200, 200)))
+    f3 = QgsFeature()
+    f3.setAttributes(["test2", 888])
+    f3.setGeometry(QgsGeometry.fromPoint(QgsPoint(300, 200)))
+    f4 = QgsFeature()
+    f4.setAttributes(["test3", -1])
+    f4.setGeometry(QgsGeometry.fromPoint(QgsPoint(400, 300)))
+    f5 = QgsFeature()
+    f5.setAttributes(["test4", 0])
+    f5.setGeometry(QgsGeometry.fromPoint(QgsPoint(0, 0)))
+    assert pr.addFeatures([f, f2, f3, f4, f5])
+    assert layer.featureCount() == 5
     return layer
 
 
@@ -1050,6 +1075,31 @@ class TestQgsVectorLayer(unittest.TestCase):
 
         self.assertFalse(fi.nextFeature(f))
 
+        layer2 = createLayerWithFivePoints()
+
+        # getFeature(fid)
+        feat = layer2.getFeature(4)
+        self.assertTrue(feat.isValid())
+        self.assertEqual(feat['fldtxt'], 'test3')
+        self.assertEqual(feat['fldint'], -1)
+        feat = layer2.getFeature(10)
+        self.assertFalse(feat.isValid())
+
+        # getFeatures(expression)
+        it = layer2.getFeatures("fldint <= 0")
+        fids = [f.id() for f in it]
+        self.assertEqual(set(fids), set([4, 5]))
+
+        # getFeatures(fids)
+        it = layer2.getFeatures([1, 2])
+        fids = [f.id() for f in it]
+        self.assertEqual(set(fids), set([1, 2]))
+
+        # getFeatures(rect)
+        it = layer2.getFeatures(QgsRectangle(99, 99, 201, 201))
+        fids = [f.id() for f in it]
+        self.assertEqual(set(fids), set([1, 2]))
+
     def test_join(self):
 
         joinLayer = createJoinLayer()
@@ -1121,6 +1171,103 @@ class TestQgsVectorLayer(unittest.TestCase):
         self.assertEqual(layer.minimumValue(3), 111)
         self.assertEqual(layer.maximumValue(3), 321)
         self.assertEqual(set(layer.uniqueValues(3)), set([111, 321]))
+
+    def testUniqueValue(self):
+        """ test retrieving unique values """
+        layer = createLayerWithFivePoints()
+
+        # test layer with just provider features
+        self.assertEqual(set(layer.uniqueValues(1)), set([123, 457, 888, -1, 0]))
+
+        # add feature with new value
+        layer.startEditing()
+        f1 = QgsFeature()
+        f1.setAttributes(["test2", 999])
+        self.assertTrue(layer.addFeature(f1))
+
+        # should be included in unique values
+        self.assertEqual(set(layer.uniqueValues(1)), set([123, 457, 888, -1, 0, 999]))
+        # add it again, should be no change
+        f2 = QgsFeature()
+        f2.setAttributes(["test2", 999])
+        self.assertTrue(layer.addFeature(f1))
+        self.assertEqual(set(layer.uniqueValues(1)), set([123, 457, 888, -1, 0, 999]))
+        # add another feature
+        f3 = QgsFeature()
+        f3.setAttributes(["test2", 9999])
+        self.assertTrue(layer.addFeature(f3))
+        self.assertEqual(set(layer.uniqueValues(1)), set([123, 457, 888, -1, 0, 999, 9999]))
+
+        # change an attribute value to a new unique value
+        f = QgsFeature()
+        f1_id = next(layer.getFeatures()).id()
+        self.assertTrue(layer.changeAttributeValue(f1_id, 1, 481523))
+        # note - this isn't 100% accurate, since 123 no longer exists - but it avoids looping through all features
+        self.assertEqual(set(layer.uniqueValues(1)), set([123, 457, 888, -1, 0, 999, 9999, 481523]))
+
+    def testMinValue(self):
+        """ test retrieving minimum values """
+        layer = createLayerWithFivePoints()
+
+        # test layer with just provider features
+        self.assertEqual(layer.minimumValue(1), -1)
+
+        # add feature with new value
+        layer.startEditing()
+        f1 = QgsFeature()
+        f1.setAttributes(["test2", -999])
+        self.assertTrue(layer.addFeature(f1))
+
+        # should be new minimum value
+        self.assertEqual(layer.minimumValue(1), -999)
+        # add it again, should be no change
+        f2 = QgsFeature()
+        f2.setAttributes(["test2", -999])
+        self.assertTrue(layer.addFeature(f1))
+        self.assertEqual(layer.minimumValue(1), -999)
+        # add another feature
+        f3 = QgsFeature()
+        f3.setAttributes(["test2", -1000])
+        self.assertTrue(layer.addFeature(f3))
+        self.assertEqual(layer.minimumValue(1), -1000)
+
+        # change an attribute value to a new minimum value
+        f = QgsFeature()
+        f1_id = next(layer.getFeatures()).id()
+        self.assertTrue(layer.changeAttributeValue(f1_id, 1, -1001))
+        self.assertEqual(layer.minimumValue(1), -1001)
+
+    def testMaxValue(self):
+        """ test retrieving maximum values """
+        layer = createLayerWithFivePoints()
+
+        # test layer with just provider features
+        self.assertEqual(layer.maximumValue(1), 888)
+
+        # add feature with new value
+        layer.startEditing()
+        f1 = QgsFeature()
+        f1.setAttributes(["test2", 999])
+        self.assertTrue(layer.addFeature(f1))
+
+        # should be new maximum value
+        self.assertEqual(layer.maximumValue(1), 999)
+        # add it again, should be no change
+        f2 = QgsFeature()
+        f2.setAttributes(["test2", 999])
+        self.assertTrue(layer.addFeature(f1))
+        self.assertEqual(layer.maximumValue(1), 999)
+        # add another feature
+        f3 = QgsFeature()
+        f3.setAttributes(["test2", 1000])
+        self.assertTrue(layer.addFeature(f3))
+        self.assertEqual(layer.maximumValue(1), 1000)
+
+        # change an attribute value to a new maximum value
+        f = QgsFeature()
+        f1_id = next(layer.getFeatures()).id()
+        self.assertTrue(layer.changeAttributeValue(f1_id, 1, 1001))
+        self.assertEqual(layer.maximumValue(1), 1001)
 
     def test_InvalidOperations(self):
         layer = createLayerWithOnePoint()
@@ -1220,7 +1367,7 @@ class TestQgsVectorLayer(unittest.TestCase):
         QgsProject.instance().writeEntry("SpatialRefSys", "/ProjectCRSID", srs.srsid())
         QgsProject.instance().writeEntry("SpatialRefSys", "/ProjectCrs", srs.authid())
         QgsProject.instance().writeEntry("Measure", "/Ellipsoid", "WGS84")
-        QgsProject.instance().writeEntry("Measurement", "/DistanceUnits", QgsUnitTypes.encodeUnit(QGis.Meters))
+        QgsProject.instance().writeEntry("Measurement", "/DistanceUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.DistanceMeters))
 
         idx = temp_layer.addExpressionField('$length', QgsField('length', QVariant.Double))  # NOQA
 
@@ -1230,7 +1377,7 @@ class TestQgsVectorLayer(unittest.TestCase):
         self.assertAlmostEqual(f['length'], expected, 3)
 
         # change project length unit, check calculation respects unit
-        QgsProject.instance().writeEntry("Measurement", "/DistanceUnits", QgsUnitTypes.encodeUnit(QGis.Feet))
+        QgsProject.instance().writeEntry("Measurement", "/DistanceUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.DistanceFeet))
         f = next(temp_layer.getFeatures())
         expected = 88360.0918635
         self.assertAlmostEqual(f['length'], expected, 3)
@@ -1250,7 +1397,7 @@ class TestQgsVectorLayer(unittest.TestCase):
         QgsProject.instance().writeEntry("SpatialRefSys", "/ProjectCRSID", srs.srsid())
         QgsProject.instance().writeEntry("SpatialRefSys", "/ProjectCrs", srs.authid())
         QgsProject.instance().writeEntry("Measure", "/Ellipsoid", "WGS84")
-        QgsProject.instance().writeEntry("Measurement", "/AreaUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.SquareMeters))
+        QgsProject.instance().writeEntry("Measurement", "/AreaUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.AreaSquareMeters))
 
         idx = temp_layer.addExpressionField('$area', QgsField('area', QVariant.Double))  # NOQA
 
@@ -1260,7 +1407,7 @@ class TestQgsVectorLayer(unittest.TestCase):
         self.assertAlmostEqual(f['area'], expected, delta=1.0)
 
         # change project area unit, check calculation respects unit
-        QgsProject.instance().writeEntry("Measurement", "/AreaUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.SquareMiles))
+        QgsProject.instance().writeEntry("Measurement", "/AreaUnits", QgsUnitTypes.encodeUnit(QgsUnitTypes.AreaSquareMiles))
         f = next(temp_layer.getFeatures())
         expected = 389.6117565069
         self.assertAlmostEqual(f['area'], expected, 3)
@@ -1444,16 +1591,16 @@ class TestQgsVectorLayer(unittest.TestCase):
     def onRendererChanged(self):
         self.rendererChanged = True
 
-    def test_setRendererV2(self):
+    def test_setRenderer(self):
         layer = createLayerWithOnePoint()
 
         self.rendererChanged = False
         layer.rendererChanged.connect(self.onRendererChanged)
 
-        r = QgsSingleSymbolRendererV2(QgsSymbolV2.defaultSymbol(QGis.Point))
-        layer.setRendererV2(r)
+        r = QgsSingleSymbolRenderer(QgsSymbol.defaultSymbol(QgsWkbTypes.PointGeometry))
+        layer.setRenderer(r)
         self.assertTrue(self.rendererChanged)
-        self.assertEqual(layer.rendererV2(), r)
+        self.assertEqual(layer.renderer(), r)
 
 # TODO:
 # - fetch rect: feat with changed geometry: 1. in rect, 2. out of rect

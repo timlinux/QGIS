@@ -27,7 +27,7 @@ __revision__ = '$Format:%H$'
 
 import os
 
-from qgis.core import QGis, QgsFeature, QgsGeometry, QgsPoint
+from qgis.core import Qgis, QgsFeature, QgsGeometry, QgsPoint, QgsWkbTypes
 
 from processing.core.GeoAlgorithm import GeoAlgorithm
 from processing.core.parameters import ParameterVector
@@ -62,16 +62,16 @@ class DensifyGeometries(GeoAlgorithm):
             self.getParameterValue(self.INPUT))
         vertices = self.getParameterValue(self.VERTICES)
 
-        isPolygon = layer.geometryType() == QGis.Polygon
+        isPolygon = layer.geometryType() == QgsWkbTypes.PolygonGeometry
 
         writer = self.getOutputFromName(
-            self.OUTPUT).getVectorWriter(layer.pendingFields().toList(),
+            self.OUTPUT).getVectorWriter(layer.fields().toList(),
                                          layer.wkbType(), layer.crs())
 
         features = vector.features(layer)
         total = 100.0 / len(features)
         for current, f in enumerate(features):
-            featGeometry = QgsGeometry(f.geometry())
+            featGeometry = f.geometry()
             attrs = f.attributes()
             newGeometry = self.densifyGeometry(featGeometry, int(vertices),
                                                isPolygon)
@@ -112,10 +112,7 @@ class DensifyGeometries(GeoAlgorithm):
 
     def densify(self, polyline, pointsNumber):
         output = []
-        if pointsNumber != 1:
-            multiplier = 1.0 / float(pointsNumber + 1)
-        else:
-            multiplier = 1
+        multiplier = 1.0 / float(pointsNumber + 1)
         for i in xrange(len(polyline) - 1):
             p1 = polyline[i]
             p2 = polyline[i + 1]

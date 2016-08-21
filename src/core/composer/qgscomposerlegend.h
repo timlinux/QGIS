@@ -18,15 +18,12 @@
 #ifndef QGSCOMPOSERLEGEND_H
 #define QGSCOMPOSERLEGEND_H
 
-#include "qgscomposerlegendstyle.h"
 #include "qgscomposeritem.h"
-#include "qgscomposerlegenditem.h"
 #include "qgslayertreemodel.h"
-#include "qgslegendmodel.h"
 #include "qgslegendsettings.h"
 
 class QgsLayerTreeModel;
-class QgsSymbolV2;
+class QgsSymbol;
 class QgsComposerGroupItem;
 class QgsComposerLayerItem;
 class QgsComposerMap;
@@ -75,12 +72,25 @@ class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
     /** Sets item box to the whole content*/
     void adjustBoxSize();
 
-    /** Returns pointer to the legend model*/
-    //! @deprecated in 2.6 - use modelV2()
-    Q_DECL_DEPRECATED QgsLegendModel* model() {return &mLegendModel;}
+    /** Sets whether the legend should automatically resize to fit its contents.
+     * @param enabled set to false to disable automatic resizing. The legend frame will not
+     * be expanded to fit legend items, and items may be cropped from display.
+     * @see resizeToContents()
+     * @note added in QGIS 3.0
+     */
+    void setResizeToContents( bool enabled );
 
-    //! @note added in 2.6
-    QgsLegendModelV2* modelV2() { return mLegendModel2; }
+    /** Returns whether the legend should automatically resize to fit its contents.
+     * @see setResizeToContents()
+     * @note added in QGIS 3.0
+     */
+    bool resizeToContents() const;
+
+
+    /**
+     * Returns the legend model
+     */
+    QgsLegendModelV2* model() { return mLegendModel; }
 
     //! @note added in 2.6
     void setAutoUpdateModel( bool autoUpdate );
@@ -237,13 +247,13 @@ class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
        * @param elem is Dom element corresponding to 'Composer' tag
        * @param doc Dom document
        */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const override;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const override;
 
     /** Sets state from Dom document
        * @param itemElem is Dom node corresponding to item tag
        * @param doc is Dom document
        */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc ) override;
 
     //Overridden to show legend title
     virtual QString displayName() const override;
@@ -272,9 +282,7 @@ class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
     //! use new custom layer tree and update model. if new root is null pointer, will use project's tree
     void setCustomLayerTree( QgsLayerTreeGroup* rootGroup );
 
-    QgsLegendModel mLegendModel;
-
-    QgsLegendModelV2* mLegendModel2;
+    QgsLegendModelV2* mLegendModel;
     QgsLayerTreeGroup* mCustomLayerTree;
 
     QgsLegendSettings mSettings;
@@ -293,6 +301,15 @@ class CORE_EXPORT QgsComposerLegend : public QgsComposerItem
     void doUpdateFilterByMap();
 
     bool mInAtlas;
+
+    //! Will be false until the associated map scale and DPI have been calculated
+    bool mInitialMapScaleCalculated;
+
+    //! Will be true if the legend size should be totally reset at next paint
+    bool mForceResize;
+
+    //! Will be true if the legend should be resized automatically to fit contents
+    bool mSizeToContents;
 };
 
 #endif

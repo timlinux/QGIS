@@ -26,6 +26,8 @@
 #include "qgsproject.h"
 #include "qgsvectordataprovider.h"
 #include "qgsvectorlayer.h"
+#include "qgsactionmanager.h"
+#include "qgsaction.h"
 
 #include <QPushButton>
 #include <QSettings>
@@ -171,7 +173,7 @@ bool QgsFeatureAction::addFeature( const QgsAttributeMap& defaultAttributes, boo
   bool isDisabledAttributeValuesDlg = ( fields.count() == 0 ) || settings.value( "/qgis/digitizing/disable_enter_attribute_values_dialog", false ).toBool();
 
   // override application-wide setting with any layer setting
-  switch ( mLayer->editFormConfig()->suppress() )
+  switch ( mLayer->editFormConfig().suppress() )
   {
     case QgsEditFormConfig::SuppressOn:
       isDisabledAttributeValuesDlg = true;

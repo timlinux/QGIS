@@ -24,10 +24,6 @@
 #include <time.h>
 
 #include "ui_qgsattributetabledialog.h"
-#include "qgscontexthelp.h"
-
-#include "qgsattributedialog.h"
-#include "qgsvectorlayer.h" //QgsFeatureIds
 #include "qgssearchwidgetwrapper.h"
 #include "qgsdockwidget.h"
 
@@ -41,7 +37,7 @@ class QgsAttributeTableModel;
 class QgsAttributeTableFilterModel;
 class QgsRubberBand;
 
-class APP_EXPORT QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDialog
+class APP_EXPORT QgsAttributeTableDialog : public QDialog, private Ui::QgsAttributeTableDialog, private QgsExpressionContextGenerator
 {
     Q_OBJECT
 
@@ -54,6 +50,8 @@ class APP_EXPORT QgsAttributeTableDialog : public QDialog, private Ui::QgsAttrib
      */
     QgsAttributeTableDialog( QgsVectorLayer *theLayer, QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::Window );
     ~QgsAttributeTableDialog();
+
+    QgsExpressionContext createExpressionContext() const override;
 
   public slots:
     /**
@@ -234,7 +232,7 @@ class QgsAttributeTableDock : public QgsDockWidget
     Q_OBJECT
 
   public:
-    QgsAttributeTableDock( const QString & title, QWidget * parent = nullptr, Qt::WindowFlags flags = nullptr );
+    QgsAttributeTableDock( const QString & title, QWidget * parent = nullptr, Qt::WindowFlags flags = 0 );
 
     virtual void closeEvent( QCloseEvent * ev ) override;
 };

@@ -16,12 +16,12 @@
 #ifndef QGSVECTORLAYERLABELPROVIDER_H
 #define QGSVECTORLAYERLABELPROVIDER_H
 
-#include "qgslabelingenginev2.h"
-#include "qgsrendererv2.h"
+#include "qgslabelingengine.h"
+#include "qgsrenderer.h"
 
 class QgsAbstractFeatureSource;
-class QgsFeatureRendererV2;
-class QgsSymbolV2;
+class QgsFeatureRenderer;
+class QgsSymbol;
 
 /** \ingroup core
  * @brief The QgsVectorLayerLabelProvider class implements a label provider
@@ -29,7 +29,7 @@ class QgsSymbolV2;
  * custom properties or from the given settings.
  *
  * @note added in QGIS 2.12
- * @note this class is not a part of public API yet. See notes in QgsLabelingEngineV2
+ * @note this class is not a part of public API yet. See notes in QgsLabelingEngine
  * @note not available in Python bindings
  */
 class CORE_EXPORT QgsVectorLayerLabelProvider : public QgsAbstractLabelProvider
@@ -50,7 +50,7 @@ class CORE_EXPORT QgsVectorLayerLabelProvider : public QgsAbstractLabelProvider
                                  const QgsCoordinateReferenceSystem& crs,
                                  QgsAbstractFeatureSource* source,
                                  bool ownsSource,
-                                 QgsFeatureRendererV2* renderer = nullptr );
+                                 QgsFeatureRenderer* renderer = nullptr );
 
     ~QgsVectorLayerLabelProvider();
 
@@ -89,7 +89,7 @@ class CORE_EXPORT QgsVectorLayerLabelProvider : public QgsAbstractLabelProvider
      * @param symbols symbols rendered for point feature
      * @note added in QGIS 2.14
      */
-    static QgsGeometry* getPointObstacleGeometry( QgsFeature& fet, QgsRenderContext& context, const QgsSymbolV2List& symbols );
+    static QgsGeometry* getPointObstacleGeometry( QgsFeature& fet, QgsRenderContext& context, const QgsSymbolList& symbols );
 
   protected:
     //! initialization method - called from constructors
@@ -101,9 +101,9 @@ class CORE_EXPORT QgsVectorLayerLabelProvider : public QgsAbstractLabelProvider
     //! Layer's labeling configuration
     QgsPalLayerSettings mSettings;
     //! Geometry type of layer
-    QGis::GeometryType mLayerGeometryType;
+    QgsWkbTypes::GeometryType mLayerGeometryType;
 
-    QgsFeatureRendererV2* mRenderer;
+    QgsFeatureRenderer* mRenderer;
 
     // these are needed only if using own renderer loop
 

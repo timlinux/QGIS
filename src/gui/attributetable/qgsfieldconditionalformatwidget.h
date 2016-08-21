@@ -23,7 +23,6 @@
 #include <QStandardItem>
 
 #include "ui_qgsfieldconditionalformatwidget.h"
-#include "qgsfieldcombobox.h"
 #include "qgsconditionalstyle.h"
 
 /** \ingroup gui
@@ -95,7 +94,7 @@ class GUI_EXPORT QgsFieldConditionalFormatWidget : public QWidget, private Ui::Q
     bool mEditing;
     QStandardItemModel* mModel;
     QStandardItemModel* mPresetsModel;
-    QgsSymbolV2* mSymbol;
+    QgsSymbol* mSymbol;
     QList<QgsConditionalStyle> mPresets;
 
     QList<QgsConditionalStyle> getStyles();

@@ -25,7 +25,7 @@ __copyright__ = '(C) 2014, Piotr Pociask'
 
 __revision__ = '$Format:%H$'
 
-from qgis.core import QGis, QgsFeatureRequest, QgsFeature, QgsGeometry
+from qgis.core import Qgis, QgsFeatureRequest, QgsFeature, QgsGeometry, QgsWkbTypes
 from processing.core.GeoAlgorithm import GeoAlgorithm
 from processing.core.parameters import ParameterVector
 from processing.core.parameters import ParameterNumber
@@ -95,7 +95,7 @@ class ConcaveHull(GeoAlgorithm):
             i += 1
 
         # Remove features
-        delaunay_layer.setSelectedFeatures(ids)
+        delaunay_layer.selectByIds(ids)
         delaunay_layer.startEditing()
         delaunay_layer.deleteSelectedFeatures()
         delaunay_layer.commitChanges()
@@ -111,7 +111,7 @@ class ConcaveHull(GeoAlgorithm):
         feat = QgsFeature()
         dissolved_layer.getFeatures(QgsFeatureRequest().setFilterFid(0)).nextFeature(feat)
         writer = self.getOutputFromName(self.OUTPUT).getVectorWriter(
-            layer.pendingFields().toList(), QGis.WKBPolygon, layer.crs())
+            layer.fields().toList(), QgsWkbTypes.Polygon, layer.crs())
         geom = feat.geometry()
         if no_multigeom and geom.isMultipart():
             # Only singlepart geometries are allowed

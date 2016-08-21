@@ -21,6 +21,8 @@
 #include "qgspythonrunner.h"
 #include "qgsgeometry.h"
 #include "qgsfeature.h"
+#include "qgsfeatureiterator.h"
+#include "qgsvectorlayer.h"
 
 #include <QSettings>
 #include <QMenu>
@@ -489,14 +491,7 @@ void QgsExpressionBuilderWidget::updateFunctionTree()
       name += '(';
     else if ( !name.startsWith( '$' ) )
       name += "()";
-    registerItem( func->group(), func->name(), ' ' + name + ' ', func->helptext() );
-  }
-
-  QList<QgsExpression::Function*> specials = QgsExpression::specialColumns();
-  for ( int i = 0; i < specials.size(); ++i )
-  {
-    QString name = specials[i]->name();
-    registerItem( specials[i]->group(), name, ' ' + name + ' ' );
+    registerItem( func->group(), func->name(), ' ' + name + ' ', func->helpText() );
   }
 
   loadExpressionContext();
@@ -545,7 +540,7 @@ void QgsExpressionBuilderWidget::on_txtExpressionString_textChanged()
   if ( mLayer )
   {
     // Only set calculator if we have layer, else use default.
-    exp.setGeomCalculator( mDa );
+    exp.setGeomCalculator( &mDa );
 
     if ( !mFeature.isValid() )
     {
@@ -619,7 +614,7 @@ void QgsExpressionBuilderWidget::loadExpressionContext()
       continue;
     if ( func->params() != 0 )
       name += '(';
-    registerItem( func->group(), func->name(), ' ' + name + ' ', func->helptext() );
+    registerItem( func->group(), func->name(), ' ' + name + ' ', func->helpText() );
   }
 }
 
@@ -785,9 +780,9 @@ QString QgsExpressionBuilderWidget::loadFunctionHelp( QgsExpressionItem* express
     QString name = expressionItem->data( Qt::UserRole ).toString();
 
     if ( expressionItem->getItemType() == QgsExpressionItem::Field )
-      helpContents = QgsExpression::helptext( "Field" );
+      helpContents = QgsExpression::helpText( "Field" );
     else
-      helpContents = QgsExpression::helptext( name );
+      helpContents = QgsExpression::helpText( name );
   }
 
   return "<head><style>" + helpStylesheet() + "</style></head><body>" + helpContents + "</body>";

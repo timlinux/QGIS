@@ -18,12 +18,8 @@ export PATH=${HOME}/osgeo4travis/bin:${HOME}/osgeo4travis/sbin:${PATH}
 export LD_LIBRARY_PATH=${HOME}/osgeo4travis/lib
 export CTEST_PARALLEL_LEVEL=1
 export CCACHE_TEMPDIR=/tmp
-if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then
-  export CCACHE_READONLY=yes
-  chmod -R ugo-w ~/.ccache
-fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-xvfb-run ctest -V -E "qgis_openstreetmaptest|qgis_wcsprovidertest|$(cat ${DIR}/blacklist.txt | paste -sd '|' -)" -S ./qgis-test-travis.ctest --output-on-failure
+xvfb-run ctest -V -E "qgis_openstreetmaptest|qgis_wcsprovidertest|PyQgsOfflineEditingWFS|$(cat ${DIR}/blacklist.txt | paste -sd '|' -)" -S ./qgis-test-travis.ctest --output-on-failure
 # xvfb-run ctest -V -E "qgis_openstreetmaptest|qgis_wcsprovidertest" -S ./qgis-test-travis.ctest --output-on-failure

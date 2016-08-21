@@ -20,6 +20,7 @@
 #define QGSMAPSERVERPROVIDER_H
 
 #include "qgsrasterdataprovider.h"
+#include "qgscoordinatereferencesystem.h"
 
 class QgsArcGisAsyncQuery;
 class QgsAmsProvider;
@@ -56,10 +57,10 @@ class QgsAmsProvider : public QgsRasterDataProvider
     QgsAmsProvider( const QString & uri );
 
     /* Inherited from QgsDataProvider */
-    bool isValid() override { return mValid; }
+    bool isValid() const override { return mValid; }
     QString name() const override { return "mapserver"; }
     QString description() const override { return "ArcGIS MapServer data provider"; }
-    QgsCoordinateReferenceSystem crs() override { return mCrs; }
+    QgsCoordinateReferenceSystem crs() const override { return mCrs; }
     uint subLayerCount() const override { return mSubLayers.size(); }
     QStringList subLayers() const override { return mSubLayers; }
     QStringList subLayerStyles() const override;
@@ -72,11 +73,11 @@ class QgsAmsProvider : public QgsRasterDataProvider
     int capabilities() const override { return Identify | IdentifyText | IdentifyFeature; }
 
     /* Inherited from QgsRasterDataProvider */
-    QgsRectangle extent() override { return mExtent; }
+    QgsRectangle extent() const override { return mExtent; }
     QString lastErrorTitle() override { return mErrorTitle; }
     QString lastError() override { return mError; }
-    QGis::DataType dataType( int /*bandNo*/ ) const override { return QGis::ARGB32; }
-    QGis::DataType srcDataType( int /*bandNo*/ ) const override { return QGis::ARGB32; }
+    Qgis::DataType dataType( int /*bandNo*/ ) const override { return Qgis::ARGB32; }
+    Qgis::DataType sourceDataType( int /*bandNo*/ ) const override { return Qgis::ARGB32; }
     QgsRasterInterface* clone() const override;
     QString metadata() override;
     QImage* draw( const QgsRectangle & viewExtent, int pixelWidth, int pixelHeight ) override;
@@ -86,7 +87,7 @@ class QgsAmsProvider : public QgsRasterDataProvider
     QgsRasterIdentifyResult identify( const QgsPoint & thePoint, QgsRaster::IdentifyFormat theFormat, const QgsRectangle &theExtent = QgsRectangle(), int theWidth = 0, int theHeight = 0, int theDpi = 96 ) override;
 
   protected:
-    void readBlock( int bandNo, const QgsRectangle & viewExtent, int width, int height, void *data ) override;
+    void readBlock( int bandNo, const QgsRectangle & viewExtent, int width, int height, void *data, QgsRasterBlockFeedback* feedback = nullptr ) override;
 
   private:
     bool mValid;

@@ -19,11 +19,11 @@ class QgsComposerLegendItem : QStandardItem
       StyleItem
     };
 
-    virtual void writeXML( QDomElement& elem, QDomDocument& doc ) const = 0;
+    virtual void writeXml( QDomElement& elem, QDomDocument& doc ) const = 0;
     /** Read item content from xml
       @param itemElem item to read from
       @param xServerAvailable Read item icons if true (QIcon needs x-server)*/
-    virtual void readXML( const QDomElement& itemElem, bool xServerAvailable = true ) = 0;
+    virtual void readXml( const QDomElement& itemElem, bool xServerAvailable = true ) = 0;
 
     virtual ItemType itemType() const = 0;
     virtual QStandardItem* clone() const = 0;
@@ -37,30 +37,30 @@ class QgsComposerLegendItem : QStandardItem
     virtual void setUserText( const QString & text );
 
   protected:
-    void writeXMLChildren( QDomElement& elem, QDomDocument& doc ) const;
+    void writeXmlChildren( QDomElement& elem, QDomDocument& doc ) const;
 };
 
 
-class QgsComposerSymbolV2Item: QgsComposerLegendItem
+class QgsComposerSymbolItem: QgsComposerLegendItem
 {
 %TypeHeaderCode
 #include <qgscomposerlegenditem.h>
 %End
 
   public:
-    QgsComposerSymbolV2Item();
-    QgsComposerSymbolV2Item( const QString& text );
-    QgsComposerSymbolV2Item( const QIcon& icon, const QString& text );
-    virtual ~QgsComposerSymbolV2Item();
+    QgsComposerSymbolItem();
+    QgsComposerSymbolItem( const QString& text );
+    QgsComposerSymbolItem( const QIcon& icon, const QString& text );
+    virtual ~QgsComposerSymbolItem();
 
     virtual QStandardItem* clone() const /Factory/;
 
-    virtual void writeXML( QDomElement& elem, QDomDocument& doc ) const;
-    virtual void readXML( const QDomElement& itemElem, bool xServerAvailable = true );
+    virtual void writeXml( QDomElement& elem, QDomDocument& doc ) const;
+    virtual void readXml( const QDomElement& itemElem, bool xServerAvailable = true );
 
     /** Set symbol (takes ownership)*/
-    void setSymbolV2( QgsSymbolV2* s /Transfer/ );
-    QgsSymbolV2* symbolV2();
+    void setSymbol( QgsSymbol* s /Transfer/ );
+    QgsSymbol* symbol();
 
     ItemType itemType() const;
 };
@@ -78,12 +78,12 @@ class QgsComposerRasterSymbolItem : QgsComposerLegendItem
 
     virtual QStandardItem* clone() const /Factory/;
 
-    virtual void writeXML( QDomElement& elem, QDomDocument& doc ) const;
-    virtual void readXML( const QDomElement& itemElem, bool xServerAvailable = true );
+    virtual void writeXml( QDomElement& elem, QDomDocument& doc ) const;
+    virtual void readXml( const QDomElement& itemElem, bool xServerAvailable = true );
     ItemType itemType() const;
 
-    void setLayerID( const QString& id );
-    QString layerID() const;
+    void setLayerId( const QString& id );
+    QString layerId() const;
 
     void setColor( const QColor& c );
     QColor color() const;
@@ -101,13 +101,13 @@ class QgsComposerLayerItem : QgsComposerLegendItem
     virtual ~QgsComposerLayerItem();
     virtual QStandardItem* clone() const /Factory/;
 
-    virtual void writeXML( QDomElement& elem, QDomDocument& doc ) const;
-    virtual void readXML( const QDomElement& itemElem, bool xServerAvailable = true );
+    virtual void writeXml( QDomElement& elem, QDomDocument& doc ) const;
+    virtual void readXml( const QDomElement& itemElem, bool xServerAvailable = true );
 
     ItemType itemType() const;
 
-    void setLayerID( const QString& id );
-    QString layerID() const;
+    void setLayerId( const QString& id );
+    QString layerId() const;
 
     void setShowFeatureCount( bool show );
     bool showFeatureCount() const;
@@ -127,8 +127,8 @@ class QgsComposerGroupItem : QgsComposerLegendItem
     virtual ~QgsComposerGroupItem();
     virtual QStandardItem* clone() const /Factory/;
 
-    virtual void writeXML( QDomElement& elem, QDomDocument& doc ) const;
-    virtual void readXML( const QDomElement& itemElem, bool xServerAvailable = true );
+    virtual void writeXml( QDomElement& elem, QDomDocument& doc ) const;
+    virtual void readXml( const QDomElement& itemElem, bool xServerAvailable = true );
 
     ItemType itemType() const;
 };

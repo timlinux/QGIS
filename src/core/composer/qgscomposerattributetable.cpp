@@ -19,8 +19,11 @@
 #include "qgscomposertablecolumn.h"
 #include "qgscomposermap.h"
 #include "qgscomposerutils.h"
+#include "qgsfeatureiterator.h"
 #include "qgsmaplayerregistry.h"
 #include "qgsvectorlayer.h"
+#include "qgscsexception.h"
+#include "qgsmapsettings.h"
 
 //QgsComposerAttributeTableCompare
 
@@ -238,7 +241,7 @@ void QgsComposerAttributeTable::setDisplayAttributes( const QSet<int>& attr, boo
       }
       QString currentAlias = mVectorLayer->attributeDisplayName( attrIdx );
       QgsComposerTableColumn* col = new QgsComposerTableColumn;
-      col->setAttribute( fields[attrIdx].name() );
+      col->setAttribute( fields.at( attrIdx ).name() );
       col->setHeading( currentAlias );
       mColumns.append( col );
     }
@@ -327,8 +330,8 @@ bool QgsComposerAttributeTable::getFeatureAttributes( QList<QgsAttributeMap> &at
     return false;
   }
 
-  QScopedPointer< QgsExpressionContext > context( createExpressionContext() );
-  context->setFields( mVectorLayer->fields() );
+  QgsExpressionContext context = createExpressionContext();
+  context.setFields( mVectorLayer->fields() );
 
   attributeMaps.clear();
 
@@ -376,11 +379,11 @@ bool QgsComposerAttributeTable::getFeatureAttributes( QList<QgsAttributeMap> &at
 
   while ( fit.nextFeature( f ) && counter < mMaximumNumberOfFeatures )
   {
-    context->setFeature( f );
+    context.setFeature( f );
     //check feature against filter
     if ( activeFilter && !filterExpression.isNull() )
     {
-      QVariant result = filterExpression->evaluate( context.data() );
+      QVariant result = filterExpression->evaluate( &context );
       // skip this feature if the filter evaluation is false
       if ( !result.toBool() )
       {
@@ -403,9 +406,9 @@ bool QgsComposerAttributeTable::getFeatureAttributes( QList<QgsAttributeMap> &at
       {
         // Lets assume it's an expression
         QgsExpression* expression = new QgsExpression(( *columnIt )->attribute() );
-        context->lastScope()->setVariable( QString( "row_number" ), counter + 1 );
-        expression->prepare( context.data() );
-        QVariant value = expression->evaluate( context.data() );
+        context.lastScope()->setVariable( QString( "row_number" ), counter + 1 );
+        expression->prepare( &context );
+        QVariant value = expression->evaluate( &context );
         attributeMaps.last().insert( i, value.toString() );
       }
 
@@ -513,7 +516,7 @@ QList<QPair<int, bool> > QgsComposerAttributeTable::sortAttributes() const
   return attributesBySortRank;
 }
 
-bool QgsComposerAttributeTable::writeXML( QDomElement& elem, QDomDocument & doc ) const
+bool QgsComposerAttributeTable::writeXml( QDomElement& elem, QDomDocument & doc ) const
 {
   QDomElement composerTableElem = doc.createElement( "ComposerAttributeTable" );
   composerTableElem.setAttribute( "showOnlyVisibleFeatures", mShowOnlyVisibleFeatures );
@@ -535,11 +538,11 @@ bool QgsComposerAttributeTable::writeXML( QDomElement& elem, QDomDocument & doc 
   }
 
   elem.appendChild( composerTableElem );
-  bool ok = tableWriteXML( composerTableElem, doc );
+  bool ok = tableWriteXml( composerTableElem, doc );
   return ok;
 }
 
-bool QgsComposerAttributeTable::readXML( const QDomElement& itemElem, const QDomDocument& doc )
+bool QgsComposerAttributeTable::readXml( const QDomElement& itemElem, const QDomDocument& doc )
 {
   if ( itemElem.isNull() )
   {
@@ -547,7 +550,7 @@ bool QgsComposerAttributeTable::readXML( const QDomElement& itemElem, const QDom
   }
 
   //read general table properties
-  if ( !tableReadXML( itemElem, doc ) )
+  if ( !tableReadXml( itemElem, doc ) )
   {
     return false;
   }
@@ -649,7 +652,7 @@ bool QgsComposerAttributeTable::readXML( const QDomElement& itemElem, const QDom
       //find corresponding column
       Q_FOREACH ( QgsComposerTableColumn* column, mColumns )
       {
-        if ( column->attribute() == fields[attribute].name() )
+        if ( column->attribute() == fields.at( attribute ).name() )
         {
           column->setSortByRank( i + 1 );
           column->setSortOrder( order );

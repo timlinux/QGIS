@@ -28,7 +28,7 @@
 #include "qgsmaptooladvanceddigitizing.h"
 #include "qgsmessagebaritem.h"
 #include "qgspoint.h"
-#include "qgslinestringv2.h"
+#include "qgslinestring.h"
 #include "qgsfocuswatcher.h"
 
 struct EdgesOnlyFilter : public QgsPointLocator::MatchFilter
@@ -485,7 +485,7 @@ void QgsAdvancedDigitizingDockWidget::lockAdditionalConstraint( AdditionalConstr
 
 void QgsAdvancedDigitizingDockWidget::updateCapacity( bool updateUIwithoutChange )
 {
-  CadCapacities newCapacities = nullptr;
+  CadCapacities newCapacities = 0;
   // first point is the mouse point (it doesn't count)
   if ( mCadPointList.count() > 1 )
   {
@@ -900,7 +900,7 @@ bool QgsAdvancedDigitizingDockWidget::canvasPressEvent( QgsMapMouseEvent* e )
   return mCadEnabled && mConstructionMode;
 }
 
-bool QgsAdvancedDigitizingDockWidget::canvasReleaseEvent( QgsMapMouseEvent* e, bool captureSegment )
+bool QgsAdvancedDigitizingDockWidget::canvasReleaseEvent( QgsMapMouseEvent* e, AdvancedDigitizingMode mode )
 {
   if ( !mCadEnabled )
     return false;
@@ -932,8 +932,8 @@ bool QgsAdvancedDigitizingDockWidget::canvasReleaseEvent( QgsMapMouseEvent* e, b
 
   if ( e->button() == Qt::LeftButton )
   {
-    // stop digitizing if not intermediate point and if line or polygon
-    if ( !mConstructionMode && !captureSegment )
+    // stop digitizing if not intermediate point and enough points are recorded with respect to the mode
+    if ( !mConstructionMode && ( mode == SinglePoint || ( mode == TwoPoints && mCadPointList.count() > 2 ) ) )
     {
       clearPoints();
     }
@@ -1169,7 +1169,7 @@ bool QgsAdvancedDigitizingDockWidget::filterKeyPress( QKeyEvent* e )
 
 void QgsAdvancedDigitizingDockWidget::enable()
 {
-  if ( mMapCanvas->mapSettings().destinationCrs().geographicFlag() )
+  if ( mMapCanvas->mapSettings().destinationCrs().isGeographic() )
   {
     mErrorLabel->setText( tr( "CAD tools can not be used on geographic coordinates. Change the coordinates system in the project properties." ) );
     mErrorLabel->show();

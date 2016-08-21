@@ -21,18 +21,18 @@
 #include "qgscomposermapitem.h"
 #include "qgscoordinatereferencesystem.h"
 #include "qgsrectangle.h"
-#include "qgsrendercontext.h"
 #include <QString>
 #include <QPainter>
 
 class QgsCoordinateTransform;
-class QgsLineSymbolV2;
-class QgsMarkerSymbolV2;
+class QgsLineSymbol;
+class QgsMarkerSymbol;
 class QgsComposerMapGrid;
 class QgsComposerMap;
 class QDomDocument;
 class QDomElement;
 class QPainter;
+class QgsRenderContext;
 
 /** \ingroup core
  * \class QgsComposerMapGridStack
@@ -125,9 +125,9 @@ class CORE_EXPORT QgsComposerMapGridStack : public QgsComposerMapItemStack
      * @param elem is DOM node corresponding to 'a ComposerMap' tag
      * @param doc DOM document
      * @returns true if read was successful
-     * @see writeXML
+     * @see writeXml
      */
-    bool readXML( const QDomElement& elem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& elem, const QDomDocument& doc ) override;
 
     /** Calculates the maximum distance grids within the stack extend
      * beyond the QgsComposerMap's item rect
@@ -288,16 +288,16 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
     /** Stores grid state in DOM element
      * @param elem is DOM element corresponding to a 'ComposerMap' tag
      * @param doc DOM document
-     * @see readXML
+     * @see readXml
      */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const override;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const override;
 
     /** Sets grid state from a DOM document
      * @param itemElem is DOM node corresponding to a 'ComposerMapGrid' tag
      * @param doc is DOM document
-     * @see writeXML
+     * @see writeXml
      */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc ) override;
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc ) override;
 
     /** Sets the CRS for the grid.
      * @param crs coordinate reference system for grid
@@ -482,7 +482,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see setMarkerSymbol
      * @see setStyle
      */
-    void setLineSymbol( QgsLineSymbolV2* symbol );
+    void setLineSymbol( QgsLineSymbol* symbol );
 
     /** Gets the line symbol used for drawing grid lines. This is only used for grids with
      * QgsComposerMapGrid::Solid or QgsComposerMapGrid::Cross styles.
@@ -492,7 +492,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see style
      * @note not available in python bindings
      */
-    const QgsLineSymbolV2* lineSymbol() const { return mGridLineSymbol; }
+    const QgsLineSymbol* lineSymbol() const { return mGridLineSymbol; }
 
     /** Gets the line symbol used for drawing grid lines. This is only used for grids with
      * QgsComposerMapGrid::Solid or QgsComposerMapGrid::Cross styles.
@@ -501,7 +501,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see markerSymbol
      * @see style
      */
-    QgsLineSymbolV2* lineSymbol() { return mGridLineSymbol; }
+    QgsLineSymbol* lineSymbol() { return mGridLineSymbol; }
 
     /** Sets the marker symbol used for drawing grid points. This is only used for grids with a
      * QgsComposerMapGrid::Markers style.
@@ -510,7 +510,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see setLineSymbol
      * @see setStyle
      */
-    void setMarkerSymbol( QgsMarkerSymbolV2* symbol );
+    void setMarkerSymbol( QgsMarkerSymbol* symbol );
 
     /** Gets the marker symbol used for drawing grid points. This is only used for grids with a
      * QgsComposerMapGrid::Markers style.
@@ -520,7 +520,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see style
      * @note not available in python bindings
      */
-    const QgsMarkerSymbolV2* markerSymbol() const { return mGridMarkerSymbol; }
+    const QgsMarkerSymbol* markerSymbol() const { return mGridMarkerSymbol; }
 
     /** Gets the marker symbol used for drawing grid points. This is only used for grids with a
      * QgsComposerMapGrid::Markers style.
@@ -529,7 +529,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      * @see lineSymbol
      * @see style
      */
-    QgsMarkerSymbolV2* markerSymbol() { return mGridMarkerSymbol; }
+    QgsMarkerSymbol* markerSymbol() { return mGridMarkerSymbol; }
 
     //
     // ANNOTATIONS
@@ -827,7 +827,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
      */
     QColor frameFillColor2() const { return mGridFrameFillColor2; }
 
-    virtual QgsExpressionContext* createExpressionContext() const override;
+    virtual QgsExpressionContext createExpressionContext() const override;
 
   private:
 
@@ -921,8 +921,8 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
     /** Divisions for frame on bottom map side*/
     DisplayMode mBottomFrameDivisions;
 
-    QgsLineSymbolV2* mGridLineSymbol;
-    QgsMarkerSymbolV2* mGridMarkerSymbol;
+    QgsLineSymbol* mGridLineSymbol;
+    QgsMarkerSymbol* mGridMarkerSymbol;
 
     QgsCoordinateReferenceSystem mCRS;
 
@@ -984,9 +984,9 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
         @return 0 in case of success*/
     int yGridLines( QList< QPair< double, QLineF > >& lines ) const;
 
-    int xGridLinesCRSTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const;
+    int xGridLinesCrsTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const;
 
-    int yGridLinesCRSTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const;
+    int yGridLinesCrsTransform( const QgsRectangle& bbox, const QgsCoordinateTransform& t, QList< QPair< double, QPolygonF > >& lines ) const;
 
     void drawGridLine( const QLineF& line, QgsRenderContext &context ) const;
 
@@ -1014,7 +1014,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
     QPolygonF scalePolygon( const QPolygonF &polygon, const double scale ) const;
 
     /** Draws grid if CRS is different to map CRS*/
-    void drawGridCRSTransform( QgsRenderContext &context, double dotsPerMM, QList< QPair< double, QLineF > > &horizontalLines,
+    void drawGridCrsTransform( QgsRenderContext &context, double dotsPerMM, QList< QPair< double, QLineF > > &horizontalLines,
                                QList< QPair< double, QLineF > > &verticalLines , bool calculateLinesOnly = false );
 
     void drawGridNoTransform( QgsRenderContext &context, double dotsPerMM, QList<QPair<double, QLineF> > &horizontalLines, QList<QPair<double, QLineF> > &verticalLines, bool calculateLinesOnly = false ) const;
@@ -1031,7 +1031,7 @@ class CORE_EXPORT QgsComposerMapGrid : public QgsComposerMapItem
 
     void drawGridFrameLineBorder( QPainter *p, BorderSide border, double* extension = nullptr ) const;
 
-    void calculateCRSTransformLines();
+    void calculateCrsTransformLines();
 
     bool shouldShowDivisionForSide( AnnotationCoordinate coordinate, BorderSide side ) const;
     bool shouldShowDivisionForDisplayMode( AnnotationCoordinate coordinate, DisplayMode mode ) const;

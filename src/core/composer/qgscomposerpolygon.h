@@ -21,7 +21,7 @@
 #include <QBrush>
 #include <QPen>
 
-class QgsFillSymbolV2;
+class QgsFillSymbol;
 
 /** \ingroup core
  * Composer item for polygons.
@@ -51,19 +51,19 @@ class CORE_EXPORT QgsComposerPolygon: public QgsComposerNodesItem
     /** Overridden to return shape name */
     virtual QString displayName() const override;
 
-    /** Returns the QgsSymbolV2 used to draw the shape. */
-    QgsFillSymbolV2* polygonStyleSymbol() { return mPolygonStyleSymbol.data(); }
+    /** Returns the QgsSymbol used to draw the shape. */
+    QgsFillSymbol* polygonStyleSymbol() { return mPolygonStyleSymbol.data(); }
 
-    /** Set the QgsSymbolV2 used to draw the shape. */
-    void setPolygonStyleSymbol( QgsFillSymbolV2* symbol );
+    /** Set the QgsSymbol used to draw the shape. */
+    void setPolygonStyleSymbol( QgsFillSymbol* symbol );
 
     /** Return correct graphics item type. */
     virtual int type() const override { return ComposerPolygon; }
 
   protected:
 
-    /** QgsSymbolV2 use to draw the shape. */
-    QScopedPointer<QgsFillSymbolV2> mPolygonStyleSymbol;
+    /** QgsSymbol use to draw the shape. */
+    QScopedPointer<QgsFillSymbol> mPolygonStyleSymbol;
 
     /** Add the node newPoint at the given position according to some
      * criteres. */
@@ -75,10 +75,10 @@ class CORE_EXPORT QgsComposerPolygon: public QgsComposerNodesItem
     void _draw( QPainter *painter ) override;
 
     /** Read symbol in XML. */
-    void _readXMLStyle( const QDomElement &elmt ) override;
+    void _readXmlStyle( const QDomElement &elmt ) override;
 
     /** Write the symbol in an XML document. */
-    void _writeXMLStyle( QDomDocument &doc, QDomElement &elmt ) const override;
+    void _writeXmlStyle( QDomDocument &doc, QDomElement &elmt ) const override;
 
     /** Create a default symbol. */
     void createDefaultPolygonStyleSymbol();

@@ -249,14 +249,11 @@ class QgsComposerMap : QgsComposerItem
 
     QgsRectangle extent() const;
 
-    //! @deprecated since 2.4 - use mapSettings() - may return 0 if not initialized with QgsMapRenderer
-    const QgsMapRenderer* mapRenderer() const /Deprecated/;
-
     /** Sets offset values to shift image (useful for live updates when moving item content)*/
     void setOffset( double xOffset, double yOffset );
 
     /** True if composer map renders a WMS layer*/
-    bool containsWMSLayer() const;
+    bool containsWmsLayer() const;
 
     /** True if composer map contains layers with blend modes or flattened layers for vectors */
     bool containsAdvancedEffects() const;
@@ -265,13 +262,13 @@ class QgsComposerMap : QgsComposerItem
      * @param elem is Dom element corresponding to 'Composer' tag
      * @param doc Dom document
      */
-    bool writeXML( QDomElement& elem, QDomDocument & doc ) const;
+    bool writeXml( QDomElement& elem, QDomDocument & doc ) const;
 
     /** Sets state from Dom document
      * @param itemElem is Dom node corresponding to 'ComposerMap' tag
      * @param doc is Dom document
      */
-    bool readXML( const QDomElement& itemElem, const QDomDocument& doc );
+    bool readXml( const QDomElement& itemElem, const QDomDocument& doc );
 
     /** Enables a coordinate grid that is shown on top of this composermap.
      * @deprecated use grid()->setEnabled() or grids() instead
@@ -513,12 +510,12 @@ class QgsComposerMap : QgsComposerItem
     /**
      * @deprecated use grid()->setLineSymbol() or grids() instead
      */
-    void setGridLineSymbol( QgsLineSymbolV2* symbol /Transfer/) /Deprecated/;
+    void setGridLineSymbol( QgsLineSymbol* symbol /Transfer/) /Deprecated/;
 
     /**
      * @deprecated use grid()->lineSymbol() or grids() instead
      */
-    QgsLineSymbolV2* gridLineSymbol() /Deprecated/;
+    QgsLineSymbol* gridLineSymbol() /Deprecated/;
 
     /** Returns the grid's blending mode
      * @deprecated use grid()->blendMode() or grids() instead
@@ -615,12 +612,12 @@ class QgsComposerMap : QgsComposerItem
     /**
      * @deprecated use overview()->setFrameSymbol() or overviews() instead
      */
-    void setOverviewFrameMapSymbol( QgsFillSymbolV2* symbol /Transfer/ ) /Deprecated/;
+    void setOverviewFrameMapSymbol( QgsFillSymbol* symbol /Transfer/ ) /Deprecated/;
 
     /**
      * @deprecated use overview()->frameSymbol() or overviews() instead
      */
-    QgsFillSymbolV2* overviewFrameMapSymbol() /Deprecated/;
+    QgsFillSymbol* overviewFrameMapSymbol() /Deprecated/;
 
     /** Returns the overview's blending mode
      * @deprecated use overview()->blendMode() or overviews() instead
@@ -772,7 +769,7 @@ class QgsComposerMap : QgsComposerItem
      * @note added in 2.6 */
     void requestedExtent( QgsRectangle& extent ) const;
 
-    virtual QgsExpressionContext* createExpressionContext() const;
+    virtual QgsExpressionContext createExpressionContext() const;
 
   signals:
     void extentChanged();

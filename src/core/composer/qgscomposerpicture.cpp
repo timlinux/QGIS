@@ -26,8 +26,10 @@
 #include "qgsmessagelog.h"
 #include "qgsdatadefined.h"
 #include "qgsnetworkcontentfetcher.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgssvgcache.h"
+#include "qgslogger.h"
+
 #include <QDomDocument>
 #include <QDomElement>
 #include <QFileInfo>
@@ -306,13 +308,8 @@ void QgsComposerPicture::setPictureFile( const QString& path )
 
 void QgsComposerPicture::refreshPicture( const QgsExpressionContext *context )
 {
-  const QgsExpressionContext* evalContext = context;
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
 
   QString source = mSourcePath;
 
@@ -691,13 +688,8 @@ void QgsComposerPicture::recalculateSize()
 
 void QgsComposerPicture::refreshDataDefinedProperty( const QgsComposerObject::DataDefinedProperty property, const QgsExpressionContext* context )
 {
-  const QgsExpressionContext* evalContext = context;
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
 
   if ( property == QgsComposerObject::PictureSource || property == QgsComposerObject::AllProperties )
   {
@@ -735,7 +727,7 @@ QString QgsComposerPicture::picturePath() const
   return mSourcePath;
 }
 
-bool QgsComposerPicture::writeXML( QDomElement& elem, QDomDocument & doc ) const
+bool QgsComposerPicture::writeXml( QDomElement& elem, QDomDocument & doc ) const
 {
   if ( elem.isNull() )
   {
@@ -747,8 +739,8 @@ bool QgsComposerPicture::writeXML( QDomElement& elem, QDomDocument & doc ) const
   composerPictureElem.setAttribute( "pictureHeight", QString::number( mPictureHeight ) );
   composerPictureElem.setAttribute( "resizeMode", QString::number( static_cast< int >( mResizeMode ) ) );
   composerPictureElem.setAttribute( "anchorPoint", QString::number( static_cast< int >( mPictureAnchor ) ) );
-  composerPictureElem.setAttribute( "svgFillColor", QgsSymbolLayerV2Utils::encodeColor( mSvgFillColor ) );
-  composerPictureElem.setAttribute( "svgBorderColor", QgsSymbolLayerV2Utils::encodeColor( mSvgBorderColor ) );
+  composerPictureElem.setAttribute( "svgFillColor", QgsSymbolLayerUtils::encodeColor( mSvgFillColor ) );
+  composerPictureElem.setAttribute( "svgBorderColor", QgsSymbolLayerUtils::encodeColor( mSvgBorderColor ) );
   composerPictureElem.setAttribute( "svgBorderWidth", QString::number( mSvgBorderWidth ) );
 
   //rotation
@@ -762,12 +754,12 @@ bool QgsComposerPicture::writeXML( QDomElement& elem, QDomDocument & doc ) const
     composerPictureElem.setAttribute( "mapId", mRotationMap->id() );
   }
 
-  _writeXML( composerPictureElem, doc );
+  _writeXml( composerPictureElem, doc );
   elem.appendChild( composerPictureElem );
   return true;
 }
 
-bool QgsComposerPicture::readXML( const QDomElement& itemElem, const QDomDocument& doc )
+bool QgsComposerPicture::readXml( const QDomElement& itemElem, const QDomDocument& doc )
 {
   if ( itemElem.isNull() )
   {
@@ -780,8 +772,8 @@ bool QgsComposerPicture::readXML( const QDomElement& itemElem, const QDomDocumen
   //when loading from xml, default to anchor point of middle to match pre 2.4 behaviour
   mPictureAnchor = static_cast< QgsComposerItem::ItemPositionMode >( itemElem.attribute( "anchorPoint", QString::number( QgsComposerItem::Middle ) ).toInt() );
 
-  mSvgFillColor = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "svgFillColor", QgsSymbolLayerV2Utils::encodeColor( QColor( 255, 255, 255 ) ) ) );
-  mSvgBorderColor = QgsSymbolLayerV2Utils::decodeColor( itemElem.attribute( "svgBorderColor", QgsSymbolLayerV2Utils::encodeColor( QColor( 0, 0, 0 ) ) ) );
+  mSvgFillColor = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "svgFillColor", QgsSymbolLayerUtils::encodeColor( QColor( 255, 255, 255 ) ) ) );
+  mSvgBorderColor = QgsSymbolLayerUtils::decodeColor( itemElem.attribute( "svgBorderColor", QgsSymbolLayerUtils::encodeColor( QColor( 0, 0, 0 ) ) ) );
   mSvgBorderWidth = itemElem.attribute( "svgBorderWidth", "0.2" ).toDouble();
 
   QDomNodeList composerItemList = itemElem.elementsByTagName( "ComposerItem" );
@@ -795,7 +787,7 @@ bool QgsComposerPicture::readXML( const QDomElement& itemElem, const QDomDocumen
       mPictureRotation = composerItemElem.attribute( "rotation", "0" ).toDouble();
     }
 
-    _readXML( composerItemElem, doc );
+    _readXml( composerItemElem, doc );
   }
 
   mDefaultSvgSize = QSize( 0, 0 );

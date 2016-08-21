@@ -26,6 +26,7 @@
 #include "qgsdistancearea.h"
 #include "qgsfontutils.h"
 #include "qgsexpressioncontext.h"
+#include "qgsmapsettings.h"
 
 #include "qgswebview.h"
 #include "qgswebframe.h"
@@ -239,38 +240,6 @@ void QgsComposerLabel::setHtmlState( int state )
   }
 }
 
-void QgsComposerLabel::setExpressionContext( QgsFeature *feature, QgsVectorLayer* layer, const QMap<QString, QVariant>& substitutions )
-{
-  mExpressionFeature.reset( feature ? new QgsFeature( *feature ) : nullptr );
-  mExpressionLayer = layer;
-  mSubstitutions = substitutions;
-
-  //setup distance area conversion
-  if ( layer )
-  {
-    mDistanceArea->setSourceCrs( layer->crs().srsid() );
-  }
-  else if ( mComposition )
-  {
-    //set to composition's mapsettings' crs
-    mDistanceArea->setSourceCrs( mComposition->mapSettings().destinationCrs().srsid() );
-  }
-  if ( mComposition )
-  {
-    mDistanceArea->setEllipsoidalMode( mComposition->mapSettings().hasCrsTransformEnabled() );
-  }
-  mDistanceArea->setEllipsoid( QgsProject::instance()->readEntry( "Measure", "/Ellipsoid", GEO_NONE ) );
-  contentChanged();
-
-  // Force label to redraw -- fixes label printing for labels with blend modes when used with atlas
-  update();
-}
-
-void QgsComposerLabel::setSubstitutions( const QMap<QString, QVariant>& substitutions )
-{
-  mSubstitutions = substitutions;
-}
-
 void QgsComposerLabel::refreshExpressionContext()
 {
   mExpressionLayer = nullptr;
@@ -306,17 +275,16 @@ QString QgsComposerLabel::displayText() const
 {
   QString displayText = mText;
   replaceDateText( displayText );
-  QMap<QString, QVariant> subs = mSubstitutions;
 
-  QScopedPointer<QgsExpressionContext> context( createExpressionContext() );
+  QgsExpressionContext context = createExpressionContext();
   //overwrite layer/feature if they have been set via setExpressionContext
   //TODO remove when setExpressionContext is removed
   if ( mExpressionFeature.data() )
-    context->setFeature( *mExpressionFeature.data() );
+    context.setFeature( *mExpressionFeature.data() );
   if ( mExpressionLayer )
-    context->setFields( mExpressionLayer->fields() );
+    context.setFields( mExpressionLayer->fields() );
 
-  return QgsExpression::replaceExpressionText( displayText, context.data(), &subs, mDistanceArea );
+  return QgsExpression::replaceExpressionText( displayText, &context, mDistanceArea );
 }
 
 void QgsComposerLabel::replaceDateText( QString& text ) const
@@ -393,7 +361,7 @@ QFont QgsComposerLabel::font() const
   return mFont;
 }
 
-bool QgsComposerLabel::writeXML( QDomElement& elem, QDomDocument & doc ) const
+bool QgsComposerLabel::writeXml( QDomElement& elem, QDomDocument & doc ) const
 {
   if ( elem.isNull() )
   {
@@ -422,10 +390,10 @@ bool QgsComposerLabel::writeXML( QDomElement& elem, QDomDocument & doc ) const
   composerLabelElem.appendChild( fontColorElem );
 
   elem.appendChild( composerLabelElem );
-  return _writeXML( composerLabelElem, doc );
+  return _writeXml( composerLabelElem, doc );
 }
 
-bool QgsComposerLabel::readXML( const QDomElement& itemElem, const QDomDocument& doc )
+bool QgsComposerLabel::readXml( const QDomElement& itemElem, const QDomDocument& doc )
 {
   if ( itemElem.isNull() )
   {
@@ -490,7 +458,7 @@ bool QgsComposerLabel::readXML( const QDomElement& itemElem, const QDomDocument&
       setItemRotation( composerItemElem.attribute( "rotation", "0" ).toDouble() );
     }
 
-    _readXML( composerItemElem, doc );
+    _readXml( composerItemElem, doc );
   }
   emit itemChanged();
   contentChanged();
@@ -644,7 +612,7 @@ void QgsComposerLabel::itemShiftAdjustSize( double newWidth, double newHeight, d
 QUrl QgsComposerLabel::createStylesheetUrl() const
 {
   QString stylesheet;
-  stylesheet += QString( "body { margin: %1 %2;" ).arg( qMax( mMarginX * mHtmlUnitsToMM, 0.0 ) ).arg( qMax( mMarginY * mHtmlUnitsToMM, 0.0 ) );
+  stylesheet += QString( "body { margin: %1 %2;" ).arg( qMax( mMarginY * mHtmlUnitsToMM, 0.0 ) ).arg( qMax( mMarginX * mHtmlUnitsToMM, 0.0 ) );
   stylesheet += QgsFontUtils::asCSS( mFont, 0.352778 * mHtmlUnitsToMM );
   stylesheet += QString( "color: %1;" ).arg( mFontColor.name() );
   stylesheet += QString( "text-align: %1; }" ).arg( mHAlignment == Qt::AlignLeft ? "left" : mHAlignment == Qt::AlignRight ? "right" : "center" );

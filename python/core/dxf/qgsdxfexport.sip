@@ -63,14 +63,14 @@ class QgsDxfExport
      * Set map units
      * @param u unit
      */
-    void setMapUnits( QGis::UnitType u );
+    void setMapUnits( QgsUnitTypes::DistanceUnit u );
 
     /**
      * Retrieve map units
      * @returns unit
      * @see setMapUnits
      */
-    QGis::UnitType mapUnits() const;
+    QgsUnitTypes::DistanceUnit mapUnits() const;
 
     /**
      * Set symbology export mode
@@ -240,7 +240,7 @@ class QgsDxfExport
      * @note not available in Python bindings
      * @note added in 2.15
      */
-    // void writePolyline( const QgsPointSequenceV2 &line, const QString &layer, const QString &lineStyleName, const QColor& color, double width = -1 );
+    // void writePolyline( const QgsPointSequence &line, const QString &layer, const QString &lineStyleName, const QColor& color, double width = -1 );
 
     /**
      * Draw dxf filled polygon (HATCH)
@@ -248,7 +248,7 @@ class QgsDxfExport
      * @param layer layer name to use
      * @param hatchPattern hatchPattern to use
      * @param color color to use
-     * @deprecated use version with QgsRingSequenceV2
+     * @deprecated use version with QgsRingSequence
      */
     void writePolygon( const QgsPolygon &polygon, const QString &layer, const QString &hatchPattern, const QColor& color ) /Deprecated/;
 
@@ -261,7 +261,7 @@ class QgsDxfExport
      * @note not available in Python bindings
      * @note added in 2.15
      */
-    // void writePolygon( const QgsRingSequenceV2 &polygon, const QString &layer, const QString &hatchPattern, const QColor& color );
+    // void writePolygon( const QgsRingSequence &polygon, const QString &layer, const QString &hatchPattern, const QColor& color );
 
     /**
      * Draw dxf filled polygon (SOLID)
@@ -327,7 +327,8 @@ class QgsDxfExport
     //! @note added in 2.15
     void writeMText( const QString &layer, const QString &text, const QgsPointV2 &pt, double width, double angle, const QColor& color );
 
-    static double mapUnitScaleFactor( double scaleDenominator, QgsSymbolV2::OutputUnit symbolUnits, QGis::UnitType mapUnits );
+    //! Calculates a scaling factor to convert from map units to a specified symbol unit.
+    static double mapUnitScaleFactor( double scaleDenominator, QgsUnitTypes::RenderUnit symbolUnits, QgsUnitTypes::DistanceUnit mapUnits );
 
     //! Return cleaned layer name for use in DXF
     static QString dxfLayerName( const QString &name );

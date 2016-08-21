@@ -26,7 +26,7 @@
 #include "qgsdistancearea.h"
 #include "qgsproject.h"
 
-QgsVectorLayerFeatureSource::QgsVectorLayerFeatureSource( QgsVectorLayer *layer )
+QgsVectorLayerFeatureSource::QgsVectorLayerFeatureSource( const QgsVectorLayer* layer )
     : mCrsId( 0 )
 {
   QMutexLocker locker( &layer->mFeatureSourceConstructorMutex );
@@ -359,9 +359,9 @@ void QgsVectorLayerFeatureIterator::useAddedFeature( const QgsFeature& src, QgsF
   f.setValid( true );
   f.setFields( mSource->mFields );
 
-  if ( src.constGeometry() && !( mRequest.flags() & QgsFeatureRequest::NoGeometry ) )
+  if ( src.hasGeometry() && !( mRequest.flags() & QgsFeatureRequest::NoGeometry ) )
   {
-    f.setGeometry( new QgsGeometry( *src.constGeometry() ) );
+    f.setGeometry( src.geometry() );
   }
 
   // TODO[MD]: if subset set just some attributes
@@ -529,7 +529,7 @@ void QgsVectorLayerFeatureIterator::prepareExpression( int fieldIdx )
   da.setSourceCrs( mSource->mCrsId );
   da.setEllipsoidalMode( true );
   da.setEllipsoid( QgsProject::instance()->readEntry( "Measure", "/Ellipsoid", GEO_NONE ) );
-  exp->setGeomCalculator( da );
+  exp->setGeomCalculator( &da );
   exp->setDistanceUnits( QgsProject::instance()->distanceUnits() );
   exp->setAreaUnits( QgsProject::instance()->areaUnits() );
 

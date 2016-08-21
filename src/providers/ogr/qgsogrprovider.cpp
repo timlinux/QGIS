@@ -39,7 +39,6 @@ email                : sherman at mrcc.com
 #include <QSettings>
 
 #include "qgsapplication.h"
-#include "qgscrscache.h"
 #include "qgsdataitem.h"
 #include "qgsdataprovider.h"
 #include "qgsfeature.h"
@@ -196,15 +195,14 @@ void QgsOgrProvider::repack()
 }
 
 
-QgsVectorLayerImport::ImportError QgsOgrProvider::createEmptyLayer(
-  const QString& uri,
-  const QgsFields &fields,
-  QGis::WkbType wkbType,
-  const QgsCoordinateReferenceSystem *srs,
-  bool overwrite,
-  QMap<int, int> *oldToNewAttrIdxMap,
-  QString *errorMessage,
-  const QMap<QString, QVariant> *options )
+QgsVectorLayerImport::ImportError QgsOgrProvider::createEmptyLayer( const QString& uri,
+    const QgsFields &fields,
+    QgsWkbTypes::Type wkbType,
+    const QgsCoordinateReferenceSystem& srs,
+    bool overwrite,
+    QMap<int, int> *oldToNewAttrIdxMap,
+    QString *errorMessage,
+    const QMap<QString, QVariant> *options )
 {
   QString encoding;
   QString driverName = "ESRI Shapefile";
@@ -475,7 +473,7 @@ bool QgsOgrProvider::setSubsetString( const QString& theSQL, bool updateFeatureC
   return true;
 }
 
-QString QgsOgrProvider::subsetString()
+QString QgsOgrProvider::subsetString() const
 {
   return mSubsetString;
 }
@@ -932,7 +930,7 @@ void QgsOgrProviderUtils::setRelevantFields( OGRLayerH ogrLayer, int fieldCount,
 #endif
 }
 
-QgsFeatureIterator QgsOgrProvider::getFeatures( const QgsFeatureRequest& request )
+QgsFeatureIterator QgsOgrProvider::getFeatures( const QgsFeatureRequest& request ) const
 {
   return QgsFeatureIterator( new QgsOgrFeatureIterator( static_cast<QgsOgrFeatureSource*>( featureSource() ), true, request ) );
 }
@@ -954,7 +952,7 @@ unsigned char * QgsOgrProvider::getGeometryPointer( OGRFeatureH fet )
 }
 
 
-QgsRectangle QgsOgrProvider::extent()
+QgsRectangle QgsOgrProvider::extent() const
 {
   if ( !mExtent )
   {
@@ -1021,9 +1019,9 @@ size_t QgsOgrProvider::layerCount() const
 /**
  * Return the feature type
  */
-QGis::WkbType QgsOgrProvider::geometryType() const
+QgsWkbTypes::Type QgsOgrProvider::wkbType() const
 {
-  return static_cast<QGis::WkbType>( mOGRGeomType );
+  return static_cast<QgsWkbTypes::Type>( mOGRGeomType );
 }
 
 /**
@@ -1035,7 +1033,7 @@ long QgsOgrProvider::featureCount() const
 }
 
 
-const QgsFields & QgsOgrProvider::fields() const
+QgsFields QgsOgrProvider::fields() const
 {
   return mAttributeFields;
 }
@@ -1044,7 +1042,7 @@ const QgsFields & QgsOgrProvider::fields() const
 //TODO - add sanity check for shape file layers, to include cheking to
 //       see if the .shp, .dbf, .shx files are all present and the layer
 //       actually has features
-bool QgsOgrProvider::isValid()
+bool QgsOgrProvider::isValid() const
 {
   return mValid;
 }
@@ -1085,14 +1083,14 @@ bool QgsOgrProvider::addFeature( QgsFeature& f )
   OGRFeatureDefnH fdef = OGR_L_GetLayerDefn( ogrLayer );
   OGRFeatureH feature = OGR_F_Create( fdef );
 
-  if ( f.constGeometry() && f.constGeometry()->wkbSize() > 0 )
+  if ( f.hasGeometry() && f.geometry().wkbSize() > 0 )
   {
-    const unsigned char* wkb = f.constGeometry()->asWkb();
+    const unsigned char* wkb = f.geometry().asWkb();
     OGRGeometryH geom = nullptr;
 
     if ( wkb )
     {
-      if ( OGR_G_CreateFromWkb( const_cast<unsigned char *>( wkb ), nullptr, &geom, f.constGeometry()->wkbSize() ) != OGRERR_NONE )
+      if ( OGR_G_CreateFromWkb( const_cast<unsigned char *>( wkb ), nullptr, &geom, f.geometry().wkbSize() ) != OGRERR_NONE )
       {
         pushError( tr( "OGR error creating wkb for feature %1: %2" ).arg( f.id() ).arg( CPLGetLastErrorMsg() ) );
         return false;
@@ -1276,6 +1274,8 @@ bool QgsOgrProvider::addAttributes( const QList<QgsField> &attributes )
 
   bool returnvalue = true;
 
+  QMap< QString, QVariant::Type > mapFieldTypesToPatch;
+
   for ( QList<QgsField>::const_iterator iter = attributes.begin(); iter != attributes.end(); ++iter )
   {
     OGRFieldType type;
@@ -1287,8 +1287,17 @@ bool QgsOgrProvider::addAttributes( const QList<QgsField> &attributes )
         break;
 #if defined(GDAL_VERSION_NUM) && GDAL_VERSION_NUM >= 2000000
       case QVariant::LongLong:
-        type = OFTInteger64;
+      {
+        const char* pszDataTypes = GDALGetMetadataItem( ogrDriver, GDAL_DMD_CREATIONFIELDDATATYPES, NULL );
+        if ( pszDataTypes && strstr( pszDataTypes, "Integer64" ) )
+          type = OFTInteger64;
+        else
+        {
+          mapFieldTypesToPatch[ iter->name()] = iter->type();
+          type = OFTReal;
+        }
         break;
+      }
 #endif
       case QVariant::Double:
         type = OFTReal;
@@ -1326,6 +1335,16 @@ bool QgsOgrProvider::addAttributes( const QList<QgsField> &attributes )
     OGR_Fld_Destroy( fielddefn );
   }
   loadFields();
+
+  // Patch field type in case of Integer64->Real mapping so that QVariant::LongLong
+  // is still returned to the caller
+  for ( QMap< QString, QVariant::Type >::const_iterator it = mapFieldTypesToPatch.begin(); it != mapFieldTypesToPatch.end(); ++it )
+  {
+    int idx = mAttributeFields.fieldNameIndex( it.key() );
+    if ( idx >= 0 )
+      mAttributeFields[ idx ].setType( *it );
+  }
+
   return returnvalue;
 }
 
@@ -1666,7 +1685,7 @@ bool QgsOgrProvider::createAttributeIndex( int field )
   QByteArray quotedLayerName = quotedIdentifier( OGR_FD_GetName( OGR_L_GetLayerDefn( ogrOrigLayer ) ) );
   QByteArray dropSql = "DROP INDEX ON " + quotedLayerName;
   OGR_DS_ExecuteSQL( ogrDataSource, dropSql.constData(), OGR_L_GetSpatialFilter( ogrOrigLayer ), nullptr );
-  QByteArray createSql = "CREATE INDEX ON " + quotedLayerName + " USING " + mEncoding->fromUnicode( fields()[field].name() );
+  QByteArray createSql = "CREATE INDEX ON " + quotedLayerName + " USING " + mEncoding->fromUnicode( fields().at( field ).name() );
   OGR_DS_ExecuteSQL( ogrDataSource, createSql.constData(), OGR_L_GetSpatialFilter( ogrOrigLayer ), nullptr );
 
   QFileInfo fi( mFilePath );     // to get the base name
@@ -1740,14 +1759,14 @@ bool QgsOgrProvider::doInitialActionsForEdition()
   return true;
 }
 
-int QgsOgrProvider::capabilities() const
+QgsVectorDataProvider::Capabilities QgsOgrProvider::capabilities() const
 {
   return mCapabilities;
 }
 
 void QgsOgrProvider::computeCapabilities()
 {
-  int ability = 0;
+  QgsVectorDataProvider::Capabilities ability = 0;
 
   // collect abilities reported by OGR
   if ( ogrLayer )
@@ -1765,7 +1784,7 @@ void QgsOgrProvider::computeCapabilities()
       //       (vs read from disk every time) based on this setting.
     {
       // the latter flag is here just for compatibility
-      ability |= QgsVectorDataProvider::SelectAtId | QgsVectorDataProvider::SelectGeometryAtId;
+      ability |= QgsVectorDataProvider::SelectAtId;
     }
 
     if ( mWriteAccessPossible && OGR_L_TestCapability( ogrLayer, "SequentialWrite" ) )
@@ -2436,15 +2455,15 @@ QGISEXTERN bool isProvider()
 QGISEXTERN bool createEmptyDataSource( const QString &uri,
                                        const QString &format,
                                        const QString &encoding,
-                                       QGis::WkbType vectortype,
+                                       QgsWkbTypes::Type vectortype,
                                        const QList< QPair<QString, QString> > &attributes,
-                                       const QgsCoordinateReferenceSystem *srs = nullptr )
+                                       const QgsCoordinateReferenceSystem& srs = QgsCoordinateReferenceSystem() )
 {
   QgsDebugMsg( QString( "Creating empty vector layer with format: %1" ).arg( format ) );
 
   OGRSFDriverH driver;
   QgsApplication::registerOgrDrivers();
-  driver = OGRGetDriverByName( format.toAscii() );
+  driver = OGRGetDriverByName( format.toLatin1() );
   if ( !driver )
   {
     return false;
@@ -2493,9 +2512,9 @@ QGISEXTERN bool createEmptyDataSource( const QString &uri,
   OGRSpatialReferenceH reference = nullptr;
 
   QgsCoordinateReferenceSystem mySpatialRefSys;
-  if ( srs )
+  if ( srs.isValid() )
   {
-    mySpatialRefSys = *srs;
+    mySpatialRefSys = srs;
   }
   else
   {
@@ -2513,22 +2532,22 @@ QGISEXTERN bool createEmptyDataSource( const QString &uri,
   OGRwkbGeometryType OGRvectortype = wkbUnknown;
   switch ( vectortype )
   {
-    case QGis::WKBPoint:
+    case QgsWkbTypes::Point:
       OGRvectortype = wkbPoint;
       break;
-    case QGis::WKBLineString:
+    case QgsWkbTypes::LineString:
       OGRvectortype = wkbLineString;
       break;
-    case QGis::WKBPolygon:
+    case QgsWkbTypes::Polygon:
       OGRvectortype = wkbPolygon;
       break;
-    case QGis::WKBMultiPoint:
+    case QgsWkbTypes::MultiPoint:
       OGRvectortype = wkbMultiPoint;
       break;
-    case QGis::WKBMultiLineString:
+    case QgsWkbTypes::MultiLineString:
       OGRvectortype = wkbMultiLineString;
       break;
-    case QGis::WKBMultiPolygon:
+    case QgsWkbTypes::MultiPolygon:
       OGRvectortype = wkbMultiPolygon;
       break;
     default:
@@ -2666,7 +2685,7 @@ QGISEXTERN bool createEmptyDataSource( const QString &uri,
   return true;
 }
 
-QgsCoordinateReferenceSystem QgsOgrProvider::crs()
+QgsCoordinateReferenceSystem QgsOgrProvider::crs() const
 {
   QgsDebugMsg( "Entering." );
 
@@ -2688,7 +2707,7 @@ QgsCoordinateReferenceSystem QgsOgrProvider::crs()
         QString myWktString = prjStream.readLine();
         prjFile.close();
 
-        srs = QgsCRSCache::instance()->crsByWkt( myWktString.toUtf8().constData() );
+        srs = QgsCoordinateReferenceSystem::fromWkt( myWktString.toUtf8().constData() );
         if ( srs.isValid() )
           return srs;
       }
@@ -2710,7 +2729,7 @@ QgsCoordinateReferenceSystem QgsOgrProvider::crs()
     char *pszWkt = nullptr;
     OSRExportToWkt( mySpatialRefSys, &pszWkt );
 
-    srs = QgsCRSCache::instance()->crsByWkt( pszWkt );
+    srs = QgsCoordinateReferenceSystem::fromWkt( pszWkt );
     OGRFree( pszWkt );
   }
   else
@@ -2721,14 +2740,14 @@ QgsCoordinateReferenceSystem QgsOgrProvider::crs()
   return srs;
 }
 
-void QgsOgrProvider::uniqueValues( int index, QList<QVariant> &uniqueValues, int limit )
+void QgsOgrProvider::uniqueValues( int index, QList<QVariant> &uniqueValues, int limit ) const
 {
   uniqueValues.clear();
 
   if ( !mValid || index < 0 || index >= mAttributeFields.count() )
     return;
 
-  const QgsField& fld = mAttributeFields.at( index );
+  QgsField fld = mAttributeFields.at( index );
   if ( fld.name().isNull() )
   {
     return; //not a provider field
@@ -2770,13 +2789,13 @@ void QgsOgrProvider::uniqueValues( int index, QList<QVariant> &uniqueValues, int
 #endif
 }
 
-QVariant QgsOgrProvider::minimumValue( int index )
+QVariant QgsOgrProvider::minimumValue( int index ) const
 {
   if ( !mValid || index < 0 || index >= mAttributeFields.count() )
   {
     return QVariant();
   }
-  const QgsField& fld = mAttributeFields.at( index );
+  QgsField fld = mAttributeFields.at( index );
 
   // Don't quote column name (see https://trac.osgeo.org/gdal/ticket/5799#comment:9)
   QByteArray sql = "SELECT MIN(" + mEncoding->fromUnicode( fld.name() );
@@ -2809,13 +2828,13 @@ QVariant QgsOgrProvider::minimumValue( int index )
   return value;
 }
 
-QVariant QgsOgrProvider::maximumValue( int index )
+QVariant QgsOgrProvider::maximumValue( int index ) const
 {
   if ( !mValid || index < 0 || index >= mAttributeFields.count() )
   {
     return QVariant();
   }
-  const QgsField& fld = mAttributeFields.at( index );
+  QgsField fld = mAttributeFields.at( index );
 
   // Don't quote column name (see https://trac.osgeo.org/gdal/ticket/5799#comment:9)
   QByteArray sql = "SELECT MAX(" + mEncoding->fromUnicode( fld.name() );
@@ -3334,8 +3353,8 @@ bool QgsOgrProvider::leaveUpdateMode()
 QGISEXTERN QgsVectorLayerImport::ImportError createEmptyLayer(
   const QString& uri,
   const QgsFields &fields,
-  QGis::WkbType wkbType,
-  const QgsCoordinateReferenceSystem *srs,
+  QgsWkbTypes::Type wkbType,
+  const QgsCoordinateReferenceSystem &srs,
   bool overwrite,
   QMap<int, int> *oldToNewAttrIdxMap,
   QString *errorMessage,

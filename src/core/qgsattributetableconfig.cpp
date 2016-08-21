@@ -14,11 +14,12 @@
  *                                                                         *
  ***************************************************************************/
 #include "qgsattributetableconfig.h"
-
+#include "qgsfield.h"
 #include <QStringList>
 
 QgsAttributeTableConfig::QgsAttributeTableConfig()
     : mActionWidgetStyle( DropDown )
+    , mSortOrder( Qt::AscendingOrder )
 {
 
 }

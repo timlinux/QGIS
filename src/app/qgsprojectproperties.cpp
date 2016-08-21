@@ -25,12 +25,10 @@
 #include "qgscomposer.h"
 #include "qgscontexthelp.h"
 #include "qgscoordinatetransform.h"
-#include "qgscrscache.h"
 #include "qgslogger.h"
 #include "qgsmapcanvas.h"
 #include "qgsmaplayer.h"
 #include "qgsmaplayerregistry.h"
-#include "qgsmaprenderer.h"
 #include "qgsproject.h"
 #include "qgsprojectlayergroupdialog.h"
 #include "qgssnappingdialog.h"
@@ -39,15 +37,15 @@
 #include "qgsvectordataprovider.h"
 #include "qgsscaleutils.h"
 #include "qgsgenericprojectionselector.h"
-#include "qgsstylev2.h"
-#include "qgssymbolv2.h"
-#include "qgsstylev2managerdialog.h"
-#include "qgsvectorcolorrampv2.h"
-#include "qgssymbolv2selectordialog.h"
+#include "qgsstyle.h"
+#include "qgssymbol.h"
+#include "qgsstylemanagerdialog.h"
+#include "qgsvectorcolorramp.h"
+#include "qgssymbolselectordialog.h"
 #include "qgsrelationmanagerdialog.h"
 #include "qgsrelationmanager.h"
 #include "qgscolorschemeregistry.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgscolordialog.h"
 #include "qgsexpressioncontext.h"
 #include "qgsmapoverviewcanvas.h"
@@ -88,25 +86,25 @@ QgsProjectProperties::QgsProjectProperties( QgsMapCanvas* mapCanvas, QWidget *pa
   mCoordinateDisplayComboBox->addItem( tr( "Degrees, minutes" ), DegreesMinutes );
   mCoordinateDisplayComboBox->addItem( tr( "Degrees, minutes, seconds" ), DegreesMinutesSeconds );
 
-  mDistanceUnitsCombo->addItem( tr( "Meters" ), QGis::Meters );
-  mDistanceUnitsCombo->addItem( tr( "Kilometers" ), QGis::Kilometers );
-  mDistanceUnitsCombo->addItem( tr( "Feet" ), QGis::Feet );
-  mDistanceUnitsCombo->addItem( tr( "Yards" ), QGis::Yards );
-  mDistanceUnitsCombo->addItem( tr( "Miles" ), QGis::Miles );
-  mDistanceUnitsCombo->addItem( tr( "Nautical miles" ), QGis::NauticalMiles );
-  mDistanceUnitsCombo->addItem( tr( "Degrees" ), QGis::Degrees );
-  mDistanceUnitsCombo->addItem( tr( "Map units" ), QGis::UnknownUnit );
+  mDistanceUnitsCombo->addItem( tr( "Meters" ), QgsUnitTypes::DistanceMeters );
+  mDistanceUnitsCombo->addItem( tr( "Kilometers" ), QgsUnitTypes::DistanceKilometers );
+  mDistanceUnitsCombo->addItem( tr( "Feet" ), QgsUnitTypes::DistanceFeet );
+  mDistanceUnitsCombo->addItem( tr( "Yards" ), QgsUnitTypes::DistanceYards );
+  mDistanceUnitsCombo->addItem( tr( "Miles" ), QgsUnitTypes::DistanceMiles );
+  mDistanceUnitsCombo->addItem( tr( "Nautical miles" ), QgsUnitTypes::DistanceNauticalMiles );
+  mDistanceUnitsCombo->addItem( tr( "Degrees" ), QgsUnitTypes::DistanceDegrees );
+  mDistanceUnitsCombo->addItem( tr( "Map units" ), QgsUnitTypes::DistanceUnknownUnit );
 
-  mAreaUnitsCombo->addItem( tr( "Square meters" ), QgsUnitTypes::SquareMeters );
-  mAreaUnitsCombo->addItem( tr( "Square kilometers" ), QgsUnitTypes::SquareKilometers );
-  mAreaUnitsCombo->addItem( tr( "Square feet" ), QgsUnitTypes::SquareFeet );
-  mAreaUnitsCombo->addItem( tr( "Square yards" ), QgsUnitTypes::SquareYards );
-  mAreaUnitsCombo->addItem( tr( "Square miles" ), QgsUnitTypes::SquareMiles );
-  mAreaUnitsCombo->addItem( tr( "Hectares" ), QgsUnitTypes::Hectares );
-  mAreaUnitsCombo->addItem( tr( "Acres" ), QgsUnitTypes::Acres );
-  mAreaUnitsCombo->addItem( tr( "Square nautical miles" ), QgsUnitTypes::SquareNauticalMiles );
-  mAreaUnitsCombo->addItem( tr( "Square degrees" ), QgsUnitTypes::SquareDegrees );
-  mAreaUnitsCombo->addItem( tr( "Map units" ), QgsUnitTypes::UnknownAreaUnit );
+  mAreaUnitsCombo->addItem( tr( "Square meters" ), QgsUnitTypes::AreaSquareMeters );
+  mAreaUnitsCombo->addItem( tr( "Square kilometers" ), QgsUnitTypes::AreaSquareKilometers );
+  mAreaUnitsCombo->addItem( tr( "Square feet" ), QgsUnitTypes::AreaSquareFeet );
+  mAreaUnitsCombo->addItem( tr( "Square yards" ), QgsUnitTypes::AreaSquareYards );
+  mAreaUnitsCombo->addItem( tr( "Square miles" ), QgsUnitTypes::AreaSquareMiles );
+  mAreaUnitsCombo->addItem( tr( "Hectares" ), QgsUnitTypes::AreaHectares );
+  mAreaUnitsCombo->addItem( tr( "Acres" ), QgsUnitTypes::AreaAcres );
+  mAreaUnitsCombo->addItem( tr( "Square nautical miles" ), QgsUnitTypes::AreaSquareNauticalMiles );
+  mAreaUnitsCombo->addItem( tr( "Square degrees" ), QgsUnitTypes::AreaSquareDegrees );
+  mAreaUnitsCombo->addItem( tr( "Map units" ), QgsUnitTypes::AreaUnknownUnit );
 
   connect( buttonBox->button( QDialogButtonBox::Apply ), SIGNAL( clicked() ), this, SLOT( apply() ) );
   connect( this, SIGNAL( accepted() ), this, SLOT( apply() ) );
@@ -130,7 +128,7 @@ QgsProjectProperties::QgsProjectProperties( QgsMapCanvas* mapCanvas, QWidget *pa
   // slot triggered by setChecked() might use it.
   mProjectSrsId = mMapCanvas->mapSettings().destinationCrs().srsid();
 
-  QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( mProjectSrsId );
+  QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( mProjectSrsId );
   updateGuiForMapUnits( srs.mapUnits() );
 
   QgsDebugMsg( "Read project CRSID: " + QString::number( mProjectSrsId ) );
@@ -154,7 +152,7 @@ QgsProjectProperties::QgsProjectProperties( QgsMapCanvas* mapCanvas, QWidget *pa
 
   mAutoTransaction->setChecked( QgsProject::instance()->autoTransaction() );
   title( QgsProject::instance()->title() );
-  projectFileName->setText( QgsProject::instance()->fileName() );
+  mProjectFileLineEdit->setText( QgsProject::instance()->fileName() );
 
   // get the manner in which the number of decimal places in the mouse
   // position display is set (manual or automatic)
@@ -661,7 +659,7 @@ QgsProjectProperties::QgsProjectProperties( QgsMapCanvas* mapCanvas, QWidget *pa
   twWCSLayers->verticalHeader()->setResizeMode( QHeaderView::ResizeToContents );
 
   // Default Styles
-  mStyle = QgsStyleV2::defaultStyle();
+  mStyle = QgsStyle::defaultStyle();
   populateStyles();
 
   // Color palette
@@ -734,17 +732,17 @@ QgsProjectProperties::~QgsProjectProperties()
 }
 
 // return the map units
-QGis::UnitType QgsProjectProperties::mapUnits() const
+QgsUnitTypes::DistanceUnit QgsProjectProperties::mapUnits() const
 {
   return mMapCanvas->mapSettings().mapUnits();
 }
 
-void QgsProjectProperties::setMapUnits( QGis::UnitType unit )
+void QgsProjectProperties::setMapUnits( QgsUnitTypes::DistanceUnit unit )
 {
   // select the button
-  if ( unit == QGis::UnknownUnit )
+  if ( unit == QgsUnitTypes::DistanceUnknownUnit )
   {
-    unit = QGis::Meters;
+    unit = QgsUnitTypes::DistanceMeters;
   }
 
   mMapCanvas->setMapUnits( unit );
@@ -775,7 +773,7 @@ void QgsProjectProperties::apply()
   long myCRSID = projectionSelector->selectedCrsId();
   if ( myCRSID )
   {
-    QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( myCRSID );
+    QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( myCRSID );
     mMapCanvas->setDestinationCrs( srs );
     QgsDebugMsg( QString( "Selected CRS " ) + srs.description() );
     // write the currently selected projections _proj string_ to project settings
@@ -789,7 +787,7 @@ void QgsProjectProperties::apply()
     {
       // If we couldn't get the map units, default to the value in the
       // projectproperties dialog box (set above)
-      if ( srs.mapUnits() != QGis::UnknownUnit )
+      if ( srs.mapUnits() != QgsUnitTypes::DistanceUnknownUnit )
         mMapCanvas->setMapUnits( srs.mapUnits() );
     }
 
@@ -833,7 +831,7 @@ void QgsProjectProperties::apply()
   // Announce that we may have a new display precision setting
   emit displayPrecisionChanged();
 
-  QGis::UnitType distanceUnits = static_cast< QGis::UnitType >( mDistanceUnitsCombo->itemData( mDistanceUnitsCombo->currentIndex() ).toInt() );
+  QgsUnitTypes::DistanceUnit distanceUnits = static_cast< QgsUnitTypes::DistanceUnit >( mDistanceUnitsCombo->itemData( mDistanceUnitsCombo->currentIndex() ).toInt() );
   QgsProject::instance()->writeEntry( "Measurement", "/DistanceUnits", QgsUnitTypes::encodeUnit( distanceUnits ) );
 
   QgsUnitTypes::AreaUnit areaUnits = static_cast< QgsUnitTypes::AreaUnit >( mAreaUnitsCombo->itemData( mAreaUnitsCombo->currentIndex() ).toInt() );
@@ -1187,6 +1185,7 @@ void QgsProjectProperties::apply()
 
   //save variables
   QgsExpressionContextUtils::setProjectVariables( mVariableEditor->variablesInActiveScope() );
+  QgsProject::instance()->emitVariablesChanged();
 
   emit refresh();
 }
@@ -1275,7 +1274,7 @@ void QgsProjectProperties::cbxWCSPubliedStateChanged( int aIdx )
   }
 }
 
-void QgsProjectProperties::updateGuiForMapUnits( QGis::UnitType units )
+void QgsProjectProperties::updateGuiForMapUnits( QgsUnitTypes::DistanceUnit units )
 {
   //make sure map units option is shown in coordinate display combo
   int idx = mCoordinateDisplayComboBox->findData( MapUnits );
@@ -1283,13 +1282,13 @@ void QgsProjectProperties::updateGuiForMapUnits( QGis::UnitType units )
   mCoordinateDisplayComboBox->setItemText( idx, mapUnitString );
 
   //also update unit combo boxes
-  idx = mDistanceUnitsCombo->findData( QGis::UnknownUnit );
+  idx = mDistanceUnitsCombo->findData( QgsUnitTypes::DistanceUnknownUnit );
   if ( idx >= 0 )
   {
     QString mapUnitString = tr( "Map units (%1)" ).arg( QgsUnitTypes::toString( units ) );
     mDistanceUnitsCombo->setItemText( idx, mapUnitString );
   }
-  idx = mAreaUnitsCombo->findData( QgsUnitTypes::UnknownAreaUnit );
+  idx = mAreaUnitsCombo->findData( QgsUnitTypes::AreaUnknownUnit );
   if ( idx >= 0 )
   {
     QString mapUnitString = tr( "Map units (%1)" ).arg( QgsUnitTypes::toString( QgsUnitTypes::distanceToAreaUnit( units ) ) );
@@ -1303,9 +1302,9 @@ void QgsProjectProperties::srIdUpdated()
   if ( !isProjected() || !myCRSID )
     return;
 
-  QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( myCRSID );
+  QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( myCRSID );
   //set radio button to crs map unit type
-  QGis::UnitType units = srs.mapUnits();
+  QgsUnitTypes::DistanceUnit units = srs.mapUnits();
 
   updateGuiForMapUnits( units );
 
@@ -1396,7 +1395,7 @@ void QgsProjectProperties::on_pbnWMSSetUsedSRS_clicked()
 
   if ( cbxProjectionEnabled->isChecked() )
   {
-    QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsBySrsId( projectionSelector->selectedCrsId() );
+    QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromSrsId( projectionSelector->selectedCrsId() );
     crsList << srs.authid();
   }
 
@@ -1660,7 +1659,7 @@ void QgsProjectProperties::on_pbnExportScales_clicked()
 
 void QgsProjectProperties::populateStyles()
 {
-  // Styles - taken from qgsstylev2managerdialog
+  // Styles - taken from qgsstylemanagerdialog
 
   // use QComboBox and QString lists for shorter code
   QStringList prefList;
@@ -1684,26 +1683,26 @@ void QgsProjectProperties::populateStyles()
   for ( int i = 0; i < symbolNames.count(); ++i )
   {
     QString name = symbolNames[i];
-    QgsSymbolV2* symbol = mStyle->symbol( name );
+    QgsSymbol* symbol = mStyle->symbol( name );
     QComboBox* cbo = nullptr;
     switch ( symbol->type() )
     {
-      case QgsSymbolV2::Marker :
+      case QgsSymbol::Marker :
         cbo = cboStyleMarker;
         break;
-      case QgsSymbolV2::Line :
+      case QgsSymbol::Line :
         cbo = cboStyleLine;
         break;
-      case QgsSymbolV2::Fill :
+      case QgsSymbol::Fill :
         cbo = cboStyleFill;
         break;
-      case QgsSymbolV2::Hybrid:
+      case QgsSymbol::Hybrid:
         // Shouldn't get here
         break;
     }
     if ( cbo )
     {
-      QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( symbol, cbo->iconSize() );
+      QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( symbol, cbo->iconSize() );
       cbo->addItem( icon, name );
     }
     delete symbol;
@@ -1714,8 +1713,8 @@ void QgsProjectProperties::populateStyles()
   for ( int i = 0; i < colorRamps.count(); ++i )
   {
     QString name = colorRamps[i];
-    QgsVectorColorRampV2* ramp = mStyle->colorRamp( name );
-    QIcon icon = QgsSymbolLayerV2Utils::colorRampPreviewIcon( ramp, cboStyleColorRamp->iconSize() );
+    QgsVectorColorRamp* ramp = mStyle->colorRamp( name );
+    QIcon icon = QgsSymbolLayerUtils::colorRampPreviewIcon( ramp, cboStyleColorRamp->iconSize() );
     cboStyleColorRamp->addItem( icon, name );
     delete ramp;
   }
@@ -1738,7 +1737,7 @@ void QgsProjectProperties::populateStyles()
 
 void QgsProjectProperties::on_pbtnStyleManager_clicked()
 {
-  QgsStyleV2ManagerDialog dlg( mStyle, this );
+  QgsStyleManagerDialog dlg( mStyle, this );
   dlg.exec();
   populateStyles();
 }
@@ -1761,7 +1760,7 @@ void QgsProjectProperties::on_pbtnStyleFill_clicked()
 void QgsProjectProperties::on_pbtnStyleColorRamp_clicked()
 {
   // TODO for now just open style manager
-  // code in QgsStyleV2ManagerDialog::editColorRamp()
+  // code in QgsStyleManagerDialog::editColorRamp()
   on_pbtnStyleManager_clicked();
 }
 
@@ -1787,7 +1786,7 @@ void QgsProjectProperties::editSymbol( QComboBox* cbo )
     QMessageBox::information( this, "", tr( "Select a valid symbol" ) );
     return;
   }
-  QgsSymbolV2* symbol = mStyle->symbol( symbolName );
+  QgsSymbol* symbol = mStyle->symbol( symbolName );
   if ( ! symbol )
   {
     QMessageBox::warning( this, "", tr( "Invalid symbol : " ) + symbolName );
@@ -1795,7 +1794,7 @@ void QgsProjectProperties::editSymbol( QComboBox* cbo )
   }
 
   // let the user edit the symbol and update list when done
-  QgsSymbolV2SelectorDialog dlg( symbol, mStyle, nullptr, this );
+  QgsSymbolSelectorDialog dlg( symbol, mStyle, nullptr, this );
   if ( dlg.exec() == 0 )
   {
     delete symbol;
@@ -1806,7 +1805,7 @@ void QgsProjectProperties::editSymbol( QComboBox* cbo )
   mStyle->addSymbol( symbolName, symbol );
 
   // update icon
-  QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( symbol, cbo->iconSize() );
+  QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( symbol, cbo->iconSize() );
   cbo->setItemIcon( cbo->currentIndex(), icon );
 }
 
@@ -2021,14 +2020,14 @@ void QgsProjectProperties::projectionSelectorInitialized()
 
 void QgsProjectProperties::on_mButtonAddColor_clicked()
 {
-  QColor newColor = QgsColorDialogV2::getColor( QColor(), this->parentWidget(), tr( "Select Color" ), true );
+  QColor newColor = QgsColorDialog::getColor( QColor(), this->parentWidget(), tr( "Select Color" ), true );
   if ( !newColor.isValid() )
   {
     return;
   }
   activateWindow();
 
-  mTreeProjectColors->addColor( newColor, QgsSymbolLayerV2Utils::colorToName( newColor ) );
+  mTreeProjectColors->addColor( newColor, QgsSymbolLayerUtils::colorToName( newColor ) );
 }
 
 void QgsProjectProperties::on_mButtonImportColors_clicked()

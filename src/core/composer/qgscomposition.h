@@ -32,16 +32,14 @@
 #include "qgscomposeritemcommand.h"
 #include "qgscomposermultiframecommand.h"
 #include "qgsatlascomposition.h"
-#include "qgspaperitem.h"
 #include "qgscomposerobject.h"
-#include "qgscomposeritem.h"
+#include "qgscomposeritem.h" // required for nested name
 #include "qgsobjectcustomproperties.h"
 
 class QgisApp;
 class QgsComposerFrame;
 class QgsComposerMap;
 class QGraphicsRectItem;
-class QgsMapRenderer;
 class QDomElement;
 class QgsComposerArrow;
 class QgsComposerPolygon;
@@ -63,9 +61,10 @@ class QgsComposerMultiFrame;
 class QgsComposerMultiFrameCommand;
 class QgsVectorLayer;
 class QgsComposer;
-class QgsFillSymbolV2;
+class QgsFillSymbol;
 class QgsDataDefined;
 class QgsComposerModel;
+class QgsPaperItem;
 
 /** \ingroup core
  * Graphics scene for map printing. The class manages the paper item which always
@@ -73,7 +72,7 @@ class QgsComposerModel;
  * them in a list in ascending z-Order. This list can be changed to lower/raise items one position
  * or to bring them to front/back.
  * */
-class CORE_EXPORT QgsComposition : public QGraphicsScene
+class CORE_EXPORT QgsComposition : public QGraphicsScene, public QgsExpressionContextGenerator
 {
     Q_OBJECT
   public:
@@ -106,8 +105,6 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
       Landscape
     };
 
-    //! @deprecated since 2.4 - use the constructor with QgsMapSettings
-    Q_DECL_DEPRECATED QgsComposition( QgsMapRenderer* mapRenderer );
     explicit QgsComposition( const QgsMapSettings& mapSettings );
 
     /** Composition atlas modes*/
@@ -225,9 +222,9 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     bool shouldExportPage( const int page ) const;
 
     /** Note: added in version 2.1*/
-    void setPageStyleSymbol( QgsFillSymbolV2* symbol );
+    void setPageStyleSymbol( QgsFillSymbol* symbol );
     /** Note: added in version 2.1*/
-    QgsFillSymbolV2* pageStyleSymbol() { return mPageStyleSymbol; }
+    QgsFillSymbol* pageStyleSymbol() { return mPageStyleSymbol; }
 
     /** Returns the position within a page of a point in the composition
       @note Added in QGIS 2.1
@@ -477,10 +474,6 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     /** Used to enable or disable advanced effects such as blend modes in a composition */
     void setUseAdvancedEffects( const bool effectsEnabled );
 
-    /** Returns pointer to map renderer of qgis map canvas*/
-    //! @deprecated since 2.4 - use mapSettings() instead. May return null if not initialized with QgsMapRenderer
-    Q_DECL_DEPRECATED QgsMapRenderer* mapRenderer() { return mMapRenderer; }
-
     //! Return setting of QGIS map canvas
     //! @note added in 2.4
     const QgsMapSettings& mapSettings() const { return mMapSettings; }
@@ -500,10 +493,10 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     Q_DECL_DEPRECATED double pointFontSize( int pixelSize ) const;
 
     /** Writes settings to xml (paper dimension)*/
-    bool writeXML( QDomElement& composerElem, QDomDocument& doc );
+    bool writeXml( QDomElement& composerElem, QDomDocument& doc );
 
     /** Reads settings from xml file*/
-    bool readXML( const QDomElement& compositionElem, const QDomDocument& doc );
+    bool readXml( const QDomElement& compositionElem, const QDomDocument& doc );
 
     /** Load a template document
      * @param doc template document
@@ -525,7 +518,7 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
      * @param pasteInPlace whether the position should be kept but mapped to the page origin. (the page is the page under to the mouse cursor)
      * @note parameters mapsToRestore, addUndoCommands pos and pasteInPlace not available in python bindings
      */
-    void addItemsFromXML( const QDomElement& elem, const QDomDocument& doc, QMap< QgsComposerMap*, int >* mapsToRestore = nullptr,
+    void addItemsFromXml( const QDomElement& elem, const QDomDocument& doc, QMap< QgsComposerMap*, int >* mapsToRestore = nullptr,
                           bool addUndoCommands = false, QPointF* pos = nullptr, bool pasteInPlace = false );
 
     /** Adds item to z list. Usually called from constructor of QgsComposerItem*/
@@ -916,15 +909,14 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
      * scopes for global, project, composition and atlas properties.
      * @note added in QGIS 2.12
      */
-    QgsExpressionContext* createExpressionContext() const;
+    QgsExpressionContext createExpressionContext() const override;
 
   protected:
     void init();
 
 
   private:
-    /** Pointer to map renderer of QGIS main map*/
-    QgsMapRenderer* mMapRenderer;
+    /** Reference to map settings of QGIS main map*/
     const QgsMapSettings& mMapSettings;
 
     QgsComposition::PlotStyle mPlotStyle;
@@ -934,7 +926,7 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     double mSpaceBetweenPages; //space in preview between pages
 
     /** Drawing style for page*/
-    QgsFillSymbolV2* mPageStyleSymbol;
+    QgsFillSymbol* mPageStyleSymbol;
     void createDefaultPageStyleSymbol();
 
     /** List multiframe objects*/
@@ -1028,7 +1020,7 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
     void removePaperItems();
     void deleteAndRemoveMultiFrames();
 
-    static QString encodeStringForXML( const QString& str );
+    static QString encodeStringForXml( const QString& str );
 
     //tries to return the current QGraphicsView attached to the composition
     QGraphicsView* graphicsView() const;
@@ -1145,6 +1137,11 @@ class CORE_EXPORT QgsComposition : public QGraphicsScene
 
     /** Is emitted when the composition has an updated status bar message for the composer window*/
     void statusMsgChanged( const QString& message );
+
+    /** Emitted whenever the expression variables stored in the composition have been changed.
+     * @note added in QGIS 3.0
+     */
+    void variablesChanged();
 
     friend class QgsComposerObject; //for accessing dataDefinedEvaluate, readDataDefinedPropertyMap and writeDataDefinedPropertyMap
     friend class QgsComposerModel; //for accessing updateZValues (should not be public)

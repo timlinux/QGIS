@@ -20,20 +20,20 @@
 
 #include <QWidget>
 
-class QgsSymbolV2;
-class QgsStyleV2;
+class QgsSymbol;
+class QgsStyle;
 
 class QMenu;
 
 /** \ingroup gui
  * \class QgsSymbolsListWidget
  */
-class GUI_EXPORT QgsSymbolsListWidget : public QWidget, private Ui::SymbolsListWidget
+class GUI_EXPORT QgsSymbolsListWidget : public QWidget, private Ui::SymbolsListWidget, private QgsExpressionContextGenerator
 {
     Q_OBJECT
 
   public:
-    QgsSymbolsListWidget( QgsSymbolV2* symbol, QgsStyleV2* style, QMenu* menu, QWidget* parent, const QgsVectorLayer * layer = nullptr );
+    QgsSymbolsListWidget( QgsSymbol* symbol, QgsStyle* style, QMenu* menu, QWidget* parent, const QgsVectorLayer * layer = nullptr );
 
     //! Destructor
     virtual ~QgsSymbolsListWidget();
@@ -84,7 +84,7 @@ class GUI_EXPORT QgsSymbolsListWidget : public QWidget, private Ui::SymbolsListW
     void setLineWidth( double width );
     void addSymbolToStyle();
     void saveSymbol();
-    void symbolAddedToStyle( const QString& name, QgsSymbolV2* symbol );
+    void symbolAddedToStyle( const QString& name, QgsSymbol* symbol );
     void on_mSymbolUnitWidget_changed();
     void on_mTransparencySlider_valueChanged( int value );
 
@@ -101,9 +101,9 @@ class GUI_EXPORT QgsSymbolsListWidget : public QWidget, private Ui::SymbolsListW
   signals:
     void changed();
 
-  protected:
-    QgsSymbolV2* mSymbol;
-    QgsStyleV2* mStyle;
+  private:
+    QgsSymbol* mSymbol;
+    QgsStyle* mStyle;
     QMenu* mAdvancedMenu;
     QAction* mClipFeaturesAction;
     const QgsVectorLayer* mLayer;
@@ -114,13 +114,14 @@ class GUI_EXPORT QgsSymbolsListWidget : public QWidget, private Ui::SymbolsListW
     void updateSymbolColor();
     void updateSymbolInfo();
 
-  private:
     /** Displays alpha value as transparency in mTransparencyLabel*/
     void displayTransparency( double alpha );
     /** Recursive function to create the group tree in the widget */
     void populateGroups( const QString& parent = "", const QString& prepend = "" );
 
     QgsExpressionContext* mPresetExpressionContext;
+
+    QgsExpressionContext createExpressionContext() const override;
 };
 
 #endif //QGSSYMBOLSLISTWIDGET_H

@@ -17,11 +17,12 @@
 #include "qgssizescalewidget.h"
 
 #include "qgsvectorlayer.h"
+#include "qgsfeatureiterator.h"
 #include "qgsmaplayerregistry.h"
-#include "qgssymbolv2.h"
+#include "qgssymbol.h"
 #include "qgslayertreelayer.h"
 #include "qgslayertreemodellegendnode.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgsscaleexpression.h"
 #include "qgsdatadefined.h"
 #include "qgsmapcanvas.h"
@@ -40,13 +41,13 @@ void QgsSizeScaleWidget::setFromSymbol()
   }
 
   QgsDataDefined ddSize;
-  if ( dynamic_cast< const QgsMarkerSymbolV2*>( mSymbol ) )
+  if ( dynamic_cast< const QgsMarkerSymbol*>( mSymbol ) )
   {
-    ddSize = static_cast< const QgsMarkerSymbolV2*>( mSymbol )->dataDefinedSize();
+    ddSize = static_cast< const QgsMarkerSymbol*>( mSymbol )->dataDefinedSize();
   }
-  else if ( dynamic_cast< const QgsLineSymbolV2*>( mSymbol ) )
+  else if ( dynamic_cast< const QgsLineSymbol*>( mSymbol ) )
   {
-    ddSize = dynamic_cast< const QgsLineSymbolV2*>( mSymbol )->dataDefinedWidth();
+    ddSize = dynamic_cast< const QgsLineSymbol*>( mSymbol )->dataDefinedWidth();
   }
 
   QgsScaleExpression expr( ddSize.expressionString() );
@@ -72,27 +73,25 @@ void QgsSizeScaleWidget::setFromSymbol()
   updatePreview();
 }
 
-static QgsExpressionContext _getExpressionContext( const void* context )
+QgsExpressionContext QgsSizeScaleWidget::createExpressionContext() const
 {
-  const QgsSizeScaleWidget* widget = ( const QgsSizeScaleWidget* ) context;
-
   QgsExpressionContext expContext;
   expContext << QgsExpressionContextUtils::globalScope()
   << QgsExpressionContextUtils::projectScope()
   << QgsExpressionContextUtils::atlasScope( nullptr );
 
-  if ( widget->mapCanvas() )
+  if ( mapCanvas() )
   {
-    expContext << QgsExpressionContextUtils::mapSettingsScope( widget->mapCanvas()->mapSettings() )
-    << new QgsExpressionContextScope( widget->mapCanvas()->expressionContextScope() );
+    expContext << QgsExpressionContextUtils::mapSettingsScope( mapCanvas()->mapSettings() )
+    << new QgsExpressionContextScope( mapCanvas()->expressionContextScope() );
   }
   else
   {
     expContext << QgsExpressionContextUtils::mapSettingsScope( QgsMapSettings() );
   }
 
-  if ( widget->layer() )
-    expContext << QgsExpressionContextUtils::layerScope( widget->layer() );
+  if ( layer() )
+    expContext << QgsExpressionContextUtils::layerScope( layer() );
 
   expContext.lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QgsExpressionContext::EXPR_GEOMETRY_PART_COUNT, 1, true ) );
   expContext.lastScope()->addVariable( QgsExpressionContextScope::StaticVariable( QgsExpressionContext::EXPR_GEOMETRY_PART_NUM, 1, true ) );
@@ -102,7 +101,7 @@ static QgsExpressionContext _getExpressionContext( const void* context )
   return expContext;
 }
 
-QgsSizeScaleWidget::QgsSizeScaleWidget( const QgsVectorLayer * layer, const QgsSymbolV2 * symbol )
+QgsSizeScaleWidget::QgsSizeScaleWidget( const QgsVectorLayer * layer, const QgsSymbol * symbol )
     : mSymbol( symbol )
     // we just use the minimumValue and maximumValue from the layer, unfortunately they are
     // non const, so we get the layer from the registry instead
@@ -112,7 +111,7 @@ QgsSizeScaleWidget::QgsSizeScaleWidget( const QgsVectorLayer * layer, const QgsS
   setupUi( this );
   setWindowFlags( Qt::WindowStaysOnTopHint );
 
-  mExpressionWidget->registerGetExpressionContextCallback( &_getExpressionContext, this );
+  mExpressionWidget->registerExpressionContextGenerator( this );
 
   if ( mLayer )
   {
@@ -143,13 +142,13 @@ QgsSizeScaleWidget::QgsSizeScaleWidget( const QgsVectorLayer * layer, const QgsS
     mExpressionWidget->setLayer( mLayer );
   }
 
-  if ( dynamic_cast<const QgsMarkerSymbolV2*>( mSymbol ) )
+  if ( dynamic_cast<const QgsMarkerSymbol*>( mSymbol ) )
   {
     scaleMethodComboBox->addItem( tr( "Flannery" ), int( QgsScaleExpression::Flannery ) );
     scaleMethodComboBox->addItem( tr( "Surface" ), int( QgsScaleExpression::Area ) );
     scaleMethodComboBox->addItem( tr( "Radius" ), int( QgsScaleExpression::Linear ) );
   }
-  else if ( dynamic_cast<const QgsLineSymbolV2*>( mSymbol ) )
+  else if ( dynamic_cast<const QgsLineSymbol*>( mSymbol ) )
   {
     scaleMethodComboBox->addItem( tr( "Exponential" ), int( QgsScaleExpression::Exponential ) );
     scaleMethodComboBox->addItem( tr( "Linear" ), int( QgsScaleExpression::Linear ) );
@@ -215,28 +214,28 @@ void QgsSizeScaleWidget::updatePreview()
   else
     exponentSpinBox->hide();
 
-  QList<double> breaks = QgsSymbolLayerV2Utils::prettyBreaks( expr->minValue(), expr->maxValue(), 4 );
+  QList<double> breaks = QgsSymbolLayerUtils::prettyBreaks( expr->minValue(), expr->maxValue(), 4 );
 
   treeView->setIconSize( QSize( 512, 512 ) );
   mPreviewList.clear();
   int widthMax = 0;
   for ( int i = 0; i < breaks.length(); i++ )
   {
-    QScopedPointer< QgsSymbolV2LegendNode > node;
-    if ( dynamic_cast<const QgsMarkerSymbolV2*>( mSymbol ) )
+    QScopedPointer< QgsSymbolLegendNode > node;
+    if ( dynamic_cast<const QgsMarkerSymbol*>( mSymbol ) )
     {
-      QScopedPointer< QgsMarkerSymbolV2 > symbol( static_cast<QgsMarkerSymbolV2*>( mSymbol->clone() ) );
+      QScopedPointer< QgsMarkerSymbol > symbol( static_cast<QgsMarkerSymbol*>( mSymbol->clone() ) );
       symbol->setDataDefinedSize( QgsDataDefined() );
       symbol->setDataDefinedAngle( QgsDataDefined() ); // to avoid symbol not beeing drawn
       symbol->setSize( expr->size( breaks[i] ) );
-      node.reset( new QgsSymbolV2LegendNode( mLayerTreeLayer, QgsLegendSymbolItemV2( symbol.data(), QString::number( i ), nullptr ) ) );
+      node.reset( new QgsSymbolLegendNode( mLayerTreeLayer, QgsLegendSymbolItem( symbol.data(), QString::number( i ), QString() ) ) );
     }
-    else if ( dynamic_cast<const QgsLineSymbolV2*>( mSymbol ) )
+    else if ( dynamic_cast<const QgsLineSymbol*>( mSymbol ) )
     {
-      QScopedPointer< QgsLineSymbolV2 > symbol( static_cast<QgsLineSymbolV2*>( mSymbol->clone() ) );
+      QScopedPointer< QgsLineSymbol > symbol( static_cast<QgsLineSymbol*>( mSymbol->clone() ) );
       symbol->setDataDefinedWidth( QgsDataDefined() );
       symbol->setWidth( expr->size( breaks[i] ) );
-      node.reset( new QgsSymbolV2LegendNode( mLayerTreeLayer, QgsLegendSymbolItemV2( symbol.data(), QString::number( i ), nullptr ) ) );
+      node.reset( new QgsSymbolLegendNode( mLayerTreeLayer, QgsLegendSymbolItem( symbol.data(), QString::number( i ), QString() ) ) );
 
     }
 

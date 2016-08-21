@@ -16,6 +16,926 @@ with too big impact should be deferred to a major version release.
 
 This page tries to maintain a list with incompatible changes that happened in previous releases.
 
+\section qgis_api_break_3_0 QGIS 3.0
+
+\subsection qgis_api_break_3_0_renamed_classes Renamed Classes
+
+<table>
+<caption id="renamed_classes">Renamed classes</caption>
+<tr><th>API 2.x<th>API 3.X
+<tr><td>QgsAttributeAction<td>QgsActionManager
+<tr><td>QgsAbstractGeometryV2<td>QgsAbstractGeometry
+<tr><td>QgsCategorizedSymbolRendererV2<td>QgsCategorizedSymbolRenderer
+<tr><td>QgsCategorizedSymbolRendererV2Model<td>QgsCategorizedSymbolRendererModel
+<tr><td>QgsCategorizedSymbolRendererV2ViewStyle<td>QgsCategorizedSymbolRendererViewStyle
+<tr><td>QgsCategorizedSymbolRendererV2Widget<td>QgsCategorizedSymbolRendererWidget
+<tr><td>QgsCentroidFillSymbolLayerV2<td>QgsCentroidFillSymbolLayer
+<tr><td>QgsCentroidFillSymbolLayerV2Widget<td>QgsCentroidFillSymbolLayerWidget
+<tr><td>QgsCircularStringV2<td>QgsCircularString
+<tr><td>QgsColorButtonV2<td>QgsColorButton
+<tr><td>QgsComposerSymbolV2Item<td>QgsComposerSymbolItem
+<tr><td>QgsComposerTableAvailableSortProxyModelV2<td>QgsComposerTableAvailableSortProxyModel
+<tr><td>QgsCompoundCurveV2<td>QgsCompoundCurve
+<tr><td>QgsCoordinateSequenceV2<td>QgsCoordinateSequence
+<tr><td>QgsCptCityColorRampV2<td>QgsCptCityColorRamp
+<tr><td>QgsCptCityColorRampV2Dialog<td>QgsCptCityColorRampDialog
+<tr><td>QgsCptCityColorRampV2DialogBase<td>QgsCptCityColorRampDialogBase
+<tr><td>QgsCurvePolygonV2<td>QgsCurvePolygon
+<tr><td>QgsCurveV2<td>QgsCurve
+<tr><td>QgsDiagramRendererV2<td>QgsDiagramRenderer
+<tr><td>QgsEditorWidgetV2<td>QgsEditorWidget
+<tr><td>QgsEllipseSymbolLayerV2<td>QgsEllipseSymbolLayer
+<tr><td>QgsEllipseSymbolLayerV2Widget<td>QgsEllipseSymbolLayerWidget
+<tr><td>QgsFeatureRendererV2<td>QgsFeatureRenderer
+<tr><td>QgsFillSymbolLayerV2<td>QgsFillSymbolLayer
+<tr><td>QgsFillSymbolV2<td>QgsFillSymbol
+<tr><td>QgsFontMarkerSymbolLayerV2<td>QgsFontMarkerSymbolLayer
+<tr><td>QgsFontMarkerSymbolLayerV2Widget<td>QgsFontMarkerSymbolLayerWidget
+<tr><td>QgsGeometryCollectionV2<td>QgsGeometryCollection
+<tr><td>QgsGeometryGeneratorSymbolLayerV2<td>QgsGeometryGeneratorSymbolLayer
+<tr><td>QgsGradientFillSymbolLayerV2<td>QgsGradientFillSymbolLayer
+<tr><td>QgsGradientFillSymbolLayerV2Widget<td>QgsGradientFillSymbolLayerWidget
+<tr><td>QgsGraduatedSymbolRendererV2<td>QgsGraduatedSymbolRenderer
+<tr><td>QgsGraduatedSymbolRendererV2Model<td>QgsGraduatedSymbolRendererModel
+<tr><td>QgsGraduatedSymbolRendererV2ViewStyle<td>QgsGraduatedSymbolRendererViewStyle
+<tr><td>QgsGraduatedSymbolRendererV2Widget<td>QgsGraduatedSymbolRendererWidget
+<tr><td>QgsLabelingEngineV2<td>QgsLabelingEngine
+<tr><td>QgsLegendSymbolItemV2<td>QgsLegendSymbolItem
+<tr><td>QgsLineStringV2<td>QgsLineString
+<tr><td>QgsLineSymbolLayerV2<td>QgsLineSymbolLayer
+<tr><td>QgsLineSymbolV2<td>QgsLineSymbol
+<tr><td>QgsMarkerLineSymbolLayerV2<td>QgsMarkerLineSymbolLayer
+<tr><td>QgsMarkerLineSymbolLayerV2Widget<td>QgsMarkerLineSymbolLayerWidget
+<tr><td>QgsMarkerSymbolLayerV2<td>QgsMarkerSymbolLayer
+<tr><td>QgsMarkerSymbolV2<td>QgsMarkerSymbol
+<tr><td>QgsMultiCurveV2<td>QgsMultiCurve
+<tr><td>QgsMultiLineStringV2<td>QgsMultiLineString
+<tr><td>QgsMultiSurfaceV2<td>QgsMultiSurface
+<tr><td>QgsPointSequenceV2<td>QgsPointSequence
+<tr><td>QgsRandomColorsV2<td>QgsRandomColors
+<tr><td>QgsRendererCategoryV2<td>QgsRendererCategory
+<tr><td>QgsRendererRangeV2<td>QgsRendererRange
+<tr><td>QgsRendererRangeV2LabelFomat<td>QgsRendererRangeLabelFomat
+<tr><td>QgsRendererRangeV2LabelFormat<td>QgsRendererRangeLabelFormat
+<tr><td>QgsRendererV2<td>QgsRenderer
+<tr><td>QgsRendererV2AbstractMetadata<td>QgsRendererAbstractMetadata
+<tr><td>QgsRendererV2CreateFromSldFunc<td>QgsRendererCreateFromSldFunc
+<tr><td>QgsRendererV2CreateFunc<td>QgsRendererCreateFunc
+<tr><td>QgsRendererV2DataDefinedMenus<td>QgsRendererDataDefinedMenus
+<tr><td>QgsRendererV2Metadata<td>QgsRendererMetadata
+<tr><td>QgsRendererV2PropertiesDialog<td>QgsRendererPropertiesDialog
+<tr><td>QgsRendererV2PropsDialogBase<td>QgsRendererPropsDialogBase
+<tr><td>QgsRendererV2Registry<td>QgsRendererRegistry
+<tr><td>QgsRendererV2Widget<td>QgsRendererWidget
+<tr><td>QgsRendererV2WidgetFunc<td>QgsRendererWidgetFunc
+<tr><td>QgsRingSequenceV2<td>QgsRingSequence
+<tr><td>QgsRuleBasedRendererV2<td>QgsRuleBasedRenderer
+<tr><td>QgsRuleBasedRendererV2Count<td>QgsRuleBasedRendererCount
+<tr><td>QgsRuleBasedRendererV2Model<td>QgsRuleBasedRendererModel
+<tr><td>QgsRuleBasedRendererV2Widget<td>QgsRuleBasedRendererWidget
+<tr><td>QgsShapeburstFillSymbolLayerV2<td>QgsShapeburstFillSymbolLayer
+<tr><td>QgsShapeburstFillSymbolLayerV2Widget<td>QgsShapeburstFillSymbolLayerWidget
+<tr><td>QgsSimpleFillSymbolLayerV2<td>QgsSimpleFillSymbolLayer
+<tr><td>QgsSimpleFillSymbolLayerV2Widget<td>QgsSimpleFillSymbolLayerWidget
+<tr><td>QgsSimpleLineSymbolLayerV2<td>QgsSimpleLineSymbolLayer
+<tr><td>QgsSimpleLineSymbolLayerV2Widget<td>QgsSimpleLineSymbolLayerWidget
+<tr><td>QgsSimpleMarkerSymbolLayerV2<td>QgsSimpleMarkerSymbolLayer
+<tr><td>QgsSimpleMarkerSymbolLayerV2Widget<td>QgsSimpleMarkerSymbolLayerWidget
+<tr><td>QgsSingleSymbolRendererV2<td>QgsSingleSymbolRenderer
+<tr><td>QgsSingleSymbolRendererV2Widget<td>QgsSingleSymbolRendererWidget
+<tr><td>QgsStyleV2<td>QgsStyle
+<tr><td>QgsStyleV2ExportImportDialog<td>QgsStyleExportImportDialog
+<tr><td>QgsStyleV2ExportImportDialogBase<td>QgsStyleExportImportDialogBase
+<tr><td>QgsStyleV2GroupSelectionDialog<td>QgsStyleGroupSelectionDialog
+<tr><td>QgsStyleV2ManagerDialog<td>QgsStyleManagerDialog
+<tr><td>QgsStyleV2ManagerDialogBase<td>QgsStyleManagerDialogBase
+<tr><td>QgsSurfaceV2<td>QgsSurface
+<tr><td>QgsSvgMarkerSymbolLayerV2<td>QgsSvgMarkerSymbolLayer
+<tr><td>QgsSvgMarkerSymbolLayerV2Widget<td>QgsSvgMarkerSymbolLayerWidget
+<tr><td>QgsSymbolLayerV2<td>QgsSymbolLayer
+<tr><td>QgsSymbolLayerV2AbstractMetadata<td>QgsSymbolLayerAbstractMetadata
+<tr><td>QgsSymbolLayerV2Metadata<td>QgsSymbolLayerMetadata
+<tr><td>QgsSymbolLayerV2Registry<td>QgsSymbolLayerRegistry
+<tr><td>QgsSymbolLayerV2Utils<td>QgsSymbolLayerUtils
+<tr><td>QgsSymbolLayerV2Widget<td>QgsSymbolLayerWidget
+<tr><td>QgsSymbolLevelsV2Dialog<td>QgsSymbolLevelsDialog
+<tr><td>QgsSymbolV2LegendNode<td>QgsSymbolLegendNode
+<tr><td>QgsSymbolV2LevelItem<td>QgsSymbolLevelItem
+<tr><td>QgsSymbolV2RenderContext<td>QgsSymbolRenderContext
+<tr><td>QgsSymbolV2SelectorDialog<td>QgsSymbolSelectorDialog
+<tr><td>QgsSymbolV2SelectorWidget<td>QgsSymbolSelectorWidget
+<tr><td>QgsSymbologyV2Conversion<td>QgsSymbologyConversion
+<tr><td>QgsVectorColorBrewerColorRampV2<td>QgsVectorColorBrewerColorRamp
+<tr><td>QgsVectorColorBrewerColorRampV2Dialog<td>QgsVectorColorBrewerColorRampDialog
+<tr><td>QgsVectorColorBrewerColorRampV2DialogBase<td>QgsVectorColorBrewerColorRampDialogBase
+<tr><td>QgsVectorColorRampV2<td>QgsVectorColorRamp
+<tr><td>QgsVectorColorRampV2Map<td>QgsVectorColorRampMap
+<tr><td>QgsVectorGradientColorRampV2<td>QgsVectorGradientColorRamp
+<tr><td>QgsVectorGradientColorRampV2Dialog<td>QgsVectorGradientColorRampDialog
+<tr><td>QgsVectorGradientColorRampV2DialogBase<td>QgsVectorGradientColorRampDialogBase
+<tr><td>QgsVectorGradientRampV2<td>QgsVectorGradientRamp
+<tr><td>QgsVectorLayersetRendererV2<td>QgsVectorLayersetRenderer
+<tr><td>QgsVectorRandomColorRampV2<td>QgsVectorRandomColorRamp
+<tr><td>QgsVectorRandomColorRampV2Dialog<td>QgsVectorRandomColorRampDialog
+<tr><td>QgsVectorRandomColorRampV2DialogBase<td>QgsVectorRandomColorRampDialogBase
+<tr><th>QgsSymbolV2<th>QgsSymbol
+</table>
+
+<table>
+<caption id="renamed_enum_values">Renamed enum values</caption>
+<tr><th>class</th><th>API 2.x<th>API 3.X
+<tr><td>QgsLayerTreeModelLegendNode<td>SymbolV2LegacyRuleKeyRole<td>SymbolLegacyRuleKeyRole
+<tr><td>QgsVectorLayer<td>EditorWidgetV2<td>EditorWidget
+</table>
+
+<table>
+<caption id="renamed_methods">Renamed method names</caption>
+<tr><th>class</th><th>API 2.x<th>API 3.X
+<tr><td>QgsApplication<td>defaultStyleV2Path<td>defaultStylePath
+<tr><td>QgsApplication<td>userStyleV2Path<td>userStylePath
+<tr><td>QgsComposerShape<td>setUseSymbolV2<td>setUseSymbol
+<tr><td>QgsSymbolLayerUtils<td>createSymbolLayerV2ListFromSld<td>createSymbolLayerListFromSld
+<tr><td>QgsVectorLayer<td>editorWidgetV2Config<td>editorWidgetConfig
+<tr><td>QgsVectorLayer<td>editorWidgetV2Text<td>editorWidgetText
+<tr><td>QgsVectorLayer<td>editorWidgetV2Type<td>editorWidgetType
+<tr><td>QgsVectorLayer<td>deleteVertexV2<td>deleteVertex
+<tr><td>QgsVectorLayer<td>rendererV2<td>renderer
+<tr><td>QgsVectorLayerEditUtils<td>deleteVertexV2<td>deleteVertex
+<tr><td>QgsComposerSymbolItem<td>symbolV2<td>symbol
+</table>
+
+\subsection qgis_api_break_3_0_removed_classes Removed Classes
+
+<ul>
+<li>QgsColorbutton was removed. QgsColorButtonV2 has now been renamed to QgsColorButton. Hence, QgsColorButtonV2 does not exist anymore.</li>
+<li>QgsColorDialog was removed, and QgsColorDialogV2 was renamed to QgsColorDialog. Hence, QgsColorButtonV2 does not exist anymore.
+All the functionality from the old QgsColorDialog has been moved to the new class.</li>
+<li>QgsCRSCache was removed. QgsCoordinateReferenceSystem now internally uses a cache for CRS creation,
+so there is no longer a need for the separate cache class. Code which previously called QgsCRSCache::updateCRSCache()
+should now call QgsCoordinateReferenceSystem::invalidateCache() and QgsCoordinateTransformCache::instance()->invalidateCrs( authid ).</li>
+<li>QgsLabel and QgsLabelAttributes. Replaced by labeling based on PAL library, see QgsLabelingEngineV2.</li>
+<li>QgsLegendModel was removed.
+<li>QgsMapCanvasMap. It is an internal class used by map canvas.</li>
+<li>QgsMapRenderer. It has been replaced by QgsMapRendererJob with subclasses and QgsMapSettings.</li>
+<li>QgsPseudoColorShader. This shader has been broken for some time and was replaced by QgsSingleBandPseudoColorRenderer.</li>
+<li>QgsRendererV2DataDefinedMenus was removed. Use QgsDataDefinedButton instead.</li>
+<li>QgsLegacyHelpers.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_global General changes
+
+<ul>
+<li>All setDestinationCRS() methods have been renamed to setDestinationCrs()</li>
+<li>All destinationCRS() methods have been renamed to destinationCrs()</li>
+<li>All readXML() and _readXML() methods have been renamed to readXml() and _readXml()</li>
+<li>All writeXML() and _writeXML() methods have been renamed to writeXml() and _writeXml()</li>
+<li>All setLayerID() methods have been renamed to setLayerId()</li>
+<li>All layerID() methods have been renamed to layerId()</li>
+<li>All setCRS() methods have been renamed to setCrs()</li>
+<li>All srcCrs() methods have been renamed to sourceCrs()</li>
+<li>All destCrs() methods have been renamed to destinationCrs()</li>
+<li>All exportXML() methods have been renamed to exportXml()</li>
+<li>All importXML() methods have been renamed to importXml()</li>
+<li>All methods taking or returning QGis::WkbType have been changed to use QgsWkbTypes::Type</li>
+<li>All methods taking or returning QGis::GeometryType have been changed to use QgsWkbTypes::GeometryType</li>
+</ul>
+
+
+\subsection qgis_api_break_3_0_DataProviders Data Providers
+
+<ul>
+<li>Many methods in QgsDataProvider, QgsVectorDataProvider and QgsRasterDataProvider have been made const-correct.
+This has no effect on PyQGIS code, but c++ code implementing third-party providers will need to update the
+signatures of these methods to match. Affected methods are:
+<ul>
+<li>QgsDataProvider: crs(), extent(), isValid(), supportsSubsetString(), subsetString()</li>
+<li>QgsVectorDataProvider: getFeatures(), minimumValue(), maximumValue(), uniqueValues(), enumValues(), defaultValue(),
+attributeIndexes(), pkAttributeIndexes(), isSaveAndLoadStyleToDBSupported()</li>
+<li>QgsRasterInterface: extent()</li>
+</ul
+</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsEditFormConfig QgsEditFormConfig
+
+<ul>
+<li>Does no longer inherit QObject
+</ul>
+
+\subsection qgis_api_break_3_0_Qgis Qgis
+
+<ul>
+<li>The QGis class was renamed to Qgis for capitalisation consistency with other class names</li>
+<li>permissiveToDouble() and permissiveToInt() where moved out of the QGis class and renamed to qgsPermissiveToDouble() and
+qgsPermissiveToInt()</li>
+<li>The constants DEFAULT_IDENTIFY_RADIUS and MINIMUM_POINT_SIZE were removed</li>
+<li>QGis::DecimalDegrees, DegreesMinutesSeconds and DegreesDecimalMinutes have been removed, and have all been replaced
+with the general Degrees unit</li>
+<li>The distance unit types QGis::UnitType (including QGis::Meters, QGis::Feet, QGis::Degrees, QGis::NauticalMiles,
+QGis::Kilometers, QGis::Yards, QGis::Miles and QGis::UnknownUnit have been moved to QgsUnitTypes::DistanceUnit.
+Some of these unit types have also been renamed - see the notes on QgsUnitTypes below. All methods which accepted
+QGis::UnitType parameters have been updated to take QgsUnitTypes::DistanceUnit instead.</li>
+<li>The unit handling methods toLiteral, fromLiteral, tr, fromTr, fromUnitToUnitFactor have been removed. Their
+corresponding counterparts in QgsUnitTypes should be used instead.</li>
+<li>The enum QGis::WkbType has been removed in favor of QgsWkbTypes::Type
+<li>The enum QGis::GeometryType has been removed in favor of QgsWkbTypes::GeometryType
+<li>singleType() has been removed. Use the equivalent QgsWkbTypes::singleType() instead
+<li>multiType() has been removed. Use the equivalent QgsWkbTypes::multiType() instead
+<li>flatType() has been removed. Use the equivalent QgsWkbTypes::flatType() instead
+<li>isSingleType() has been removed. Use the equivalent QgsWkbTypes::issingleType() instead
+<li>isMultiType() has been removed. Use the equivalent QgsWkbTypes::isMultiType() instead
+<li>wkbDimensions() has been removed. Use the equivalent QgsWkbTypes::coordDimensions() instead
+<li>fromOldWkbType() has been removed. This is no longer required.
+<li>fromNewWkbType() has been removed. This is no longer required.
+<li>vectorGeometryType() has been removed. Use the equivalent QgsWkbTypes::geometrydisplayString() instead.
+<li>featureType() has been removed. Use the equivalent QgsWkbTypes::displayString() instead.
+</ul>
+
+
+\subsection qgis_api_break_3_0_QgisInterface QgisInterface
+
+<ul>
+<li>fileMenu() has been removed, use projectMenu() instead.
+</ul>
+
+\subsection qgis_api_break_3_0_QgsActionManager QgsActionManager
+
+<ul>
+<li>doAction() no longer accepts a substitution map. Use expression context variables instead.</li>
+<li>The doAction() variant which takes a QgsFeature along has been removed. Use the expression context
+variant instead.</li>
+<li>expandAction() has been removed. Use QgsExpression::replaceExpressionText() instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsAdvancedDigitizingDockWidget QgsAdvancedDigitizingDockWidget
+
+<ul>
+<li>canvasReleaseEvent takes now QgsAdvancedDigitizingDockWidget::CaptureMode as second argument.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsAtlasComposition QgsAtlasComposition
+
+<ul>
+<li>readXMLMapSettings() has been renamed to readXmlMapSettings()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsAuthConfigUriEdit QgsAuthConfigUriEdit
+
+<ul>
+<li>hasConfigID() has been renamed to hasConfigId()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsAuthMethod QgsAuthMethod
+<ul>
+<li>DataSourceURI has been renamed to DataSourceUri</li>
+<li>GenericDataSourceURI has been renamed to GenericDataSourceUri</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerLabel QgsComposerLabel
+
+<ul>
+<li>setExpressionContext() has been removed. Setup the composition using an atlas and with
+expression variables in the composer label item instead.</li>
+<li>setSubstitutions has been removed. Use expression context variables in the composer
+label item instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerLegend QgsComposerLegend
+
+<ul>
+<li>model() now returns the new QgsLegendModel (previously QgsLegendModelV2, see \ref qgis_api_break_3_0_renamed_classes).</li>
+<li>modelV2() has been renamed to model().</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerLegendItem QgsComposerLegendItem
+
+<ul>
+<li>writeXMLChildren() has been renamed to writeXmlChildren()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerMap QgsComposerMap
+
+<ul>
+<li>containsWMSLayer() has been renamed to containsWmsLayer()</li>
+<li>mapRenderer() has been removed. Use mapSettings() instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerNodesItem QgsComposerNodesItem
+
+<ul>
+<li>_readXMLStyle() has been renamed to _readXmlStyle()</li>
+<li>_writeXMLStyle() has been renamed to _writeXMLStyle()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsComposerTable QgsComposerTable
+
+<ul>
+<li>tableWriteXML() has been renamed to tableWriteXml()</li>
+<li>tableReadXML() has been renamed to tableReadXml()</li>
+</ul>
+
+
+\subsection qgis_api_break_3_0_QgsComposition QgsComposition
+
+<ul>
+<li>addItemsFromXML() has been renamed to addItemsFromXml()</li>
+<li>Constructor with QgsMapRenderer parameter has been removed. Use the variant with QgsMapSettings parameter.</li>
+<li>mapRenderer() has been removed. Use mapSettings() instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsCoordinateReferenceSystem QgsCoordinateReferenceSystem
+
+<ul>
+<li>QgsCoordinateReferenceSystem now uses internal caches to avoid expensive database lookups
+when CRS objects are initialized. This is handled internally, but invalidateCache() must be
+called if changes are made to the CRS database.</li>
+<li>setCustomSrsValidation() has been renamed to setCustomCrsValidation()</li>
+<li>saveAsUserCRS() has been renamed to saveAsUserCrs()</li>
+<li>geographicCRSAuthId() has been renamed to geographicCrsAuthId()</li>
+<li>geographicFlag() was renamed to isGeographic()</li>
+<li>axisInverted() was renamed to hasAxisInverted()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsCoordinateTransform QgsCoordinateTransform
+
+<ul>
+<li>QgsCoordinateTransform is no longer a QObject. readXml, writeXml and initialise are all normal public members now,
+not slots. The invalidTransformInput() signal has been removed.</li>
+<li>The extra QgsCoordinateTransform constructors (those not taking QgsCoordinateReferenceSystem arguments) have been
+removed. Now, QgsCoordinateTransform must be created using an already existing source and destination
+QgsCoordinateReferenceSystem object.</li>
+<li>QgsCoordinateTransform::clone() has been removed. Just use direct copies instead.</li>
+<li>sourceCrs() and destCrs() now return a copy instead of a reference to the CRS. This has no effect on PyQGIS code, but c++
+plugins calling these methods will need to be updated.</li>
+<li>isInitialised() has been renamed to isValid()</li>
+<li>theCRS parameter in setSourceCrs has been renamed to 'crs'</li>
+<li>setDestCRS() has been renamed to setDestinationCrs() for consistency</li>
+<li>destCRS() has been renamed to destinationCrs() for consistency</li>
+<li>theSource, theDest, theSourceSrsId, theDestSrsId, theSourceWkt, theDestWkt, theSourceCRSType parameters in the QgsCoordinateTransform constructors have been renamed to source, destination, sourceSrsId, destinationSrsId, sourceWkt, destinationWkt, sourceCrsType respectively</li>
+<li>'p' argument in transform() has been renamed to 'point', 'theRect' to 'rectangle', 'poly' to 'polygon'</li>
+<li>setDestCRSID has been removed, use setDestinationCrs() instead</li>
+<li>'theNode', 'theDoc' parameters in readXML and writeXML have been renamed to 'node' and 'document' respectively</li>
+<li>readXML() and writeXML() have been renamed to readXml() and writeXml() for consistency</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsCoordinateTransformCache QgsCoordinateTransformCache
+
+<ul>
+<li>transform() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned in place of a null pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsCptCitySelectionItem QgsCptCitySelectionItem
+
+<ul>
+<li>parseXML() has been renamed to parseXml()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsCRSCache QgsCRSCache
+
+<ul>
+<li>QgsCRSCache has been renamed to QgsCrsCache</li>
+<li>updateCRSCache() has been renamed to updateCrsCache</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDataDefined QgsDataDefined
+
+<ul>
+<li>expressionParams(), setExpressionParams() and insertExpressionParam() have been removed.
+QgsExpressionContext variables should be used in their place.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDataDefinedButton QgsDataDefinedButton
+
+<ul>
+<li>registerGetExpressionContextCallback has been removed in favor of registerExpressionContextGenerator</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsFieldExpressionWidget QgsFieldExpressionWidget
+
+<ul>
+<li>registerGetExpressionContextCallback has been removed in favor of registerExpressionContextGenerator</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDataDefinedSymbolDialog QgsDataDefinedSymbolDialog
+
+<ul>
+<li>QgsDataDefinedSymbolDialog was removed. Code using this dialog should be reworked to use QgsDataDefinedButton
+instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDataItem QgsDataItem
+
+<ul>
+<li>supportedCRS() has been renamed to supportedCrs()</li>
+<li>isPopulated() has been removed. Use state() instead.</li>
+<li>capabilities() has been removed. Use capabilities2() instead (TODO: rename back to capabilities()).</li>
+<li>emitBeginInsertItems(), emitEndInsertItems(), emitBeginRemoveItems(), emitEndRemoveItems(), emitDataChanged(), emitStateChanged() have been removed.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDatasourceUri QgsDataSourceURI
+
+<ul>
+<li>QgsDataSourceURI has been renamed to QgsDataSourceUri</li>
+<li>QgsDataSourceURI::SSLmode has been renamed to QgsDataSourceUri::SslMode. All items of this enum have been properly CamelCased.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDatumTransformStore QgsDatumTransformStore
+
+<ul>
+<li>transformation() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned in place of a null pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDiagram QgsDiagram
+
+<ul>
+<li>The deprecated getExpression( const QString& expression, const QgsFields* fields ) method has been removed.
+Use the variant which accepts an expression context instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsDiagramLayerSettings QgsDiagramLayerSettings
+
+<ul>
+<li>coordinateTransform() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned in place of a null pointer.</li>
+<li>setCoordinateTransform() now takes a QgsCoordinateTransform object, not a pointer. Use an invalid QgsCoordinateTransform in
+place of a null pointer.</li>
+<li>The ct member has been removed. Use coordinateTransform() and setCoordinateTransform() instead.
+</ul>
+
+\subsection qgis_api_break_3_0_QgsExpression QgsExpression
+
+<ul>
+<li>prepare( const QgsFields &fields ) has been removed. Use prepare( const QgsExpressionContext *context ) instead.</li>
+<li>The evaluate methods which accept feature parameters have been removed. Use the version which takes a QgsExpressionContext
+argument instead.</li>
+<li>isValid( const QString& text, const QgsFields& fields, QString &errorMessage ) has been removed, use the QgsExpressionContext
+version instead.</li>
+<li>setCurrentRowNumber, currentRowNumber, scale, setScale, setSpecialColumn, unsetSpecialColumn, specialColumn, hasSpecialColumn have been
+removed. Use QgsExpressionContext variables instead.</li>
+<li>The replaceExpressionText version which accepts a QgsFeature argument has been removed. Use the QgsExpressionContext
+version instead.</li>
+<li>QgsExpression::Function::func has been modified to use a QgsExpressionContext argument rather than a QgsFeature.</li>
+<li>QgsExpression::Function::usesgeometry() has been renamed to usesGeometry()</li>
+<li>QgsExpression::Function::helptext() has been renamed to helpText()</li>
+<li>The QgsExpression::Node::eval and prepare versions which take a QgsFeature has been removed, use the QgsExpressionContext versions instead.</li>
+<li>QgsExpression::Interval has been removed. Use QgsInterval instead.</li>
+<li>replaceExpressionText() no longer accepts a substitution map parameter. Use expression context variables instead.</li>
+<li>helptext() has been renamed to helpText()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsFeature QgsFeature
+
+<ul>
+<li>geometryAndOwnership() has been removed. Use geometry() instead.</li>
+<li>setGeometryAndOwnership() has been removed. Use setGeometry() instead.</li>
+<li>The setGeometry( QgsGeometry* ) method has been removed, use setGeometry( const QgsGeometry& ) instead.</li>
+<li>The geometry() method now returns a copy of the geometry, not a pointer. Since QgsGeometry objects are
+implicitly shared this is a low-cost copy, and avoids ownership and dangling pointer issues. <b>Very important: Testing that
+a feature has a geometry is now done using the new hasGeometry() method. Any code which compares QgsFeature::geometry() to
+None will need to be modified, as the method will return an empty geometry if the feature has no geometry.</b></li>
+<li>The temporary constGeometry() method has been removed. Use geometry() instead.</li>
+<li>setFields( const QgsFields*, bool ) has been removed, use setFields( const QgsFields&, bool ) instead.</li>
+<li>fields() no longer returns a pointer, but instead a QgsFields value.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsFeatureRendererV2 QgsFeatureRendererV2
+
+<ul>
+<li>The method capabilities() returns QgsFeatureRendererV2::Capabilities flags instead of an integer. The two are binary compatible.
+</ul>
+
+\subsection qgis_api_break_3_0_QgsFields QgsFields
+
+<ul>
+<li>All const methods which return a field from QgsFields now return a QgsField value, not a reference.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsGeometry QgsGeometry
+
+<ul>
+<li>All QgsGeometry methods now accept geometry references instead of pointers, and return a QgsGeometry
+value instead of a pointer. The biggest impact with this change is that PyQGIS code should not compare a geometry
+result to None, but instead either use a boolean test (`if g.buffer(10):`) or explicitly use the isEmpty()
+method to determine if a geometry is valid.</li>
+<li>int addPart( const QList<QgsPoint> &points, QgsWkbTypes::GeometryType geomType ) has been renamed to addPoints</li>
+<li>int addPart( const QList<QgsPointV2> &points, QgsWkbTypes::GeometryType geomType ) has been renamed to addPointsV2</li>
+<li>static bool compare( const QgsPolyline& p1, const QgsPolyline& p2, double epsilon ) has been renamed to comparePolylines</li>
+<li>static bool compare( const QgsPolygon& p1, const QgsPolygon& p2, double epsilon ) has been renamed to comparePolygons</li>
+<li>static bool compare( const QgsMultiPolygon& p1, const QgsMultiPolygon& p2, double epsilon ) has been renamed to compareMultiPolygons</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsGeometryAnalyzer QgsGeometryAnalyzer
+
+<ul>
+<li>locateBetweenMeasures() and locateAlongMeasure() now take geometry references, not pointers, and return
+a QgsGeometry value rather than a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsGraphBuilderInterface QgsGraphBuilderInterface
+
+<ul>
+<li>destinationCrs() now returns a copy instead of a reference to the CRS. This has no effect on PyQGIS code, but c++
+plugins calling this method will need to be updated.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsGroupWMSDataDialog QgsGroupWMSDataDialog
+
+<ul>
+<li>QgsGroupWMSDataDialo has been renamed to QgsGroupWmsDataDialog</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsHighlight QgsHighlight
+
+<ul>
+<li>The QgsHighlight constructor now takes a geometry reference, not a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsJSONExporter QgsJSONExporter
+
+<ul>
+<li>sourceCrs() now returns a copy instead of a reference to the CRS. This has no effect on PyQGIS code, but c++
+plugins calling this method will need to be updated.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsLabelingEngineInterface QgsLabelingEngineInterface
+
+<ul>
+<li>init(QgsMapRenderer*) has been removed. Use init(const QgsMapSettings&) instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsLayerTreeGroup QgsLayerTreeGroup
+
+<ul>
+<li>readChildrenFromXML() has been renamed to readChildrenFromXml()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsLayerTreeNode QgsLayerTreeNode
+
+<ul>
+<li>readCommonXML() has been renamed to readCommonXml()</li>
+<li>writeCommonXML() has been renamed to writeCommonXml()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapCanvas QgsMapCanvas
+
+<ul>
+<li>rotationEnabled() and enableRotation() have been removed, since map rotation is now always supported</li>
+<li>The "name" parameter has been removed from constructor. Use QObject::setObjectName() to set canvas name if necessary.</li>
+<li>map() has been removed because QgsMapCanvasMap is not available in API anymore.</li>
+<li>mapRenderer() has been removed. Use directly map canvas methods to get/set configuration or mapSettings() (for reading only).</li>
+<li>canvasPaintDevice() has been removed. Use map canvas items to draw anything on top of canvas.</li>
+<li>clear() has been removed. Use refresh() instead.</li>
+<li>setCanvasColor() and canvasColor() are not virtual methods anymore.</li>
+<li>updateFullExtent() has been removed. No need to call it explicitly. Full extent calculation is done in QgsMapSettings.</li>
+<li>setDirty() and isDirty() have been removed. Use refresh() to refresh canvas content.</li>
+<li>setWheelAction() and WheelAction enum have been removed. Custom wheel actions are not supported anymore.</li>
+<li>updateMap(), showError(), useImageToRender() have been removed. They did nothing since 2.4.</li>
+<li>setProgress() signal has been removed. It was not emitted since 2.0.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapLayer QgsMapLayer
+
+<ul>
+<li>crs() now returns a QgsCoordinateReferenceSystem object, not a reference. This change has no effect for PyQGIS code.</li>
+<li>setLayerName() was removed, use setName() instead. The layerNameChanged() signal has been replaced by nameChanged().</li>
+<li>toggleScaleBasedVisibility() was replaced by setScaleBasedVisibility()</li>
+<li>lastErrorTitle(), lastError(), cacheImage(), onCacheImageDelete(), clearCacheImage() and the signals drawingProgress(),
+screenUpdateRequested() were removed. These members have had no effect for a number of QGIS 2.x releases.</li>
+<li>extent(), styleURI(), exportNamedStyle(), exportSldStyle(), writeXml(), metadata() were made const. This has no effect on PyQGIS code, but c++ code implementing derived layer classes will need to update the signatures of these methods to match.</li>
+<li>The lyrname parameter in the QgsMapLayer constructor was renamed to 'name'.</li>
+<li>The vis parameter in setSubLayerVisibility was renamed to 'visible'.</li>
+<li>theResultFlag parameter in loadDefaultStyle and saveDefaultStyle were renamed to resultFlag.</li>
+<li>theURI, theResultFlag parameters in loadNamedStyle, saveNamedStyle, saveSldStyle and loadSldStyle were renamed to uri, resultFlag.</li>
+<li>theURI parameter in loadNamedStyleFromDb was renamed to uri.</li>
+<li>theMinScale and theMaxScale parameters in setMinimumScale and setMaximumScale were renamed to scale</li>
+<li>The layerCrsChanged() signal was renamed to crsChanged()</li>
+<li>theError parameter in appendError() and setError() were renamed to 'error'.</li>
+<li>drawLabels() method was removed. It used old deprecated labeling. Replaced by labeling based on PAL library, see QgsLabelingEngineV2.</li>
+<li>readLayerXML() was renamed to readLayerXml()</li>
+<li>writeLayerXML() was renamed to writeLayerXml()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapOverviewCanvas QgsMapOverviewCanvas
+
+<ul>
+<li>destinationSrsChanged() was renamed to destinationCrsChanged()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapRenderer QgsMapRenderer
+
+<ul>
+<li>transformation() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned instead of a null pointer if no transformation is required.</li>
+<li>destinationSrsChanged() was renamed to destinationCrsChanged()</li>
+<li>getCompositionMode(), getBlendModeEnum() and BlendMode enum have been moved to QgsPainting utility class.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapRendererJob QgsMapRendererJob
+
+<ul>
+<li>reprojectToLayerExtent() now takes a QgsCoordinateTransform reference, not a pointer. An invalid QgsCoordinateTransform should
+be used instead of a null pointer if no transformation is required.</li>
+<li>prepareJobs() and drawLabeling() (neither available in PyQGIS) do not take QgsPalLabeling parameter anymore. All drawing of labels is done by QgsLabelingEngineV2.</li>
+<li>drawOldLabeling(), drawNewLabeling() were removed. The method drawLabeling() should be used instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMapSettings QgsMapSettings
+
+<ul>
+<li>layerTransform() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned instead of a null pointer if no transformation is required.</li>
+<li>destinationCrs() now returns a copy instead of a reference to the CRS. This has no effect on PyQGIS code, but c++
+plugins calling this method will need to be updated.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsMimeDataUtils QgsMimeDataUtils
+
+<ul>
+<li>Constructor taking QgsLayerItem argument has been removed. Use QgsDataItem::mimeUri() instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsOSMElement QgsOSMElement
+
+<ul>
+<li>elemID() has been renamed to elemId()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsOWSSourceSelect QgsOWSSourceSelect
+
+<ul>
+<li>selectedLayersCRSs() has been renamed selectedLayersCrses()</li>
+<li>populateCRS() has been renamed to populateCrs()</li>
+<li>clearCRS() has been renamed to clearCrs()</li>
+<li>addWMSListRow() has been renamed to addWmsListRow()</li>
+<li>addWMSListItem() has been renamed to addWmsListItem()</li>
+<li>selectedCRS() has been renamed to selectedCrs()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsOWSConnection QgsOWSConnection
+
+<ul>
+<li>QgsOWSConnection has been renamed QgsOwsConnection</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsNumericSortTreeWidgetItem QgsNumericSortTreeWidgetItem
+
+<ul>
+<li>QgsNumericSortTreeWidgetItem has been removed and replaced with QgsTreeWidgetItem, which
+has improved sort capabilities including the ability to set custom sort values for items
+and for forcing certain items to always sort on top.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsPalLabeling QgsPalLabeling
+
+<ul>
+<li>init(QgsMapRenderer*) has been removed. Use init(const QgsMapSettings&) instead.</li>
+<li>prepareGeometry and geometryRequiresPreparation now take geometry references, not pointers.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsPalLayerSettings QgsPalLayerSettings
+
+<ul>
+<li>ct is now a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be used instead of a null pointer if no transformation is required.</li>
+<li>prepareGeometry() and geometryRequiresPreparation() now take a QgsCoordinateTransform reference, not a pointer. An invalid QgsCoordinateTransform should be used instead of a null pointer if no transformation is required.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsPointLocator QgsPointLocator
+
+<ul>
+<li>The constructor now takes a reference rather than a pointer to a CRS.  This has no effect on PyQGIS code, but c++
+plugins calling this method will need to be updated.</li>
+<li>The destCRS parameter in the constructor has been renamed to destinationCrs.</li>
+<li>destCRS() has been renamed to destinationCrs()</li>
+<li>destinationCrs() now returns a copy instead of a reference to the CRS. This has no effect on PyQGIS code, but c++
+plugins calling this method will need to be updated.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsProject QgsProject
+
+<ul>
+<li>visibilityPresetCollection() has been renamed to mapThemeCollection()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRasterDataProvider QgsRasterDataProvider
+
+<ul>
+<li>srcDataType() has been renamed to sourceDataType()</li>
+<li>srcHasNoDataValue() has been renamed to sourceHasNoDataValue()</li>
+<li>useSrcNoDataValue() has been renamed to useSourceNoDataValue()</li>
+<li>setUseSrcNoDataValue() has been renamed to setUseSourceNoDataValue()</li>
+<li>srcNoDataValue() has been renamed to sourceNoDataValue()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRasterInterface QgsRasterInterface
+
+<ul>
+<li>srcDataType() has been renamed to sourceDataType()</li>
+<li>srcInput() has been renamed to sourceInput()</li>
+<li>block() has new "feedback" argument.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRasterProjector QgsRasterProjector
+
+<ul>
+<li>extentSize() now takes a QgsCoordinateTransform reference, not a pointer. An invalid QgsCoordinateTransform should be used instead of a null pointer if no transformation is required.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRelation QgsRelation
+
+<ul>
+<li>createFromXML() has been renamed to createFromXml()</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRenderChecker QgsRenderChecker
+
+<ul>
+<li>setMapRenderer() has been removed. Use setMapSettings() instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRenderContext QgsRenderContext
+
+<ul>
+<li>coordinateTransform() now returns a QgsCoordinateTransform object, not a pointer. An invalid QgsCoordinateTransform will
+be returned instead of a null pointer if no transformation is required.</li>
+<li>setCoordinateTransform() now takes a QgsCoordinateTransform reference, not a pointer. An invalid QgsCoordinateTransform should be used instead of a null pointer if no transformation is required.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsRubberBand QgsRubberBand
+
+<ul>
+<li>setToGeometry() and addGeometry() now take geometry references, not pointers.</li>
+<li>QgsRubberBand( QgsMapCanvas* mapCanvas, bool isPolygon ) constructor and reset( bool isPolygon) have been removed, use constructor and function with Qgis::GeometryType as argument instead.</li>
+</ul>
+
+
+\subsection qgis_api_break_3_0_QgsSnapper QgsSnapper
+
+<ul>
+<li>Constructor variant with QgsMapRenderer has been removed. Use the variant with QgsMapSettings.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsSymbol QgsSymbol (renamed from QgsSymbolV2)
+
+<ul>
+<li>The OutputUnit enum, including QgsSymbol::MM, QgsSymbol::MapUnit, QgsSymbol::Mixed, QgsSymbol::Pixel and QgsSymbol::Percentage has been moved to QgsUnitTypes
+and renamed to RenderUnit. QgsSymbol::OutputUnitList was renamed to QgsUnitTypes::RenderUnitList. All methods which previously accepted QgsSymbol::OutputUnit
+parameters or QgsSymbol::OutputUnitList parameters now take QgsUnitTypes::RenderUnit or QgsUnitTypes::RenderUnitList parameters respectively.</li>
+<li>startRender() now accepts a QgsFields reference, not a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsSymbolLayer QgsSymbolLayer (renamed from QgsSymbolLayerV2)
+
+<ul>
+<li>The deprecated prepareExpressions( const QgsFields* fields, double scale = -1.0 ) method has been removed. Use
+the variant which takes QgsSymbolRenderContext instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsSymbolRenderContext QgsSymbolRenderContext (renamed from QgsSymbolV2RenderContext)
+
+<ul>
+<li>The constructor now accepts a QgsFields reference, not a pointer.</li>
+<li>fields() now returns a QgsFields value, not a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsSymbolLayerUtils QgsSymbolLayerUtils (renamed from QgsSymbolLayerUtilsV2)
+
+<ul>
+<li>encodeOutputUnit() and decodeOutputUnit() were removed. QgsUnitTypes::encodeUnit() and QgsUnitTypes::decodeRenderUnit() should be used instead.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsTolerance QgsTolerance
+
+<ul>
+<li>vertexSearchRadius(), defaultTolerance(), toleranceInMapUnits() do not have variant with QgsMapRenderer anymore. Use the variants with QgsMapSettings.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsTreeWidgetItem QgsTreeWidgetItem
+
+<ul>
+<li>QgsTreeWidgetItem is no longer a QObject and does not emit the itemEdited signal. Instead,
+use QgsTreeWidgetItemObject which is an upgraded version of the original QgsTreeWidgetItem</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsUnitTypes QgsUnitTypes
+
+<ul>
+<li>All distance enumeration values were renamed to have a "Distance" prefix, including
+Meters (to DistanceMeters), Kilometers (to DistanceKilometers), Feet (to DistanceFeet),
+NauticalMiles (to DistanceNauticalMiles), Yards (to DistanceYards), Miles (to DistanceMiles),
+Degrees (to DistanceDegrees) and UnknownDistanceUnit to DistanceUnknownUnit</li>
+<li>All area enumeration values were renamed to have a "Area" prefix, including
+SquareMeters (to AreaSquareMeters), SquareKilometers (to AreaSquareKilometers), SquareFeet (to AreaSquareFeet),
+SquareYards (to AreaSquareYards), SquareMiles (to AreaSquareMiles), Hectares (to AreaHectares),
+Acres (to AreaAcres), SquareNauticalMiles (to AreaSquareNauticalMiles), SquareDegrees (to AreaSquareDegrees)
+and UnknownAreaUnit to AreaUnknownUnit</li>
+<li>All angle enumeration values were renamed to have a "Angle" prefix, including
+Radians (to AngleRadians), Gon (to AngleGon), MinutesOfArc (to AngleMinutesOfArc),
+SecondsOfArc (to AngleSecondsOfArc), Turn (to AngleTurn) and UnknownAngleUnit to AngleUnknownUnit</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorDataProvider QgsVectorDataProvider
+
+<ul>
+<li>QgsVectorDataProvider::fields() now returns a copy, rather than a const reference. Since QgsFields
+objects are implicitly shared, returning a copy helps simplify and make code more robust. This change
+only affects third party c++ providers, and does not affect PyQGIS scripts.</li>
+<li>The SaveAsShapefile, SelectGeometryAtId, RandomSelectGeometryAtId and SequentialSelectGeometryAtId
+capabilities have been removed, as they were unused and had no effect.</li>
+<li>capabilities() now returns a typesafe QgsVectorDataProvider::Capabilities object, not an integer.</li>
+<li>convertToProviderType() now takes a geometry reference, not a pointer.</li>
+<li>geometryType() has been renamed to wkbType() to be in line with QgsVectorLayer</li>
+</ul>
+
+
+\subsection qgis_api_break_3_0_QgsVectorLayer QgsVectorLayer
+
+<ul>
+<li>excludeAttributesWMS() and setExcludeAttributesWMS() have been renamed to excludeAttributesWms() and
+setExcludeAttributesWms()</li>
+<li>excludeAttributesWFS() and setExcludeAttributesWFS() have been renamed to excludeAttributesWfs() and
+setExcludeAttributesWfs()</li>
+<li>The displayField property has been separated from the mapTip. For a plain text short title use the
+displayExpression instead. For the map tip use mapTipTemplate() instead.</li>
+<li>changeGeometry() now accepts a geometry reference, not a pointer.</li>
+<li>The geometryChanged() signal now uses a const QgsGeometry reference.</li>
+<li>The deprecated removePolygonIntersections has been removed.</li>
+<li>addTopologicalPoints() now takes a geometry reference, not a pointer.</li>
+<li>commitErrors() now returns an object, rather than a reference. This has no effect on PyQGIS code.</li>
+<li>subsetString() was made const. This has no effect on PyQGIS code, but c++ code implementing derived layer classes will need to update the signature of this method to match.</li>
+<li>label(), enableLabels(), hasLabelsEnabled(), drawLabels() have been removed. Replaced by labeling based on PAL library, see QgsLabelingEngineV2.</li>
+<li>Signal layerDeleted() has been removed. Replaced by Qt signal destroyed().</li>
+<li>Deprecated editor widget methods and enums and structs: struct RangeData, enum FeatureFormSuppress, enum EditType, addAttributeEditorWidget(), editorWidgetV2(), editorWidgetConfig(), attributeEditorElements(), editType(), setEditType(), editorLayout(), setEditorLayout, setEditorWidgetV2Config(), setCheckedState(), editForm(), setEditForm(), featureFormSuppress(), setFeatureFormSuppress(), editFormInit(), setEditFormInit(), valueMap(), range(), dateFormat(), fieldEditable(), labelOnTop(), setFieldEditable() and setLabelOnTop().  Use editFormConfig()</li>
+<li>select() replaced by selectByRect()
+<li>setSelectedFeatures() replaced by selectByIds()
+<li>applyNamedStyle() replaced by applyNamedStyle()
+<li>isReadOnly() use readOnly()
+<li>Signal changeAttributeValue()
+<li>Deleted GroupData (Use QgsEditFormConfig::GroupData)
+<li>Deleted TabData (Use QgsEditFormConfig::TabData)
+<li>Deleted EditorLayout (Use QgsEditFormConfig::EditorLayout)
+<li>Deleted ValueRelationData (Use QgsEditFormConfig::editorWidgetConfig)
+<li>Deleted attributeEditorElementFromDomElement
+<li>editFormConfig() returns a copy instead of direct access (Use setEditFormConfig to update)
+<li>Removed valueRelation(), replaced with QgsEditFormConfig::editorWidgetConfig
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorLayerEditBuffer QgsVectorLayerEditBuffer
+
+<ul>
+<li>changeGeometry() now accepts a geometry reference, not a pointer.</li>
+<li>The geometryChanged() signal now uses a const QgsGeometry reference.</li>
+<li>The addedFeatures(), changedAttributeValues(), deletedAttributeIds(), addedAttributes(), changedGeometries()
+and deletedFeatureIds() functions now return values, not references. This has no effect on PyQGIS code, but c++
+plugins calling these methods will need to be updated.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorLayerEditUtils QgsVectorLayerEditUtils
+
+<ul>
+<li>addTopologicalPoints() now accepts a geometry reference, not a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorLayerImport QgsVectorLayerImport
+
+<ul>
+<li>QgsVectorLayerImport now takes references instead of pointers to QgsCoordinateReferenceSystem objects. Since
+QgsCoordinateReferenceSystem is now implicitly shared, using references to QgsCoordinateReferenceSystem rather than
+pointers makes for more robust, safer code. Use an invalid (default constructed) QgsCoordinateReferenceSystem
+in code which previously passed a null pointer to QgsVectorLayerImport.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorLayerUndoCommand QgsVectorLayerUndoCommand
+
+<ul>
+<li>QgsVectorLayerUndoCommandChangeGeometry constructor now accepts a geometry reference, not a pointer.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVisibilityPresetCollection QgsVisibilityPresetCollection
+
+<ul>
+<li>Has been renamed to QgsMapThemeCollection</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsVectorFileWriter QgsVectorFileWriter
+
+<ul>
+<li>QgsVectorFileWriter now takes references instead of pointers to QgsCoordinateReferenceSystem objects. Since
+QgsCoordinateReferenceSystem is now implicitly shared, using references to QgsCoordinateReferenceSystem rather than
+pointers makes for more robust, safer code. Use an invalid (default constructed) QgsCoordinateReferenceSystem
+in code which previously passed a null pointer to QgsVectorFileWriter.</li>
+<li>writeAsVectorFormat() now takes a QgsCoordinateTransform reference, not a pointer. An invalid QgsCoordinateTransform should be used instead of a null pointer if no transformation is required.</li>
+</ul>
+
+\subsection qgis_api_break_3_0_QgsWMSLegendNode QgsWMSLegendNode
+
+<ul>
+<li>QgsWMSLegendNode has been renamed to QgsWmsLegendNode</li>
+</ul>
+
+
 \section qgis_api_break_2_4 QGIS 2.4
 
 \subsection qgis_api_break_mtr Multi-threaded Rendering

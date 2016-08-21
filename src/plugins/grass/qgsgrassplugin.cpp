@@ -37,7 +37,7 @@
 #include "qgsrubberband.h"
 #include "qgsproject.h"
 #include "qgsproviderregistry.h"
-#include "qgsrendererv2registry.h"
+#include "qgsrendererregistry.h"
 #include "qgsvectorlayer.h"
 #include "qgsmaplayerregistry.h"
 
@@ -148,7 +148,7 @@ void QgsGrassPlugin::initGui()
   mCanvas = qGisInterface->mapCanvas();
 
   // Create region rubber band
-  mRegionBand = new QgsRubberBand( mCanvas, QGis::Polygon );
+  mRegionBand = new QgsRubberBand( mCanvas, QgsWkbTypes::PolygonGeometry );
   mRegionBand->setZValue( 20 );
 
   // Create the action for tool (the icons are set later by calling setCurrentTheme)
@@ -290,9 +290,9 @@ void QgsGrassPlugin::initGui()
   qGisInterface->addDockWidget( Qt::RightDockWidgetArea, mTools );
 
   // add edit renderer immediately so that if project was saved during editing, the layer can be loaded
-  if ( !QgsRendererV2Registry::instance()->renderersList().contains( "grassEdit" ) )
+  if ( !QgsRendererRegistry::instance()->renderersList().contains( "grassEdit" ) )
   {
-    QgsRendererV2Registry::instance()->addRenderer( new QgsRendererV2Metadata( "grassEdit",
+    QgsRendererRegistry::instance()->addRenderer( new QgsRendererMetadata( "grassEdit",
         QObject::tr( "GRASS edit" ),
         QgsGrassEditRenderer::create,
         QIcon( QgsApplication::defaultThemePath() + "rendererGrassSymbol.svg" ),
@@ -397,7 +397,7 @@ void QgsGrassPlugin::onEditingStarted()
     return;
 
   mOldStyles[vectorLayer] = vectorLayer->styleManager()->currentStyle();
-  mFormSuppress[vectorLayer] = vectorLayer->editFormConfig()->suppress();
+  mFormSuppress[vectorLayer] = vectorLayer->editFormConfig().suppress();
 
   // Because the edit style may be stored to project:
   // - do not translate because it may be loaded in QGIS running with different language
@@ -419,7 +419,7 @@ void QgsGrassPlugin::onEditingStarted()
 
     QgsGrassEditRenderer *renderer = new QgsGrassEditRenderer();
 
-    vectorLayer->setRendererV2( renderer );
+    vectorLayer->setRenderer( renderer );
   }
 
   grassProvider->startEditing( vectorLayer );
@@ -515,7 +515,7 @@ void QgsGrassPlugin::addFeature()
     grassProvider->setNewFeatureType( GV_AREA );
     formSuppress = QgsEditFormConfig::SuppressOn;
   }
-  vectorLayer->editFormConfig()->setSuppress( formSuppress );
+  vectorLayer->editFormConfig().setSuppress( formSuppress );
 }
 
 void QgsGrassPlugin::onSplitFeaturesTriggered( bool checked )
@@ -693,7 +693,7 @@ void QgsGrassPlugin::displayRegion()
   mRegionBand->setColor( regionPen.color() );
   mRegionBand->setWidth( regionPen.width() );
 
-  QgsGrassRegionEdit::drawRegion( mCanvas, mRegionBand, rect, &mCoordinateTransform );
+  QgsGrassRegionEdit::drawRegion( mCanvas, mRegionBand, rect, mCoordinateTransform );
 }
 
 void QgsGrassPlugin::switchRegion( bool on )
@@ -930,7 +930,7 @@ void QgsGrassPlugin::setTransform()
     QgsDebugMsg( "srcCrs: " + mCrs.toWkt() );
     QgsDebugMsg( "destCrs " + mCanvas->mapSettings().destinationCrs().toWkt() );
     mCoordinateTransform.setSourceCrs( mCrs );
-    mCoordinateTransform.setDestCRS( mCanvas->mapSettings().destinationCrs() );
+    mCoordinateTransform.setDestinationCrs( mCanvas->mapSettings().destinationCrs() );
   }
 }
 

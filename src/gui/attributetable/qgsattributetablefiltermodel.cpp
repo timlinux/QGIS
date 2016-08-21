@@ -18,11 +18,12 @@
 #include "qgis.h"
 #include "qgsattributetablefiltermodel.h"
 #include "qgsattributetablemodel.h"
+#include "qgsfeatureiterator.h"
 #include "qgsvectorlayer.h"
 #include "qgsfeature.h"
 #include "qgsmapcanvas.h"
 #include "qgslogger.h"
-#include "qgsrendererv2.h"
+#include "qgsrenderer.h"
 #include "qgsvectorlayereditbuffer.h"
 //////////////////
 // Filter Model //
@@ -324,11 +325,18 @@ bool QgsAttributeTableFilterModel::filterAcceptsRow( int sourceRow, const QModel
       QgsVectorLayerEditBuffer* editBuffer = layer()->editBuffer();
       if ( editBuffer )
       {
-        const QList<QgsFeatureId> addedFeatures = editBuffer->addedFeatures().keys();
-        const QList<QgsFeatureId> changedFeatures = editBuffer->changedAttributeValues().keys();
-        const QList<QgsFeatureId> changedGeometries = editBuffer->changedGeometries().keys();
-        const QgsFeatureId fid = masterModel()->rowToId( sourceRow );
-        return addedFeatures.contains( fid ) || changedFeatures.contains( fid ) || changedGeometries.contains( fid );
+        QgsFeatureId fid = masterModel()->rowToId( sourceRow );
+
+        if ( editBuffer->isFeatureAdded( fid ) )
+          return true;
+
+        if ( editBuffer->isFeatureAttributesChanged( fid ) )
+          return true;
+
+        if ( editBuffer->isFeatureGeometryChanged( fid ) )
+          return true;
+
+        return false;
       }
       return false;
     }
@@ -386,7 +394,7 @@ void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
   renderContext.expressionContext() << QgsExpressionContextUtils::globalScope()
   << QgsExpressionContextUtils::projectScope()
   << QgsExpressionContextUtils::layerScope( layer() );
-  QgsFeatureRendererV2* renderer = layer()->rendererV2();
+  QgsFeatureRenderer* renderer = layer()->renderer();
 
   mFilteredFeatures.clear();
 
@@ -403,7 +411,7 @@ void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
   }
   else
   {
-    if ( renderer && renderer->capabilities() & QgsFeatureRendererV2::ScaleDependent )
+    if ( renderer && renderer->capabilities() & QgsFeatureRenderer::ScaleDependent )
     {
       // setup scale
       // mapRenderer()->renderContext()->scale is not automaticaly updated when
@@ -414,7 +422,7 @@ void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
       renderContext.setRendererScale( ms.scale() );
     }
 
-    filter = renderer && renderer->capabilities() & QgsFeatureRendererV2::Filter;
+    filter = renderer && renderer->capabilities() & QgsFeatureRenderer::Filter;
   }
 
   renderer->startRender( renderContext, layer()->fields() );
@@ -454,7 +462,7 @@ void QgsAttributeTableFilterModel::generateListOfVisibleFeatures()
 
   features.close();
 
-  if ( renderer && renderer->capabilities() & QgsFeatureRendererV2::ScaleDependent )
+  if ( renderer && renderer->capabilities() & QgsFeatureRenderer::ScaleDependent )
   {
     renderer->stopRender( renderContext );
   }

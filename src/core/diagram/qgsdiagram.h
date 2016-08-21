@@ -15,20 +15,19 @@
 #ifndef QGSDIAGRAM_H
 #define QGSDIAGRAM_H
 
-#include "qgsfeature.h"
-#include "qgsexpressioncontext.h"
 #include <QPen>
 #include <QBrush>
+#include "qgsexpression.h" //for QMap with QgsExpression
 
 class QPainter;
 class QPointF;
 class QgsDiagramSettings;
 class QgsDiagramInterpolationSettings;
-
+class QgsFeature;
 class QgsRenderContext;
-
-class QgsExpression;
-
+class QgsExpressionContext;
+class QgsFields;
+class QgsAttributes;
 
 
 /** \ingroup core
@@ -42,9 +41,6 @@ class CORE_EXPORT QgsDiagram
     virtual QgsDiagram* clone() const = 0;
 
     void clearCache();
-
-    //! @deprecated use QgsExpressionContext variant instead
-    Q_DECL_DEPRECATED QgsExpression* getExpression( const QString& expression, const QgsFields* fields );
 
     /** Returns a prepared expression for the specified context.
      * @param expression expression string

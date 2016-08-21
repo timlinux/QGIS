@@ -17,32 +17,32 @@ SET(QGIS_CORE_SRCS
 
   symbology-ng/qgs25drenderer.cpp
   symbology-ng/qgsarrowsymbollayer.cpp
-  symbology-ng/qgscategorizedsymbolrendererv2.cpp
+  symbology-ng/qgscategorizedsymbolrenderer.cpp
   symbology-ng/qgscolorbrewerpalette.cpp
   symbology-ng/qgscptcityarchive.cpp
-  symbology-ng/qgsellipsesymbollayerv2.cpp
-  symbology-ng/qgsfillsymbollayerv2.cpp
-  symbology-ng/qgsgeometrygeneratorsymbollayerv2.cpp
-  symbology-ng/qgsgraduatedsymbolrendererv2.cpp
+  symbology-ng/qgsellipsesymbollayer.cpp
+  symbology-ng/qgsfillsymbollayer.cpp
+  symbology-ng/qgsgeometrygeneratorsymbollayer.cpp
+  symbology-ng/qgsgraduatedsymbolrenderer.cpp
   symbology-ng/qgsheatmaprenderer.cpp
   symbology-ng/qgsinvertedpolygonrenderer.cpp
-  symbology-ng/qgslegendsymbolitemv2.cpp
-  symbology-ng/qgslinesymbollayerv2.cpp
-  symbology-ng/qgsmarkersymbollayerv2.cpp
+  symbology-ng/qgslegendsymbolitem.cpp
+  symbology-ng/qgslinesymbollayer.cpp
+  symbology-ng/qgsmarkersymbollayer.cpp
   symbology-ng/qgsnullsymbolrenderer.cpp
   symbology-ng/qgspointdisplacementrenderer.cpp
-  symbology-ng/qgsrendererv2.cpp
-  symbology-ng/qgsrendererv2registry.cpp
-  symbology-ng/qgsrulebasedrendererv2.cpp
-  symbology-ng/qgssinglesymbolrendererv2.cpp
-  symbology-ng/qgsstylev2.cpp
+  symbology-ng/qgsrenderer.cpp
+  symbology-ng/qgsrendererregistry.cpp
+  symbology-ng/qgsrulebasedrenderer.cpp
+  symbology-ng/qgssinglesymbolrenderer.cpp
+  symbology-ng/qgsstyle.cpp
   symbology-ng/qgssvgcache.cpp
-  symbology-ng/qgssymbollayerv2.cpp
-  symbology-ng/qgssymbollayerv2registry.cpp
-  symbology-ng/qgssymbollayerv2utils.cpp
-  symbology-ng/qgssymbologyv2conversion.cpp
-  symbology-ng/qgssymbolv2.cpp
-  symbology-ng/qgsvectorcolorrampv2.cpp
+  symbology-ng/qgssymbollayer.cpp
+  symbology-ng/qgssymbollayerregistry.cpp
+  symbology-ng/qgssymbollayerutils.cpp
+  symbology-ng/qgssymbologyconversion.cpp
+  symbology-ng/qgssymbol.cpp
+  symbology-ng/qgsvectorcolorramp.cpp
   symbology-ng/qgsvectorfieldsymbollayer.cpp
 
   diagram/qgsdiagram.cpp
@@ -81,6 +81,7 @@ SET(QGIS_CORE_SRCS
   qgsactionmanager.cpp
   qgsaggregatecalculator.cpp
   qgsattributetableconfig.cpp
+  qgsattributeeditorelement.cpp
   qgsbrowsermodel.cpp
   qgscachedfeatureiterator.cpp
   qgscacheindex.cpp
@@ -105,7 +106,7 @@ SET(QGIS_CORE_SRCS
   qgsdatetimestatisticalsummary.cpp
   qgsdatumtransformstore.cpp
   qgsdbfilterproxymodel.cpp
-  qgsdiagramrendererv2.cpp
+  qgsdiagramrenderer.cpp
   qgsdistancearea.cpp
   qgseditformconfig.cpp
   qgserror.cpp
@@ -126,13 +127,10 @@ SET(QGIS_CORE_SRCS
   qgshistogram.cpp
   qgsinterval.cpp
   qgsjsonutils.cpp
-  qgslabel.cpp
-  qgslabelattributes.cpp
   qgslabelfeature.cpp
-  qgslabelingenginev2.cpp
+  qgslabelingengine.cpp
   qgslabelsearchtree.cpp
   qgslayerdefinition.cpp
-  qgslegacyhelpers.cpp
   qgslegendrenderer.cpp
   qgslegendsettings.cpp
   qgslocalec.cpp
@@ -142,7 +140,6 @@ SET(QGIS_CORE_SRCS
   qgsmaplayerlegend.cpp
   qgsmaplayerregistry.cpp
   qgsmaplayerstylemanager.cpp
-  qgsmaprenderer.cpp
   qgsmaprenderercache.cpp
   qgsmaprenderercustompainterjob.cpp
   qgsmaprendererjob.cpp
@@ -165,6 +162,7 @@ SET(QGIS_CORE_SRCS
   qgsogrutils.cpp
   qgsowsconnection.cpp
   qgspaintenginehack.cpp
+  qgspainting.cpp
   qgspallabeling.cpp
   qgspluginlayer.cpp
   qgspluginlayerregistry.cpp
@@ -225,7 +223,7 @@ SET(QGIS_CORE_SRCS
   qgsvectorsimplifymethod.cpp
   qgsvirtuallayerdefinition.cpp
   qgsvirtuallayerdefinitionutils.cpp
-  qgsvisibilitypresetcollection.cpp
+  qgsmapthemecollection.cpp
   qgsxmlutils.cpp
 
   composer/qgsaddremoveitemcommand.cpp
@@ -269,7 +267,6 @@ SET(QGIS_CORE_SRCS
   composer/qgscomposition.cpp
   composer/qgsdoubleboxscalebarstyle.cpp
   composer/qgsgroupungroupitemscommand.cpp
-  composer/qgslegendmodel.cpp
   composer/qgsnumericscalebarstyle.cpp
   composer/qgspaperitem.cpp
   composer/qgsscalebarstyle.cpp
@@ -300,7 +297,6 @@ SET(QGIS_CORE_SRCS
   raster/qgscontrastenhancementfunction.cpp
   raster/qgslinearminmaxenhancement.cpp
   raster/qgslinearminmaxenhancementwithclip.cpp
-  raster/qgspseudocolorshader.cpp
   raster/qgsraster.cpp
   raster/qgsrasterblock.cpp
   raster/qgsrasterchecker.cpp
@@ -334,26 +330,26 @@ SET(QGIS_CORE_SRCS
   raster/qgssinglebandpseudocolorrenderer.cpp
   raster/qgshillshaderenderer.cpp
 
-  geometry/qgsabstractgeometryv2.cpp
-  geometry/qgscircularstringv2.cpp
-  geometry/qgscompoundcurvev2.cpp
-  geometry/qgscurvepolygonv2.cpp
-  geometry/qgscurvev2.cpp
+  geometry/qgsabstractgeometry.cpp
+  geometry/qgscircularstring.cpp
+  geometry/qgscompoundcurve.cpp
+  geometry/qgscurvepolygon.cpp
+  geometry/qgscurve.cpp
   geometry/qgsgeometry.cpp
-  geometry/qgsgeometrycollectionv2.cpp
+  geometry/qgsgeometrycollection.cpp
   geometry/qgsgeometryeditutils.cpp
   geometry/qgsgeometryfactory.cpp
   geometry/qgsgeometryutils.cpp
   geometry/qgsgeos.cpp
   geometry/qgsinternalgeometryengine.cpp
-  geometry/qgslinestringv2.cpp
-  geometry/qgsmulticurvev2.cpp
-  geometry/qgsmultilinestringv2.cpp
-  geometry/qgsmultipointv2.cpp
-  geometry/qgsmultipolygonv2.cpp
-  geometry/qgsmultisurfacev2.cpp
+  geometry/qgslinestring.cpp
+  geometry/qgsmulticurve.cpp
+  geometry/qgsmultilinestring.cpp
+  geometry/qgsmultipoint.cpp
+  geometry/qgsmultipolygon.cpp
+  geometry/qgsmultisurface.cpp
   geometry/qgspointv2.cpp
-  geometry/qgspolygonv2.cpp
+  geometry/qgspolygon.cpp
   geometry/qgswkbptr.cpp
   geometry/qgswkbtypes.cpp
   geometry/qgswkbsimplifierptr.cpp
@@ -454,12 +450,13 @@ SET(QGIS_CORE_MOC_HDRS
   qgsapplication.h
   qgsbrowsermodel.h
   qgscontexthelp.h
-  qgscoordinatetransform.h
   qgscredentials.h
   qgsdataitem.h
   qgsdataprovider.h
   qgsdbfilterproxymodel.h
-  qgseditformconfig.h
+  qgsfeature.h
+  qgsfeedback.h
+  qgsfield.h
   qgsgeometryvalidator.h
   qgsgml.h
   qgsgmlschema.h
@@ -469,7 +466,6 @@ SET(QGIS_CORE_MOC_HDRS
   qgsmaplayerstylemanager.h
   qgsmaprenderercache.h
   qgsmaprenderercustompainterjob.h
-  qgsmaprenderer.h
   qgsmaprendererjob.h
   qgsmaprendererparalleljob.h
   qgsmaprenderersequentialjob.h
@@ -496,7 +492,7 @@ SET(QGIS_CORE_MOC_HDRS
   qgsvectorlayereditpassthrough.h
   qgsvectorlayer.h
   qgsvectorlayerjoinbuffer.h
-  qgsvisibilitypresetcollection.h
+  qgsmapthemecollection.h
   qgswebpage.h
   qgswebview.h
 
@@ -537,7 +533,6 @@ SET(QGIS_CORE_MOC_HDRS
   composer/qgscomposertexttable.h
   composer/qgscomposition.h
   composer/qgsgroupungroupitemscommand.h
-  composer/qgslegendmodel.h
   composer/qgspaperitem.h
 
   raster/qgsrasterlayer.h
@@ -550,7 +545,7 @@ SET(QGIS_CORE_MOC_HDRS
 
   symbology-ng/qgscptcityarchive.h
   symbology-ng/qgssvgcache.h
-  symbology-ng/qgsstylev2.h
+  symbology-ng/qgsstyle.h
 
   layertree/qgslayertreegroup.h
   layertree/qgslayertreelayer.h
@@ -607,8 +602,10 @@ SET(QGIS_CORE_HDRS
   qgis.h
   qgsaction.h
   qgsaggregatecalculator.h
+  qgsannotation.h
   qgsattributetableconfig.h
   qgsattributeaction.h
+  qgsattributeeditorelement.h
   qgscachedfeatureiterator.h
   qgscacheindex.h
   qgscacheindexfeatureid.h
@@ -619,13 +616,12 @@ SET(QGIS_CORE_HDRS
   qgscontexthelp.h
   qgsconditionalstyle.h
   qgscoordinatereferencesystem.h  
-  qgscoordinatereferencesystem_p.h
+  qgscoordinatetransform.h
   qgscoordinateutils.h
   qgscrscache.h
   qgscsexception.h
   qgsdartmeasurement.h
   qgsdatadefined.h
-  qgsdatadefined_p.h
   qgsdataitem.h
   qgsdataitemprovider.h
   qgsdataitemproviderregistry.h
@@ -633,22 +629,20 @@ SET(QGIS_CORE_HDRS
   qgsdatetimestatisticalsummary.h
   qgsdatumtransformstore.h
   qgsdbfilterproxymodel.h
-  qgsdiagramrendererv2.h
+  qgsdiagramrenderer.h
   qgsdistancearea.h
+  qgseditformconfig.h
   qgseditorwidgetconfig.h
   qgsfeaturefilterprovider.h
   qgserror.h
   qgsexception.h
   qgsexpression.h
   qgsexpressioncontext.h
+  qgsexpressioncontextgenerator.h
   qgsexpressionfieldbuffer.h
-  qgsfeature.h
-  qgsfeature_p.h
   qgsfeatureiterator.h
   qgsfeaturerequest.h
   qgsfeaturestore.h
-  qgsfield.h
-  qgsfield_p.h
   qgsfontutils.h
   qgsgeometrycache.h
   qgshistogram.h
@@ -656,12 +650,9 @@ SET(QGIS_CORE_HDRS
   qgsinterval.h
   qgsjsonutils.h
   qgslayerdefinition.h
-  qgslabel.h
-  qgslabelattributes.h
   qgslabelfeature.h
-  qgslabelingenginev2.h
+  qgslabelingengine.h
   qgslabelsearchtree.h
-  qgslegacyhelpers.h
   qgslegendrenderer.h
   qgslegendsettings.h
   qgslogger.h
@@ -678,6 +669,7 @@ SET(QGIS_CORE_HDRS
   qgsogcutils.h
   qgsowsconnection.h
   qgspaintenginehack.h
+  qgspainting.h
   qgspallabeling.h
   qgspluginlayerregistry.h
   qgspoint.h
@@ -724,7 +716,7 @@ SET(QGIS_CORE_HDRS
   qgsvectorlayerrenderer.h
   qgsvectorlayerundocommand.h
   qgsvectorsimplifymethod.h
-  qgsvisibilitypresetcollection.h
+  qgsmapthemecollection.h
   qgsxmlutils.h
   qgswebpage.h
   qgswebframe.h
@@ -782,7 +774,6 @@ SET(QGIS_CORE_HDRS
   raster/qgslinearminmaxenhancementwithclip.h
   raster/qgsmultibandcolorrenderer.h
   raster/qgspalettedrasterrenderer.h
-  raster/qgspseudocolorshader.h
   raster/qgsraster.h
   raster/qgsrasterbandstats.h
   raster/qgsrasterblock.h
@@ -811,40 +802,40 @@ SET(QGIS_CORE_HDRS
   raster/qgshillshaderenderer.h
 
   symbology-ng/qgs25drenderer.h
-  symbology-ng/qgscategorizedsymbolrendererv2.h
+  symbology-ng/qgscategorizedsymbolrenderer.h
   symbology-ng/qgscolorbrewerpalette.h
-  symbology-ng/qgsellipsesymbollayerv2.h
-  symbology-ng/qgsfillsymbollayerv2.h
-  symbology-ng/qgsgraduatedsymbolrendererv2.h
-  symbology-ng/qgslegendsymbolitemv2.h
-  symbology-ng/qgslinesymbollayerv2.h
-  symbology-ng/qgsmarkersymbollayerv2.h
+  symbology-ng/qgsellipsesymbollayer.h
+  symbology-ng/qgsfillsymbollayer.h
+  symbology-ng/qgsgraduatedsymbolrenderer.h
+  symbology-ng/qgslegendsymbolitem.h
+  symbology-ng/qgslinesymbollayer.h
+  symbology-ng/qgsmarkersymbollayer.h
   symbology-ng/qgspointdisplacementrenderer.h
-  symbology-ng/qgsrendererv2.h
-  symbology-ng/qgsrendererv2registry.h
-  symbology-ng/qgsrulebasedrendererv2.h
-  symbology-ng/qgssinglesymbolrendererv2.h
+  symbology-ng/qgsrenderer.h
+  symbology-ng/qgsrendererregistry.h
+  symbology-ng/qgsrulebasedrenderer.h
+  symbology-ng/qgssinglesymbolrenderer.h
   symbology-ng/qgsheatmaprenderer.h
   symbology-ng/qgsinvertedpolygonrenderer.h
   symbology-ng/qgsnullsymbolrenderer.h
-  symbology-ng/qgssymbollayerv2.h
-  symbology-ng/qgssymbollayerv2registry.h
-  symbology-ng/qgssymbollayerv2utils.h
-  symbology-ng/qgssymbologyv2conversion.h
-  symbology-ng/qgssymbolv2.h
-  symbology-ng/qgsvectorcolorrampv2.h
+  symbology-ng/qgssymbollayer.h
+  symbology-ng/qgssymbollayerregistry.h
+  symbology-ng/qgssymbollayerutils.h
+  symbology-ng/qgssymbologyconversion.h
+  symbology-ng/qgssymbol.h
+  symbology-ng/qgsvectorcolorramp.h
   symbology-ng/qgsvectorfieldsymbollayer.h
-  symbology-ng/qgsgeometrygeneratorsymbollayerv2.h
+  symbology-ng/qgsgeometrygeneratorsymbollayer.h
 
   layertree/qgslayertree.h
   layertree/qgslayertreeutils.h
 
-  geometry/qgsabstractgeometryv2.h
-  geometry/qgscircularstringv2.h
-  geometry/qgscompoundcurvev2.h
-  geometry/qgscurvepolygonv2.h
-  geometry/qgscurvev2.h
-  geometry/qgsgeometrycollectionv2.h
+  geometry/qgsabstractgeometry.h
+  geometry/qgscircularstring.h
+  geometry/qgscompoundcurve.h
+  geometry/qgscurvepolygon.h
+  geometry/qgscurve.h
+  geometry/qgsgeometrycollection.h
   geometry/qgsgeometryeditutils.h
   geometry/qgsgeometryengine.h
   geometry/qgsgeometryfactory.h
@@ -852,15 +843,15 @@ SET(QGIS_CORE_HDRS
   geometry/qgsgeometryutils.h
   geometry/qgsgeos.h
   geometry/qgsinternalgeometryengine.h
-  geometry/qgslinestringv2.h
-  geometry/qgsmulticurvev2.h
-  geometry/qgsmultilinestringv2.h
-  geometry/qgsmultipointv2.h
-  geometry/qgsmultipolygonv2.h
-  geometry/qgsmultisurfacev2.h
+  geometry/qgslinestring.h
+  geometry/qgsmulticurve.h
+  geometry/qgsmultilinestring.h
+  geometry/qgsmultipoint.h
+  geometry/qgsmultipolygon.h
+  geometry/qgsmultisurface.h
   geometry/qgspointv2.h
-  geometry/qgspolygonv2.h
-  geometry/qgssurfacev2.h
+  geometry/qgspolygon.h
+  geometry/qgssurface.h
   geometry/qgswkbptr.h
   geometry/qgswkbsimplifierptr.h
   geometry/qgswkbtypes.h

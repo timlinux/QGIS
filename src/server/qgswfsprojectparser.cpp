@@ -22,8 +22,9 @@
 #include "qgsvectordataprovider.h"
 #include "qgsmapserviceexception.h"
 #include "qgsaccesscontrol.h"
+#include "qgslogger.h"
 
-QgsWFSProjectParser::QgsWFSProjectParser(
+QgsWfsProjectParser::QgsWfsProjectParser(
   const QString& filePath
 #ifdef HAVE_SERVER_PYTHON_PLUGINS
   , const QgsAccessControl* ac
@@ -37,27 +38,27 @@ QgsWFSProjectParser::QgsWFSProjectParser(
   mProjectParser = QgsConfigCache::instance()->serverConfiguration( filePath );
 }
 
-QgsWFSProjectParser::~QgsWFSProjectParser()
+QgsWfsProjectParser::~QgsWfsProjectParser()
 {
   delete mProjectParser;
 }
 
-void QgsWFSProjectParser::serviceCapabilities( QDomElement& parentElement, QDomDocument& doc ) const
+void QgsWfsProjectParser::serviceCapabilities( QDomElement& parentElement, QDomDocument& doc ) const
 {
   mProjectParser->serviceCapabilities( parentElement, doc, "WFS" );
 }
 
-QString QgsWFSProjectParser::serviceUrl() const
+QString QgsWfsProjectParser::serviceUrl() const
 {
   return mProjectParser->serviceUrl();
 }
 
-QString QgsWFSProjectParser::wfsServiceUrl() const
+QString QgsWfsProjectParser::wfsServiceUrl() const
 {
   return mProjectParser->wfsServiceUrl();
 }
 
-void QgsWFSProjectParser::featureTypeList( QDomElement& parentElement, QDomDocument& doc ) const
+void QgsWfsProjectParser::featureTypeList( QDomElement& parentElement, QDomDocument& doc ) const
 {
   const QList<QDomElement>& projectLayerElements = mProjectParser->projectLayerElements();
   if ( projectLayerElements.size() < 1 )
@@ -210,7 +211,7 @@ void QgsWFSProjectParser::featureTypeList( QDomElement& parentElement, QDomDocum
   return;
 }
 
-QSet<QString> QgsWFSProjectParser::wfstUpdateLayers() const
+QSet<QString> QgsWfsProjectParser::wfstUpdateLayers() const
 {
   QSet<QString> publishedIds = wfsLayerSet();
   QSet<QString> wfsList;
@@ -246,7 +247,7 @@ QSet<QString> QgsWFSProjectParser::wfstUpdateLayers() const
   return wfsList;
 }
 
-QSet<QString> QgsWFSProjectParser::wfstInsertLayers() const
+QSet<QString> QgsWfsProjectParser::wfstInsertLayers() const
 {
   QSet<QString> publishedIds = wfsLayerSet();
   QSet<QString> wfsList;
@@ -282,7 +283,7 @@ QSet<QString> QgsWFSProjectParser::wfstInsertLayers() const
   return wfsList;
 }
 
-QSet<QString> QgsWFSProjectParser::wfstDeleteLayers() const
+QSet<QString> QgsWfsProjectParser::wfstDeleteLayers() const
 {
   QSet<QString> publishedIds = wfsLayerSet();
   QSet<QString> wfsList;
@@ -318,7 +319,7 @@ QSet<QString> QgsWFSProjectParser::wfstDeleteLayers() const
   return wfsList;
 }
 
-void QgsWFSProjectParser::describeFeatureType( const QString& aTypeName, QDomElement& parentElement, QDomDocument& doc ) const
+void QgsWfsProjectParser::describeFeatureType( const QString& aTypeName, QDomElement& parentElement, QDomDocument& doc ) const
 {
   const QList<QDomElement>& projectLayerElements = mProjectParser->projectLayerElements();
   if ( projectLayerElements.size() < 1 )
@@ -372,7 +373,7 @@ void QgsWFSProjectParser::describeFeatureType( const QString& aTypeName, QDomEle
         }
 
         //hidden attributes for this layer
-        const QSet<QString>& layerExcludedAttributes = layer->excludeAttributesWFS();
+        const QSet<QString>& layerExcludedAttributes = layer->excludeAttributesWfs();
 
         //xsd:element
         QDomElement elementElem = doc.createElement( "element"/*xsd:element*/ );
@@ -413,31 +414,31 @@ void QgsWFSProjectParser::describeFeatureType( const QString& aTypeName, QDomEle
           }
           else
           {
-            QGis::WkbType wkbType = layer->wkbType();
+            QgsWkbTypes::Type wkbType = layer->wkbType();
             switch ( wkbType )
             {
-              case QGis::WKBPoint25D:
-              case QGis::WKBPoint:
+              case QgsWkbTypes::Point25D:
+              case QgsWkbTypes::Point:
                 geomElem.setAttribute( "type", "gml:PointPropertyType" );
                 break;
-              case QGis::WKBLineString25D:
-              case QGis::WKBLineString:
+              case QgsWkbTypes::LineString25D:
+              case QgsWkbTypes::LineString:
                 geomElem.setAttribute( "type", "gml:LineStringPropertyType" );
                 break;
-              case QGis::WKBPolygon25D:
-              case QGis::WKBPolygon:
+              case QgsWkbTypes::Polygon25D:
+              case QgsWkbTypes::Polygon:
                 geomElem.setAttribute( "type", "gml:PolygonPropertyType" );
                 break;
-              case QGis::WKBMultiPoint25D:
-              case QGis::WKBMultiPoint:
+              case QgsWkbTypes::MultiPoint25D:
+              case QgsWkbTypes::MultiPoint:
                 geomElem.setAttribute( "type", "gml:MultiPointPropertyType" );
                 break;
-              case QGis::WKBMultiLineString25D:
-              case QGis::WKBMultiLineString:
+              case QgsWkbTypes::MultiLineString25D:
+              case QgsWkbTypes::MultiLineString:
                 geomElem.setAttribute( "type", "gml:MultiLineStringPropertyType" );
                 break;
-              case QGis::WKBMultiPolygon25D:
-              case QGis::WKBMultiPolygon:
+              case QgsWkbTypes::MultiPolygon25D:
+              case QgsWkbTypes::MultiPolygon:
                 geomElem.setAttribute( "type", "gml:MultiPolygonPropertyType" );
                 break;
               default:
@@ -465,7 +466,7 @@ void QgsWFSProjectParser::describeFeatureType( const QString& aTypeName, QDomEle
           //xsd:element
           QDomElement attElem = doc.createElement( "element"/*xsd:element*/ );
           attElem.setAttribute( "name", attributeName );
-          QVariant::Type attributeType = fields[idx].type();
+          QVariant::Type attributeType = fields.at( idx ).type();
           if ( attributeType == QVariant::Int )
             attElem.setAttribute( "type", "integer" );
           else if ( attributeType == QVariant::LongLong )
@@ -498,17 +499,17 @@ void QgsWFSProjectParser::describeFeatureType( const QString& aTypeName, QDomEle
   return;
 }
 
-QStringList QgsWFSProjectParser::wfsLayers() const
+QStringList QgsWfsProjectParser::wfsLayers() const
 {
   return mProjectParser->wfsLayers();
 }
 
-QSet<QString> QgsWFSProjectParser::wfsLayerSet() const
+QSet<QString> QgsWfsProjectParser::wfsLayerSet() const
 {
   return QSet<QString>::fromList( wfsLayers() );
 }
 
-int QgsWFSProjectParser::wfsLayerPrecision( const QString& aLayerId ) const
+int QgsWfsProjectParser::wfsLayerPrecision( const QString& aLayerId ) const
 {
   QStringList wfsLayersId = mProjectParser->wfsLayers();
   if ( !wfsLayersId.contains( aLayerId ) )
@@ -533,7 +534,7 @@ int QgsWFSProjectParser::wfsLayerPrecision( const QString& aLayerId ) const
   return prec;
 }
 
-QList<QgsMapLayer*> QgsWFSProjectParser::mapLayerFromTypeName( const QString& aTypeName, bool useCache ) const
+QList<QgsMapLayer*> QgsWfsProjectParser::mapLayerFromTypeName( const QString& aTypeName, bool useCache ) const
 {
   Q_UNUSED( useCache );
 

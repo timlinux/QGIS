@@ -22,15 +22,14 @@
 #include <QDesktopServices>
 
 //qgis includes...
-#include <qgsmaprenderer.h>
 #include <qgsmaplayer.h>
 #include <qgsvectorlayer.h>
 #include <qgsapplication.h>
 #include <qgsproviderregistry.h>
 #include <qgsmaplayerregistry.h>
-#include <qgssymbolv2.h>
-#include <qgssinglesymbolrendererv2.h>
-#include "qgsmarkersymbollayerv2.h"
+#include <qgssymbol.h>
+#include <qgssinglesymbolrenderer.h>
+#include "qgsmarkersymbollayer.h"
 #include "qgsdatadefined.h"
 
 //qgis test includes
@@ -74,9 +73,9 @@ class TestQgsSimpleMarkerSymbol : public QObject
     bool imageCheck( const QString& theType );
     QgsMapSettings mMapSettings;
     QgsVectorLayer * mpPointsLayer;
-    QgsSimpleMarkerSymbolLayerV2* mSimpleMarkerLayer;
-    QgsMarkerSymbolV2* mMarkerSymbol;
-    QgsSingleSymbolRendererV2* mSymbolRenderer;
+    QgsSimpleMarkerSymbolLayer* mSimpleMarkerLayer;
+    QgsMarkerSymbol* mMarkerSymbol;
+    QgsSingleSymbolRenderer* mSymbolRenderer;
     QString mTestDataDir;
     QString mReport;
 };
@@ -107,11 +106,11 @@ void TestQgsSimpleMarkerSymbol::initTestCase()
     QList<QgsMapLayer *>() << mpPointsLayer );
 
   //setup symbol
-  mSimpleMarkerLayer = new QgsSimpleMarkerSymbolLayerV2();
-  mMarkerSymbol = new QgsMarkerSymbolV2();
+  mSimpleMarkerLayer = new QgsSimpleMarkerSymbolLayer();
+  mMarkerSymbol = new QgsMarkerSymbol();
   mMarkerSymbol->changeSymbolLayer( 0, mSimpleMarkerLayer );
-  mSymbolRenderer = new QgsSingleSymbolRendererV2( mMarkerSymbol );
-  mpPointsLayer->setRendererV2( mSymbolRenderer );
+  mSymbolRenderer = new QgsSingleSymbolRenderer( mMarkerSymbol );
+  mpPointsLayer->setRenderer( mSymbolRenderer );
 
   // We only need maprender instead of mapcanvas
   // since maprender does not require a qui
@@ -256,7 +255,7 @@ void TestQgsSimpleMarkerSymbol::colors()
 {
   //test logic for setting/retrieving symbol color
 
-  QgsSimpleMarkerSymbolLayerV2 marker;
+  QgsSimpleMarkerSymbolLayer marker;
   marker.setOutlineColor( QColor( 200, 200, 200 ) );
   marker.setFillColor( QColor( 100, 100, 100 ) );
 

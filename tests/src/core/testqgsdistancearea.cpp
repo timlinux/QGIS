@@ -158,13 +158,13 @@ void TestQgsDistanceArea::unit_conversions()
   myDa.setEllipsoidalMode( false );
 
   double inputValue;
-  QGis::UnitType inputUnit;
-  QGis::UnitType outputUnit;
+  QgsUnitTypes::DistanceUnit inputUnit;
+  QgsUnitTypes::DistanceUnit outputUnit;
 
   inputValue = 10000.0;
-  inputUnit = QGis::Meters;
-  outputUnit = QGis::Feet;
-  //outputUnit = QGis::Meters;
+  inputUnit = QgsUnitTypes::DistanceMeters;
+  outputUnit = QgsUnitTypes::DistanceFeet;
+  //outputUnit = QgsUnitTypes::Meters;
 
   // First, convert from sq.meter to sq.feet
   Q_NOWARN_DEPRECATED_PUSH
@@ -238,20 +238,20 @@ void TestQgsDistanceArea::measureUnits()
   calc.setEllipsoidalMode( false );
   calc.setEllipsoid( "NONE" );
   calc.setSourceCrs( 254L );
-  QGis::UnitType units;
+  QgsUnitTypes::DistanceUnit units;
   QgsPoint p1( 1341683.9854275715, 408256.9562717728 );
   QgsPoint p2( 1349321.7807031618, 408256.9562717728 );
 
   double result = calc.measureLine( p1, p2, units );
   //no OTF, result will be in CRS unit (feet)
-  QCOMPARE( units, QGis::Feet );
+  QCOMPARE( units, QgsUnitTypes::DistanceFeet );
   QGSCOMPARENEAR( result, 7637.7952755903825, 0.001 );
 
   calc.setEllipsoidalMode( true );
   calc.setEllipsoid( "WGS84" );
   result = calc.measureLine( p1, p2, units );
   //OTF, result will be in meters
-  QCOMPARE( units, QGis::Meters );
+  QCOMPARE( units, QgsUnitTypes::DistanceMeters );
   QGSCOMPARENEAR( result, 2328.0988253106957, 0.001 );
 }
 
@@ -274,37 +274,37 @@ void TestQgsDistanceArea::measureAreaAndUnits()
   QgsPolygon poly;
   poly << ring;
 
-  QScopedPointer< QgsGeometry > polygon( QgsGeometry::fromPolygon( poly ) );
+  QgsGeometry polygon( QgsGeometry::fromPolygon( poly ) );
 
   // We check both the measured area AND the units, in case the logic regarding
   // ellipsoids and units changes in future
-  double area = da.measureArea( polygon.data() );
+  double area = da.measureArea( &polygon );
   QgsUnitTypes::AreaUnit units = da.areaUnits();
 
   QgsDebugMsg( QString( "measured %1 in %2" ).arg( area ).arg( QgsUnitTypes::toString( units ) ) );
 
-  QVERIFY(( qgsDoubleNear( area, 3.0, 0.00000001 ) && units == QgsUnitTypes::SquareDegrees )
-          || ( qgsDoubleNear( area, 37176087091.5, 0.1 ) && units == QgsUnitTypes::SquareMeters ) );
+  QVERIFY(( qgsDoubleNear( area, 3.0, 0.00000001 ) && units == QgsUnitTypes::AreaSquareDegrees )
+          || ( qgsDoubleNear( area, 37176087091.5, 0.1 ) && units == QgsUnitTypes::AreaSquareMeters ) );
 
   da.setEllipsoid( "WGS84" );
-  area = da.measureArea( polygon.data() );
+  area = da.measureArea( &polygon );
   units = da.areaUnits();
 
   QgsDebugMsg( QString( "measured %1 in %2" ).arg( area ).arg( QgsUnitTypes::toString( units ) ) );
-  QVERIFY(( qgsDoubleNear( area, 3.0, 0.00000001 ) && units == QgsUnitTypes::SquareDegrees )
-          || ( qgsDoubleNear( area, 37176087091.5, 0.1 ) && units == QgsUnitTypes::SquareMeters ) );
+  QVERIFY(( qgsDoubleNear( area, 3.0, 0.00000001 ) && units == QgsUnitTypes::AreaSquareDegrees )
+          || ( qgsDoubleNear( area, 37176087091.5, 0.1 ) && units == QgsUnitTypes::AreaSquareMeters ) );
 
   da.setEllipsoidalMode( true );
-  area = da.measureArea( polygon.data() );
+  area = da.measureArea( &polygon );
   units = da.areaUnits();
 
   QgsDebugMsg( QString( "measured %1 in %2" ).arg( area ).arg( QgsUnitTypes::toString( units ) ) );
   // should always be in Meters Squared
   QGSCOMPARENEAR( area, 37416879192.9, 0.1 );
-  QCOMPARE( units, QgsUnitTypes::SquareMeters );
+  QCOMPARE( units, QgsUnitTypes::AreaSquareMeters );
 
   // test converting the resultant area
-  area = da.convertAreaMeasurement( area, QgsUnitTypes::SquareMiles );
+  area = da.convertAreaMeasurement( area, QgsUnitTypes::AreaSquareMiles );
   QGSCOMPARENEAR( area, 14446.7378, 0.001 );
 
   // now try with a source CRS which is in feet
@@ -318,31 +318,31 @@ void TestQgsDistanceArea::measureAreaAndUnits()
   << QgsPoint( 1850000, 4423000 );
   poly.clear();
   poly << ring;
-  polygon.reset( QgsGeometry::fromPolygon( poly ) );
+  polygon = QgsGeometry::fromPolygon( poly );
 
   da.setSourceCrs( 27469 );
   da.setEllipsoidalMode( false );
   // measurement should be in square feet
-  area = da.measureArea( polygon.data() );
+  area = da.measureArea( &polygon );
   units = da.areaUnits();
   QgsDebugMsg( QString( "measured %1 in %2" ).arg( area ).arg( QgsUnitTypes::toString( units ) ) );
   QGSCOMPARENEAR( area, 2000000, 0.001 );
-  QCOMPARE( units, QgsUnitTypes::SquareFeet );
+  QCOMPARE( units, QgsUnitTypes::AreaSquareFeet );
 
   // test converting the resultant area
-  area = da.convertAreaMeasurement( area, QgsUnitTypes::SquareYards );
+  area = da.convertAreaMeasurement( area, QgsUnitTypes::AreaSquareYards );
   QGSCOMPARENEAR( area, 222222.2222, 0.001 );
 
   da.setEllipsoidalMode( true );
   // now should be in Square Meters again
-  area = da.measureArea( polygon.data() );
+  area = da.measureArea( &polygon );
   units = da.areaUnits();
   QgsDebugMsg( QString( "measured %1 in %2" ).arg( area ).arg( QgsUnitTypes::toString( units ) ) );
   QGSCOMPARENEAR( area, 184149.37, 1.0 );
-  QCOMPARE( units, QgsUnitTypes::SquareMeters );
+  QCOMPARE( units, QgsUnitTypes::AreaSquareMeters );
 
   // test converting the resultant area
-  area = da.convertAreaMeasurement( area, QgsUnitTypes::SquareYards );
+  area = da.convertAreaMeasurement( area, QgsUnitTypes::AreaSquareYards );
   QgsDebugMsg( QString( "measured %1 in sq yrds" ).arg( area ) );
   QGSCOMPARENEAR( area, 220240.8172549, 0.00001 );
 }

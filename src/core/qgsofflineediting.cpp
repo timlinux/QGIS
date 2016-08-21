@@ -30,6 +30,8 @@
 #include "qgsvectorlayereditbuffer.h"
 #include "qgsvectorlayerjoinbuffer.h"
 #include "qgsslconnect.h"
+#include "qgsfeatureiterator.h"
+#include "qgslogger.h"
 
 #include <QDir>
 #include <QDomDocument>
@@ -313,7 +315,7 @@ void QgsOfflineEditing::synchronize()
       }
       // Invalidate the connection to force a reload if the project is put offline
       // again with the same path
-      offlineLayer->dataProvider()->invalidateConnections( QgsDataSourceURI( offlineLayer->source() ).database() );
+      offlineLayer->dataProvider()->invalidateConnections( QgsDataSourceUri( offlineLayer->source() ).database() );
       // remove offline layer
       QgsMapLayerRegistry::instance()->removeMapLayers(
         ( QStringList() << qgisLayerId ) );
@@ -529,22 +531,22 @@ QgsVectorLayer* QgsOfflineEditing::copyVectorLayer( QgsVectorLayer* layer, sqlit
     QString geomType = "";
     switch ( layer->wkbType() )
     {
-      case QGis::WKBPoint:
+      case QgsWkbTypes::Point:
         geomType = "POINT";
         break;
-      case QGis::WKBMultiPoint:
+      case QgsWkbTypes::MultiPoint:
         geomType = "MULTIPOINT";
         break;
-      case QGis::WKBLineString:
+      case QgsWkbTypes::LineString:
         geomType = "LINESTRING";
         break;
-      case QGis::WKBMultiLineString:
+      case QgsWkbTypes::MultiLineString:
         geomType = "MULTILINESTRING";
         break;
-      case QGis::WKBPolygon:
+      case QgsWkbTypes::Polygon:
         geomType = "POLYGON";
         break;
-      case QGis::WKBMultiPolygon:
+      case QgsWkbTypes::MultiPolygon:
         geomType = "MULTIPOLYGON";
         break;
       default:
@@ -591,14 +593,7 @@ QgsVectorLayer* QgsOfflineEditing::copyVectorLayer( QgsVectorLayer* layer, sqlit
         QList<QgsMapLayer *>() << newLayer );
 
       // copy style
-      Q_NOWARN_DEPRECATED_PUSH
-      bool hasLabels = layer->hasLabelsEnabled();
-      Q_NOWARN_DEPRECATED_POP
-      if ( !hasLabels )
-      {
-        // NOTE: copy symbology before adding the layer so it is displayed correctly
-        copySymbology( layer, newLayer );
-      }
+      copySymbology( layer, newLayer );
 
       QgsLayerTreeGroup* layerTreeRoot = QgsProject::instance()->layerTreeRoot();
       // Find the parent group of the original layer
@@ -620,12 +615,6 @@ QgsVectorLayer* QgsOfflineEditing::copyVectorLayer( QgsVectorLayer* layer, sqlit
               grp->removeChildNode( newLayerTreeLayer );
           }
         }
-      }
-
-      if ( hasLabels )
-      {
-        // NOTE: copy symbology of layers with labels enabled after adding to project, as it will crash otherwise (WORKAROUND)
-        copySymbology( layer, newLayer );
       }
 
       // copy features
@@ -847,7 +836,8 @@ void QgsOfflineEditing::applyGeometryChanges( QgsVectorLayer* remoteLayer, sqlit
   for ( int i = 0; i < values.size(); i++ )
   {
     QgsFeatureId fid = remoteFid( db, layerId, values.at( i ).fid );
-    remoteLayer->changeGeometry( fid, QgsGeometry::fromWkt( values.at( i ).geom_wkt ) );
+    QgsGeometry newGeom = QgsGeometry::fromWkt( values.at( i ).geom_wkt );
+    remoteLayer->changeGeometry( fid, newGeom );
 
     emit progressUpdated( i + 1 );
   }
@@ -1218,7 +1208,7 @@ void QgsOfflineEditing::committedFeaturesAdded( const QString& qgisLayerId, cons
 
   // get new feature ids from db
   QgsMapLayer* layer = QgsMapLayerRegistry::instance()->mapLayer( qgisLayerId );
-  QgsDataSourceURI uri = QgsDataSourceURI( layer->source() );
+  QgsDataSourceUri uri = QgsDataSourceUri( layer->source() );
 
   // only store feature ids
   QString sql = QString( "SELECT ROWID FROM '%1' ORDER BY ROWID DESC LIMIT %2" ).arg( uri.table() ).arg( addedFeatures.size() );

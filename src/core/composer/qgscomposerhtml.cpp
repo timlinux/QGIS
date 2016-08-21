@@ -26,6 +26,7 @@
 #include "qgsproject.h"
 #include "qgsdistancearea.h"
 #include "qgsjsonutils.h"
+#include "qgsmapsettings.h"
 
 #include "qgswebpage.h"
 #include "qgswebframe.h"
@@ -131,13 +132,8 @@ void QgsComposerHtml::loadHtml( const bool useCache, const QgsExpressionContext 
     return;
   }
 
-  const QgsExpressionContext* evalContext = context;
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
 
   QString loadedHtml;
   switch ( mContentMode )
@@ -178,7 +174,7 @@ void QgsComposerHtml::loadHtml( const bool useCache, const QgsExpressionContext 
   //evaluate expressions
   if ( mEvaluateExpressions )
   {
-    loadedHtml = QgsExpression::replaceExpressionText( loadedHtml, evalContext, nullptr, mDistanceArea );
+    loadedHtml = QgsExpression::replaceExpressionText( loadedHtml, evalContext, mDistanceArea );
   }
 
   mLoaded = false;
@@ -477,7 +473,7 @@ QString QgsComposerHtml::displayName() const
   return tr( "<HTML frame>" );
 }
 
-bool QgsComposerHtml::writeXML( QDomElement& elem, QDomDocument & doc, bool ignoreFrames ) const
+bool QgsComposerHtml::writeXml( QDomElement& elem, QDomDocument & doc, bool ignoreFrames ) const
 {
   QDomElement htmlElem = doc.createElement( "ComposerHtml" );
   htmlElem.setAttribute( "contentMode", QString::number( static_cast< int >( mContentMode ) ) );
@@ -489,12 +485,12 @@ bool QgsComposerHtml::writeXML( QDomElement& elem, QDomDocument & doc, bool igno
   htmlElem.setAttribute( "stylesheet", mUserStylesheet );
   htmlElem.setAttribute( "stylesheetEnabled", mEnableUserStylesheet ? "true" : "false" );
 
-  bool state = _writeXML( htmlElem, doc, ignoreFrames );
+  bool state = _writeXml( htmlElem, doc, ignoreFrames );
   elem.appendChild( htmlElem );
   return state;
 }
 
-bool QgsComposerHtml::readXML( const QDomElement& itemElem, const QDomDocument& doc, bool ignoreFrames )
+bool QgsComposerHtml::readXml( const QDomElement& itemElem, const QDomDocument& doc, bool ignoreFrames )
 {
   if ( !ignoreFrames )
   {
@@ -502,7 +498,7 @@ bool QgsComposerHtml::readXML( const QDomElement& itemElem, const QDomDocument& 
   }
 
   //first create the frames
-  if ( !_readXML( itemElem, doc, ignoreFrames ) )
+  if ( !_readXml( itemElem, doc, ignoreFrames ) )
   {
     return false;
   }
@@ -580,13 +576,9 @@ void QgsComposerHtml::refreshExpressionContext()
 
 void QgsComposerHtml::refreshDataDefinedProperty( const QgsComposerObject::DataDefinedProperty property, const QgsExpressionContext* context )
 {
-  const QgsExpressionContext* evalContext = context;
-  QScopedPointer< QgsExpressionContext > scopedContext;
-  if ( !evalContext )
-  {
-    scopedContext.reset( createExpressionContext() );
-    evalContext = scopedContext.data();
-  }
+  QgsExpressionContext scopedContext = createExpressionContext();
+  const QgsExpressionContext* evalContext = context ? context : &scopedContext;
+
 
   //updates data defined properties and redraws item to match
   if ( property == QgsComposerObject::SourceUrl || property == QgsComposerObject::AllProperties )

@@ -24,16 +24,16 @@
 #include <QCheckBox>
 #include <QUndoCommand>
 #include <QDomNode>
+#include <QTime>
 #include <QTimer>
 
 #include "ui_qgsmapstylingwidgetbase.h"
-#include "qgsmaplayerconfigwidget.h"
 #include "qgsmaplayerconfigwidgetfactory.h"
 
 class QgsLabelingWidget;
 class QgsMapLayer;
 class QgsMapCanvas;
-class QgsRendererV2PropertiesDialog;
+class QgsRendererPropertiesDialog;
 class QgsRendererRasterPropertiesWidget;
 class QgsUndoWidget;
 class QgsRasterHistogramWidget;

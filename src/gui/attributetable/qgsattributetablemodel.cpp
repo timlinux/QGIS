@@ -19,17 +19,19 @@
 
 #include "qgsactionmanager.h"
 #include "qgseditorwidgetregistry.h"
+#include "qgseditorwidgetfactory.h"
 #include "qgsexpression.h"
+#include "qgsfeatureiterator.h"
 #include "qgsconditionalstyle.h"
 #include "qgsfield.h"
 #include "qgslogger.h"
 #include "qgsmapcanvas.h"
 #include "qgsmaplayeractionregistry.h"
 #include "qgsmaplayerregistry.h"
-#include "qgsrendererv2.h"
+#include "qgsrenderer.h"
 #include "qgsvectorlayer.h"
 #include "qgsvectordataprovider.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 
 #include <QVariant>
 
@@ -47,7 +49,7 @@ QgsAttributeTableModel::QgsAttributeTableModel( QgsVectorLayerCache *layerCache,
   << QgsExpressionContextUtils::projectScope()
   << QgsExpressionContextUtils::layerScope( layerCache->layer() );
 
-  if ( layerCache->layer()->geometryType() == QGis::NoGeometry )
+  if ( layerCache->layer()->geometryType() == QgsWkbTypes::NullGeometry )
   {
     mFeatureRequest.setFlags( QgsFeatureRequest::NoGeometry );
   }
@@ -337,12 +339,12 @@ void QgsAttributeTableModel::loadAttributes()
 
   for ( int idx = 0; idx < fields.count(); ++idx )
   {
-    const QString widgetType = layer()->editFormConfig()->widgetType( idx );
+    const QString widgetType = layer()->editFormConfig().widgetType( idx );
     QgsEditorWidgetFactory* widgetFactory = QgsEditorWidgetRegistry::instance()->factory( widgetType );
     if ( widgetFactory )
     {
       mWidgetFactories.append( widgetFactory );
-      mWidgetConfigs.append( layer()->editFormConfig()->widgetConfig( idx ) );
+      mWidgetConfigs.append( layer()->editFormConfig().widgetConfig( idx ) );
       mAttributeWidgetCaches.append( widgetFactory->createCache( layer(), idx, mWidgetConfigs.last() ) );
 
       attributes << idx;
@@ -725,7 +727,7 @@ Qt::ItemFlags QgsAttributeTableModel::flags( const QModelIndex &index ) const
   Qt::ItemFlags flags = QAbstractItemModel::flags( index );
 
   if ( layer()->isEditable() &&
-       !layer()->editFormConfig()->readOnly( mAttributes[index.column()] ) &&
+       !layer()->editFormConfig().readOnly( mAttributes[index.column()] ) &&
        (( layer()->dataProvider() && layer()->dataProvider()->capabilities() & QgsVectorDataProvider::ChangeAttributeValues ) ||
         FID_IS_NEW( rowToId( index.row() ) ) ) )
     flags |= Qt::ItemIsEditable;
@@ -790,7 +792,7 @@ void QgsAttributeTableModel::prefetchSortData( const QString& expressionString )
 
   if ( mSortCacheExpression.isField() )
   {
-    QString fieldName = dynamic_cast<const QgsExpression::NodeColumnRef*>( mSortCacheExpression.rootNode() )->name();
+    QString fieldName = static_cast<const QgsExpression::NodeColumnRef*>( mSortCacheExpression.rootNode() )->name();
     mSortFieldIndex = mLayerCache->layer()->fieldNameIndex( fieldName );
   }
 
@@ -827,7 +829,7 @@ void QgsAttributeTableModel::prefetchSortData( const QString& expressionString )
     }
     else
     {
-      QVariant sortValue = widgetFactory->representValue( layer(), mSortFieldIndex, widgetConfig, widgetCache, f.attribute( mSortFieldIndex ) );
+      QVariant sortValue = widgetFactory->sortValue( layer(), mSortFieldIndex, widgetConfig, widgetCache, f.attribute( mSortFieldIndex ) );
       mSortCache.insert( f.id(), sortValue );
     }
   }

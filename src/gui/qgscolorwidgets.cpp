@@ -15,7 +15,7 @@
 
 #include "qgscolorwidgets.h"
 #include "qgsapplication.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include <QResizeEvent>
 #include <QStyleOptionFrameV3>
 #include <QPainter>
@@ -189,7 +189,7 @@ void QgsColorWidget::dragEnterEvent( QDragEnterEvent *e )
 {
   //is dragged data valid color data?
   bool hasAlpha;
-  QColor mimeColor = QgsSymbolLayerV2Utils::colorFromMimeData( e->mimeData(), hasAlpha );
+  QColor mimeColor = QgsSymbolLayerUtils::colorFromMimeData( e->mimeData(), hasAlpha );
 
   if ( mimeColor.isValid() )
   {
@@ -202,7 +202,7 @@ void QgsColorWidget::dropEvent( QDropEvent *e )
 {
   //is dropped data valid color data?
   bool hasAlpha = false;
-  QColor mimeColor = QgsSymbolLayerV2Utils::colorFromMimeData( e->mimeData(), hasAlpha );
+  QColor mimeColor = QgsSymbolLayerUtils::colorFromMimeData( e->mimeData(), hasAlpha );
 
   if ( mimeColor.isValid() )
   {
@@ -1178,6 +1178,27 @@ void QgsColorRampWidget::mouseMoveEvent( QMouseEvent *event )
   QgsColorWidget::mouseMoveEvent( event );
 }
 
+void QgsColorRampWidget::wheelEvent( QWheelEvent *event )
+{
+  int oldValue = componentValue();
+
+  if ( event->delta() > 0 )
+  {
+    setComponentValue( componentValue() + 1 );
+  }
+  else
+  {
+    setComponentValue( componentValue() - 1 );
+  }
+
+  if ( componentValue() != oldValue )
+  {
+    //value has changed
+    emit colorChanged( mCurrentColor );
+    emit valueChanged( componentValue() );
+  }
+}
+
 void QgsColorRampWidget::mousePressEvent( QMouseEvent *event )
 {
   setColorFromPoint( event->posF() );
@@ -1469,7 +1490,7 @@ void QgsColorTextWidget::textChanged()
 {
   QString testString = mLineEdit->text();
   bool containsAlpha;
-  QColor color = QgsSymbolLayerV2Utils::parseColorWithAlpha( testString, containsAlpha );
+  QColor color = QgsSymbolLayerUtils::parseColorWithAlpha( testString, containsAlpha );
   if ( !color.isValid() )
   {
     //bad color string
@@ -1680,7 +1701,7 @@ void QgsColorPreviewWidget::mouseMoveEvent( QMouseEvent *e )
   }
 
   QDrag *drag = new QDrag( this );
-  drag->setMimeData( QgsSymbolLayerV2Utils::colorToMimeData( dragColor ) );
+  drag->setMimeData( QgsSymbolLayerUtils::colorToMimeData( dragColor ) );
   drag->setPixmap( createDragIcon( dragColor ) );
   drag->exec( Qt::CopyAction );
 }

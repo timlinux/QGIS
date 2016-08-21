@@ -17,8 +17,9 @@
 #include "qgscomposerpolygon.h"
 #include "qgscomposition.h"
 #include "qgscomposerutils.h"
-#include "qgssymbollayerv2utils.h"
-#include "qgssymbolv2.h"
+#include "qgssymbollayerutils.h"
+#include "qgssymbol.h"
+#include "qgsmapsettings.h"
 #include <limits>
 
 QgsComposerPolygon::QgsComposerPolygon( QgsComposition* c )
@@ -58,7 +59,7 @@ void QgsComposerPolygon::createDefaultPolygonStyleSymbol()
   properties.insert( "width_border", "0.3" );
   properties.insert( "joinstyle", "miter" );
 
-  mPolygonStyleSymbol.reset( QgsFillSymbolV2::createSimple( properties ) );
+  mPolygonStyleSymbol.reset( QgsFillSymbol::createSimple( properties ) );
 
   emit frameChanged();
 }
@@ -83,9 +84,7 @@ void QgsComposerPolygon::_draw( QPainter *painter )
   context.setPainter( painter );
   context.setForceVectorOutput( true );
 
-  QScopedPointer<QgsExpressionContext> expressionContext;
-  expressionContext.reset( createExpressionContext() );
-  context.setExpressionContext( *expressionContext.data() );
+  context.setExpressionContext( createExpressionContext() );
 
   painter->scale( 1 / dotsPerMM, 1 / dotsPerMM ); // scale painter from mm to dots
   QTransform t = QTransform::fromScale( dotsPerMM, dotsPerMM );
@@ -101,21 +100,21 @@ void QgsComposerPolygon::_draw( QPainter *painter )
   painter->scale( dotsPerMM, dotsPerMM );
 }
 
-void QgsComposerPolygon::_readXMLStyle( const QDomElement &elmt )
+void QgsComposerPolygon::_readXmlStyle( const QDomElement &elmt )
 {
-  mPolygonStyleSymbol.reset( QgsSymbolLayerV2Utils::loadSymbol<QgsFillSymbolV2>( elmt ) );
+  mPolygonStyleSymbol.reset( QgsSymbolLayerUtils::loadSymbol<QgsFillSymbol>( elmt ) );
 }
 
-void QgsComposerPolygon::setPolygonStyleSymbol( QgsFillSymbolV2* symbol )
+void QgsComposerPolygon::setPolygonStyleSymbol( QgsFillSymbol* symbol )
 {
-  mPolygonStyleSymbol.reset( static_cast<QgsFillSymbolV2*>( symbol->clone() ) );
+  mPolygonStyleSymbol.reset( static_cast<QgsFillSymbol*>( symbol->clone() ) );
   update();
   emit frameChanged();
 }
 
-void QgsComposerPolygon::_writeXMLStyle( QDomDocument &doc, QDomElement &elmt ) const
+void QgsComposerPolygon::_writeXmlStyle( QDomDocument &doc, QDomElement &elmt ) const
 {
-  const QDomElement pe = QgsSymbolLayerV2Utils::saveSymbol( QString(),
+  const QDomElement pe = QgsSymbolLayerUtils::saveSymbol( QString(),
                          mPolygonStyleSymbol.data(),
                          doc );
   elmt.appendChild( pe );

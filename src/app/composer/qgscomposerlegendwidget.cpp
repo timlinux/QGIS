@@ -35,7 +35,6 @@
 #include "qgsmapcanvas.h"
 #include "qgsmaplayerlegend.h"
 #include "qgsmaplayerregistry.h"
-#include "qgsmaprenderer.h"
 #include "qgsproject.h"
 #include "qgsvectorlayer.h"
 
@@ -76,7 +75,7 @@ QgsComposerLegendWidget::QgsComposerLegendWidget( QgsComposerLegend* legend )
 
   if ( legend )
   {
-    mItemTreeView->setModel( legend->modelV2() );
+    mItemTreeView->setModel( legend->model() );
     mItemTreeView->setMenuProvider( new QgsComposerLegendMenuProvider( mItemTreeView, this ) );
     connect( legend, SIGNAL( itemChanged() ), this, SLOT( setGuiElements() ) );
     mWrapCharLineEdit->setText( legend->wrapChar() );
@@ -136,6 +135,8 @@ void QgsComposerLegendWidget::setGuiElements()
   mRasterBorderColorButton->setColor( mLegend->rasterBorderColor() );
 
   mCheckBoxAutoUpdate->setChecked( mLegend->autoUpdateModel() );
+
+  mCheckboxResizeContents->setChecked( mLegend->resizeToContents() );
 
   const QgsComposerMap* map = mLegend->composerMap();
   mMapComboBox->setItem( map );
@@ -572,6 +573,21 @@ void QgsComposerLegendWidget::composerMapChanged( QgsComposerItem* item )
   }
 }
 
+void QgsComposerLegendWidget::on_mCheckboxResizeContents_toggled( bool checked )
+{
+  if ( !mLegend )
+  {
+    return;
+  }
+
+  mLegend->beginCommand( tr( "Legend resize to contents" ) );
+  mLegend->setResizeToContents( checked );
+  if ( checked )
+    mLegend->adjustBoxSize();
+  mLegend->updateItem();
+  mLegend->endCommand();
+}
+
 void QgsComposerLegendWidget::on_mRasterBorderGroupBox_toggled( bool state )
 {
   if ( !mLegend )
@@ -638,7 +654,7 @@ void QgsComposerLegendWidget::on_mAddToolButton_clicked()
       if ( layer )
       {
         mLegend->beginCommand( "Legend item added" );
-        mLegend->modelV2()->rootGroup()->addLayer( layer );
+        mLegend->model()->rootGroup()->addLayer( layer );
         mLegend->endCommand();
       }
     }
@@ -694,7 +710,7 @@ void QgsComposerLegendWidget::on_mRemoveToolButton_clicked()
   Q_FOREACH ( const QPersistentModelIndex& index, indexes )
   {
     if ( index.isValid() && mItemTreeView->layerTreeModel()->index2node( index ) )
-      mLegend->modelV2()->removeRow( index.row(), index.parent() );
+      mLegend->model()->removeRow( index.row(), index.parent() );
   }
 
   mLegend->adjustBoxSize();
@@ -828,7 +844,7 @@ void QgsComposerLegendWidget::on_mAddGroupToolButton_clicked()
   if ( mLegend )
   {
     mLegend->beginCommand( tr( "Legend group added" ) );
-    mLegend->modelV2()->rootGroup()->addGroup( tr( "Group" ) );
+    mLegend->model()->rootGroup()->addGroup( tr( "Group" ) );
     mLegend->updateItem();
     mLegend->endCommand();
   }
@@ -884,6 +900,10 @@ void QgsComposerLegendWidget::blockAllSignals( bool b )
   mRasterBorderGroupBox->blockSignals( b );
   mRasterBorderColorButton->blockSignals( b );
   mRasterBorderWidthSpinBox->blockSignals( b );
+  mWmsLegendWidthSpinBox->blockSignals( b );
+  mWmsLegendHeightSpinBox->blockSignals( b );
+  mCheckboxResizeContents->blockSignals( b );
+  mTitleSpaceBottomSpinBox->blockSignals( b );
 }
 
 void QgsComposerLegendWidget::selectedChanged( const QModelIndex & current, const QModelIndex & previous )
@@ -937,7 +957,7 @@ void QgsComposerLegendWidget::setCurrentNodeStyleFromAction()
 void QgsComposerLegendWidget::updateFilterLegendByAtlasButton()
 {
   const QgsAtlasComposition& atlas = mLegend->composition()->atlasComposition();
-  mFilterLegendByAtlasCheckBox->setEnabled( atlas.enabled() && atlas.coverageLayer() && atlas.coverageLayer()->geometryType() == QGis::Polygon );
+  mFilterLegendByAtlasCheckBox->setEnabled( atlas.enabled() && atlas.coverageLayer() && atlas.coverageLayer()->geometryType() == QgsWkbTypes::PolygonGeometry );
 }
 
 void QgsComposerLegendWidget::on_mItemTreeView_doubleClicked( const QModelIndex &idx )

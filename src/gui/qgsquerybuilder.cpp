@@ -25,7 +25,7 @@
 // constructor used when the query builder must make its own
 // connection to the database
 QgsQueryBuilder::QgsQueryBuilder( QgsVectorLayer *layer,
-                                  QWidget *parent, const Qt::WindowFlags& fl )
+                                  QWidget *parent, Qt::WindowFlags fl )
     : QDialog( parent, fl )
     , mPreviousFieldRow( -1 )
     , mLayer( layer )
@@ -77,7 +77,7 @@ void QgsQueryBuilder::populateFields()
       // only consider native fields
       continue;
     }
-    QStandardItem *myItem = new QStandardItem( fields[idx].name() );
+    QStandardItem *myItem = new QStandardItem( fields.at( idx ).name() );
     myItem->setData( idx );
     myItem->setEditable( false );
     mModelFields->insertRow( mModelFields->rowCount(), myItem );

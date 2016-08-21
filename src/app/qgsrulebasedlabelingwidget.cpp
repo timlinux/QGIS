@@ -16,10 +16,13 @@
 
 #include "qgsapplication.h"
 #include "qgsexpressionbuilderdialog.h"
+#include "qgsfeatureiterator.h"
 #include "qgslabelinggui.h"
+#include "qgsmapcanvas.h"
 #include "qgsrulebasedlabeling.h"
 #include "qgsvectorlayer.h"
 #include "qgsvectorlayerlabeling.h"
+#include "qgslogger.h"
 
 #include <QClipboard>
 #include <QMessageBox>
@@ -151,10 +154,8 @@ void QgsRuleBasedLabelingWidget::editRule( const QModelIndex& index )
 void QgsRuleBasedLabelingWidget::removeRule()
 {
   QItemSelection sel = viewRules->selectionModel()->selection();
-  QgsDebugMsg( QString( "REMOVE RULES!!! ranges: %1" ).arg( sel.count() ) );
   Q_FOREACH ( const QItemSelectionRange& range, sel )
   {
-    QgsDebugMsg( QString( "RANGE: r %1 - %2" ).arg( range.top() ).arg( range.bottom() ) );
     if ( range.isValid() )
       mModel->removeRows( range.top(), range.bottom() - range.top() + 1, range.parent() );
   }
@@ -165,7 +166,6 @@ void QgsRuleBasedLabelingWidget::removeRule()
 void QgsRuleBasedLabelingWidget::copy()
 {
   QModelIndexList indexlist = viewRules->selectionModel()->selectedRows();
-  QgsDebugMsg( QString( "%1" ).arg( indexlist.count() ) );
 
   if ( indexlist.isEmpty() )
     return;
@@ -266,7 +266,7 @@ QVariant QgsRuleBasedLabelingModel::data( const QModelIndex& index, int role ) c
   }
   else if ( role == Qt::DecorationRole && index.column() == 0 && rule->settings() )
   {
-    // TODO return QgsSymbolLayerV2Utils::symbolPreviewIcon( rule->symbol(), QSize( 16, 16 ) );
+    // TODO return QgsSymbolLayerUtils::symbolPreviewIcon( rule->symbol(), QSize( 16, 16 ) );
     return QVariant();
   }
   else if ( role == Qt::TextAlignmentRole )

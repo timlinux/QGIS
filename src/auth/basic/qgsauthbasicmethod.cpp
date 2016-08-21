@@ -30,7 +30,7 @@ QgsAuthBasicMethod::QgsAuthBasicMethod()
     : QgsAuthMethod()
 {
   setVersion( 2 );
-  setExpansions( QgsAuthMethod::NetworkRequest | QgsAuthMethod::DataSourceURI );
+  setExpansions( QgsAuthMethod::NetworkRequest | QgsAuthMethod::DataSourceUri );
   setDataProviders( QStringList()
                     << "postgres"
                     << "db2"
@@ -76,7 +76,7 @@ bool QgsAuthBasicMethod::updateNetworkRequest( QNetworkRequest &request, const Q
 
   if ( !username.isEmpty() )
   {
-    request.setRawHeader( "Authorization", "Basic " + QString( "%1:%2" ).arg( username, password ).toAscii().toBase64() );
+    request.setRawHeader( "Authorization", "Basic " + QString( "%1:%2" ).arg( username, password ).toLatin1().toBase64() );
   }
   return true;
 }

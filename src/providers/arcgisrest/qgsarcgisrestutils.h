@@ -23,15 +23,15 @@ class QNetworkReply;
 class QgsNetworkAccessManager;
 class QgsFields;
 class QgsRectangle;
-class QgsAbstractGeometryV2;
+class QgsAbstractGeometry;
 class QgsCoordinateReferenceSystem;
 
 class QgsArcGisRestUtils
 {
   public:
     static QVariant::Type mapEsriFieldType( const QString& esriFieldType );
-    static QgsWKBTypes::Type mapEsriGeometryType( const QString& esriGeometryType );
-    static QgsAbstractGeometryV2* parseEsriGeoJSON( const QVariantMap& geometryData, const QString& esriGeometryType, bool readM, bool readZ, QgsCoordinateReferenceSystem *crs = 0 );
+    static QgsWkbTypes::Type mapEsriGeometryType( const QString& esriGeometryType );
+    static QgsAbstractGeometry* parseEsriGeoJSON( const QVariantMap& geometryData, const QString& esriGeometryType, bool readM, bool readZ, QgsCoordinateReferenceSystem *crs = 0 );
     static QgsCoordinateReferenceSystem parseSpatialReference( const QVariantMap& spatialReferenceMap );
 
     static QVariantMap getServiceInfo( const QString& baseurl, QString &errorTitle, QString &errorText );

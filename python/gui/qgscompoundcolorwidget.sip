@@ -6,7 +6,7 @@
  * \note Added in version 2.16
  */
 
-class QgsCompoundColorWidget : QWidget
+class QgsCompoundColorWidget : QgsPanelWidget
 {
 %TypeHeaderCode
 #include <qgscompoundcolorwidget.h>
@@ -14,11 +14,19 @@ class QgsCompoundColorWidget : QWidget
 
   public:
 
+    //! Widget layout
+    enum Layout
+    {
+      LayoutDefault, /*!< Use the default (rectangular) layout */
+      LayoutVertical, /*!< Use a narrower, vertically stacked layout */
+    };
+
     /** Constructor for QgsCompoundColorWidget
      * @param parent parent widget
      * @param color initial color for dialog
+     * @param layout widget layout to use
      */
-    QgsCompoundColorWidget( QWidget *parent /TransferThis/ = nullptr, const QColor& color = QColor() );
+    QgsCompoundColorWidget( QWidget *parent /TransferThis/ = nullptr, const QColor& color = QColor(), Layout layout = LayoutDefault );
 
     ~QgsCompoundColorWidget();
 

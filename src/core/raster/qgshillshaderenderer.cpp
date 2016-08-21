@@ -58,14 +58,14 @@ QgsRasterRenderer *QgsHillshadeRenderer::create( const QDomElement &elem, QgsRas
   double zFactor = elem.attribute( "zfactor", "1" ).toDouble();
   bool multiDirectional = elem.attribute( "multidirection", "0" ).toInt();
   QgsHillshadeRenderer* r = new QgsHillshadeRenderer( input, band, azimuth , angle );
-  r->readXML( elem );
+  r->readXml( elem );
 
   r->setZFactor( zFactor );
   r->setMultiDirectional( multiDirectional );
   return r;
 }
 
-void QgsHillshadeRenderer::writeXML( QDomDocument &doc, QDomElement &parentElem ) const
+void QgsHillshadeRenderer::writeXml( QDomDocument &doc, QDomElement &parentElem ) const
 {
   if ( parentElem.isNull() )
   {
@@ -73,7 +73,7 @@ void QgsHillshadeRenderer::writeXML( QDomDocument &doc, QDomElement &parentElem 
   }
 
   QDomElement rasterRendererElem = doc.createElement( "rasterrenderer" );
-  _writeXML( doc, rasterRendererElem );
+  _writeXml( doc, rasterRendererElem );
 
   rasterRendererElem.setAttribute( "band", mBand );
   rasterRendererElem.setAttribute( "azimuth", QString::number( mLightAzimuth ) );
@@ -83,7 +83,7 @@ void QgsHillshadeRenderer::writeXML( QDomDocument &doc, QDomElement &parentElem 
   parentElem.appendChild( rasterRendererElem );
 }
 
-QgsRasterBlock *QgsHillshadeRenderer::block( int bandNo, const QgsRectangle &extent, int width, int height )
+QgsRasterBlock *QgsHillshadeRenderer::block( int bandNo, const QgsRectangle &extent, int width, int height, QgsRasterBlockFeedback* feedback )
 {
   Q_UNUSED( bandNo );
   QgsRasterBlock *outputBlock = new QgsRasterBlock();
@@ -93,7 +93,7 @@ QgsRasterBlock *QgsHillshadeRenderer::block( int bandNo, const QgsRectangle &ext
     return outputBlock;
   }
 
-  QgsRasterBlock *inputBlock = mInput->block( mBand, extent, width, height );
+  QgsRasterBlock *inputBlock = mInput->block( mBand, extent, width, height, feedback );
 
   if ( !inputBlock || inputBlock->isEmpty() )
   {
@@ -107,7 +107,7 @@ QgsRasterBlock *QgsHillshadeRenderer::block( int bandNo, const QgsRectangle &ext
   if ( mAlphaBand > 0 && mBand != mAlphaBand )
   {
 
-    alphaBlock = mInput->block( mAlphaBand, extent, width, height );
+    alphaBlock = mInput->block( mAlphaBand, extent, width, height, feedback );
     if ( !alphaBlock || alphaBlock->isEmpty() )
     {
       // TODO: better to render without alpha
@@ -121,7 +121,7 @@ QgsRasterBlock *QgsHillshadeRenderer::block( int bandNo, const QgsRectangle &ext
     alphaBlock = inputBlock;
   }
 
-  if ( !outputBlock->reset( QGis::ARGB32_Premultiplied, width, height ) )
+  if ( !outputBlock->reset( Qgis::ARGB32_Premultiplied, width, height ) )
   {
     delete inputBlock;
     delete alphaBlock;

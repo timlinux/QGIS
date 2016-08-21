@@ -30,7 +30,7 @@
 #include <qgsdatasourceuri.h>
 #include <qgslogger.h>
 #include <qgsmaplayerregistry.h>
-#include <qgsmaprenderer.h>
+#include <qgsmaprenderersequentialjob.h>
 #include <qgsproviderregistry.h>
 #include <qgsrasterdataprovider.h>
 #include <qgsrasterinterface.h>
@@ -236,7 +236,7 @@ int TestQgsWcsPublicServers::issueOffender( const QString & url, const QString &
     }
     else
     {
-      offender |= QGisOffender;
+      offender |= QgisOffender;
     }
   }
   return offender;
@@ -309,7 +309,7 @@ void TestQgsWcsPublicServers::test()
         myServerDir.mkdir( myVersionDirName );
       }
 
-      QgsDataSourceURI myServerUri;
+      QgsDataSourceUri myServerUri;
 
       myServerUri.setParam( "url", serverUrl );
       if ( !version.isEmpty() )
@@ -385,7 +385,7 @@ void TestQgsWcsPublicServers::test()
         myLog << "identifier:" + myCoverage.identifier;
         myCapabilities.describeCoverage( myCoverage.identifier );
         myCoverage = myCapabilities.coverage( myCoverage.identifier ); // get described
-        QgsDataSourceURI myUri = myServerUri;
+        QgsDataSourceUri myUri = myServerUri;
         myUri.setParam( "identifier", myCoverage.identifier );
         if ( !myCoverage.times.isEmpty() )
         {
@@ -450,32 +450,24 @@ void TestQgsWcsPublicServers::test()
             myLog << provider + "_bandCount:" + QString::number( myBandCount );
             if ( myBandCount > 0 )
             {
-              myLog << provider + "_srcType:" + QString::number( myLayer->dataProvider()->srcDataType( 1 ) );
+              myLog << provider + "_srcType:" + QString::number( myLayer->dataProvider()->sourceDataType( 1 ) );
 
               QgsRasterBandStats myStats = myLayer->dataProvider()->bandStatistics( 1, QgsRasterBandStats::All, QgsRectangle(), myWidth * myHeight );
               myLog << provider + "_min:" + QString::number( myStats.minimumValue );
               myLog << provider + "_max:" + QString::number( myStats.maximumValue );
             }
 
-            QgsMapRenderer myMapRenderer;
-            QList<QgsMapLayer *> myLayersList;
+            QgsMapLayerRegistry::instance()->addMapLayer( myLayer, false );
 
-            myLayersList.append( myLayer );
-            QgsMapLayerRegistry::instance()->addMapLayers( myLayersList, false );
+            QgsMapSettings mapSettings;
+            mapSettings.setLayers( QStringList( myLayer->id() ) );
+            mapSettings.setExtent( myLayer->extent() );
+            mapSettings.setOutputSize( QSize( myWidth, myHeight ) );
 
-            QMap<QString, QgsMapLayer*> myLayersMap = QgsMapLayerRegistry::instance()->mapLayers();
-
-            myMapRenderer.setLayerSet( myLayersMap.keys() );
-
-            myMapRenderer.setExtent( myLayer->extent() );
-
-            QImage myImage( myWidth, myHeight, QImage::Format_ARGB32_Premultiplied );
-            myImage.fill( 0 );
-
-            myMapRenderer.setOutputSize( QSize( myWidth, myHeight ), myImage.logicalDpiX() );
-
-            QPainter myPainter( &myImage );
-            myMapRenderer.render( &myPainter );
+            QgsMapRendererSequentialJob job( mapSettings );
+            job.start();
+            job.waitForFinished();
+            QImage myImage( job.renderedImage() );
 
             // Save rendered image
             QString myPngPath = myPath + "-" + provider + ".png";
@@ -681,7 +673,7 @@ void TestQgsWcsPublicServers::report()
               {
                 cls = "cell-err-server";
               }
-              else if ( offender == QGisOffender )
+              else if ( offender == QgisOffender )
               {
                 cls = "cell-err-qgis";
               }

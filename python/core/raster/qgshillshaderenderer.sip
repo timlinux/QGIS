@@ -31,9 +31,9 @@ class QgsHillshadeRenderer : QgsRasterRenderer
      */
     static QgsRasterRenderer* create( const QDomElement& elem, QgsRasterInterface* input ) /Factory/;
 
-    QgsRasterBlock *block( int bandNo, const QgsRectangle & extent, int width, int height ) /Factory/;
+    QgsRasterBlock *block( int bandNo, const QgsRectangle & extent, int width, int height, QgsRasterBlockFeedback* feedback = nullptr ) /Factory/;
 
-    void writeXML( QDomDocument& doc, QDomElement& parentElem ) const;
+    void writeXml( QDomDocument& doc, QDomElement& parentElem ) const;
 
     QList<int> usesBands() const;
 

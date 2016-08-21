@@ -15,7 +15,6 @@
  ***************************************************************************/
 
 #include "ui_qgscompositionwidgetbase.h"
-#include "qgscomposeritem.h"
 
 class QgsComposition;
 class QgsComposerMap;
@@ -83,6 +82,8 @@ class QgsCompositionWidget: public QWidget, private Ui::QgsCompositionWidgetBase
     void variablesChanged();
 
     void resizeMarginsChanged();
+
+    void updateVariables();
 
   private:
     QgsComposition* mComposition;

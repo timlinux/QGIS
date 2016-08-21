@@ -296,6 +296,13 @@ class QgsExpressionContext
      */
     int indexOfScope( QgsExpressionContextScope* scope ) const;
 
+    /** Returns the index of the first scope with a matching name within the context.
+     * @param scopeName name of scope to find
+     * @returns index of scope, or -1 if scope was not found within the context.
+     * @note added in QGIS 3.0
+     */
+    int indexOfScope( const QString& scopeName ) const;
+
     /** Returns a list of variables names set by all scopes in the context.
      * @returns list of unique variable names
      * @see filteredVariableNames
@@ -542,12 +549,12 @@ class QgsExpressionContextUtils
     static QgsExpressionContextScope* mapSettingsScope( const QgsMapSettings &mapSettings ) /Factory/;
 
     /**
-     * Updates a symbol scope related to a QgsSymbolV2 to an expression context.
+     * Updates a symbol scope related to a QgsSymbol to an expression context.
      * @param symbol symbol to extract properties from
      * @param symbolScope pointer to an existing scope to update
      * @note added in QGIS 2.14
      */
-    static QgsExpressionContextScope* updateSymbolScope( const QgsSymbolV2* symbol, QgsExpressionContextScope* symbolScope = nullptr );
+    static QgsExpressionContextScope* updateSymbolScope( const QgsSymbol* symbol, QgsExpressionContextScope* symbolScope = nullptr );
 
     /** Creates a new scope which contains variables and functions relating to a QgsComposition.
      * For instance, number of pages and page sizes.

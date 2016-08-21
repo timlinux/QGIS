@@ -13,9 +13,10 @@
  *                                                                         *
  ***************************************************************************/
 #include "qgsdiagram.h"
-#include "qgsdiagramrendererv2.h"
+#include "qgsdiagramrenderer.h"
 #include "qgsrendercontext.h"
 #include "qgsexpression.h"
+#include "qgssymbollayerutils.h"
 
 #include <QPainter>
 
@@ -44,19 +45,6 @@ void QgsDiagram::clearCache()
   mExpressions.clear();
 }
 
-QgsExpression* QgsDiagram::getExpression( const QString& expression, const QgsFields* fields )
-{
-  Q_NOWARN_DEPRECATED_PUSH
-  if ( !mExpressions.contains( expression ) )
-  {
-    QgsExpression* expr = new QgsExpression( expression );
-    expr->prepare( *fields );
-    mExpressions[expression] = expr;
-  }
-  return mExpressions[expression];
-  Q_NOWARN_DEPRECATED_POP
-}
-
 QgsExpression *QgsDiagram::getExpression( const QString &expression, const QgsExpressionContext &context )
 {
   if ( !mExpressions.contains( expression ) )
@@ -70,24 +58,24 @@ QgsExpression *QgsDiagram::getExpression( const QString &expression, const QgsEx
 
 void QgsDiagram::setPenWidth( QPen& pen, const QgsDiagramSettings& s, const QgsRenderContext& c )
 {
-  pen.setWidthF( QgsSymbolLayerV2Utils::convertToPainterUnits( c, s.penWidth, s.lineSizeUnit, s.lineSizeScale ) );
+  pen.setWidthF( QgsSymbolLayerUtils::convertToPainterUnits( c, s.penWidth, s.lineSizeUnit, s.lineSizeScale ) );
 }
 
 
 QSizeF QgsDiagram::sizePainterUnits( QSizeF size, const QgsDiagramSettings& s, const QgsRenderContext& c )
 {
-  return QSizeF( QgsSymbolLayerV2Utils::convertToPainterUnits( c, size.width(), s.sizeType, s.sizeScale ), QgsSymbolLayerV2Utils::convertToPainterUnits( c, size.height(), s.sizeType, s.sizeScale ) );
+  return QSizeF( QgsSymbolLayerUtils::convertToPainterUnits( c, size.width(), s.sizeType, s.sizeScale ), QgsSymbolLayerUtils::convertToPainterUnits( c, size.height(), s.sizeType, s.sizeScale ) );
 }
 
 float QgsDiagram::sizePainterUnits( float l, const QgsDiagramSettings& s, const QgsRenderContext& c )
 {
-  return QgsSymbolLayerV2Utils::convertToPainterUnits( c, l, s.sizeType, s.sizeScale );
+  return QgsSymbolLayerUtils::convertToPainterUnits( c, l, s.sizeType, s.sizeScale );
 }
 
 QFont QgsDiagram::scaledFont( const QgsDiagramSettings& s, const QgsRenderContext& c )
 {
   QFont f = s.font;
-  if ( s.sizeType == QgsSymbolV2::MapUnit )
+  if ( s.sizeType == QgsUnitTypes::RenderMapUnits )
   {
     int pixelsize = s.font.pointSizeF() / c.mapToPixel().mapUnitsPerPixel();
     f.setPixelSize( pixelsize > 0 ? pixelsize : 1 );

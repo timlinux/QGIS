@@ -26,6 +26,8 @@
 #include <QVector>
 #include <QStyle>
 #include <QSettings>
+#include <QDomDocument>
+#include <QDomElement>
 
 #include "qgscptcityarchive.h"
 #include "qgis.h"
@@ -35,7 +37,7 @@
 #include "qgsconfig.h"
 #include "qgsmimedatautils.h"
 #include "qgsapplication.h"
-
+#include "qgssymbollayerutils.h"
 
 QString QgsCptCityArchive::mDefaultArchiveName;
 QMap< QString, QgsCptCityArchive* > QgsCptCityArchive::mArchiveRegistry;
@@ -379,7 +381,7 @@ QMap< double, QPair<QColor, QColor> >QgsCptCityArchive::gradientColorMap( const 
         offset = offsetStr.toDouble();
 
       // QColor color( 255, 0, 0 ); // red color as a warning :)
-      QColor color = QgsSymbolLayerV2Utils::parseColor( colorStr );
+      QColor color = QgsSymbolLayerUtils::parseColor( colorStr );
       if ( color != QColor() )
       {
         int alpha = opacityStr.toDouble() * 255; // test
@@ -821,7 +823,7 @@ QIcon QgsCptCityColorRampItem::icon( QSize size )
 
   if ( mValid && mRamp.count() > 0 )
   {
-    icon = QgsSymbolLayerV2Utils::colorRampPreviewIcon( &mRamp, size );
+    icon = QgsSymbolLayerUtils::colorRampPreviewIcon( &mRamp, size );
   }
   else
   {
@@ -1168,7 +1170,7 @@ QgsCptCitySelectionItem::QgsCptCitySelectionItem( QgsCptCityDataItem* parent,
   mType = Selection;
   mValid = ! path.isNull();
   if ( mValid )
-    parseXML();
+    parseXml();
 }
 
 QgsCptCitySelectionItem::~QgsCptCitySelectionItem()
@@ -1218,7 +1220,7 @@ QVector<QgsCptCityDataItem*> QgsCptCitySelectionItem::createChildren()
   return children;
 }
 
-void QgsCptCitySelectionItem::parseXML()
+void QgsCptCitySelectionItem::parseXml()
 {
   QString filename = QgsCptCityArchive::defaultBaseDir() + '/' + mPath;
 

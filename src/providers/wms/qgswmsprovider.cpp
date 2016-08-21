@@ -35,6 +35,7 @@
 #include "qgsrasterlayer.h"
 #include "qgsrectangle.h"
 #include "qgscoordinatereferencesystem.h"
+#include "qgsmapsettings.h"
 #include "qgsmessageoutput.h"
 #include "qgsmessagelog.h"
 #include "qgsnetworkaccessmanager.h"
@@ -42,7 +43,7 @@
 #include "qgsgml.h"
 #include "qgsgmlschema.h"
 #include "qgswmscapabilities.h"
-#include "qgscrscache.h"
+#include "qgscsexception.h"
 
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -89,7 +90,6 @@ QgsWmsProvider::QgsWmsProvider( QString const& uri, const QgsWmsCapabilities* ca
     , mCachedViewExtent( 0 )
     , mCachedViewWidth( 0 )
     , mCachedViewHeight( 0 )
-    , mCoordinateTransform( nullptr )
     , mExtentDirty( true )
     , mTileReqNo( 0 )
     , mTileLayer( nullptr )
@@ -130,7 +130,7 @@ QgsWmsProvider::QgsWmsProvider( QString const& uri, const QgsWmsCapabilities* ca
     appendError( ERR( tr( "Cannot set CRS" ) ) );
     return;
   }
-  mCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( mSettings.mCrsId );
+  mCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( mSettings.mCrsId );
 
   if ( !calculateExtent() || mLayerExtent.isEmpty() )
   {
@@ -481,6 +481,11 @@ void QgsWmsProvider::setFormatQueryItem( QUrl &url )
 
 QImage *QgsWmsProvider::draw( QgsRectangle const &viewExtent, int pixelWidth, int pixelHeight )
 {
+  return draw( viewExtent, pixelWidth, pixelHeight, nullptr );
+}
+
+QImage *QgsWmsProvider::draw( QgsRectangle const & viewExtent, int pixelWidth, int pixelHeight, QgsRasterBlockFeedback* feedback )
+{
   QgsDebugMsg( "Entering." );
 
   // Can we reuse the previously cached image?
@@ -580,7 +585,7 @@ QImage *QgsWmsProvider::draw( QgsRectangle const &viewExtent, int pixelWidth, in
 
     emit statusChanged( tr( "Getting map via WMS." ) );
 
-    QgsWmsImageDownloadHandler handler( dataSourceUri(), url, mSettings.authorization(), mCachedImage );
+    QgsWmsImageDownloadHandler handler( dataSourceUri(), url, mSettings.authorization(), mCachedImage, feedback );
     handler.downloadBlocking();
   }
   else
@@ -846,7 +851,7 @@ QImage *QgsWmsProvider::draw( QgsRectangle const &viewExtent, int pixelWidth, in
 
     emit statusChanged( tr( "Getting tiles." ) );
 
-    QgsWmsTiledImageDownloadHandler handler( dataSourceUri(), mSettings.authorization(), mTileReqNo, requests, mCachedImage, mCachedViewExtent, mSettings.mSmoothPixmapTransform );
+    QgsWmsTiledImageDownloadHandler handler( dataSourceUri(), mSettings.authorization(), mTileReqNo, requests, mCachedImage, mCachedViewExtent, mSettings.mSmoothPixmapTransform, feedback );
     handler.downloadBlocking();
 
 
@@ -863,11 +868,11 @@ QImage *QgsWmsProvider::draw( QgsRectangle const &viewExtent, int pixelWidth, in
   return mCachedImage;
 }
 
-void QgsWmsProvider::readBlock( int bandNo, QgsRectangle  const & viewExtent, int pixelWidth, int pixelHeight, void *block )
+void QgsWmsProvider::readBlock( int bandNo, QgsRectangle  const & viewExtent, int pixelWidth, int pixelHeight, void *block, QgsRasterBlockFeedback* feedback )
 {
   Q_UNUSED( bandNo );
   // TODO: optimize to avoid writing to QImage
-  QImage *image = draw( viewExtent, pixelWidth, pixelHeight );
+  QImage *image = draw( viewExtent, pixelWidth, pixelHeight, feedback );
   if ( !image )   // should not happen
   {
     QgsMessageLog::logMessage( tr( "image is NULL" ), tr( "WMS" ) );
@@ -927,15 +932,15 @@ bool QgsWmsProvider::retrieveServerCapabilities( bool forceRefresh )
 }
 
 
-QGis::DataType QgsWmsProvider::dataType( int bandNo ) const
+Qgis::DataType QgsWmsProvider::dataType( int bandNo ) const
 {
-  return srcDataType( bandNo );
+  return sourceDataType( bandNo );
 }
 
-QGis::DataType QgsWmsProvider::srcDataType( int bandNo ) const
+Qgis::DataType QgsWmsProvider::sourceDataType( int bandNo ) const
 {
   Q_UNUSED( bandNo );
-  return QGis::ARGB32;
+  return Qgis::ARGB32;
 }
 
 int QgsWmsProvider::bandCount() const
@@ -959,7 +964,7 @@ static const QgsWmsLayerProperty* _findNestedLayerProperty( const QString& layer
 }
 
 
-bool QgsWmsProvider::extentForNonTiledLayer( const QString& layerName, const QString& crs, QgsRectangle& extent )
+bool QgsWmsProvider::extentForNonTiledLayer( const QString& layerName, const QString& crs, QgsRectangle& extent ) const
 {
   const QgsWmsLayerProperty* layerProperty = nullptr;
   Q_FOREACH ( const QgsWmsLayerProperty& toplevelLayer, mCaps.mCapabilities.capability.layers )
@@ -1004,8 +1009,8 @@ bool QgsWmsProvider::extentForNonTiledLayer( const QString& layerName, const QSt
 
   // transform it to requested CRS
 
-  QgsCoordinateReferenceSystem dst = QgsCRSCache::instance()->crsByOgcWmsCrs( crs );
-  QgsCoordinateReferenceSystem wgs = QgsCRSCache::instance()->crsByOgcWmsCrs( DEFAULT_LATLON_CRS );
+  QgsCoordinateReferenceSystem dst = QgsCoordinateReferenceSystem::fromOgcWmsCrs( crs );
+  QgsCoordinateReferenceSystem wgs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( DEFAULT_LATLON_CRS );
   if ( !wgs.isValid() || !dst.isValid() )
     return false;
 
@@ -1176,7 +1181,7 @@ void QgsWmsProvider::parseServiceException( QDomElement const & e, QString& erro
   QgsDebugMsg( QString( "exiting with composed error message '%1'." ).arg( errorText ) );
 }
 
-QgsRectangle QgsWmsProvider::extent()
+QgsRectangle QgsWmsProvider::extent() const
 {
   if ( mExtentDirty )
   {
@@ -1189,7 +1194,7 @@ QgsRectangle QgsWmsProvider::extent()
   return mLayerExtent;
 }
 
-bool QgsWmsProvider::isValid()
+bool QgsWmsProvider::isValid() const
 {
   return mValid;
 }
@@ -1198,7 +1203,7 @@ bool QgsWmsProvider::isValid()
 QString QgsWmsProvider::wmsVersion()
 {
   // TODO
-  return nullptr;
+  return QString();
 }
 
 
@@ -1213,7 +1218,7 @@ QStringList QgsWmsProvider::subLayerStyles() const
   return mSettings.mActiveSubStyles;
 }
 
-bool QgsWmsProvider::calculateExtent()
+bool QgsWmsProvider::calculateExtent() const
 {
   //! \todo Make this handle non-geographic CRSs (e.g. floor plans) as per WMS spec
 
@@ -1232,12 +1237,12 @@ bool QgsWmsProvider::calculateExtent()
       }
       else
       {
-        QgsCoordinateReferenceSystem qgisSrsDest = QgsCRSCache::instance()->crsByOgcWmsCrs( mImageCrs );
+        QgsCoordinateReferenceSystem qgisSrsDest = QgsCoordinateReferenceSystem::fromOgcWmsCrs( mImageCrs );
 
         // pick the first that transforms fin(it)e
         for ( i = 0; i < mTileLayer->boundingBoxes.size(); i++ )
         {
-          QgsCoordinateReferenceSystem qgisSrsSource = QgsCRSCache::instance()->crsByOgcWmsCrs( mTileLayer->boundingBoxes[i].crs );
+          QgsCoordinateReferenceSystem qgisSrsSource = QgsCoordinateReferenceSystem::fromOgcWmsCrs( mTileLayer->boundingBoxes[i].crs );
 
           QgsCoordinateTransform ct( qgisSrsSource, qgisSrsDest );
 
@@ -2103,19 +2108,19 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
     double xRes = 0.001; // expecting meters
 
     // TODO: add CRS as class member
-    QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsByOgcWmsCrs( mImageCrs );
+    QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( mImageCrs );
     if ( crs.isValid() )
     {
       // set resolution approximately to 1mm
       switch ( crs.mapUnits() )
       {
-        case QGis::Meters:
+        case QgsUnitTypes::DistanceMeters:
           xRes = 0.001;
           break;
-        case QGis::Feet:
+        case QgsUnitTypes::DistanceFeet:
           xRes = 0.003;
           break;
-        case QGis::Degrees:
+        case QgsUnitTypes::DistanceDegrees:
           // max length of degree of latitude on pole is 111694 m
           xRes = 1e-8;
           break;
@@ -2523,7 +2528,7 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
 
         QgsDebugMsg( "GML UTF-8 (first 2000 bytes):\n" + gmlByteArray.left( 2000 ) );
 
-        QGis::WkbType wkbType;
+        QgsWkbTypes::Type wkbType;
         QgsGmlSchema gmlSchema;
 
         if ( xsdPart >= 0 )  // XSD available
@@ -2612,10 +2617,10 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
           QMap<QgsFeatureId, QgsFeature* > features = gml.featuresMap();
           QgsCoordinateReferenceSystem featuresCrs = gml.crs();
           QgsDebugMsg( QString( "%1 features read, crs: %2 %3" ).arg( features.size() ).arg( featuresCrs.authid(), featuresCrs.description() ) );
-          QgsCoordinateTransform *coordinateTransform = nullptr;
+          QgsCoordinateTransform coordinateTransform;
           if ( featuresCrs.isValid() && featuresCrs != crs() )
           {
-            coordinateTransform = new QgsCoordinateTransform( featuresCrs, crs() );
+            coordinateTransform = QgsCoordinateTransform( featuresCrs, crs() );
           }
           QgsFeatureStore featureStore( fields, crs() );
           QMap<QString, QVariant> params;
@@ -2629,14 +2634,15 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
 
             QgsDebugMsg( QString( "feature id = %1 : %2 attributes" ).arg( id ).arg( feature->attributes().size() ) );
 
-            if ( coordinateTransform && feature->constGeometry() )
+            if ( coordinateTransform.isValid() && feature->hasGeometry() )
             {
-              feature->geometry()->transform( *coordinateTransform );
+              QgsGeometry g = feature->geometry();
+              g.transform( coordinateTransform );
+              feature->setGeometry( g );
             }
             featureStore.features().append( QgsFeature( *feature ) );
           }
           featureStoreList.append( featureStore );
-          delete coordinateTransform;
         }
         // It is suspicious if we guessed feature types from GML but could not get
         // features from it. Either we geuessed wrong schema or parsing features failed.
@@ -2663,7 +2669,7 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
         QScriptValue result = engine.evaluate( json );
 
         QgsFeatureStoreList featureStoreList;
-        QgsCoordinateTransform *coordinateTransform = nullptr;
+        QgsCoordinateTransform coordinateTransform;
 
         try
         {
@@ -2688,14 +2694,14 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
               QgsDebugMsg( QString( "crs not supported:%1" ).arg( result.property( "crs" ).toString() ) );
             }
 
-            QgsCoordinateReferenceSystem featuresCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( crsText );
+            QgsCoordinateReferenceSystem featuresCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( crsText );
 
             if ( !featuresCrs.isValid() )
               throw QString( "CRS %1 invalid" ).arg( crsText );
 
             if ( featuresCrs.isValid() && featuresCrs != crs() )
             {
-              coordinateTransform = new QgsCoordinateTransform( featuresCrs, crs() );
+              coordinateTransform = QgsCoordinateTransform( featuresCrs, crs() );
             }
           }
 
@@ -2738,13 +2744,15 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
                   OGR_G_ExportToWkb( ogrGeom, ( OGRwkbByteOrder ) QgsApplication::endian(), wkb );
                   OGR_G_DestroyGeometry( ogrGeom );
 
-                  QgsGeometry *g = new QgsGeometry();
-                  g->fromWkb( wkb, wkbSize );
+                  QgsGeometry g;
+                  g.fromWkb( wkb, wkbSize );
                   feature.setGeometry( g );
 
-                  if ( coordinateTransform && feature.constGeometry() )
+                  if ( coordinateTransform.isValid() && feature.hasGeometry() )
                   {
-                    feature.geometry()->transform( *coordinateTransform );
+                    QgsGeometry transformed = feature.geometry();
+                    transformed.transform( coordinateTransform );
+                    feature.setGeometry( transformed );
                   }
                 }
               }
@@ -2776,8 +2784,6 @@ QgsRasterIdentifyResult QgsWmsProvider::identify( const QgsPoint & thePoint, Qgs
         {
           QgsDebugMsg( QString( "JSON error: %1\nResult: %2" ).arg( err, QString::fromUtf8( mIdentifyResultBodies.value( jsonPart ) ) ) );
         }
-
-        delete coordinateTransform;
 
         results.insert( results.size(), qVariantFromValue( featureStoreList ) );
       }
@@ -2854,7 +2860,7 @@ void QgsWmsProvider::identifyReplyFinished()
 }
 
 
-QgsCoordinateReferenceSystem QgsWmsProvider::crs()
+QgsCoordinateReferenceSystem QgsWmsProvider::crs() const
 {
   return mCrs;
 }
@@ -3216,7 +3222,7 @@ QGISEXTERN bool isProvider()
 
 // -----------------
 
-QgsWmsImageDownloadHandler::QgsWmsImageDownloadHandler( const QString& providerUri, const QUrl& url, const QgsWmsAuthorization& auth, QImage* image )
+QgsWmsImageDownloadHandler::QgsWmsImageDownloadHandler( const QString& providerUri, const QUrl& url, const QgsWmsAuthorization& auth, QImage* image, QgsRasterBlockFeedback* feedback )
     : mProviderUri( providerUri )
     , mCachedImage( image )
     , mEventLoop( new QEventLoop )
@@ -3230,6 +3236,8 @@ QgsWmsImageDownloadHandler::QgsWmsImageDownloadHandler( const QString& providerU
 
   Q_ASSERT( mCacheReply->thread() == QThread::currentThread() );
 
+  if ( feedback )
+    connect( feedback, SIGNAL( cancelled() ), this, SLOT( cancelled() ), Qt::QueuedConnection );
 }
 
 QgsWmsImageDownloadHandler::~QgsWmsImageDownloadHandler()
@@ -3323,16 +3331,20 @@ void QgsWmsImageDownloadHandler::cacheReplyFinished()
   }
   else
   {
-    QgsWmsStatistics::Stat& stat = QgsWmsStatistics::statForUri( mProviderUri );
+    // report any errors except for the one we have caused by cancelling the request
+    if ( mCacheReply->error() != QNetworkReply::OperationCanceledError )
+    {
+      QgsWmsStatistics::Stat& stat = QgsWmsStatistics::statForUri( mProviderUri );
 
-    stat.errors++;
-    if ( stat.errors < 100 )
-    {
-      QgsMessageLog::logMessage( tr( "Map request failed [error:%1 url:%2]" ).arg( mCacheReply->errorString(), mCacheReply->url().toString() ), tr( "WMS" ) );
-    }
-    else if ( stat.errors == 100 )
-    {
-      QgsMessageLog::logMessage( tr( "Not logging more than 100 request errors." ), tr( "WMS" ) );
+      stat.errors++;
+      if ( stat.errors < 100 )
+      {
+        QgsMessageLog::logMessage( tr( "Map request failed [error:%1 url:%2]" ).arg( mCacheReply->errorString(), mCacheReply->url().toString() ), tr( "WMS" ) );
+      }
+      else if ( stat.errors == 100 )
+      {
+        QgsMessageLog::logMessage( tr( "Not logging more than 100 request errors." ), tr( "WMS" ) );
+      }
     }
 
     mCacheReply->deleteLater();
@@ -3349,11 +3361,22 @@ void QgsWmsImageDownloadHandler::cacheReplyProgress( qint64 bytesReceived, qint6
   QgsDebugMsg( tr( "%1 of %2 bytes of map downloaded." ).arg( bytesReceived ).arg( bytesTotal < 0 ? QString( "unknown number of" ) : QString::number( bytesTotal ) ) );
 }
 
+void QgsWmsImageDownloadHandler::cancelled()
+{
+  QgsDebugMsg( "Caught cancelled() signal" );
+  if ( mCacheReply )
+  {
+    // abort the reply if it is still active
+    QgsDebugMsg( "Aborting WMS network request" );
+    mCacheReply->abort();
+  }
+}
+
 
 // ----------
 
 
-QgsWmsTiledImageDownloadHandler::QgsWmsTiledImageDownloadHandler( const QString& providerUri, const QgsWmsAuthorization& auth, int tileReqNo, const QList<QgsWmsTiledImageDownloadHandler::TileRequest>& requests, QImage* cachedImage, const QgsRectangle& cachedViewExtent, bool smoothPixmapTransform )
+QgsWmsTiledImageDownloadHandler::QgsWmsTiledImageDownloadHandler( const QString& providerUri, const QgsWmsAuthorization& auth, int tileReqNo, const QList<QgsWmsTiledImageDownloadHandler::TileRequest>& requests, QImage* cachedImage, const QgsRectangle& cachedViewExtent, bool smoothPixmapTransform, QgsRasterBlockFeedback* feedback )
     : mProviderUri( providerUri )
     , mAuth( auth )
     , mCachedImage( cachedImage )
@@ -3378,6 +3401,9 @@ QgsWmsTiledImageDownloadHandler::QgsWmsTiledImageDownloadHandler( const QString&
 
     mReplies << reply;
   }
+
+  if ( feedback )
+    connect( feedback, SIGNAL( cancelled() ), this, SLOT( cancelled() ), Qt::QueuedConnection );
 }
 
 QgsWmsTiledImageDownloadHandler::~QgsWmsTiledImageDownloadHandler()
@@ -3585,10 +3611,14 @@ void QgsWmsTiledImageDownloadHandler::tileReplyFinished()
   }
   else
   {
-    QgsWmsStatistics::Stat& stat = QgsWmsStatistics::statForUri( mProviderUri );
-    stat.errors++;
+    // report any errors except for the one we have caused by cancelling the request
+    if ( reply->error() != QNetworkReply::OperationCanceledError )
+    {
+      QgsWmsStatistics::Stat& stat = QgsWmsStatistics::statForUri( mProviderUri );
+      stat.errors++;
 
-    repeatTileRequest( reply->request() );
+      repeatTileRequest( reply->request() );
+    }
 
     mReplies.removeOne( reply );
     reply->deleteLater();
@@ -3605,6 +3635,16 @@ void QgsWmsTiledImageDownloadHandler::tileReplyFinished()
                       + tr( ", %n errors.", "errors", stat.errors )
                     );
 #endif
+}
+
+void QgsWmsTiledImageDownloadHandler::cancelled()
+{
+  QgsDebugMsg( "Caught cancelled() signal" );
+  Q_FOREACH ( QNetworkReply* reply, mReplies )
+  {
+    QgsDebugMsg( "Aborting tiled network request" );
+    reply->abort();
+  }
 }
 
 

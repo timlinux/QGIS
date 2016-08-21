@@ -17,7 +17,7 @@
 
 #include "qgsshadoweffect.h"
 #include "qgsimageoperation.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbollayerutils.h"
 #include "qgsunittypes.h"
 
 QgsShadowEffect::QgsShadowEffect()
@@ -25,7 +25,7 @@ QgsShadowEffect::QgsShadowEffect()
     , mBlurLevel( 10 )
     , mOffsetAngle( 135 )
     , mOffsetDist( 2.0 )
-    , mOffsetUnit( QgsSymbolV2::MM )
+    , mOffsetUnit( QgsUnitTypes::RenderMillimeters )
     , mTransparency( 0.0 )
     , mColor( Qt::black )
     , mBlendMode( QPainter::CompositionMode_Multiply )
@@ -60,7 +60,7 @@ void QgsShadowEffect::draw( QgsRenderContext &context )
   QgsImageOperation::stackBlur( colorisedIm, mBlurLevel );
 
   double offsetDist = mOffsetDist *
-                      QgsSymbolLayerV2Utils::pixelSizeScaleFactor( context, mOffsetUnit, mOffsetMapUnitScale );
+                      QgsSymbolLayerUtils::pixelSizeScaleFactor( context, mOffsetUnit, mOffsetMapUnitScale );
 
   double   angleRad = mOffsetAngle * M_PI / 180; // to radians
   QPointF transPt( -offsetDist * cos( angleRad + M_PI / 2 ),
@@ -103,9 +103,9 @@ QgsStringMap QgsShadowEffect::properties() const
   props.insert( "blur_level", QString::number( mBlurLevel ) );
   props.insert( "offset_angle", QString::number( mOffsetAngle ) );
   props.insert( "offset_distance", QString::number( mOffsetDist ) );
-  props.insert( "offset_unit", QgsSymbolLayerV2Utils::encodeOutputUnit( mOffsetUnit ) );
-  props.insert( "offset_unit_scale", QgsSymbolLayerV2Utils::encodeMapUnitScale( mOffsetMapUnitScale ) );
-  props.insert( "color", QgsSymbolLayerV2Utils::encodeColor( mColor ) );
+  props.insert( "offset_unit", QgsUnitTypes::encodeUnit( mOffsetUnit ) );
+  props.insert( "offset_unit_scale", QgsSymbolLayerUtils::encodeMapUnitScale( mOffsetMapUnitScale ) );
+  props.insert( "color", QgsSymbolLayerUtils::encodeColor( mColor ) );
   return props;
 }
 
@@ -139,18 +139,18 @@ void QgsShadowEffect::readProperties( const QgsStringMap &props )
   {
     mOffsetDist = distance;
   }
-  mOffsetUnit = QgsSymbolLayerV2Utils::decodeOutputUnit( props.value( "offset_unit" ) );
-  mOffsetMapUnitScale = QgsSymbolLayerV2Utils::decodeMapUnitScale( props.value( "offset_unit_scale" ) );
+  mOffsetUnit = QgsUnitTypes::decodeRenderUnit( props.value( "offset_unit" ) );
+  mOffsetMapUnitScale = QgsSymbolLayerUtils::decodeMapUnitScale( props.value( "offset_unit_scale" ) );
   if ( props.contains( "color" ) )
   {
-    mColor = QgsSymbolLayerV2Utils::decodeColor( props.value( "color" ) );
+    mColor = QgsSymbolLayerUtils::decodeColor( props.value( "color" ) );
   }
 }
 
 QRectF QgsShadowEffect::boundingRect( const QRectF &rect, const QgsRenderContext& context ) const
 {
   //offset distance
-  double spread = mOffsetDist * QgsSymbolLayerV2Utils::pixelSizeScaleFactor( context, mOffsetUnit, mOffsetMapUnitScale );
+  double spread = mOffsetDist * QgsSymbolLayerUtils::pixelSizeScaleFactor( context, mOffsetUnit, mOffsetMapUnitScale );
   //plus possible extension due to blur, with a couple of extra pixels thrown in for safety
   spread += mBlurLevel * 2 + 10;
   return rect.adjusted( -spread, -spread, spread, spread );

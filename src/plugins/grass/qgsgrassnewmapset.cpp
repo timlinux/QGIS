@@ -22,12 +22,12 @@
 #include "qgisinterface.h"
 #include "qgsapplication.h"
 #include "qgscoordinatetransform.h"
-#include "qgscrscache.h"
 #include "qgslogger.h"
 #include "qgsmapcanvas.h"
 #include "qgsproject.h"
 #include "qgsprojectionselector.h"
 #include "qgslocalec.h"
+#include "qgscsexception.h"
 
 #include <QCloseEvent>
 #include <QFileDialog>
@@ -526,7 +526,7 @@ void QgsGrassNewMapset::setRegionPage()
 
     if ( ok )
     {
-      int precision = newCrs.mapUnits() == QGis::Degrees ? 6 : 1;
+      int precision = newCrs.mapUnits() == QgsUnitTypes::DistanceDegrees ? 6 : 1;
       mNorthLineEdit->setText( qgsDoubleToString( points[1].y(), precision ) );
       mSouthLineEdit->setText( qgsDoubleToString( points[0].y(), precision ) );
       mEastLineEdit->setText( qgsDoubleToString( points[1].x(), precision ) );
@@ -815,7 +815,7 @@ void QgsGrassNewMapset::setSelectedRegion()
   {
     // Warning: QgsCoordinateReferenceSystem::EpsgCrsId is broken (using epsg_id)
     //QgsCoordinateReferenceSystem source ( 4326, QgsCoordinateReferenceSystem::EpsgCrsId );
-    QgsCoordinateReferenceSystem source = QgsCRSCache::instance()->crsBySrsId( GEOCRS_ID );
+    QgsCoordinateReferenceSystem source = QgsCoordinateReferenceSystem::fromSrsId( GEOCRS_ID );
 
     if ( !source.isValid() )
     {
@@ -823,7 +823,7 @@ void QgsGrassNewMapset::setSelectedRegion()
       return;
     }
 
-    QgsCoordinateReferenceSystem dest = QgsCRSCache::instance()->crsBySrsId( mProjectionSelector->selectedCrsId() );
+    QgsCoordinateReferenceSystem dest = QgsCoordinateReferenceSystem::fromSrsId( mProjectionSelector->selectedCrsId() );
 
     if ( !dest.isValid() )
     {
@@ -1023,7 +1023,7 @@ void QgsGrassNewMapset::drawRegion()
   // Warning: seems that crashes if source == dest
   if ( mProjectionSelector->selectedCrsId() != GEOCRS_ID )
   {
-    QgsCoordinateReferenceSystem source = QgsCRSCache::instance()->crsBySrsId( mProjectionSelector->selectedCrsId() );
+    QgsCoordinateReferenceSystem source = QgsCoordinateReferenceSystem::fromSrsId( mProjectionSelector->selectedCrsId() );
 
     if ( !source.isValid() )
     {
@@ -1031,7 +1031,7 @@ void QgsGrassNewMapset::drawRegion()
       return;
     }
 
-    QgsCoordinateReferenceSystem dest = QgsCRSCache::instance()->crsBySrsId( GEOCRS_ID );
+    QgsCoordinateReferenceSystem dest = QgsCoordinateReferenceSystem::fromSrsId( GEOCRS_ID );
 
     if ( !dest.isValid() )
     {

@@ -40,8 +40,6 @@ class QgsComposition : QGraphicsScene
       Landscape
     };
 
-    //! @deprecated since 2.4 - use the constructor with QgsMapSettings
-    QgsComposition( QgsMapRenderer* mapRenderer ) /Deprecated/;
     explicit QgsComposition( const QgsMapSettings& mapSettings );
 
     /** Composition atlas modes*/
@@ -159,9 +157,9 @@ class QgsComposition : QGraphicsScene
     bool shouldExportPage( const int page ) const;
 
     /** Note: added in version 2.1*/
-    void setPageStyleSymbol( QgsFillSymbolV2* symbol );
+    void setPageStyleSymbol( QgsFillSymbol* symbol );
     /** Note: added in version 2.1*/
-    QgsFillSymbolV2* pageStyleSymbol();
+    QgsFillSymbol* pageStyleSymbol();
 
     /** Returns the position within a page of a point in the composition
       @note Added in QGIS 2.1
@@ -413,10 +411,6 @@ class QgsComposition : QGraphicsScene
     /** Used to enable or disable advanced effects such as blend modes in a composition */
     void setUseAdvancedEffects( const bool effectsEnabled );
 
-    /** Returns pointer to map renderer of qgis map canvas*/
-    //! @deprecated since 2.4 - use mapSettings() instead. May return null if not initialized with QgsMapRenderer
-    QgsMapRenderer* mapRenderer() /Deprecated/;
-
     //! Return setting of QGIS map canvas
     //! @note added in 2.4
     const QgsMapSettings& mapSettings() const;
@@ -436,10 +430,10 @@ class QgsComposition : QGraphicsScene
     double pointFontSize( int pixelSize ) const /Deprecated/;
 
     /** Writes settings to xml (paper dimension)*/
-    bool writeXML( QDomElement& composerElem, QDomDocument& doc );
+    bool writeXml( QDomElement& composerElem, QDomDocument& doc );
 
     /** Reads settings from xml file*/
-    bool readXML( const QDomElement& compositionElem, const QDomDocument& doc );
+    bool readXml( const QDomElement& compositionElem, const QDomDocument& doc );
 
     /** Load a template document
      * @param doc template document
@@ -461,7 +455,7 @@ class QgsComposition : QGraphicsScene
      * @param pasteInPlace whether the position should be kept but mapped to the page origin. (the page is the page under to the mouse cursor)
      * @note parameters mapsToRestore, addUndoCommands pos and pasteInPlace not available in python bindings
      */
-    void addItemsFromXML( const QDomElement& elem, const QDomDocument& doc );
+    void addItemsFromXml( const QDomElement& elem, const QDomDocument& doc );
 
     /** Adds item to z list. Usually called from constructor of QgsComposerItem*/
     void addItemToZList( QgsComposerItem* item );
@@ -851,7 +845,7 @@ class QgsComposition : QGraphicsScene
      * scopes for global, project, composition and atlas properties.
      * @note added in QGIS 2.12
      */
-    QgsExpressionContext* createExpressionContext() const;
+    QgsExpressionContext createExpressionContext() const;
 
   protected:
     void init();
@@ -900,4 +894,9 @@ class QgsComposition : QGraphicsScene
 
     /** Is emitted when the composition has an updated status bar message for the composer window*/
     void statusMsgChanged( QString message );
+
+    /** Emitted whenever the expression variables stored in the composition have been changed.
+     * @note added in QGIS 3.0
+     */
+    void variablesChanged();
 };

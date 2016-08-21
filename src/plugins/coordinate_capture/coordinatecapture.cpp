@@ -24,7 +24,6 @@
 #include "qgsapplication.h"
 #include <qgspoint.h>
 #include <qgsmapcanvas.h>
-#include <qgsmaprenderer.h>
 #include <qgis.h>
 #include <qgscoordinatereferencesystem.h>
 #include <qgscoordinatetransform.h>
@@ -97,8 +96,8 @@ void CoordinateCapture::initGui()
   connect( mQGisIface, SIGNAL( currentThemeChanged( QString ) ), this, SLOT( setCurrentTheme( QString ) ) );
 
   setSourceCrs(); //set up the source CRS
-  mTransform.setDestCRS( mCrs ); // set the CRS in the transform
-  mUserCrsDisplayPrecision = ( mCrs.mapUnits() == QGis::Degrees ) ? 5 : 3; // precision depends on CRS units
+  mTransform.setDestinationCrs( mCrs ); // set the CRS in the transform
+  mUserCrsDisplayPrecision = ( mCrs.mapUnits() == QgsUnitTypes::DistanceDegrees ) ? 5 : 3; // precision depends on CRS units
 
   //create the dock widget
   mpDockWidget = new QgsDockWidget( tr( "Coordinate Capture" ), mQGisIface->mainWindow() );
@@ -190,15 +189,15 @@ void CoordinateCapture::setCRS()
   if ( mySelector.exec() )
   {
     mCrs.createFromSrsId( mySelector.selectedCrsId() );
-    mTransform.setDestCRS( mCrs );
-    mUserCrsDisplayPrecision = ( mCrs.mapUnits() == QGis::Degrees ) ? 5 : 3; //precision depends on CRS units
+    mTransform.setDestinationCrs( mCrs );
+    mUserCrsDisplayPrecision = ( mCrs.mapUnits() == QgsUnitTypes::DistanceDegrees ) ? 5 : 3; //precision depends on CRS units
   }
 }
 
 void CoordinateCapture::setSourceCrs()
 {
   mTransform.setSourceCrs( mQGisIface->mapCanvas()->mapSettings().destinationCrs() );
-  mCanvasDisplayPrecision = ( mQGisIface->mapCanvas()->mapSettings().destinationCrs().mapUnits() == QGis::Degrees ) ? 5 : 3; // for the map canvas coordinate display
+  mCanvasDisplayPrecision = ( mQGisIface->mapCanvas()->mapSettings().destinationCrs().mapUnits() == QgsUnitTypes::DistanceDegrees ) ? 5 : 3; // for the map canvas coordinate display
 }
 
 void CoordinateCapture::mouseClicked( const QgsPoint& thePoint )

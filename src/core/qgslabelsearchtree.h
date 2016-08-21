@@ -19,13 +19,14 @@
 #ifndef QGSLABELSEARCHTREE_H
 #define QGSLABELSEARCHTREE_H
 
-#include "qgspoint.h"
-#include "qgsmaprenderer.h"
 #include <QList>
 #include <QVector>
 #include <pointset.h>
 #include <labelposition.h>
-#include "qgsrectangle.h"
+#include "qgspallabeling.h"
+#include "rtree.hpp"
+
+class QgsPoint;
 
 /** \ingroup core
  * A class to query the labeling structure at a given point (small wraper around pal RTree class)*/

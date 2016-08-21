@@ -1,4 +1,4 @@
-class QgsPointDisplacementRenderer : QgsFeatureRendererV2
+class QgsPointDisplacementRenderer : QgsFeatureRenderer
 {
 %TypeHeaderCode
 #include <qgspointdisplacementrenderer.h>
@@ -20,33 +20,33 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
 
     virtual void toSld( QDomDocument& doc, QDomElement &element ) const;
 
-    /** Reimplemented from QgsFeatureRendererV2*/
+    /** Reimplemented from QgsFeatureRenderer*/
     bool renderFeature( QgsFeature& feature, QgsRenderContext& context, int layer = -1, bool selected = false, bool drawVertexMarker = false );
 
     /** Partial proxy that will call this method on the embedded renderer. */
     virtual QList<QString> usedAttributes();
     /** Proxy that will call this method on the embedded renderer. */
-    virtual int capabilities();
+    virtual QgsFeatureRenderer::Capabilities capabilities();
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as symbols2
      */
-    virtual QgsSymbolV2List symbols( QgsRenderContext& context ) /PyName=symbols2/;
+    virtual QgsSymbolList symbols( QgsRenderContext& context ) /PyName=symbols2/;
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as symbolForFeature2
      */
-    virtual QgsSymbolV2* symbolForFeature( QgsFeature& feature, QgsRenderContext& context ) /PyName=symbolForFeature2/;
+    virtual QgsSymbol* symbolForFeature( QgsFeature& feature, QgsRenderContext& context ) /PyName=symbolForFeature2/;
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as originalSymbolForFeature2
      */
-    virtual QgsSymbolV2* originalSymbolForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=originalSymbolForFeature2/;
+    virtual QgsSymbol* originalSymbolForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=originalSymbolForFeature2/;
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as symbolsForFeature2
      */
-    virtual QgsSymbolV2List symbolsForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=symbolsForFeature2/;
+    virtual QgsSymbolList symbolsForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=symbolsForFeature2/;
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as originalSymbolsForFeature2
      */
-    virtual QgsSymbolV2List originalSymbolsForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=originalSymbolsForFeature2/;
+    virtual QgsSymbolList originalSymbolsForFeature( QgsFeature& feat, QgsRenderContext& context ) /PyName=originalSymbolsForFeature2/;
     /** Proxy that will call this method on the embedded renderer.
       @note available in python as willRenderFeature2
      */
@@ -57,7 +57,7 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
     void stopRender( QgsRenderContext& context );
 
     //! create a renderer from XML element
-    static QgsFeatureRendererV2* create( QDomElement& symbologyElem ) /Factory/;
+    static QgsFeatureRenderer* create( QDomElement& symbologyElem ) /Factory/;
     QDomElement save( QDomDocument& doc );
 
     QgsLegendSymbologyList legendSymbologyItems( QSize iconSize );
@@ -68,10 +68,10 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
     void setLabelAttributeName( const QString& name );
     QString labelAttributeName() const;
 
-    void setEmbeddedRenderer( QgsFeatureRendererV2* r /Transfer/ );
-    const QgsFeatureRendererV2* embeddedRenderer() const;
+    void setEmbeddedRenderer( QgsFeatureRenderer* r /Transfer/ );
+    const QgsFeatureRenderer* embeddedRenderer() const;
 
-    virtual void setLegendSymbolItem( const QString& key, QgsSymbolV2* symbol );
+    virtual void setLegendSymbolItem( const QString& key, QgsSymbol* symbol );
 
     virtual bool legendSymbolItemsCheckable() const;
     virtual bool legendSymbolItemChecked( const QString& key );
@@ -113,9 +113,9 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
     void setPlacement( Placement placement );
 
     /** Returns the symbol for the center of a displacement group (but _not_ ownership of the symbol)*/
-    QgsMarkerSymbolV2* centerSymbol();
+    QgsMarkerSymbol* centerSymbol();
     /** Sets the center symbol (takes ownership)*/
-    void setCenterSymbol( QgsMarkerSymbolV2* symbol /Transfer/ );
+    void setCenterSymbol( QgsMarkerSymbol* symbol /Transfer/ );
 
     /** Sets the tolerance distance for grouping points. Units are specified using
      * setToleranceUnit().
@@ -138,17 +138,17 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
      * @see toleranceUnit()
      * @note added in QGIS 2.12
      */
-    void setToleranceUnit( QgsSymbolV2::OutputUnit unit );
+    void setToleranceUnit( QgsUnitTypes::RenderUnit unit );
 
     /** Returns the units for the tolerance distance.
      * @see tolerance()
      * @see setToleranceUnit()
      * @note added in QGIS 2.12
      */
-    QgsSymbolV2::OutputUnit toleranceUnit() const;
+    QgsUnitTypes::RenderUnit toleranceUnit() const;
 
     /** Sets the map unit scale object for the distance tolerance. This is only used if the
-     * toleranceUnit() is set to QgsSymbolV2::MapUnit.
+     * toleranceUnit() is set to QgsSymbol::MapUnit.
      * @param scale scale for distance tolerance
      * @see toleranceMapUnitScale()
      * @see setToleranceUnit()
@@ -156,7 +156,7 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
     void setToleranceMapUnitScale( const QgsMapUnitScale& scale );
 
     /** Returns the map unit scale object for the distance tolerance. This is only used if the
-     * toleranceUnit() is set to QgsSymbolV2::MapUnit.
+     * toleranceUnit() is set to QgsSymbol::MapUnit.
      * @see setToleranceMapUnitScale()
      * @see toleranceUnit()
      */
@@ -165,7 +165,7 @@ class QgsPointDisplacementRenderer : QgsFeatureRendererV2
     //! creates a QgsPointDisplacementRenderer from an existing renderer.
     //! @note added in 2.5
     //! @returns a new renderer if the conversion was possible, otherwise 0.
-    static QgsPointDisplacementRenderer* convertFromRenderer(const QgsFeatureRendererV2 *renderer ) /Factory/;
+    static QgsPointDisplacementRenderer* convertFromRenderer(const QgsFeatureRenderer *renderer ) /Factory/;
 
   private:
     QgsPointDisplacementRenderer( const QgsPointDisplacementRenderer & );

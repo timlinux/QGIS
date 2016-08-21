@@ -1415,7 +1415,7 @@ bool QgsAuthManager::updateDataSourceUriItems( QStringList &connectionItems, con
   QgsAuthMethod* authmethod = configAuthMethod( authcfg );
   if ( authmethod )
   {
-    if ( !( authmethod->supportedExpansions() & QgsAuthMethod::DataSourceURI ) )
+    if ( !( authmethod->supportedExpansions() & QgsAuthMethod::DataSourceUri ) )
     {
       QgsDebugMsg( QString( "Data source URI updating not supported by authcfg: %1" ).arg( authcfg ) );
       return false;
@@ -1688,7 +1688,7 @@ const QPair<QSslCertificate, QSslKey> QgsAuthManager::getCertIdentityBundle( con
     QSslKey key;
     if ( query.first() )
     {
-      key =  QSslKey( QgsAuthCrypto::decrypt( mMasterPass, masterPasswordCiv(), query.value( 0 ).toString() ).toAscii(),
+      key =  QSslKey( QgsAuthCrypto::decrypt( mMasterPass, masterPasswordCiv(), query.value( 0 ).toString() ).toLatin1(),
                       QSsl::Rsa, QSsl::Pem, QSsl::PrivateKey );
       if ( key.isNull() )
       {
@@ -2714,7 +2714,7 @@ const QByteArray QgsAuthManager::getTrustedCaCertsPemText()
     {
       certslist << cert.toPem();
     }
-    capem = certslist.join( "\n" ).toAscii(); //+ "\n";
+    capem = certslist.join( "\n" ).toLatin1(); //+ "\n";
   }
   return capem;
 }
@@ -3351,7 +3351,7 @@ bool QgsAuthManager::authDbCommit() const
     const char* err = QT_TR_NOOP( "Auth db FAILED to rollback changes" );
     QgsDebugMsg( err );
     emit messageOut( tr( err ), authManTag(), WARNING );
-    authDbConnection().rollback();
+    ( void )authDbConnection().rollback();
     return false;
   }
 
@@ -3378,7 +3378,7 @@ bool QgsAuthManager::authDbTransactionQuery( QSqlQuery *query ) const
     const char* err = QT_TR_NOOP( "Auth db FAILED to rollback changes" );
     QgsDebugMsg( err );
     emit messageOut( tr( err ), authManTag(), WARNING );
-    authDbConnection().rollback();
+    ( void )authDbConnection().rollback();
     return false;
   }
 

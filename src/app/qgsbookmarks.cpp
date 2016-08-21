@@ -19,10 +19,8 @@
 #include "qgsbookmarks.h"
 #include "qgscontexthelp.h"
 #include "qgsmapcanvas.h"
-#include "qgsmaprenderer.h"
 #include "qgsproject.h"
 #include "qgsmessagelog.h"
-#include "qgscrscache.h"
 
 #include "qgslogger.h"
 
@@ -34,10 +32,12 @@
 #include <QSqlQuery>
 #include <QModelIndex>
 #include <QAbstractTableModel>
-
+#include <QToolButton>
 
 QgsBookmarks::QgsBookmarks( QWidget *parent )
     : QgsDockWidget( parent )
+    , mQgisModel( nullptr )
+    , mProjectModel( nullptr )
 {
   setupUi( this );
   restorePosition();
@@ -57,8 +57,8 @@ QgsBookmarks::QgsBookmarks( QWidget *parent )
   QAction *btnImport = share->addAction( tr( "&Import" ) );
   btnExport->setIcon( QgsApplication::getThemeIcon( "/mActionSharingExport.svg" ) );
   btnImport->setIcon( QgsApplication::getThemeIcon( "/mActionSharingImport.svg" ) );
-  connect( btnExport, SIGNAL( triggered() ), this, SLOT( exportToXML() ) );
-  connect( btnImport, SIGNAL( triggered() ), this, SLOT( importFromXML() ) );
+  connect( btnExport, SIGNAL( triggered() ), this, SLOT( exportToXml() ) );
+  connect( btnImport, SIGNAL( triggered() ), this, SLOT( importFromXml() ) );
   btnImpExp->setMenu( share );
 
   connect( actionAdd, SIGNAL( triggered() ), this, SLOT( addClicked() ) );
@@ -233,7 +233,7 @@ void QgsBookmarks::zoomToBookmark()
   if ( srid > 0 &&
        srid != QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs().srsid() )
   {
-    QgsCoordinateTransform ct( QgsCRSCache::instance()->crsBySrsId( srid ),
+    QgsCoordinateTransform ct( QgsCoordinateReferenceSystem::fromSrsId( srid ),
                                QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs() );
     rect = ct.transform( rect );
     if ( rect.isEmpty() )
@@ -248,7 +248,7 @@ void QgsBookmarks::zoomToBookmark()
   QgisApp::instance()->mapCanvas()->refresh();
 }
 
-void QgsBookmarks::importFromXML()
+void QgsBookmarks::importFromXml()
 {
   QSettings settings;
 
@@ -323,7 +323,7 @@ void QgsBookmarks::importFromXML()
   mQgisModel->select();
 }
 
-void QgsBookmarks::exportToXML()
+void QgsBookmarks::exportToXml()
 {
   QSettings settings;
 

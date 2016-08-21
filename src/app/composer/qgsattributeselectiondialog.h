@@ -23,6 +23,7 @@
 #include <QSet>
 #include <QItemDelegate>
 #include "ui_qgsattributeselectiondialogbase.h"
+#include "qgsexpressioncontextgenerator.h"
 
 class QGridLayout;
 class QgsVectorLayer;
@@ -33,7 +34,7 @@ class QgsComposerAttributeTableColumnModel;
 class QgsComposerAttributeTableColumnModelV2;
 class QgsComposerTableSortColumnsProxyModel;
 class QgsComposerTableSortColumnsProxyModelV2;
-class QgsComposerTableAvailableSortProxyModelV2;
+class QgsComposerTableAvailableSortProxyModel;
 class QgsComposerObject;
 
 // QgsComposerColumnAlignmentDelegate
@@ -56,7 +57,7 @@ class QgsComposerColumnAlignmentDelegate : public QItemDelegate
 // QgsComposerColumnAlignmentDelegate
 
 /** A delegate for showing column attribute source as a QgsFieldExpressionWidget*/
-class QgsComposerColumnSourceDelegate : public QItemDelegate
+class QgsComposerColumnSourceDelegate : public QItemDelegate, private QgsExpressionContextGenerator
 {
     Q_OBJECT
 
@@ -71,6 +72,7 @@ class QgsComposerColumnSourceDelegate : public QItemDelegate
   private:
     QgsVectorLayer* mVectorLayer;
     const QgsComposerObject* mComposerObject;
+    QgsExpressionContext createExpressionContext() const override;
 };
 
 // QgsComposerColumnWidthDelegate
@@ -114,10 +116,10 @@ class QgsAttributeSelectionDialog: public QDialog, private Ui::QgsAttributeSelec
 {
     Q_OBJECT
   public:
-    QgsAttributeSelectionDialog( QgsComposerAttributeTableV2* table, QgsVectorLayer* vLayer, QWidget * parent = nullptr, Qt::WindowFlags f = nullptr );
+    QgsAttributeSelectionDialog( QgsComposerAttributeTableV2* table, QgsVectorLayer* vLayer, QWidget * parent = nullptr, Qt::WindowFlags f = 0 );
 
     //todo - remove for QGIS 3.0
-    QgsAttributeSelectionDialog( QgsComposerAttributeTable* table, QgsVectorLayer* vLayer, QWidget * parent = nullptr, Qt::WindowFlags f = nullptr );
+    QgsAttributeSelectionDialog( QgsComposerAttributeTable* table, QgsVectorLayer* vLayer, QWidget * parent = nullptr, Qt::WindowFlags f = 0 );
 
 
     ~QgsAttributeSelectionDialog();

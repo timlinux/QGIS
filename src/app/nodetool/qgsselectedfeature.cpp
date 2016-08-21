@@ -16,6 +16,7 @@
 #include "nodetool/qgsselectedfeature.h"
 #include "nodetool/qgsvertexentry.h"
 
+#include "qgsfeatureiterator.h"
 #include "qgspointv2.h"
 #include <qgslogger.h>
 #include <qgsvertexmarker.h>
@@ -23,7 +24,6 @@
 #include <qgsvectorlayer.h>
 #include <qgsrubberband.h>
 #include <qgisapp.h>
-#include <qgsmaprenderer.h>
 #include <qgslayertreeview.h>
 #include <qgsproject.h>
 
@@ -68,7 +68,7 @@ void QgsSelectedFeature::currentLayerChanged( QgsMapLayer *layer )
     deleteLater();
 }
 
-void QgsSelectedFeature::updateGeometry( QgsGeometry *geom )
+void QgsSelectedFeature::updateGeometry( const QgsGeometry *geom )
 {
   QgsDebugCall;
 
@@ -78,8 +78,8 @@ void QgsSelectedFeature::updateGeometry( QgsGeometry *geom )
   {
     QgsFeature f;
     mVlayer->getFeatures( QgsFeatureRequest().setFilterFid( mFeatureId ) ).nextFeature( f );
-    if ( f.geometry() )
-      mGeometry = new QgsGeometry( *f.geometry() );
+    if ( f.hasGeometry() )
+      mGeometry = new QgsGeometry( f.geometry() );
     else
       mGeometry = new QgsGeometry();
   }
@@ -112,7 +112,7 @@ void QgsSelectedFeature::setSelectedFeature( QgsFeatureId featureId, QgsVectorLa
   connect( canvas, SIGNAL( extentsChanged() ), this, SLOT( updateVertexMarkersPosition() ) );
 
   // geometry was changed
-  connect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, QgsGeometry & ) ) );
+  connect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, const QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, const QgsGeometry & ) ) );
 
   replaceVertexMap();
 }
@@ -120,7 +120,7 @@ void QgsSelectedFeature::setSelectedFeature( QgsFeatureId featureId, QgsVectorLa
 void QgsSelectedFeature::beforeRollBack()
 {
   QgsDebugCall;
-  disconnect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, QgsGeometry & ) ) );
+  disconnect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, const QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, const QgsGeometry & ) ) );
   deleteVertexMap();
 }
 
@@ -129,7 +129,7 @@ void QgsSelectedFeature::beginGeometryChange()
   Q_ASSERT( !mChangingGeometry );
   mChangingGeometry = true;
 
-  disconnect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, QgsGeometry & ) ) );
+  disconnect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, const QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, const QgsGeometry & ) ) );
 }
 
 void QgsSelectedFeature::endGeometryChange()
@@ -137,7 +137,7 @@ void QgsSelectedFeature::endGeometryChange()
   Q_ASSERT( mChangingGeometry );
   mChangingGeometry = false;
 
-  connect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, QgsGeometry & ) ) );
+  connect( mVlayer, SIGNAL( geometryChanged( QgsFeatureId, const QgsGeometry & ) ), this, SLOT( geometryChanged( QgsFeatureId, const QgsGeometry & ) ) );
 }
 
 void QgsSelectedFeature::canvasLayersChanged()
@@ -151,7 +151,7 @@ void QgsSelectedFeature::featureDeleted( QgsFeatureId fid )
     deleteLater();
 }
 
-void QgsSelectedFeature::geometryChanged( QgsFeatureId fid, QgsGeometry &geom )
+void QgsSelectedFeature::geometryChanged( QgsFeatureId fid, const QgsGeometry &geom )
 {
   QgsDebugCall;
 
@@ -268,7 +268,7 @@ void QgsSelectedFeature::deleteSelectedVertexes()
         endGeometryChange();
 
       if ( res != QgsVectorLayer::EmptyGeometry )
-        res = mVlayer->deleteVertexV2( mFeatureId, i );
+        res = mVlayer->deleteVertex( mFeatureId, i );
 
       if ( res != QgsVectorLayer::Success && res != QgsVectorLayer::EmptyGeometry )
       {
@@ -287,7 +287,7 @@ void QgsSelectedFeature::deleteSelectedVertexes()
         {
           // move all other
           if ( mFeatureId !=  resultIt.value().snappedAtGeometry )
-            mVlayer->deleteVertexV2( resultIt.value().snappedAtGeometry, resultIt.value().snappedVertexNr );
+            mVlayer->deleteVertex( resultIt.value().snappedAtGeometry, resultIt.value().snappedVertexNr );
         }
       }
 
@@ -424,7 +424,7 @@ void QgsSelectedFeature::createVertexMap()
     return;
   }
 
-  const QgsAbstractGeometryV2* geom = mGeometry->geometry();
+  const QgsAbstractGeometry* geom = mGeometry->geometry();
   if ( !geom )
   {
     return;

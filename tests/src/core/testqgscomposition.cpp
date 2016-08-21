@@ -25,7 +25,7 @@
 #include "qgscomposermap.h"
 #include "qgsmapsettings.h"
 #include "qgsmultirenderchecker.h"
-#include "qgsfillsymbollayerv2.h"
+#include "qgsfillsymbollayer.h"
 
 #include <QObject>
 #include <QtTest/QtTest>
@@ -53,6 +53,7 @@ class TestQgsComposition : public QObject
     void resizeToContentsMargin();
     void resizeToContentsMultiPage();
     void georeference();
+    void variablesEdited();
 
   private:
     QgsComposition *mComposition;
@@ -76,7 +77,7 @@ void TestQgsComposition::initTestCase()
 
   //create composition
   mMapSettings->setCrsTransformEnabled( true );
-  mMapSettings->setMapUnits( QGis::Meters );
+  mMapSettings->setMapUnits( QgsUnitTypes::DistanceMeters );
   mComposition = new QgsComposition( *mMapSettings );
   mComposition->setPaperSize( 297, 210 ); //A4 landscape
   mComposition->setNumPages( 3 );
@@ -307,7 +308,7 @@ void TestQgsComposition::writeRetrieveCustomProperties()
       "qgis", "http://mrcc.com/qgis.dtd", "SYSTEM" );
   QDomDocument doc( documentType );
   QDomElement rootNode = doc.createElement( "qgis" );
-  QVERIFY( composition->writeXML( rootNode, doc ) );
+  QVERIFY( composition->writeXml( rootNode, doc ) );
 
   //check if composition node was written
   QDomNodeList evalNodeList = rootNode.elementsByTagName( "Composition" );
@@ -316,7 +317,7 @@ void TestQgsComposition::writeRetrieveCustomProperties()
 
   //test reading node containing custom properties
   QgsComposition* readComposition = new QgsComposition( *mMapSettings );
-  QVERIFY( readComposition->readXML( compositionElem, doc ) );
+  QVERIFY( readComposition->readXml( compositionElem, doc ) );
 
   //test retrieved custom properties
   QCOMPARE( readComposition->customProperties().length(), 2 );
@@ -391,8 +392,8 @@ void TestQgsComposition::resizeToContents()
 {
   //add some items to a composition
   QgsComposition* composition = new QgsComposition( *mMapSettings );
-  QgsSimpleFillSymbolLayerV2* simpleFill = new QgsSimpleFillSymbolLayerV2();
-  QgsFillSymbolV2* fillSymbol = new QgsFillSymbolV2();
+  QgsSimpleFillSymbolLayer* simpleFill = new QgsSimpleFillSymbolLayer();
+  QgsFillSymbol* fillSymbol = new QgsFillSymbol();
   fillSymbol->changeSymbolLayer( 0, simpleFill );
   simpleFill->setColor( Qt::yellow );
   simpleFill->setBorderColor( Qt::transparent );
@@ -432,8 +433,8 @@ void TestQgsComposition::resizeToContentsMargin()
   //resize to contents, with margin
 
   QgsComposition* composition = new QgsComposition( *mMapSettings );
-  QgsSimpleFillSymbolLayerV2* simpleFill = new QgsSimpleFillSymbolLayerV2();
-  QgsFillSymbolV2* fillSymbol = new QgsFillSymbolV2();
+  QgsSimpleFillSymbolLayer* simpleFill = new QgsSimpleFillSymbolLayer();
+  QgsFillSymbol* fillSymbol = new QgsFillSymbol();
   fillSymbol->changeSymbolLayer( 0, simpleFill );
   simpleFill->setColor( Qt::yellow );
   simpleFill->setBorderColor( Qt::transparent );
@@ -473,8 +474,8 @@ void TestQgsComposition::resizeToContentsMultiPage()
   //resize to contents with multi-page composition, should result in a single page
 
   QgsComposition* composition = new QgsComposition( *mMapSettings );
-  QgsSimpleFillSymbolLayerV2* simpleFill = new QgsSimpleFillSymbolLayerV2();
-  QgsFillSymbolV2* fillSymbol = new QgsFillSymbolV2();
+  QgsSimpleFillSymbolLayer* simpleFill = new QgsSimpleFillSymbolLayer();
+  QgsFillSymbol* fillSymbol = new QgsFillSymbol();
   fillSymbol->changeSymbolLayer( 0, simpleFill );
   simpleFill->setColor( Qt::yellow );
   simpleFill->setBorderColor( Qt::transparent );
@@ -581,6 +582,20 @@ void TestQgsComposition::georeference()
   delete[] t;
 
   delete composition;
+}
+
+void TestQgsComposition::variablesEdited()
+{
+  QgsMapSettings ms;
+  QgsComposition c( ms );
+  QSignalSpy spyVariablesChanged( &c, SIGNAL( variablesChanged() ) );
+
+  c.setCustomProperty( "not a variable", "1" );
+  QVERIFY( spyVariablesChanged.count() == 0 );
+  c.setCustomProperty( "variableNames", "1" );
+  QVERIFY( spyVariablesChanged.count() == 1 );
+  c.setCustomProperty( "variableValues", "1" );
+  QVERIFY( spyVariablesChanged.count() == 2 );
 }
 
 QTEST_MAIN( TestQgsComposition )

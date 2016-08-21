@@ -15,6 +15,8 @@
 
 #include "qgsgradientstopeditor.h"
 #include "qgsapplication.h"
+#include "qgssymbollayerutils.h"
+
 #include <QPainter>
 #include <QStyleOptionFrameV3>
 #include <QMouseEvent>
@@ -27,7 +29,7 @@
 #define FRAME_MARGIN 2
 #define CLICK_THRESHOLD ( MARKER_WIDTH / 2 + 3 )
 
-QgsGradientStopEditor::QgsGradientStopEditor( QWidget *parent, QgsVectorGradientColorRampV2 *ramp )
+QgsGradientStopEditor::QgsGradientStopEditor( QWidget *parent, QgsVectorGradientColorRamp *ramp )
     : QWidget( parent )
     , mSelectedStop( 0 )
 {
@@ -56,7 +58,7 @@ QgsGradientStopEditor::QgsGradientStopEditor( QWidget *parent, QgsVectorGradient
   setAcceptDrops( true );
 }
 
-void QgsGradientStopEditor::setGradientRamp( const QgsVectorGradientColorRampV2 &ramp )
+void QgsGradientStopEditor::setGradientRamp( const QgsVectorGradientColorRamp &ramp )
 {
   mGradient = ramp;
   mStops = mGradient.stops();
@@ -442,7 +444,7 @@ void QgsGradientStopEditor::dragEnterEvent( QDragEnterEvent *e )
 {
   //is dragged data valid color data?
   bool hasAlpha;
-  QColor mimeColor = QgsSymbolLayerV2Utils::colorFromMimeData( e->mimeData(), hasAlpha );
+  QColor mimeColor = QgsSymbolLayerUtils::colorFromMimeData( e->mimeData(), hasAlpha );
 
   if ( mimeColor.isValid() )
   {
@@ -455,7 +457,7 @@ void QgsGradientStopEditor::dropEvent( QDropEvent *e )
 {
   //is dropped data valid color data?
   bool hasAlpha = false;
-  QColor mimeColor = QgsSymbolLayerV2Utils::colorFromMimeData( e->mimeData(), hasAlpha );
+  QColor mimeColor = QgsSymbolLayerUtils::colorFromMimeData( e->mimeData(), hasAlpha );
 
   if ( mimeColor.isValid() )
   {

@@ -109,6 +109,7 @@
 #include "qgsapplication.h"
 #include "qgsactionmanager.h"
 #include "qgsattributetabledialog.h"
+#include "qgsattributedialog.h"
 #include "qgsauthmanager.h"
 #include "qgsauthguiutils.h"
 #ifndef QT_NO_OPENSSL
@@ -126,8 +127,8 @@
 #include "qgscoordinatetransform.h"
 #include "qgscoordinateutils.h"
 #include "qgscredentialdialog.h"
-#include "qgscrscache.h"
 #include "qgscursors.h"
+#include "qgscustomdrophandler.h"
 #include "qgscustomization.h"
 #include "qgscustomlayerorderwidget.h"
 #include "qgscustomprojectiondialog.h"
@@ -172,7 +173,6 @@
 #include "qgsmaplayerregistry.h"
 #include "qgsmaplayerstyleguiutils.h"
 #include "qgsmapoverviewcanvas.h"
-#include "qgsmaprenderer.h"
 #include "qgsmapsettings.h"
 #include "qgsmaptip.h"
 #include "qgsmergeattributesdialog.h"
@@ -190,6 +190,7 @@
 #include "qgspluginmanager.h"
 #include "qgspluginregistry.h"
 #include "qgspoint.h"
+#include "qgsruntimeprofiler.h"
 #include "qgshandlebadlayers.h"
 #include "qgsproject.h"
 #include "qgsprojectlayergroupdialog.h"
@@ -206,6 +207,7 @@
 #include "qgsbrightnesscontrastfilter.h"
 #include "qgsrasterrenderer.h"
 #include "qgsrasterlayersaveasdialog.h"
+#include "qgsrasterprojector.h"
 #include "qgsrectangle.h"
 #include "qgsscalevisibilitydialog.h"
 #include "qgsgroupwmsdatadialog.h"
@@ -219,9 +221,9 @@
 #include "qgsstatusbarcoordinateswidget.h"
 #include "qgsstatusbarmagnifierwidget.h"
 #include "qgsstatusbarscalewidget.h"
-#include "qgsstylev2.h"
+#include "qgsstyle.h"
 #include "qgssvgannotationitem.h"
-#include "qgssymbolv2selectordialog.h"
+#include "qgssymbolselectordialog.h"
 #include "qgstextannotationitem.h"
 #include "qgstipgui.h"
 #include "qgsundowidget.h"
@@ -230,12 +232,11 @@
 #include "qgsvectorfilewriter.h"
 #include "qgsvectorlayer.h"
 #include "qgsvectorlayerproperties.h"
-#include "qgsvisibilitypresets.h"
+#include "qgsmapthemes.h"
 #include "qgsmessagelogviewer.h"
 #include "qgsdataitem.h"
 #include "qgsmaplayeractionregistry.h"
 #include "qgswelcomepage.h"
-#include "qgsmaprendererparalleljob.h"
 #include "qgsversioninfo.h"
 #include "qgslegendfilterbutton.h"
 #include "qgsvirtuallayerdefinition.h"
@@ -376,13 +377,13 @@ static void setTitleBarText_( QWidget & qgisApp )
 {
   QString caption = QgisApp::tr( "QGIS " );
 
-  if ( QGis::QGIS_VERSION.endsWith( "Master" ) )
+  if ( Qgis::QGIS_VERSION.endsWith( "Master" ) )
   {
-    caption += QString( "%1" ).arg( QGis::QGIS_DEV_VERSION );
+    caption += QString( "%1" ).arg( Qgis::QGIS_DEV_VERSION );
   }
   else
   {
-    caption += QGis::QGIS_VERSION;
+    caption += Qgis::QGIS_VERSION;
   }
 
   if ( QgsProject::instance()->title().isEmpty() )
@@ -419,12 +420,12 @@ static QgsMessageOutput *messageOutputViewer_()
 
 static void customSrsValidation_( QgsCoordinateReferenceSystem &srs )
 {
-  QgisApp::instance()->emitCustomSrsValidation( srs );
+  QgisApp::instance()->emitCustomCrsValidation( srs );
 }
 
-void QgisApp::emitCustomSrsValidation( QgsCoordinateReferenceSystem &srs )
+void QgisApp::emitCustomCrsValidation( QgsCoordinateReferenceSystem &srs )
 {
-  emit customSrsValidation( srs );
+  emit customCrsValidation( srs );
 }
 
 void QgisApp::layerTreeViewDoubleClicked( const QModelIndex& index )
@@ -439,15 +440,15 @@ void QgisApp::layerTreeViewDoubleClicked( const QModelIndex& index )
       if ( mLayerTreeView )
       {
         // if it's a legend node, open symbol editor directly
-        if ( QgsSymbolV2LegendNode* node = dynamic_cast<QgsSymbolV2LegendNode*>( mLayerTreeView->currentLegendNode() ) )
+        if ( QgsSymbolLegendNode* node = dynamic_cast<QgsSymbolLegendNode*>( mLayerTreeView->currentLegendNode() ) )
         {
-          const QgsSymbolV2* originalSymbol = node->symbol();
+          const QgsSymbol* originalSymbol = node->symbol();
           if ( !originalSymbol )
             return;
 
-          QScopedPointer< QgsSymbolV2 > symbol( originalSymbol->clone() );
+          QScopedPointer< QgsSymbol > symbol( originalSymbol->clone() );
           QgsVectorLayer* vlayer = qobject_cast<QgsVectorLayer*>( node->layerNode()->layer() );
-          QgsSymbolV2SelectorDialog dlg( symbol.data(), QgsStyleV2::defaultStyle(), vlayer, this );
+          QgsSymbolSelectorDialog dlg( symbol.data(), QgsStyle::defaultStyle(), vlayer, this );
           dlg.setMapCanvas( mMapCanvas );
           if ( dlg.exec() )
           {
@@ -497,7 +498,7 @@ void QgisApp::activeLayerChanged( QgsMapLayer* layer )
  * - use project's CRS
  * - use predefined global CRS
  */
-void QgisApp::validateSrs( QgsCoordinateReferenceSystem &srs )
+void QgisApp::validateCrs( QgsCoordinateReferenceSystem &srs )
 {
   static QString authid = QString::null;
   QSettings mySettings;
@@ -512,7 +513,7 @@ void QgisApp::validateSrs( QgsCoordinateReferenceSystem &srs )
     if ( authid.isNull() )
       authid = QgisApp::instance()->mapCanvas()->mapSettings().destinationCrs().authid();
 
-    QgsCoordinateReferenceSystem defaultCrs = QgsCRSCache::instance()->crsByOgcWmsCrs( authid );
+    QgsCoordinateReferenceSystem defaultCrs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( authid );
     if ( defaultCrs.isValid() )
     {
       mySelector->setSelectedCrsId( defaultCrs.srsid() );
@@ -669,7 +670,8 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
 
   // "theMapCanvas" used to find this canonical instance later
   startProfile( "Creating map canvas" );
-  mMapCanvas = new QgsMapCanvas( centralWidget, "theMapCanvas" );
+  mMapCanvas = new QgsMapCanvas( centralWidget );
+  mMapCanvas->setObjectName( "theMapCanvas" );
   connect( mMapCanvas, SIGNAL( messageEmitted( const QString&, const QString&, QgsMessageBar::MessageLevel ) ),
            this, SLOT( displayMessage( const QString&, const QString&, QgsMessageBar::MessageLevel ) ) );
   mMapCanvas->setWhatsThis( tr( "Map canvas. This is where raster and vector "
@@ -875,15 +877,15 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
   connect( QgsMapLayerActionRegistry::instance(), SIGNAL( changed() ), this, SLOT( refreshActionFeatureAction() ) );
 
   // set application's caption
-  QString caption = tr( "QGIS - %1 ('%2')" ).arg( QGis::QGIS_VERSION, QGis::QGIS_RELEASE_NAME );
+  QString caption = tr( "QGIS - %1 ('%2')" ).arg( Qgis::QGIS_VERSION, Qgis::QGIS_RELEASE_NAME );
   setWindowTitle( caption );
 
   QgsMessageLog::logMessage( tr( "QGIS starting..." ), QString::null, QgsMessageLog::INFO );
 
   // set QGIS specific srs validation
-  connect( this, SIGNAL( customSrsValidation( QgsCoordinateReferenceSystem& ) ),
-           this, SLOT( validateSrs( QgsCoordinateReferenceSystem& ) ) );
-  QgsCoordinateReferenceSystem::setCustomSrsValidation( customSrsValidation_ );
+  connect( this, SIGNAL( customCrsValidation( QgsCoordinateReferenceSystem& ) ),
+           this, SLOT( validateCrs( QgsCoordinateReferenceSystem& ) ) );
+  QgsCoordinateReferenceSystem::setCustomCrsValidation( customSrsValidation_ );
 
   // set graphical message output
   QgsMessageOutput::setMessageOutputCreator( messageOutputViewer_ );
@@ -1031,7 +1033,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
   zoomInToolShortCut->setWhatsThis( "Zoom in (secondary)" );
 
   // Show a nice tip of the day
-  if ( settings.value( QString( "/qgis/showTips%1" ).arg( QGis::QGIS_VERSION_INT / 100 ), true ).toBool() )
+  if ( settings.value( QString( "/qgis/showTips%1" ).arg( Qgis::QGIS_VERSION_INT / 100 ), true ).toBool() )
   {
     mSplash->hide();
     QgsTipGui myTip( this );
@@ -1092,7 +1094,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
 } // QgisApp ctor
 
 QgisApp::QgisApp()
-    : QMainWindow( nullptr, nullptr )
+    : QMainWindow( nullptr, 0 )
     , mProfiler( nullptr )
     , mStyleSheetBuilder( nullptr )
     , mActionPluginSeparator1( nullptr )
@@ -1342,28 +1344,57 @@ void QgisApp::dropEvent( QDropEvent *event )
   if ( QgsMimeDataUtils::isUriList( event->mimeData() ) )
   {
     QgsMimeDataUtils::UriList lst = QgsMimeDataUtils::decodeUriList( event->mimeData() );
-    Q_FOREACH ( const QgsMimeDataUtils::Uri& u, lst )
-    {
-      QString uri = crsAndFormatAdjustedLayerUri( u.uri, u.supportedCrs, u.supportedFormats );
-
-      if ( u.layerType == "vector" )
-      {
-        addVectorLayer( uri, u.name, u.providerKey );
-      }
-      else if ( u.layerType == "raster" )
-      {
-        addRasterLayer( uri, u.name, u.providerKey );
-      }
-      else if ( u.layerType == "plugin" )
-      {
-        addPluginLayer( uri, u.name, u.providerKey );
-      }
-    }
+    handleDropUriList( lst );
   }
   mMapCanvas->freeze( false );
   mMapCanvas->refresh();
   event->acceptProposedAction();
 }
+
+
+void QgisApp::registerCustomDropHandler( QgsCustomDropHandler* handler )
+{
+  if ( !mCustomDropHandlers.contains( handler ) )
+    mCustomDropHandlers << handler;
+}
+
+void QgisApp::unregisterCustomDropHandler( QgsCustomDropHandler* handler )
+{
+  mCustomDropHandlers.removeOne( handler );
+}
+
+void QgisApp::handleDropUriList( const QgsMimeDataUtils::UriList& lst )
+{
+  Q_FOREACH ( const QgsMimeDataUtils::Uri& u, lst )
+  {
+    QString uri = crsAndFormatAdjustedLayerUri( u.uri, u.supportedCrs, u.supportedFormats );
+
+    if ( u.layerType == "vector" )
+    {
+      addVectorLayer( uri, u.name, u.providerKey );
+    }
+    else if ( u.layerType == "raster" )
+    {
+      addRasterLayer( uri, u.name, u.providerKey );
+    }
+    else if ( u.layerType == "plugin" )
+    {
+      addPluginLayer( uri, u.name, u.providerKey );
+    }
+    else if ( u.layerType == "custom" )
+    {
+      Q_FOREACH ( QgsCustomDropHandler* handler, mCustomDropHandlers )
+      {
+        if ( handler->key() == u.providerKey )
+        {
+          handler->handleDrop( u );
+          break;
+        }
+      }
+    }
+  }
+}
+
 
 bool QgisApp::event( QEvent * event )
 {
@@ -1595,8 +1626,8 @@ void QgisApp::createActions()
   connect( mActionRemoveLayer, SIGNAL( triggered() ), this, SLOT( removeLayer() ) );
   connect( mActionDuplicateLayer, SIGNAL( triggered() ), this, SLOT( duplicateLayers() ) );
   connect( mActionSetLayerScaleVisibility, SIGNAL( triggered() ), this, SLOT( setLayerScaleVisibility() ) );
-  connect( mActionSetLayerCRS, SIGNAL( triggered() ), this, SLOT( setLayerCRS() ) );
-  connect( mActionSetProjectCRSFromLayer, SIGNAL( triggered() ), this, SLOT( setProjectCRSFromLayer() ) );
+  connect( mActionSetLayerCRS, SIGNAL( triggered() ), this, SLOT( setLayerCrs() ) );
+  connect( mActionSetProjectCRSFromLayer, SIGNAL( triggered() ), this, SLOT( setProjectCrsFromLayer() ) );
   connect( mActionLayerProperties, SIGNAL( triggered() ), this, SLOT( layerProperties() ) );
   connect( mActionLayerSubsetString, SIGNAL( triggered() ), this, SLOT( layerSubsetString() ) );
   connect( mActionAddToOverview, SIGNAL( triggered() ), this, SLOT( isInOverview() ) );
@@ -1619,7 +1650,7 @@ void QgisApp::createActions()
   connect( mActionOptions, SIGNAL( triggered() ), this, SLOT( options() ) );
   connect( mActionCustomProjection, SIGNAL( triggered() ), this, SLOT( customProjection() ) );
   connect( mActionConfigureShortcuts, SIGNAL( triggered() ), this, SLOT( configureShortcuts() ) );
-  connect( mActionStyleManagerV2, SIGNAL( triggered() ), this, SLOT( showStyleManagerV2() ) );
+  connect( mActionStyleManagerV2, SIGNAL( triggered() ), this, SLOT( showStyleManager() ) );
   connect( mActionCustomization, SIGNAL( triggered() ), this, SLOT( customize() ) );
 
 #ifdef Q_OS_MAC
@@ -1715,12 +1746,12 @@ void QgisApp::createActions()
 
 }
 
-#include "qgsstylev2.h"
-#include "qgsstylev2managerdialog.h"
+#include "qgsstyle.h"
+#include "qgsstylemanagerdialog.h"
 
-void QgisApp::showStyleManagerV2()
+void QgisApp::showStyleManager()
 {
-  QgsStyleV2ManagerDialog dlg( QgsStyleV2::defaultStyle(), this );
+  QgsStyleManagerDialog dlg( QgsStyle::defaultStyle(), this );
   dlg.exec();
 }
 
@@ -1739,7 +1770,7 @@ void QgisApp::writeAnnotationItemsToProject( QDomDocument& doc )
     {
       continue;
     }
-    item->writeXML( doc );
+    item->writeXml( doc );
   }
 }
 
@@ -1794,10 +1825,7 @@ void QgisApp::createActionGroups()
   mMapToolGroup->addAction( mActionCircularStringRadius );
   mMapToolGroup->addAction( mActionMoveFeature );
   mMapToolGroup->addAction( mActionRotateFeature );
-#if defined(GEOS_VERSION_MAJOR) && defined(GEOS_VERSION_MINOR) && \
-    ((GEOS_VERSION_MAJOR>3) || ((GEOS_VERSION_MAJOR==3) && (GEOS_VERSION_MINOR>=3)))
   mMapToolGroup->addAction( mActionOffsetCurve );
-#endif
   mMapToolGroup->addAction( mActionReshapeFeatures );
   mMapToolGroup->addAction( mActionSplitFeatures );
   mMapToolGroup->addAction( mActionSplitParts );
@@ -2327,6 +2355,7 @@ void QgisApp::createStatusBar()
   mMagnifierWidget->updateMagnification( QSettings().value( "/qgis/magnifier_factor_default", 1.0 ).toDouble() );
   statusBar()->addPermanentWidget( mMagnifierWidget, 0 );
 
+<<<<<<< HEAD
   if ( QgsMapCanvas::rotationEnabled() )
   {
     // Little icon shown next to rotation label / edit widget
@@ -2373,6 +2402,39 @@ void QgisApp::createStatusBar()
 
     showRotation();
   }
+=======
+  // add a widget to show/set current rotation
+  mRotationLabel = new QLabel( QString(), statusBar() );
+  mRotationLabel->setObjectName( "mRotationLabel" );
+  mRotationLabel->setFont( myFont );
+  mRotationLabel->setMinimumWidth( 10 );
+  //mRotationLabel->setMaximumHeight( 20 );
+  mRotationLabel->setMargin( 3 );
+  mRotationLabel->setAlignment( Qt::AlignCenter );
+  mRotationLabel->setFrameStyle( QFrame::NoFrame );
+  mRotationLabel->setText( tr( "Rotation" ) );
+  mRotationLabel->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
+  statusBar()->addPermanentWidget( mRotationLabel, 0 );
+
+  mRotationEdit = new QgsDoubleSpinBox( statusBar() );
+  mRotationEdit->setObjectName( "mRotationEdit" );
+  mRotationEdit->setClearValue( 0.0 );
+  mRotationEdit->setKeyboardTracking( false );
+  mRotationEdit->setMaximumWidth( 120 );
+  mRotationEdit->setDecimals( 1 );
+  mRotationEdit->setRange( -180.0, 180.0 );
+  mRotationEdit->setWrapping( true );
+  mRotationEdit->setSingleStep( 5.0 );
+  mRotationEdit->setFont( myFont );
+  mRotationEdit->setWhatsThis( tr( "Shows the current map clockwise rotation "
+                                   "in degrees. It also allows editing to set "
+                                   "the rotation" ) );
+  mRotationEdit->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
+  statusBar()->addPermanentWidget( mRotationEdit, 0 );
+  connect( mRotationEdit, SIGNAL( valueChanged( double ) ), this, SLOT( userRotation() ) );
+
+  showRotation();
+>>>>>>> upstream/master
 
   // render suppression status bar widget
   mRenderSuppressionCBox = new QCheckBox( tr( "Render" ), statusBar() );
@@ -2742,12 +2804,6 @@ void QgisApp::setupConnections()
   connect( mActionPreviewProtanope, SIGNAL( triggered() ), this, SLOT( activateProtanopePreview() ) );
   connect( mActionPreviewDeuteranope, SIGNAL( triggered() ), this, SLOT( activateDeuteranopePreview() ) );
 
-  // handle deprecated labels in project for QGIS 2.0
-  connect( this, SIGNAL( newProject() ),
-           this, SLOT( checkForDeprecatedLabelsInProject() ) );
-  connect( this, SIGNAL( projectRead() ),
-           this, SLOT( checkForDeprecatedLabelsInProject() ) );
-
   // setup undo/redo actions
   connect( mUndoWidget, SIGNAL( undoStackChanged() ), this, SLOT( updateUndoActions() ) );
 }
@@ -2797,16 +2853,8 @@ void QgisApp::createCanvasTools()
   mMapTools.mMoveFeature->setAction( mActionMoveFeature );
   mMapTools.mRotateFeature = new QgsMapToolRotateFeature( mMapCanvas );
   mMapTools.mRotateFeature->setAction( mActionRotateFeature );
-//need at least geos 3.3 for OffsetCurve tool
-#if defined(GEOS_VERSION_MAJOR) && defined(GEOS_VERSION_MINOR) && \
-((GEOS_VERSION_MAJOR>3) || ((GEOS_VERSION_MAJOR==3) && (GEOS_VERSION_MINOR>=3)))
   mMapTools.mOffsetCurve = new QgsMapToolOffsetCurve( mMapCanvas );
   mMapTools.mOffsetCurve->setAction( mActionOffsetCurve );
-#else
-  mAdvancedDigitizeToolBar->removeAction( mActionOffsetCurve );
-  mEditMenu->removeAction( mActionOffsetCurve );
-  mMapTools.mOffsetCurve = 0;
-#endif //GEOS_VERSION
   mMapTools.mReshapeFeatures = new QgsMapToolReshape( mMapCanvas );
   mMapTools.mReshapeFeatures->setAction( mActionReshapeFeatures );
   mMapTools.mSplitFeatures = new QgsMapToolSplitFeatures( mMapCanvas );
@@ -3024,10 +3072,10 @@ void QgisApp::initLayerTreeView()
   // visibility groups tool button
   QToolButton* btnVisibilityPresets = new QToolButton;
   btnVisibilityPresets->setAutoRaise( true );
-  btnVisibilityPresets->setToolTip( tr( "Manage Layer Visibility" ) );
+  btnVisibilityPresets->setToolTip( tr( "Manage Map Themes" ) );
   btnVisibilityPresets->setIcon( QgsApplication::getThemeIcon( "/mActionShowAllLayers.svg" ) );
   btnVisibilityPresets->setPopupMode( QToolButton::InstantPopup );
-  btnVisibilityPresets->setMenu( QgsVisibilityPresets::instance()->menu() );
+  btnVisibilityPresets->setMenu( QgsMapThemes::instance()->menu() );
 
   // filter legend action
   mActionFilterLegend = new QAction( tr( "Filter Legend By Map Content" ), this );
@@ -3172,6 +3220,8 @@ void QgisApp::createMapTips()
   connect( mpMapTipsTimer, SIGNAL( timeout() ), this, SLOT( showMapTip() ) );
   // set the interval to 0.850 seconds - timer will be started next time the mouse moves
   mpMapTipsTimer->setInterval( 850 );
+  mpMapTipsTimer->setSingleShot( true );
+
   // Create the maptips object
   mpMaptip = new QgsMapTip();
 }
@@ -3386,17 +3436,17 @@ void QgisApp::about()
     QString versionString = "<html><body><div align='center'><table width='100%'>";
 
     versionString += "<tr>";
-    versionString += "<td>" + tr( "QGIS version" )       + "</td><td>" + QGis::QGIS_VERSION + "</td><td>";
+    versionString += "<td>" + tr( "QGIS version" )       + "</td><td>" + Qgis::QGIS_VERSION + "</td><td>";
 
 
-    if ( QString( QGis::QGIS_DEV_VERSION ) == "exported" )
+    if ( QString( Qgis::QGIS_DEV_VERSION ) == "exported" )
     {
       versionString += tr( "QGIS code branch" ) + QString( "</td><td><a href=\"https://github.com/qgis/QGIS/tree/release-%1_%2\">Release %1.%2</a></td>" )
-                       .arg( QGis::QGIS_VERSION_INT / 10000 ).arg( QGis::QGIS_VERSION_INT / 100 % 100 );
+                       .arg( Qgis::QGIS_VERSION_INT / 10000 ).arg( Qgis::QGIS_VERSION_INT / 100 % 100 );
     }
     else
     {
-      versionString += tr( "QGIS code revision" ) + QString( "</td><td><a href=\"https://github.com/qgis/QGIS/commit/%1\">%1</a></td>" ).arg( QGis::QGIS_DEV_VERSION );
+      versionString += tr( "QGIS code revision" ) + QString( "</td><td><a href=\"https://github.com/qgis/QGIS/commit/%1\">%1</a></td>" ).arg( Qgis::QGIS_DEV_VERSION );
     }
 
     versionString += "</tr><tr>";
@@ -4048,7 +4098,7 @@ void QgisApp::addDatabaseLayers( QStringList const & layerPathList, QString cons
   Q_FOREACH ( const QString& layerPath, layerPathList )
   {
     // create the layer
-    QgsDataSourceURI uri( layerPath );
+    QgsDataSourceUri uri( layerPath );
 
     QgsVectorLayer *layer = new QgsVectorLayer( uri.uri( false ), uri.table(), providerKey, false );
     Q_CHECK_PTR( layer );
@@ -4434,14 +4484,14 @@ void QgisApp::fileNew( bool thePromptToSaveFlag, bool forceBlank )
 
   // set project CRS
   QString defCrs = settings.value( "/Projections/projectDefaultCrs", GEO_EPSG_CRS_AUTHID ).toString();
-  QgsCoordinateReferenceSystem srs = QgsCRSCache::instance()->crsByOgcWmsCrs( defCrs );
+  QgsCoordinateReferenceSystem srs = QgsCoordinateReferenceSystem::fromOgcWmsCrs( defCrs );
   mMapCanvas->setDestinationCrs( srs );
   // write the projections _proj string_ to project settings
   prj->writeEntry( "SpatialRefSys", "/ProjectCRSProj4String", srs.toProj4() );
   prj->writeEntry( "SpatialRefSys", "/ProjectCrs", srs.authid() );
   prj->writeEntry( "SpatialRefSys", "/ProjectCRSID", static_cast< int >( srs.srsid() ) );
   prj->setDirty( false );
-  if ( srs.mapUnits() != QGis::UnknownUnit )
+  if ( srs.mapUnits() != QgsUnitTypes::DistanceUnknownUnit )
   {
     mMapCanvas->setMapUnits( srs.mapUnits() );
   }
@@ -4449,7 +4499,7 @@ void QgisApp::fileNew( bool thePromptToSaveFlag, bool forceBlank )
   // enable OTF CRS transformation if necessary
   mMapCanvas->setCrsTransformEnabled( settings.value( "/Projections/otfTransformEnabled", 0 ).toBool() );
 
-  updateCRSStatusBar();
+  updateCrsStatusBar();
 
   /** New Empty Project Created
       (before attempting to load custom project templates/filepaths) */
@@ -5975,7 +6025,7 @@ void QgisApp::saveAsRasterFile()
     fileWriter.setMaxTileHeight( d.maximumTileSizeY() );
   }
 
-  QProgressDialog pd( nullptr, tr( "Abort..." ), 0, 0 );
+  QProgressDialog pd( QString(), tr( "Abort..." ), 0, 0 );
   // Show the dialo immediately because cloning pipe can take some time (WCS)
   pd.setLabelText( tr( "Reading raster" ) );
   pd.setWindowTitle( tr( "Saving raster" ) );
@@ -6013,7 +6063,7 @@ void QgisApp::saveAsRasterFile()
     if ( d.outputCrs() != rasterLayer->crs() )
     {
       QgsRasterProjector * projector = new QgsRasterProjector;
-      projector->setCRS( rasterLayer->crs(), d.outputCrs() );
+      projector->setCrs( rasterLayer->crs(), d.outputCrs() );
       if ( !pipe->insert( 2, projector ) )
       {
         QgsDebugMsg( "Cannot set pipe projector" );
@@ -6032,7 +6082,7 @@ void QgisApp::saveAsRasterFile()
       QgsDebugMsg( "Cannot get pipe projector" );
       return;
     }
-    projector->setCRS( rasterLayer->crs(), d.outputCrs() );
+    projector->setCrs( rasterLayer->crs(), d.outputCrs() );
   }
 
   if ( !pipe->last() )
@@ -6148,10 +6198,10 @@ QVariant QgisAppFieldValueConverter::convert( int idx, const QVariant& value )
   {
     return value;
   }
-  QgsEditorWidgetFactory *factory = QgsEditorWidgetRegistry::instance()->factory( mLayer->editFormConfig()->widgetType( idx ) );
+  QgsEditorWidgetFactory *factory = QgsEditorWidgetRegistry::instance()->factory( mLayer->editFormConfig().widgetType( idx ) );
   if ( factory )
   {
-    QgsEditorWidgetConfig cfg( mLayer->editFormConfig()->widgetConfig( idx ) );
+    QgsEditorWidgetConfig cfg( mLayer->editFormConfig().widgetConfig( idx ) );
     return QVariant( factory->representValue( mLayer, idx, cfg, QVariant(), value ) );
   }
   return value;
@@ -6180,7 +6230,7 @@ void QgisApp::saveAsVectorFileGeneral( QgsVectorLayer* vlayer, bool symbologyOpt
   QgsVectorLayerSaveAsDialog *dialog = new QgsVectorLayerSaveAsDialog( vlayer, options, this );
 
   dialog->setCanvasExtent( mMapCanvas->mapSettings().visibleExtent(), mMapCanvas->mapSettings().destinationCrs() );
-  dialog->setIncludeZ( QgsWKBTypes::hasZ( QGis::fromOldWkbType( vlayer->wkbType() ) ) );
+  dialog->setIncludeZ( QgsWkbTypes::hasZ( vlayer->wkbType() ) );
 
   if ( dialog->exec() == QDialog::Accepted )
   {
@@ -6189,14 +6239,14 @@ void QgisApp::saveAsVectorFileGeneral( QgsVectorLayer* vlayer, bool symbologyOpt
     QString format = dialog->format();
     QStringList datasourceOptions = dialog->datasourceOptions();
     bool autoGeometryType = dialog->automaticGeometryType();
-    QgsWKBTypes::Type forcedGeometryType = dialog->geometryType();
+    QgsWkbTypes::Type forcedGeometryType = dialog->geometryType();
 
-    QgsCoordinateTransform* ct = nullptr;
-    destCRS = QgsCRSCache::instance()->crsBySrsId( dialog->crs() );
+    QgsCoordinateTransform ct;
+    destCRS = QgsCoordinateReferenceSystem::fromSrsId( dialog->crs() );
 
     if ( destCRS.isValid() && destCRS != vlayer->crs() )
     {
-      ct = new QgsCoordinateTransform( vlayer->crs(), destCRS );
+      ct = QgsCoordinateTransform( vlayer->crs(), destCRS );
 
       //ask user about datum transformation
       QSettings settings;
@@ -6209,13 +6259,13 @@ void QgisApp::saveAsVectorFileGeneral( QgsVectorLayer* vlayer, bool symbologyOpt
           QList< int > sdt = d.selectedDatumTransform();
           if ( !sdt.isEmpty() )
           {
-            ct->setSourceDatumTransform( sdt.at( 0 ) );
+            ct.setSourceDatumTransform( sdt.at( 0 ) );
           }
           if ( sdt.size() > 1 )
           {
-            ct->setDestinationDatumTransform( sdt.at( 1 ) );
+            ct.setDestinationDatumTransform( sdt.at( 1 ) );
           }
-          ct->initialise();
+          ct.initialise();
         }
       }
     }
@@ -6242,14 +6292,12 @@ void QgisApp::saveAsVectorFileGeneral( QgsVectorLayer* vlayer, bool symbologyOpt
               static_cast< QgsVectorFileWriter::SymbologyExport >( dialog->symbologyExport() ),
               dialog->scaleDenominator(),
               dialog->hasFilterExtent() ? &filterExtent : nullptr,
-              autoGeometryType ? QgsWKBTypes::Unknown : forcedGeometryType,
+              autoGeometryType ? QgsWkbTypes::Unknown : forcedGeometryType,
               dialog->forceMulti(),
               dialog->includeZ(),
               dialog->selectedAttributes(),
               converterPtr
             );
-
-    delete ct;
 
     QApplication::restoreOverrideCursor();
 
@@ -6274,42 +6322,6 @@ void QgisApp::saveAsVectorFileGeneral( QgsVectorLayer* vlayer, bool symbologyOpt
   }
 
   delete dialog;
-}
-
-void QgisApp::checkForDeprecatedLabelsInProject()
-{
-  bool ok;
-  QgsProject::instance()->readBoolEntry( "DeprecatedLabels", "/Enabled", false, &ok );
-  if ( ok ) // project already flagged (regardless of project property value)
-  {
-    return;
-  }
-
-  if ( QgsMapLayerRegistry::instance()->count() > 0 )
-  {
-    bool depLabelsUsed = false;
-    QMap<QString, QgsMapLayer*> layers = QgsMapLayerRegistry::instance()->mapLayers();
-    for ( QMap<QString, QgsMapLayer*>::iterator it = layers.begin(); it != layers.end(); ++it )
-    {
-      QgsVectorLayer *vl = qobject_cast<QgsVectorLayer *>( it.value() );
-      if ( !vl )
-      {
-        continue;
-      }
-
-      Q_NOWARN_DEPRECATED_PUSH
-      depLabelsUsed = vl->hasLabelsEnabled();
-      if ( depLabelsUsed )
-      {
-        break;
-      }
-      Q_NOWARN_DEPRECATED_POP
-    }
-    if ( depLabelsUsed )
-    {
-      QgsProject::instance()->writeEntry( "DeprecatedLabels", "/Enabled", true );
-    }
-  }
 }
 
 void QgisApp::layerProperties()
@@ -6418,20 +6430,18 @@ void QgisApp::deletePart()
   mMapCanvas->setMapTool( mMapTools.mDeletePart );
 }
 
-QgsGeometry* QgisApp::unionGeometries( const QgsVectorLayer* vl, QgsFeatureList& featureList, bool& canceled )
+QgsGeometry QgisApp::unionGeometries( const QgsVectorLayer* vl, QgsFeatureList& featureList, bool& canceled )
 {
   canceled = false;
   if ( !vl || featureList.size() < 2 )
   {
-    return nullptr;
+    return QgsGeometry();
   }
 
-  QgsGeometry* unionGeom = featureList[0].geometry();
-  QgsGeometry* backupPtr = nullptr; //pointer to delete intermediate results
-  if ( !unionGeom )
-  {
-    return nullptr;
-  }
+  if ( !featureList.at( 0 ).hasGeometry() )
+    return QgsGeometry();
+
+  QgsGeometry unionGeom = featureList.at( 0 ).geometry();
 
   QProgressDialog progress( tr( "Merging features..." ), tr( "Abort" ), 0, featureList.size(), this );
   progress.setWindowModality( Qt::WindowModal );
@@ -6442,34 +6452,27 @@ QgsGeometry* QgisApp::unionGeometries( const QgsVectorLayer* vl, QgsFeatureList&
   {
     if ( progress.wasCanceled() )
     {
-      delete unionGeom;
       QApplication::restoreOverrideCursor();
       canceled = true;
-      return nullptr;
+      return QgsGeometry();
     }
     progress.setValue( i );
-    QgsGeometry* currentGeom = featureList[i].geometry();
-    if ( currentGeom )
+    QgsGeometry currentGeom = featureList.at( i ).geometry();
+    if ( !currentGeom.isEmpty() )
     {
-      backupPtr = unionGeom;
-      unionGeom = unionGeom->combine( currentGeom );
-      if ( i > 1 ) //delete previous intermediate results
-      {
-        delete backupPtr;
-        backupPtr = nullptr;
-      }
-      if ( !unionGeom )
+      unionGeom = unionGeom.combine( currentGeom );
+      if ( unionGeom.isEmpty() )
       {
         QApplication::restoreOverrideCursor();
-        return nullptr;
+        return QgsGeometry();
       }
     }
   }
 
   //convert unionGeom to a multipart geometry in case it is necessary to match the layer type
-  if ( QGis::isMultiType( vl->wkbType() ) && !unionGeom->isMultipart() )
+  if ( QgsWkbTypes::isMultiType( vl->wkbType() ) && !unionGeom.isMultipart() )
   {
-    unionGeom->convertToMultiType();
+    unionGeom.convertToMultiType();
   }
 
   QApplication::restoreOverrideCursor();
@@ -6593,7 +6596,7 @@ QgsComposer* QgisApp::duplicateComposer( QgsComposer* currentComposer, QString t
 
   // test that current composer template write is valid
   QDomDocument currentDoc;
-  currentComposer->templateXML( currentDoc );
+  currentComposer->templateXml( currentDoc );
   QDomElement compositionElem = currentDoc.documentElement().firstChildElement( "Composition" );
   if ( compositionElem.isNull() )
   {
@@ -6616,8 +6619,7 @@ QgsComposer* QgisApp::duplicateComposer( QgsComposer* currentComposer, QString t
 
   // hiding composer until template is loaded is much faster, provide feedback to user
   newComposer->hide();
-  QApplication::setOverrideCursor( Qt::BusyCursor );
-  if ( !newComposer->composition()->loadFromTemplate( currentDoc, nullptr, false ) )
+  if ( !newComposer->loadFromTemplate( currentDoc, true ) )
   {
     deleteComposer( newComposer );
     newComposer = nullptr;
@@ -6625,7 +6627,6 @@ QgsComposer* QgisApp::duplicateComposer( QgsComposer* currentComposer, QString t
     return newComposer;
   }
   newComposer->activate();
-  QApplication::restoreOverrideCursor();
 
   return newComposer;
 }
@@ -6649,7 +6650,7 @@ bool QgisApp::loadComposersFromProject( const QDomDocument& doc )
     QTime t;
     t.start();
     QgsComposer* composer = new QgsComposer( this, tr( "Composer %1" ).arg( mLastComposerId ) );
-    composer->readXML( composerNodes.at( i ).toElement(), doc );
+    composer->readXml( composerNodes.at( i ).toElement(), doc );
     mPrintComposers.insert( composer );
     mPrintComposersMenu->addAction( composer->windowAction() );
 #ifndef Q_OS_MACX
@@ -6736,14 +6737,14 @@ bool QgisApp::loadAnnotationItemsFromProject( const QDomDocument& doc )
   for ( int i = 0; i < textItemList.size(); ++i )
   {
     QgsTextAnnotationItem* newTextItem = new QgsTextAnnotationItem( mMapCanvas );
-    newTextItem->readXML( doc, textItemList.at( i ).toElement() );
+    newTextItem->readXml( doc, textItemList.at( i ).toElement() );
   }
 
   QDomNodeList formItemList = doc.elementsByTagName( "FormAnnotationItem" );
   for ( int i = 0; i < formItemList.size(); ++i )
   {
     QgsFormAnnotationItem* newFormItem = new QgsFormAnnotationItem( mMapCanvas );
-    newFormItem->readXML( doc, formItemList.at( i ).toElement() );
+    newFormItem->readXml( doc, formItemList.at( i ).toElement() );
   }
 
 #ifdef WITH_QTWEBKIT
@@ -6751,7 +6752,7 @@ bool QgisApp::loadAnnotationItemsFromProject( const QDomDocument& doc )
   for ( int i = 0; i < htmlItemList.size(); ++i )
   {
     QgsHtmlAnnotationItem* newHtmlItem = new QgsHtmlAnnotationItem( mMapCanvas );
-    newHtmlItem->readXML( doc, htmlItemList.at( i ).toElement() );
+    newHtmlItem->readXml( doc, htmlItemList.at( i ).toElement() );
   }
 #endif
 
@@ -6759,7 +6760,7 @@ bool QgisApp::loadAnnotationItemsFromProject( const QDomDocument& doc )
   for ( int i = 0; i < svgItemList.size(); ++i )
   {
     QgsSvgAnnotationItem* newSvgItem = new QgsSvgAnnotationItem( mMapCanvas );
-    newSvgItem->readXML( doc, svgItemList.at( i ).toElement() );
+    newSvgItem->readXml( doc, svgItemList.at( i ).toElement() );
   }
   return true;
 }
@@ -6917,7 +6918,7 @@ void QgisApp::mergeAttributesOfSelectedFeatures()
         continue;
 
       QVariant val = merged.at( i );
-      const QgsField &fld( vl->fields().at( i ) );
+      QgsField fld( vl->fields().at( i ) );
       bool isDefaultValue = vl->fields().fieldOrigin( i ) == QgsFields::OriginProvider &&
                             vl->dataProvider() &&
                             vl->dataProvider()->defaultValue( vl->fields().fieldOriginIndex( i ) ) == val;
@@ -7037,8 +7038,8 @@ void QgisApp::mergeSelectedFeatures()
   QgsFeatureIds featureIds = vl->selectedFeaturesIds();
   QgsFeatureList featureList = vl->selectedFeatures();  //get QList<QgsFeature>
   bool canceled;
-  QgsGeometry* unionGeom = unionGeometries( vl, featureList, canceled );
-  if ( !unionGeom )
+  QgsGeometry unionGeom = unionGeometries( vl, featureList, canceled );
+  if ( unionGeom.isEmpty() )
   {
     if ( !canceled )
     {
@@ -7054,7 +7055,6 @@ void QgisApp::mergeSelectedFeatures()
   QgsMergeAttributesDialog d( featureList, vl, mapCanvas() );
   if ( d.exec() == QDialog::Rejected )
   {
-    delete unionGeom;
     return;
   }
 
@@ -7066,18 +7066,16 @@ void QgisApp::mergeSelectedFeatures()
       tr( "Not enough features selected" ),
       tr( "The merge tool requires at least two selected features" ),
       QgsMessageBar::WARNING );
-    delete unionGeom;
     return;
   }
 
   //if the user changed the feature selection in the merge dialog, we need to repeat the union and check the type
   if ( featureIds.size() != featureIdsAfter.size() )
   {
-    delete unionGeom;
     bool canceled;
     QgsFeatureList featureListAfter = vl->selectedFeatures();
     unionGeom = unionGeometries( vl, featureListAfter, canceled );
-    if ( !unionGeom )
+    if ( unionGeom.isEmpty() )
     {
       if ( !canceled )
       {
@@ -7435,11 +7433,11 @@ void QgisApp::editPaste( QgsMapLayer *destinationLayer )
 
     featureIt->setAttributes( dstAttr );
 
-    if ( featureIt->constGeometry() )
+    if ( featureIt->hasGeometry() )
     {
       // convert geometry to match destination layer
-      QGis::GeometryType destType = pasteVectorLayer->geometryType();
-      bool destIsMulti = QGis::isMultiType( pasteVectorLayer->wkbType() );
+      QgsWkbTypes::GeometryType destType = pasteVectorLayer->geometryType();
+      bool destIsMulti = QgsWkbTypes::isMultiType( pasteVectorLayer->wkbType() );
       if ( pasteVectorLayer->dataProvider() &&
            !pasteVectorLayer->dataProvider()->doesStrictFeatureTypeCheck() )
       {
@@ -7447,10 +7445,10 @@ void QgisApp::editPaste( QgsMapLayer *destinationLayer )
         destIsMulti = true;
       }
 
-      if ( destType != QGis::UnknownGeometry )
+      if ( destType != QgsWkbTypes::UnknownGeometry )
       {
-        QgsGeometry* newGeometry = featureIt->constGeometry()->convertToType( destType, destIsMulti );
-        if ( !newGeometry )
+        QgsGeometry newGeometry = featureIt->geometry().convertToType( destType, destIsMulti );
+        if ( newGeometry.isEmpty() )
         {
           featureIt = features.erase( featureIt );
           continue;
@@ -7458,7 +7456,9 @@ void QgisApp::editPaste( QgsMapLayer *destinationLayer )
         featureIt->setGeometry( newGeometry );
       }
       // avoid intersection if enabled in digitize settings
-      featureIt->geometry()->avoidIntersections();
+      QgsGeometry g = featureIt->geometry();
+      g.avoidIntersections();
+      featureIt->setGeometry( g );
     }
 
     ++featureIt;
@@ -7545,45 +7545,45 @@ QgsVectorLayer *QgisApp::pasteToNewMemoryVector()
   QgsFields fields = clipboard()->fields();
 
   // Decide geometry type from features, switch to multi type if at least one multi is found
-  QMap<QGis::WkbType, int> typeCounts;
+  QMap<QgsWkbTypes::Type, int> typeCounts;
   QgsFeatureList features = clipboard()->copyOf( fields );
   for ( int i = 0; i < features.size(); i++ )
   {
     QgsFeature &feature = features[i];
-    if ( !feature.constGeometry() )
+    if ( !feature.hasGeometry() )
       continue;
 
-    QGis::WkbType type = QGis::flatType( feature.constGeometry()->wkbType() );
+    QgsWkbTypes::Type type = QgsWkbTypes::flatType( feature.geometry().wkbType() );
 
-    if ( type == QGis::WKBUnknown || type == QGis::WKBNoGeometry )
+    if ( type == QgsWkbTypes::Unknown || type == QgsWkbTypes::NoGeometry )
       continue;
 
-    if ( QGis::isSingleType( type ) )
+    if ( QgsWkbTypes::isSingleType( type ) )
     {
-      if ( typeCounts.contains( QGis::multiType( type ) ) )
+      if ( typeCounts.contains( QgsWkbTypes::multiType( type ) ) )
       {
-        typeCounts[ QGis::multiType( type )] = typeCounts[ QGis::multiType( type )] + 1;
+        typeCounts[ QgsWkbTypes::multiType( type )] = typeCounts[ QgsWkbTypes::multiType( type )] + 1;
       }
       else
       {
         typeCounts[ type ] = typeCounts[ type ] + 1;
       }
     }
-    else if ( QGis::isMultiType( type ) )
+    else if ( QgsWkbTypes::isMultiType( type ) )
     {
-      if ( typeCounts.contains( QGis::singleType( type ) ) )
+      if ( typeCounts.contains( QgsWkbTypes::singleType( type ) ) )
       {
         // switch to multi type
-        typeCounts[type] = typeCounts[ QGis::singleType( type )];
-        typeCounts.remove( QGis::singleType( type ) );
+        typeCounts[type] = typeCounts[ QgsWkbTypes::singleType( type )];
+        typeCounts.remove( QgsWkbTypes::singleType( type ) );
       }
       typeCounts[type] = typeCounts[type] + 1;
     }
   }
 
-  QGis::WkbType wkbType = !typeCounts.isEmpty() ? typeCounts.keys().value( 0 ) : QGis::WKBNoGeometry;
+  QgsWkbTypes::Type wkbType = !typeCounts.isEmpty() ? typeCounts.keys().value( 0 ) : QgsWkbTypes::NoGeometry;
 
-  QString typeName = wkbType != QGis::WKBNoGeometry ? QString( QGis::featureType( wkbType ) ).remove( "WKB" ) : "none";
+  QString typeName = wkbType != QgsWkbTypes::NoGeometry ? QString( QgsWkbTypes::displayString( wkbType ) ).remove( "WKB" ) : "none";
 
   if ( features.isEmpty() )
   {
@@ -7615,7 +7615,7 @@ QgsVectorLayer *QgisApp::pasteToNewMemoryVector()
   }
 
   layer->startEditing();
-  if ( wkbType != QGis::WKBNoGeometry )
+  if ( wkbType != QgsWkbTypes::NoGeometry )
     layer->setCrs( clipboard()->crs(), false );
 
   Q_FOREACH ( QgsField f, clipboard()->fields().toList() )
@@ -7635,21 +7635,23 @@ QgsVectorLayer *QgisApp::pasteToNewMemoryVector()
   for ( int i = 0; i < features.size(); i++ )
   {
     QgsFeature &feature = features[i];
-    if ( !feature.constGeometry() )
+    if ( !feature.hasGeometry() )
       continue;
 
-    QGis::WkbType type = QGis::flatType( feature.constGeometry()->wkbType() );
-    if ( type == QGis::WKBUnknown || type == QGis::WKBNoGeometry )
+    QgsWkbTypes::Type type = QgsWkbTypes::flatType( feature.geometry().wkbType() );
+    if ( type == QgsWkbTypes::Unknown || type == QgsWkbTypes::NoGeometry )
       continue;
 
-    if ( QGis::singleType( wkbType ) != QGis::singleType( type ) )
+    if ( QgsWkbTypes::singleType( wkbType ) != QgsWkbTypes::singleType( type ) )
     {
-      feature.setGeometry( nullptr );
+      feature.clearGeometry();
     }
 
-    if ( QGis::isMultiType( wkbType ) &&  QGis::isSingleType( type ) )
+    if ( QgsWkbTypes::isMultiType( wkbType ) &&  QgsWkbTypes::isSingleType( type ) )
     {
-      feature.geometry()->convertToMultiType();
+      QgsGeometry g = feature.geometry();
+      g.convertToMultiType();
+      feature.setGeometry( g );
     }
   }
   if ( ! layer->addFeatures( features, false ) || !layer->commitChanges() )
@@ -7796,7 +7798,7 @@ bool QgisApp::toggleEditing( QgsMapLayer *layer, bool allowCancel )
 
   bool res = true;
 
-  QString connString = QgsDataSourceURI( vlayer->source() ).connectionInfo();
+  QString connString = QgsDataSourceUri( vlayer->source() ).connectionInfo();
   QString key = vlayer->providerType();
 
   QMap< QPair< QString, QString>, QgsTransactionGroup*> transactionGroups = QgsProject::instance()->transactionGroups();
@@ -8128,7 +8130,7 @@ void QgisApp::duplicateVectorStyle( QgsVectorLayer* srcLayer, QgsVectorLayer* de
         "qgis", "http://mrcc.com/qgis.dtd", "SYSTEM" );
     QDomDocument doc( documentType );
     QDomElement rootNode = doc.createElement( "qgis" );
-    rootNode.setAttribute( "version", QGis::QGIS_VERSION );
+    rootNode.setAttribute( "version", Qgis::QGIS_VERSION );
     doc.appendChild( rootNode );
     QString errorMsg;
     srcLayer->writeSymbology( rootNode, doc, errorMsg );
@@ -8505,7 +8507,7 @@ void QgisApp::zoomToLayerScale()
     const double scale = mMapCanvas->scale();
     if ( scale > layer->maximumScale() )
     {
-      mMapCanvas->zoomScale( layer->maximumScale() * QGis::SCALE_PRECISION );
+      mMapCanvas->zoomScale( layer->maximumScale() * Qgis::SCALE_PRECISION );
     }
     else if ( scale <= layer->minimumScale() )
     {
@@ -8514,7 +8516,7 @@ void QgisApp::zoomToLayerScale()
   }
 }
 
-void QgisApp::setLayerCRS()
+void QgisApp::setLayerCrs()
 {
   if ( !( mLayerTreeView && mLayerTreeView->currentLayer() ) )
   {
@@ -8530,7 +8532,7 @@ void QgisApp::setLayerCRS()
     return;
   }
 
-  QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsBySrsId( mySelector.selectedCrsId() );
+  QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromSrsId( mySelector.selectedCrsId() );
 
   Q_FOREACH ( QgsLayerTreeNode* node, mLayerTreeView->selectedNodes() )
   {
@@ -8559,7 +8561,7 @@ void QgisApp::setLayerCRS()
   mMapCanvas->refresh();
 }
 
-void QgisApp::setProjectCRSFromLayer()
+void QgisApp::setProjectCrsFromLayer()
 {
   if ( !( mLayerTreeView && mLayerTreeView->currentLayer() ) )
   {
@@ -8569,7 +8571,7 @@ void QgisApp::setProjectCRSFromLayer()
   QgsCoordinateReferenceSystem crs = mLayerTreeView->currentLayer()->crs();
   mMapCanvas->freeze();
   mMapCanvas->setDestinationCrs( crs );
-  if ( crs.mapUnits() != QGis::UnknownUnit )
+  if ( crs.mapUnits() != QgsUnitTypes::DistanceUnknownUnit )
   {
     mMapCanvas->setMapUnits( crs.mapUnits() );
   }
@@ -8668,7 +8670,7 @@ void QgisApp::applyStyleToGroup()
   }
 }
 
-void QgisApp::legendGroupSetCRS()
+void QgisApp::legendGroupSetCrs()
 {
   if ( !mMapCanvas )
   {
@@ -8687,7 +8689,7 @@ void QgisApp::legendGroupSetCRS()
     return;
   }
 
-  QgsCoordinateReferenceSystem crs = QgsCRSCache::instance()->crsBySrsId( mySelector.selectedCrsId() );
+  QgsCoordinateReferenceSystem crs = QgsCoordinateReferenceSystem::fromSrsId( mySelector.selectedCrsId() );
   Q_FOREACH ( QgsLayerTreeLayer* nodeLayer, currentGroup->findLayers() )
   {
     if ( nodeLayer->layer() )
@@ -8698,12 +8700,12 @@ void QgisApp::legendGroupSetCRS()
   }
 }
 
-void QgisApp::legendGroupSetWMSData()
+void QgisApp::legendGroupSetWmsData()
 {
   QgsLayerTreeGroup* currentGroup = mLayerTreeView->currentGroupNode();
   if ( !currentGroup )
     return;
-  QgsGroupWMSDataDialog* dlg = new QgsGroupWMSDataDialog( this );
+  QgsGroupWmsDataDialog* dlg = new QgsGroupWmsDataDialog( this );
   dlg->setGroupShortName( currentGroup->customProperty( "wmsShortName" ).toString() );
   dlg->setGroupTitle( currentGroup->customProperty( "wmsTitle" ).toString() );
   dlg->setGroupTitle( currentGroup->customProperty( "wmsAbstract" ).toString() );
@@ -8773,7 +8775,7 @@ void QgisApp::loadPythonSupport()
 #ifdef __MINGW32__
   pythonlibName.prepend( "lib" );
 #endif
-  QString version = QString( "%1.%2.%3" ).arg( QGis::QGIS_VERSION_INT / 10000 ).arg( QGis::QGIS_VERSION_INT / 100 % 100 ).arg( QGis::QGIS_VERSION_INT % 100 );
+  QString version = QString( "%1.%2.%3" ).arg( Qgis::QGIS_VERSION_INT / 10000 ).arg( Qgis::QGIS_VERSION_INT / 100 % 100 ).arg( Qgis::QGIS_VERSION_INT % 100 );
   QgsDebugMsg( QString( "load library %1 (%2)" ).arg( pythonlibName, version ) );
   QLibrary pythonlib( pythonlibName, version );
   // It's necessary to set these two load hints, otherwise Python library won't work correctly
@@ -8948,7 +8950,7 @@ void QgisApp::showOptionsDialog( QWidget *parent, const QString& currentPage )
     mLayerTreeCanvasBridge->setAutoEnableCrsTransform( otfTransformAutoEnable );
 
     mMapCanvas->setSegmentationTolerance( mySettings.value( "/qgis/segmentationTolerance", "0.01745" ).toDouble() );
-    mMapCanvas->setSegmentationToleranceType( QgsAbstractGeometryV2::SegmentationToleranceType( mySettings.value( "/qgis/segmentationToleranceType", "0" ).toInt() ) );
+    mMapCanvas->setSegmentationToleranceType( QgsAbstractGeometry::SegmentationToleranceType( mySettings.value( "/qgis/segmentationToleranceType", "0" ).toInt() ) );
 
     double factor = mySettings.value( "/qgis/magnifier_factor_default", 1.0 ).toDouble();
     mMagnifierWidget->setDefaultFactor( factor );
@@ -9088,8 +9090,8 @@ void QgisApp::helpContents()
 {
   // We should really ship the HTML version of the docs local too.
   openURL( QString( "https://docs.qgis.org/%1.%2/%3/docs/user_manual/" )
-           .arg( QGis::QGIS_VERSION_INT / 10000 )
-           .arg( QGis::QGIS_VERSION_INT / 100 % 100 )
+           .arg( Qgis::QGIS_VERSION_INT / 10000 )
+           .arg( Qgis::QGIS_VERSION_INT / 100 % 100 )
            .arg( tr( "en", "documentation language" ) ),
            false );
 }
@@ -10027,7 +10029,7 @@ void QgisApp::removeWebToolBarIcon( QAction *qAction )
   mWebToolBar->removeAction( qAction );
 }
 
-void QgisApp::updateCRSStatusBar()
+void QgisApp::updateCrsStatusBar()
 {
   mOnTheFlyProjectionStatusButton->setText( mMapCanvas->mapSettings().destinationCrs().authid() );
 
@@ -10048,14 +10050,14 @@ void QgisApp::updateCRSStatusBar()
 
 void QgisApp::destinationCrsChanged()
 {
-  updateCRSStatusBar();
+  updateCrsStatusBar();
 }
 
 void QgisApp::hasCrsTransformEnabled( bool theFlag )
 {
   // save this information to project
   QgsProject::instance()->writeEntry( "SpatialRefSys", "/ProjectionsEnabled", ( theFlag ? 1 : 0 ) );
-  updateCRSStatusBar();
+  updateCrsStatusBar();
 }
 
 // slot to update the progress bar in the status bar
@@ -10229,32 +10231,21 @@ void QgisApp::removeMapToolMessage()
 // Show the maptip using tooltip
 void QgisApp::showMapTip()
 {
-  // Stop the timer while we look for a maptip
-  mpMapTipsTimer->stop();
+  QPoint myPointerPos = mMapCanvas->mouseLastXY();
 
-  // Only show tooltip if the mouse is over the canvas
-  if ( mMapCanvas->underMouse() )
+  //  Make sure there is an active layer before proceeding
+  QgsMapLayer* mypLayer = mMapCanvas->currentLayer();
+  if ( mypLayer )
   {
-    QPoint myPointerPos = mMapCanvas->mouseLastXY();
-
-    //  Make sure there is an active layer before proceeding
-    QgsMapLayer* mypLayer = mMapCanvas->currentLayer();
-    if ( mypLayer )
+    //QgsDebugMsg("Current layer for maptip display is: " + mypLayer->source());
+    // only process vector layers
+    if ( mypLayer->type() == QgsMapLayer::VectorLayer )
     {
-      //QgsDebugMsg("Current layer for maptip display is: " + mypLayer->source());
-      // only process vector layers
-      if ( mypLayer->type() == QgsMapLayer::VectorLayer )
+      // Show the maptip if the maptips button is depressed
+      if ( mMapTipsVisible )
       {
-        // Show the maptip if the maptips button is depressed
-        if ( mMapTipsVisible )
-        {
-          mpMaptip->showMapTip( mypLayer, mLastMapPosition, myPointerPos, mMapCanvas );
-        }
+        mpMaptip->showMapTip( mypLayer, mLastMapPosition, myPointerPos, mMapCanvas );
       }
-    }
-    else
-    {
-      showStatusMessage( tr( "Maptips require an active layer" ) );
     }
   }
 }
@@ -10582,7 +10573,7 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
       mActionPasteFeatures->setEnabled( isEditable && canAddFeatures && !clipboard()->isEmpty() );
 
       mActionAddFeature->setEnabled( isEditable && canAddFeatures );
-      mActionCircularStringCurvePoint->setEnabled( isEditable && ( canAddFeatures || canChangeGeometry ) && vlayer->geometryType() != QGis::Point );
+      mActionCircularStringCurvePoint->setEnabled( isEditable && ( canAddFeatures || canChangeGeometry ) && vlayer->geometryType() != QgsWkbTypes::PointGeometry );
       mActionCircularStringRadius->setEnabled( isEditable && ( canAddFeatures || canChangeGeometry ) );
 
       //does provider allow deleting of features?
@@ -10603,7 +10594,7 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
         mActionMultiEditAttributes->setEnabled( false );
       }
 
-      bool isMultiPart = QGis::isMultiType( vlayer->wkbType() ) || !dprovider->doesStrictFeatureTypeCheck();
+      bool isMultiPart = QgsWkbTypes::isMultiType( vlayer->wkbType() ) || !dprovider->doesStrictFeatureTypeCheck();
 
       // moving enabled if geometry changes are supported
       mActionAddPart->setEnabled( isEditable && canChangeGeometry );
@@ -10613,9 +10604,9 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
       mActionNodeTool->setEnabled( isEditable && canChangeGeometry );
 
       mActionEnableTracing->setEnabled( isEditable && canAddFeatures &&
-                                        ( vlayer->geometryType() == QGis::Line || vlayer->geometryType() == QGis::Polygon ) );
+                                        ( vlayer->geometryType() == QgsWkbTypes::LineGeometry || vlayer->geometryType() == QgsWkbTypes::PolygonGeometry ) );
 
-      if ( vlayer->geometryType() == QGis::Point )
+      if ( vlayer->geometryType() == QgsWkbTypes::PointGeometry )
       {
         mActionAddFeature->setIcon( QgsApplication::getThemeIcon( "/mActionCapturePoint.svg" ) );
         mActionMoveFeature->setIcon( QgsApplication::getThemeIcon( "/mActionMoveFeaturePoint.svg" ) );
@@ -10643,7 +10634,7 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
           }
         }
       }
-      else if ( vlayer->geometryType() == QGis::Line )
+      else if ( vlayer->geometryType() == QgsWkbTypes::LineGeometry )
       {
         mActionAddFeature->setIcon( QgsApplication::getThemeIcon( "/mActionCaptureLine.svg" ) );
         mActionMoveFeature->setIcon( QgsApplication::getThemeIcon( "/mActionMoveFeatureLine.svg" ) );
@@ -10658,7 +10649,7 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
         mActionFillRing->setEnabled( false );
         mActionDeleteRing->setEnabled( false );
       }
-      else if ( vlayer->geometryType() == QGis::Polygon )
+      else if ( vlayer->geometryType() == QgsWkbTypes::PolygonGeometry )
       {
         mActionAddFeature->setIcon( QgsApplication::getThemeIcon( "/mActionCapturePolygon.svg" ) );
         mActionMoveFeature->setIcon( QgsApplication::getThemeIcon( "/mActionMoveFeature.svg" ) );
@@ -10672,7 +10663,7 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
         mActionDeleteRing->setEnabled( isEditable && canChangeGeometry );
         mActionOffsetCurve->setEnabled( false );
       }
-      else if ( vlayer->geometryType() == QGis::NoGeometry )
+      else if ( vlayer->geometryType() == QgsWkbTypes::NullGeometry )
       {
         mActionAddFeature->setIcon( QgsApplication::getThemeIcon( "/mActionNewTableRow.svg" ) );
       }
@@ -10691,8 +10682,8 @@ void QgisApp::activateDeactivateLayerRelatedActions( QgsMapLayer* layer )
   else if ( layer->type() == QgsMapLayer::RasterLayer )
   {
     const QgsRasterLayer *rlayer = qobject_cast<const QgsRasterLayer *>( layer );
-    if ( rlayer->dataProvider()->dataType( 1 ) != QGis::ARGB32
-         && rlayer->dataProvider()->dataType( 1 ) != QGis::ARGB32_Premultiplied )
+    if ( rlayer->dataProvider()->dataType( 1 ) != Qgis::ARGB32
+         && rlayer->dataProvider()->dataType( 1 ) != Qgis::ARGB32_Premultiplied )
     {
       if ( rlayer->dataProvider()->capabilities() & QgsRasterDataProvider::Size )
       {
@@ -11889,7 +11880,7 @@ LONG WINAPI QgisApp::qgisCrashDump( struct _EXCEPTION_POINTERS *ExceptionInfo )
                        .arg( QDateTime::currentDateTime().toString( "yyyyMMdd-hhmmss" ) )
                        .arg( GetCurrentProcessId() )
                        .arg( GetCurrentThreadId() )
-                       .arg( QGis::QGIS_DEV_VERSION )
+                       .arg( Qgis::QGIS_DEV_VERSION )
                      );
 
   QString msg;

@@ -84,7 +84,7 @@ class SelectByAttribute(GeoAlgorithm):
         operator = self.OPERATORS[self.getParameterValue(self.OPERATOR)]
         value = self.getParameterValue(self.VALUE)
 
-        fields = layer.pendingFields()
+        fields = layer.fields()
 
         idx = layer.fieldNameIndex(fieldName)
         fieldType = fields[idx].type()
@@ -116,5 +116,5 @@ class SelectByAttribute(GeoAlgorithm):
             raise GeoAlgorithmExecutionException(qExp.parserErrorString())
         selected = [f.id() for f in layer.getFeatures(qReq)]
 
-        layer.setSelectedFeatures(selected)
+        layer.selectByIds(selected)
         self.setOutputValue(self.OUTPUT, fileName)

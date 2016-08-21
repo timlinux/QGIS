@@ -29,6 +29,14 @@ import inspect
 import string
 from qgis._core import *
 
+# Boolean evaluation of QgsGeometry
+
+
+def _geometryNonZero(self):
+    return not self.isEmpty()
+QgsGeometry.__nonzero__ = _geometryNonZero
+QgsGeometry.__bool__ = _geometryNonZero
+
 
 def register_function(function, arg_count, group, usesgeometry=False, referenced_columns=[QgsFeatureRequest.AllAttributes], **kwargs):
     """
@@ -64,7 +72,10 @@ def register_function(function, arg_count, group, usesgeometry=False, referenced
             self.function = func
             self.expandargs = expandargs
 
-        def func(self, values, feature, parent):
+        def func(self, values, context, parent):
+            feature = None
+            if context:
+                feature = context.feature()
             try:
                 if self.expandargs:
                     values.append(feature)

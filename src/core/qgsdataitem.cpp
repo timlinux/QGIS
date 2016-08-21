@@ -32,6 +32,7 @@
 #include "qgis.h"
 #include "qgsdataitem.h"
 
+#include "qgsapplication.h"
 #include "qgsdataitemprovider.h"
 #include "qgsdataitemproviderregistry.h"
 #include "qgsdataprovider.h"
@@ -211,7 +212,6 @@ QgsDataItem::QgsDataItem( QgsDataItem::Type type, QgsDataItem* parent, const QSt
     , mCapabilities( NoCapabilities )
     , mParent( parent )
     , mState( NotPopulated )
-    , mPopulated( false )
     , mName( name )
     , mPath( path )
     , mDeferredDelete( false )
@@ -310,39 +310,9 @@ QIcon QgsDataItem::icon()
   return mIconMap.value( mIconName );
 }
 
-void QgsDataItem::emitBeginInsertItems( QgsDataItem* parent, int first, int last )
-{
-  emit beginInsertItems( parent, first, last );
-}
-void QgsDataItem::emitEndInsertItems()
-{
-  emit endInsertItems();
-}
-void QgsDataItem::emitBeginRemoveItems( QgsDataItem* parent, int first, int last )
-{
-  emit beginRemoveItems( parent, first, last );
-}
-void QgsDataItem::emitEndRemoveItems()
-{
-  emit endRemoveItems();
-}
-
-void QgsDataItem::emitDataChanged( QgsDataItem* item )
-{
-  emit dataChanged( item );
-}
-
 void QgsDataItem::emitDataChanged()
 {
   emit dataChanged( this );
-}
-
-void QgsDataItem::emitStateChanged( QgsDataItem* item, QgsDataItem::State oldState )
-{
-  if ( !item )
-    return;
-  QgsDebugMsgLevel( QString( "item %1 state changed %2 -> %3" ).arg( item->path() ).arg( oldState ).arg( item->state() ), 2 );
-  emit stateChanged( item, oldState );
 }
 
 QVector<QgsDataItem*> QgsDataItem::createChildren()
@@ -530,17 +500,17 @@ void QgsDataItem::setParent( QgsDataItem* parent )
   if ( parent )
   {
     connect( this, SIGNAL( beginInsertItems( QgsDataItem*, int, int ) ),
-             parent, SLOT( emitBeginInsertItems( QgsDataItem*, int, int ) ) );
+             parent, SIGNAL( beginInsertItems( QgsDataItem*, int, int ) ) );
     connect( this, SIGNAL( endInsertItems() ),
-             parent, SLOT( emitEndInsertItems() ) );
+             parent, SIGNAL( endInsertItems() ) );
     connect( this, SIGNAL( beginRemoveItems( QgsDataItem*, int, int ) ),
-             parent, SLOT( emitBeginRemoveItems( QgsDataItem*, int, int ) ) );
+             parent, SIGNAL( beginRemoveItems( QgsDataItem*, int, int ) ) );
     connect( this, SIGNAL( endRemoveItems() ),
-             parent, SLOT( emitEndRemoveItems() ) );
+             parent, SIGNAL( endRemoveItems() ) );
     connect( this, SIGNAL( dataChanged( QgsDataItem* ) ),
-             parent, SLOT( emitDataChanged( QgsDataItem* ) ) );
+             parent, SIGNAL( dataChanged( QgsDataItem* ) ) );
     connect( this, SIGNAL( stateChanged( QgsDataItem*, QgsDataItem::State ) ),
-             parent, SLOT( emitStateChanged( QgsDataItem*, QgsDataItem::State ) ) );
+             parent, SIGNAL( stateChanged( QgsDataItem*, QgsDataItem::State ) ) );
   }
   mParent = parent;
 }
@@ -613,7 +583,7 @@ int QgsDataItem::findItem( QVector<QgsDataItem*> items, QgsDataItem * item )
 {
   for ( int i = 0; i < items.size(); i++ )
   {
-    Q_ASSERT_X( items[i], "findItem", QString( "item %1 is nullptr" ).arg( i ).toAscii() );
+    Q_ASSERT_X( items[i], "findItem", QString( "item %1 is nullptr" ).arg( i ).toLatin1() );
     QgsDebugMsgLevel( QString::number( i ) + " : " + items[i]->mPath + " x " + item->mPath, 2 );
     if ( items[i]->equal( item ) )
       return i;
@@ -633,10 +603,6 @@ bool QgsDataItem::equal( const QgsDataItem *other )
 
 QgsDataItem::State QgsDataItem::state() const
 {
-  // for backward compatibility (if subclass set mPopulated directly)
-  // TODO: remove in 3.0
-  if ( mPopulated )
-    return Populated;
   return mState;
 }
 
@@ -663,9 +629,6 @@ void QgsDataItem::setState( State state )
   }
 
   mState = state;
-  // for backward compatibility (if subclass access mPopulated directly)
-  // TODO: remove in 3.0
-  mPopulated = state == Populated;
 
   emit stateChanged( this, oldState );
   if ( state == Populated )
@@ -707,7 +670,7 @@ QgsLayerItem::QgsLayerItem( QgsDataItem* parent, const QString& name, const QStr
   }
 }
 
-QgsMapLayer::LayerType QgsLayerItem::mapLayerType()
+QgsMapLayer::LayerType QgsLayerItem::mapLayerType() const
 {
   if ( mLayerType == QgsLayerItem::Raster )
     return QgsMapLayer::RasterLayer;
@@ -729,6 +692,33 @@ bool QgsLayerItem::equal( const QgsDataItem *other )
     return false;
 
   return ( mPath == o->mPath && mName == o->mName && mUri == o->mUri && mProviderKey == o->mProviderKey );
+}
+
+QgsMimeDataUtils::Uri QgsLayerItem::mimeUri() const
+{
+  QgsMimeDataUtils::Uri u;
+
+  switch ( mapLayerType() )
+  {
+    case QgsMapLayer::VectorLayer:
+      u.layerType = "vector";
+      break;
+    case QgsMapLayer::RasterLayer:
+      u.layerType = "raster";
+      break;
+    case QgsMapLayer::PluginLayer:
+      u.layerType = "plugin";
+      break;
+    default:
+      return u;  // invalid URI
+  }
+
+  u.providerKey = providerKey();
+  u.name = layerName();
+  u.uri = uri();
+  u.supportedCrs = supportedCrs();
+  u.supportedFormats = supportedFormats();
+  return u;
 }
 
 // ---------------------------------------------------------------------
@@ -754,10 +744,6 @@ QgsDataCollectionItem::~QgsDataCollectionItem()
 }
 
 //-----------------------------------------------------------------------
-// QVector<QgsDataProvider*> QgsDirectoryItem::mProviders = QVector<QgsDataProvider*>();
-Q_NOWARN_DEPRECATED_PUSH
-QVector<QLibrary*> QgsDirectoryItem::mLibraries = QVector<QLibrary*>();
-Q_NOWARN_DEPRECATED_POP
 
 QgsDirectoryItem::QgsDirectoryItem( QgsDataItem* parent, const QString& name, const QString& path )
     : QgsDataCollectionItem( parent, name, path )

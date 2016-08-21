@@ -16,22 +16,22 @@
 #include "qgsvectorfieldsymbollayer.h"
 #include "qgsvectorlayer.h"
 
-QgsVectorFieldSymbolLayerWidget::QgsVectorFieldSymbolLayerWidget( const QgsVectorLayer* vl, QWidget* parent ): QgsSymbolLayerV2Widget( parent, vl ), mLayer( nullptr )
+QgsVectorFieldSymbolLayerWidget::QgsVectorFieldSymbolLayerWidget( const QgsVectorLayer* vl, QWidget* parent ): QgsSymbolLayerWidget( parent, vl ), mLayer( nullptr )
 {
   setupUi( this );
 
-  mDistanceUnitWidget->setUnits( QgsSymbolV2::OutputUnitList() << QgsSymbolV2::MM << QgsSymbolV2::MapUnit << QgsSymbolV2::Pixel );
+  mDistanceUnitWidget->setUnits( QgsUnitTypes::RenderUnitList() << QgsUnitTypes::RenderMillimeters << QgsUnitTypes::RenderMapUnits << QgsUnitTypes::RenderPixels );
 
-  if ( mVectorLayer )
+  if ( vectorLayer() )
   {
     mXAttributeComboBox->addItem( "" );
     mYAttributeComboBox->addItem( "" );
     int i = 0;
-    Q_FOREACH ( const QgsField& f, mVectorLayer->fields() )
+    Q_FOREACH ( const QgsField& f, vectorLayer()->fields() )
     {
       QString fieldName = f.name();
-      mXAttributeComboBox->addItem( mVectorLayer->fields().iconForField( i ), fieldName );
-      mYAttributeComboBox->addItem( mVectorLayer->fields().iconForField( i ), fieldName );
+      mXAttributeComboBox->addItem( vectorLayer()->fields().iconForField( i ), fieldName );
+      mYAttributeComboBox->addItem( vectorLayer()->fields().iconForField( i ), fieldName );
       i++;
     }
   }
@@ -41,7 +41,7 @@ QgsVectorFieldSymbolLayerWidget::~QgsVectorFieldSymbolLayerWidget()
 {
 }
 
-void QgsVectorFieldSymbolLayerWidget::setSymbolLayer( QgsSymbolLayerV2* layer )
+void QgsVectorFieldSymbolLayerWidget::setSymbolLayer( QgsSymbolLayer* layer )
 {
   if ( layer->layerType() != "VectorField" )
   {
@@ -99,7 +99,7 @@ void QgsVectorFieldSymbolLayerWidget::setSymbolLayer( QgsSymbolLayerV2* layer )
   emit changed();
 }
 
-QgsSymbolLayerV2* QgsVectorFieldSymbolLayerWidget::symbolLayer()
+QgsSymbolLayer* QgsVectorFieldSymbolLayerWidget::symbolLayer()
 {
   return mLayer;
 }

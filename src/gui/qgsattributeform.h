@@ -17,7 +17,6 @@
 #define QGSATTRIBUTEFORM_H
 
 #include "qgsfeature.h"
-#include "qgsvectorlayer.h"
 #include "qgsattributeeditorcontext.h"
 
 #include <QWidget>
@@ -288,12 +287,14 @@ class GUI_EXPORT QgsAttributeForm : public QWidget
           : widget( nullptr )
           , labelOnTop( false )
           , labelAlignRight( false )
+          , showLabel( true )
       {}
 
       QWidget* widget;
       QString labelText;
       bool labelOnTop;
       bool labelAlignRight;
+      bool showLabel;
     };
 
     WidgetInfo createWidgetFromDef( const QgsAttributeEditorElement* widgetDef, QWidget* parent, QgsVectorLayer* vl, QgsAttributeEditorContext& context );
@@ -321,13 +322,13 @@ class GUI_EXPORT QgsAttributeForm : public QWidget
 
     //! constraints management
     void updateAllConstaints();
-    void updateConstraints( QgsEditorWidgetWrapper *w );
-    bool currentFormFeature( QgsFeature &feature );
-    bool currentFormValidConstraints( QStringList &invalidFields, QStringList &descriptions );
-    void constraintDependencies( QgsEditorWidgetWrapper *w, QList<QgsEditorWidgetWrapper*> &wDeps );
+    void updateConstraints( QgsEditorWidgetWrapper* w );
+    bool currentFormFeature( QgsFeature& feature );
+    bool currentFormValidConstraints( QStringList& invalidFields, QStringList& descriptions );
+    void constraintDependencies( QgsEditorWidgetWrapper* w, QList<QgsEditorWidgetWrapper*>& wDeps );
     void clearInvalidConstraintsMessage();
-    void displayInvalidConstraintMessage( const QStringList &invalidFields,
-                                          const QStringList &description );
+    void displayInvalidConstraintMessage( const QStringList& invalidFields,
+                                          const QStringList& description );
 
     QgsVectorLayer* mLayer;
     QgsFeature mFeature;

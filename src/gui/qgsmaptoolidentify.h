@@ -16,12 +16,11 @@
 #ifndef QGSMAPTOOLIDENTIFY_H
 #define QGSMAPTOOLIDENTIFY_H
 
-#include "qgsdistancearea.h"
 #include "qgsfeature.h"
 #include "qgsfield.h"
 #include "qgsmaptool.h"
-#include "qgsmaplayer.h"
 #include "qgspoint.h"
+#include "qgsunittypes.h"
 
 #include <QObject>
 #include <QPointer>
@@ -32,6 +31,7 @@ class QgsMapLayer;
 class QgsMapCanvas;
 class QgsHighlight;
 class QgsIdentifyMenu;
+class QgsDistanceArea;
 
 /** \ingroup gui
   \brief Map tool for identifying features in layers
@@ -159,20 +159,11 @@ class GUI_EXPORT QgsMapToolIdentify : public QgsMapTool
 
   private:
 
-    //! Private helper
-    //! @deprecated use displayDistanceUnits() and displayAreaUnits() instead
-    Q_DECL_DEPRECATED virtual void convertMeasurement( QgsDistanceArea &calc, double &measure, QGis::UnitType &u, bool isArea );
-
-    /** Transforms the measurements of derived attributes in the desired units
-     * @deprecated use displayDistanceUnits() and displayAreaUnits() instead
-    */
-    Q_DECL_DEPRECATED virtual QGis::UnitType displayUnits();
-
     /** Desired units for distance display.
      * @note added in QGIS 2.14
      * @see displayAreaUnits()
      */
-    virtual QGis::UnitType displayDistanceUnits() const;
+    virtual QgsUnitTypes::DistanceUnit displayDistanceUnits() const;
 
     /** Desired units for area display.
      * @note added in QGIS 2.14
@@ -196,7 +187,7 @@ class GUI_EXPORT QgsMapToolIdentify : public QgsMapTool
 
     /** Adds details of the closest vertex to derived attributes
      */
-    void closestVertexAttributes( const QgsAbstractGeometryV2& geometry, QgsVertexId vId, QgsMapLayer *layer, QMap< QString, QString >& derivedAttributes );
+    void closestVertexAttributes( const QgsAbstractGeometry& geometry, QgsVertexId vId, QgsMapLayer *layer, QMap< QString, QString >& derivedAttributes );
 
     QString formatCoordinate( const QgsPoint& canvasPoint ) const;
     QString formatXCoordinate( const QgsPoint& canvasPoint ) const;

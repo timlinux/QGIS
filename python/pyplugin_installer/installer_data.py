@@ -36,7 +36,7 @@ try:
 except ImportError:
     import ConfigParser as configparser
 import qgis.utils
-from qgis.core import QGis, QgsNetworkAccessManager, QgsAuthManager
+from qgis.core import Qgis, QgsNetworkAccessManager, QgsAuthManager, QgsWkbTypes
 from qgis.gui import QgsMessageBar
 from qgis.utils import iface, plugin_paths
 from .version_compare import compareVersions, normalizeVersion, isCompatible
@@ -227,7 +227,7 @@ class Repositories(QObject):
     # ----------------------------------------- #
     def urlParams(self):
         """ return GET parameters to be added to every request """
-        v = str(QGis.QGIS_VERSION_INT)
+        v = str(Qgis.QGIS_VERSION_INT)
         return "?qgis=%d.%d" % (int(v[0]), int(v[1:3]))
 
     # ----------------------------------------- #
@@ -342,7 +342,7 @@ class Repositories(QObject):
         """ start fetching the repository given by key """
         self.mRepositories[key]["state"] = 1
         url = QUrl(self.mRepositories[key]["url"] + self.urlParams())
-        #v=str(QGis.QGIS_VERSION_INT)
+        #v=str(Qgis.QGIS_VERSION_INT)
         #url.addQueryItem('qgis', '.'.join([str(int(s)) for s in [v[0], v[1:3]]]) ) # don't include the bugfix version!
 
         self.mRepositories[key]["QRequest"] = QNetworkRequest(url)
@@ -465,7 +465,7 @@ class Repositories(QObject):
                         qgisMaximumVersion = qgisMinimumVersion[0] + ".99"
                     #if compatible, add the plugin to the list
                     if not pluginNodes.item(i).firstChildElement("disabled").text().strip().upper() in ["TRUE", "YES"]:
-                        if isCompatible(QGis.QGIS_VERSION, qgisMinimumVersion, qgisMaximumVersion):
+                        if isCompatible(Qgis.QGIS_VERSION, qgisMinimumVersion, qgisMaximumVersion):
                             #add the plugin to the cache
                             plugins.addFromRepository(plugin)
                 self.mRepositories[reposName]["state"] = 2
@@ -613,7 +613,7 @@ class Plugins(QObject):
             if not qgisMaximumVersion:
                 qgisMaximumVersion = qgisMinimumVersion[0] + ".99"
             #if compatible, add the plugin to the list
-            if not isCompatible(QGis.QGIS_VERSION, qgisMinimumVersion, qgisMaximumVersion):
+            if not isCompatible(Qgis.QGIS_VERSION, qgisMinimumVersion, qgisMaximumVersion):
                 error = "incompatible"
                 errorDetails = "%s - %s" % (qgisMinimumVersion, qgisMaximumVersion)
             elif testLoad:
@@ -761,7 +761,7 @@ class Plugins(QObject):
                         # other remote metadata is preffered:
                         for attrib in ["name", "plugin_id", "description", "about", "category", "tags", "changelog", "author_name", "author_email", "homepage",
                                        "tracker", "code_repository", "experimental", "deprecated", "version_available", "zip_repository",
-                                       "download_url", "filename", "downloads", "average_vote", "rating_votes"]:
+                                       "download_url", "filename", "downloads", "average_vote", "rating_votes", "trusted"]:
                             if attrib not in translatableAttributes or attrib == "name":  # include name!
                                 if plugin[attrib]:
                                     self.mPlugins[key][attrib] = plugin[attrib]

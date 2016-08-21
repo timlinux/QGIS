@@ -18,11 +18,10 @@
 #include <osgEarth/Registry>
 #include <osgEarth/ImageUtils>
 
-#include "qgscrscache.h"
+#include "qgscoordinatereferencesystem.h"
 #include "qgsglobetilesource.h"
 #include "qgscoordinatetransform.h"
 #include "qgslogger.h"
-#include "qgsmapcanvas.h"
 #include "qgsmaprenderercustompainterjob.h"
 #include "qgsmaprendererparalleljob.h"
 
@@ -99,14 +98,14 @@ QgsMapSettings QgsGlobeTileImage::createSettings( int dpi , const QStringList &l
 {
   QgsMapSettings settings;
   settings.setBackgroundColor( QColor( Qt::transparent ) );
-  settings.setDestinationCrs( QgsCRSCache::instance()->crsByAuthId( GEO_EPSG_CRS_AUTHID ) );
+  settings.setDestinationCrs( QgsCoordinateReferenceSystem::fromOgcWmsCrs( GEO_EPSG_CRS_AUTHID ) );
   settings.setCrsTransformEnabled( true );
   settings.setExtent( mTileExtent );
   settings.setLayers( layerSet );
   settings.setFlag( QgsMapSettings::DrawEditingInfo, false );
   settings.setFlag( QgsMapSettings::DrawLabeling, false );
   settings.setFlag( QgsMapSettings::DrawSelection, false );
-  settings.setMapUnits( QGis::Degrees );
+  settings.setMapUnits( QgsUnitTypes::DistanceDegrees );
   settings.setOutputSize( QSize( mTileSize, mTileSize ) );
   settings.setOutputImageFormat( QImage::Format_ARGB32_Premultiplied );
   settings.setOutputDpi( dpi );
@@ -215,9 +214,8 @@ void QgsGlobeTileUpdateManager::renderingFinished()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QgsGlobeTileSource::QgsGlobeTileSource( QgsMapCanvas* canvas, const osgEarth::TileSourceOptions& options )
+QgsGlobeTileSource::QgsGlobeTileSource( const osgEarth::TileSourceOptions& options )
     : TileSource( options )
-    , mCanvas( canvas )
 {
   osgEarth::GeoExtent geoextent( osgEarth::SpatialReference::get( "wgs84" ), -180., -90., 180., 90. );
   osgEarth::DataExtentList extents;

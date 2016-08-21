@@ -14,7 +14,7 @@
  ***************************************************************************/
 
 #include "qgspointmarkeritem.h"
-#include "qgssymbolv2.h"
+#include "qgssymbol.h"
 #include "qgsmapcanvas.h"
 #include "qgsmapsettings.h"
 #include <QPainter>
@@ -86,12 +86,12 @@ void QgsPointMarkerItem::setPointLocation( const QgsPoint& p )
   mLocation = toCanvasCoordinates( p );
 }
 
-void QgsPointMarkerItem::setSymbol( QgsMarkerSymbolV2 *symbol )
+void QgsPointMarkerItem::setSymbol( QgsMarkerSymbol *symbol )
 {
   mMarkerSymbol.reset( symbol );
 }
 
-QgsMarkerSymbolV2*QgsPointMarkerItem::symbol()
+QgsMarkerSymbol*QgsPointMarkerItem::symbol()
 {
   return mMarkerSymbol.data();
 }

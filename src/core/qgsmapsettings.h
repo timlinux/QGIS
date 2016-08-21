@@ -21,7 +21,7 @@
 #include <QSize>
 #include <QStringList>
 
-#include "qgsabstractgeometryv2.h"
+#include "qgsabstractgeometry.h"
 #include "qgscoordinatereferencesystem.h"
 #include "qgsdatumtransformstore.h"
 #include "qgsmaptopixel.h"
@@ -136,12 +136,12 @@ class CORE_EXPORT QgsMapSettings
     //! sets destination coordinate reference system
     void setDestinationCrs( const QgsCoordinateReferenceSystem& crs );
     //! returns CRS of destination coordinate reference system
-    const QgsCoordinateReferenceSystem& destinationCrs() const;
+    QgsCoordinateReferenceSystem destinationCrs() const;
 
     //! Get units of map's geographical coordinates - used for scale calculation
-    QGis::UnitType mapUnits() const;
+    QgsUnitTypes::DistanceUnit mapUnits() const;
     //! Set units of map's geographical coordinates - used for scale calculation
-    void setMapUnits( QGis::UnitType u );
+    void setMapUnits( QgsUnitTypes::DistanceUnit u );
 
     //! Set the background color of the map
     void setBackgroundColor( const QColor& color ) { mBackgroundColor = color; }
@@ -267,18 +267,18 @@ class CORE_EXPORT QgsMapSettings
     /**
      * @brief Return coordinate transform from layer's CRS to destination CRS
      * @param layer
-     * @return transform - may be null if the transform is not needed
+     * @return transform - may be invalid if the transform is not needed
      */
-    const QgsCoordinateTransform* layerTransform( QgsMapLayer *layer ) const;
+    QgsCoordinateTransform layerTransform( QgsMapLayer *layer ) const;
 
     //! returns current extent of layer set
     QgsRectangle fullExtent() const;
 
     /* serialization */
 
-    void readXML( QDomNode& theNode );
+    void readXml( QDomNode& theNode );
 
-    void writeXML( QDomNode& theNode, QDomDocument& theDoc );
+    void writeXml( QDomNode& theNode, QDomDocument& theDoc );
 
     /** Sets the segmentation tolerance applied when rendering curved geometries
     @param tolerance the segmentation tolerance*/
@@ -287,9 +287,9 @@ class CORE_EXPORT QgsMapSettings
     double segmentationTolerance() const { return mSegmentationTolerance; }
     /** Sets segmentation tolerance type (maximum angle or maximum difference between curve and approximation)
     @param type the segmentation tolerance typename*/
-    void setSegmentationToleranceType( QgsAbstractGeometryV2::SegmentationToleranceType type ) { mSegmentationToleranceType = type; }
+    void setSegmentationToleranceType( QgsAbstractGeometry::SegmentationToleranceType type ) { mSegmentationToleranceType = type; }
     /** Gets segmentation tolerance type (maximum angle or maximum difference between curve and approximation)*/
-    QgsAbstractGeometryV2::SegmentationToleranceType segmentationToleranceType() const { return mSegmentationToleranceType; }
+    QgsAbstractGeometry::SegmentationToleranceType segmentationToleranceType() const { return mSegmentationToleranceType; }
 
   protected:
 
@@ -319,7 +319,7 @@ class CORE_EXPORT QgsMapSettings
     QImage::Format mImageFormat;
 
     double mSegmentationTolerance;
-    QgsAbstractGeometryV2::SegmentationToleranceType mSegmentationToleranceType;
+    QgsAbstractGeometry::SegmentationToleranceType mSegmentationToleranceType;
 
 
     // derived properties

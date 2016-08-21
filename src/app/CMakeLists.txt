@@ -39,7 +39,6 @@ SET(QGIS_APP_SRCS
   qgsfieldsproperties.cpp
   qgsidentifyresultsdialog.cpp
   qgsfeatureaction.cpp
-  qgslabeldialog.cpp
   qgslabelpropertydialog.cpp
   qgslabelengineconfigdialog.cpp
   qgslabelinggui.cpp
@@ -122,7 +121,7 @@ SET(QGIS_APP_SRCS
   qgstipgui.cpp
   qgstipfactory.cpp
   qgsvectorlayerproperties.cpp
-  qgsvisibilitypresets.cpp
+  qgsmapthemes.cpp
   qgshandlebadlayers.cpp
   qgsmaptooladdcircularstring.cpp
   qgsmaptoolcircularstringcurvepoint.cpp
@@ -217,7 +216,6 @@ SET (QGIS_APP_MOC_HDRS
   qgsguivectorlayertools.h
   qgshtmlannotationdialog.h
   qgsidentifyresultsdialog.h
-  qgslabeldialog.h
   qgslabelengineconfigdialog.h
   qgslabelinggui.h
   qgslabelpreview.h
@@ -298,7 +296,7 @@ SET (QGIS_APP_MOC_HDRS
   qgstipfactory.h
   qgsundowidget.h
   qgsvectorlayerproperties.h
-  qgsvisibilitypresets.h
+  qgsmapthemes.h
   qgshandlebadlayers.h
 
   composer/qgsattributeselectiondialog.h

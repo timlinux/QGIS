@@ -40,8 +40,8 @@
 #include <qgsproject.h>
 #include <qgspoint.h>
 #include <qgsdistancearea.h>
-#include <symbology-ng/qgsrendererv2.h>
-#include <symbology-ng/qgssymbolv2.h>
+#include <symbology-ng/qgsrenderer.h>
+#include <symbology-ng/qgssymbol.h>
 #include <qgspallabeling.h>
 
 #include <QAction>
@@ -363,7 +363,7 @@ void GlobePlugin::run()
     osgEarth::TileSourceOptions opts;
     opts.L2CacheSize() = 0;
     opts.tileSize() = 128;
-    mTileSource = new QgsGlobeTileSource( mQGisIface->mapCanvas(), opts );
+    mTileSource = new QgsGlobeTileSource( opts );
 
     osgEarth::ImageLayerOptions options( "QGIS" );
     options.driver()->L2CacheSize() = 0;
@@ -617,7 +617,7 @@ QgsRectangle GlobePlugin::getQGISLayerExtent() const
 void GlobePlugin::showCurrentCoordinates( const osgEarth::GeoPoint& geoPoint )
 {
   osg::Vec3d pos = geoPoint.vec3d();
-  emit xyCoordinates( QgsCoordinateTransformCache::instance()->transform( GEO_EPSG_CRS_AUTHID, mQGisIface->mapCanvas()->mapSettings().destinationCrs().authid() )->transform( QgsPoint( pos.x(), pos.y() ) ) );
+  emit xyCoordinates( QgsCoordinateTransformCache::instance()->transform( GEO_EPSG_CRS_AUTHID, mQGisIface->mapCanvas()->mapSettings().destinationCrs().authid() ).transform( QgsPoint( pos.x(), pos.y() ) ) );
 }
 
 void GlobePlugin::setSelectedCoordinates( const osg::Vec3d &coords )
@@ -777,18 +777,18 @@ void GlobePlugin::addModelLayer( QgsVectorLayer* vLayer, QgsGlobeVectorLayerConf
   featureOpt.setLayer( vLayer );
   osgEarth::Style style;
 
-  if ( !vLayer->rendererV2()->symbols().isEmpty() )
+  if ( !vLayer->renderer()->symbols().isEmpty() )
   {
-    Q_FOREACH ( QgsSymbolV2* sym, vLayer->rendererV2()->symbols() )
+    Q_FOREACH ( QgsSymbol* sym, vLayer->renderer()->symbols() )
     {
-      if ( sym->type() == QgsSymbolV2::Line )
+      if ( sym->type() == QgsSymbol::Line )
       {
         osgEarth::LineSymbol* ls = style.getOrCreateSymbol<osgEarth::LineSymbol>();
         QColor color = sym->color();
         ls->stroke()->color() = osg::Vec4f( color.redF(), color.greenF(), color.blueF(), color.alphaF() * ( 100.f - vLayer->layerTransparency() ) / 100.f );
         ls->stroke()->width() = 1.0f;
       }
-      else if ( sym->type() == QgsSymbolV2::Fill )
+      else if ( sym->type() == QgsSymbol::Fill )
       {
         // TODO access border color, etc.
         osgEarth::PolygonSymbol* poly = style.getOrCreateSymbol<osgEarth::PolygonSymbol>();
@@ -932,7 +932,7 @@ void GlobePlugin::updateLayers()
       else
       {
         drapedLayers.append( mapLayer->id() );
-        QgsRectangle extent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID )->transform( mapLayer->extent() );
+        QgsRectangle extent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID ).transform( mapLayer->extent() );
         mLayerExtents.insert( mapLayer->id(), extent );
       }
     }
@@ -994,12 +994,12 @@ void GlobePlugin::layerChanged( QgsMapLayer* mapLayer )
           }
         }
         mTileSource->setLayerSet( layerSet );
-        QgsRectangle extent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID )->transform( mapLayer->extent() );
+        QgsRectangle extent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID ).transform( mapLayer->extent() );
         mLayerExtents.insert( mapLayer->id(), extent );
       }
       // Remove any model layer of that layer, in case one existed
       mMapNode->getMap()->removeModelLayer( mMapNode->getMap()->getModelLayerByName( mapLayer->id().toStdString() ) );
-      QgsRectangle layerExtent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID )->transform( mapLayer->extent() );
+      QgsRectangle layerExtent = QgsCoordinateTransformCache::instance()->transform( mapLayer->crs().authid(), GEO_EPSG_CRS_AUTHID ).transform( mapLayer->extent() );
       QgsRectangle dirtyExtent = layerExtent;
       if ( mLayerExtents.contains( mapLayer->id() ) )
       {
@@ -1024,7 +1024,7 @@ void GlobePlugin::rebuildQGISLayer()
     osgEarth::TileSourceOptions opts;
     opts.L2CacheSize() = 0;
     opts.tileSize() = 128;
-    mTileSource = new QgsGlobeTileSource( mQGisIface->mapCanvas(), opts );
+    mTileSource = new QgsGlobeTileSource( opts );
 
     osgEarth::ImageLayerOptions options( "QGIS" );
     options.driver()->L2CacheSize() = 0;

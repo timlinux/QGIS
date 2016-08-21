@@ -17,9 +17,9 @@
 #include "qgscomposerpolygonwidget.h"
 #include "qgscomposerpolygon.h"
 #include "qgscomposeritemwidget.h"
-#include "qgssymbolv2selectordialog.h"
-#include "qgsstylev2.h"
-#include "qgssymbollayerv2utils.h"
+#include "qgssymbolselectordialog.h"
+#include "qgsstyle.h"
+#include "qgssymbollayerutils.h"
 
 QgsComposerPolygonWidget::QgsComposerPolygonWidget( QgsComposerPolygon* composerPolygon ):
     QgsComposerItemBaseWidget( nullptr, composerPolygon )
@@ -30,7 +30,7 @@ QgsComposerPolygonWidget::QgsComposerPolygonWidget( QgsComposerPolygon* composer
   //add widget for general composer item properties
   QgsComposerItemWidget* itemPropertiesWidget = new QgsComposerItemWidget( this, composerPolygon );
 
-  //shapes don't use background or frame, since the symbol style is set through a QgsSymbolV2SelectorDialog
+  //shapes don't use background or frame, since the symbol style is set through a QgsSymbolSelectorDialog
   itemPropertiesWidget->showBackgroundGroup( false );
   itemPropertiesWidget->showFrameGroup( false );
   mainLayout->addWidget( itemPropertiesWidget );
@@ -58,12 +58,13 @@ void QgsComposerPolygonWidget::on_mPolygonStyleButton_clicked()
   // use the atlas coverage layer, if any
   QgsVectorLayer* coverageLayer = atlasCoverageLayer();
 
-  QScopedPointer<QgsFillSymbolV2> newSymbol;
+  QScopedPointer<QgsFillSymbol> newSymbol;
   newSymbol.reset( mComposerPolygon->polygonStyleSymbol()->clone() );
 
-  QgsSymbolV2SelectorDialog d( newSymbol.data(), QgsStyleV2::defaultStyle(),
-                               coverageLayer, this );
-  d.setExpressionContext( mComposerPolygon->createExpressionContext() );
+  QgsExpressionContext context = mComposerPolygon->createExpressionContext();
+  QgsSymbolSelectorDialog d( newSymbol.data(), QgsStyle::defaultStyle(),
+                             coverageLayer, this );
+  d.setExpressionContext( &context );
 
   if ( d.exec() == QDialog::Accepted )
   {
@@ -88,7 +89,7 @@ void QgsComposerPolygonWidget::updatePolygonStyle()
 {
   if ( mComposerPolygon )
   {
-    QIcon icon = QgsSymbolLayerV2Utils::symbolPreviewIcon( mComposerPolygon->polygonStyleSymbol(), mPolygonStyleButton->iconSize() );
+    QIcon icon = QgsSymbolLayerUtils::symbolPreviewIcon( mComposerPolygon->polygonStyleSymbol(), mPolygonStyleButton->iconSize() );
     mPolygonStyleButton->setIcon( icon );
   }
 }

@@ -31,43 +31,43 @@
  ****************************************************************************/
 
 QgsPointV2::QgsPointV2( double x, double y )
-    : QgsAbstractGeometryV2()
+    : QgsAbstractGeometry()
     , mX( x )
     , mY( y )
     , mZ( 0.0 )
     , mM( 0.0 )
 {
-  mWkbType = QgsWKBTypes::Point;
+  mWkbType = QgsWkbTypes::Point;
 }
 
 QgsPointV2::QgsPointV2( const QgsPoint& p )
-    : QgsAbstractGeometryV2()
+    : QgsAbstractGeometry()
     , mX( p.x() )
     , mY( p.y() )
     , mZ( 0.0 )
     , mM( 0.0 )
 {
-  mWkbType = QgsWKBTypes::Point;
+  mWkbType = QgsWkbTypes::Point;
 }
 
 QgsPointV2::QgsPointV2( QPointF p )
-    : QgsAbstractGeometryV2()
+    : QgsAbstractGeometry()
     , mX( p.x() )
     , mY( p.y() )
     , mZ( 0.0 )
     , mM( 0.0 )
 {
-  mWkbType = QgsWKBTypes::Point;
+  mWkbType = QgsWkbTypes::Point;
 }
 
-QgsPointV2::QgsPointV2( QgsWKBTypes::Type type, double x, double y, double z, double m )
+QgsPointV2::QgsPointV2( QgsWkbTypes::Type type, double x, double y, double z, double m )
     : mX( x )
     , mY( y )
     , mZ( z )
     , mM( m )
 {
   //protect against non-point WKB types
-  Q_ASSERT( QgsWKBTypes::flatType( type ) == QgsWKBTypes::Point );
+  Q_ASSERT( QgsWkbTypes::flatType( type ) == QgsWkbTypes::Point );
   mWkbType = type;
 }
 
@@ -98,8 +98,8 @@ QgsPointV2 *QgsPointV2::clone() const
 
 bool QgsPointV2::fromWkb( QgsConstWkbPtr wkbPtr )
 {
-  QgsWKBTypes::Type type = wkbPtr.readHeader();
-  if ( QgsWKBTypes::flatType( type ) != QgsWKBTypes::Point )
+  QgsWkbTypes::Type type = wkbPtr.readHeader();
+  if ( QgsWkbTypes::flatType( type ) != QgsWkbTypes::Point )
   {
     clear();
     return false;
@@ -128,9 +128,9 @@ bool QgsPointV2::fromWkt( const QString& wkt )
 {
   clear();
 
-  QPair<QgsWKBTypes::Type, QString> parts = QgsGeometryUtils::wktReadBlock( wkt );
+  QPair<QgsWkbTypes::Type, QString> parts = QgsGeometryUtils::wktReadBlock( wkt );
 
-  if ( QgsWKBTypes::flatType( parts.first ) != QgsWKBTypes::Point )
+  if ( QgsWkbTypes::flatType( parts.first ) != QgsWkbTypes::Point )
     return false;
   mWkbType = parts.first;
 
@@ -144,14 +144,14 @@ bool QgsPointV2::fromWkt( const QString& wkt )
   {
     // 3 dimensional coordinates, but not specifically marked as such. We allow this
     // anyway and upgrade geometry to have Z dimension
-    mWkbType = QgsWKBTypes::addZ( mWkbType );
+    mWkbType = QgsWkbTypes::addZ( mWkbType );
   }
   else if ( coordinates.size() >= 4 && ( !is3D() || !isMeasure() ) )
   {
     // 4 (or more) dimensional coordinates, but not specifically marked as such. We allow this
     // anyway and upgrade geometry to have Z&M dimensions
-    mWkbType = QgsWKBTypes::addZ( mWkbType );
-    mWkbType = QgsWKBTypes::addM( mWkbType );
+    mWkbType = QgsWkbTypes::addZ( mWkbType );
+    mWkbType = QgsWkbTypes::addM( mWkbType );
   }
 
   int idx = 0;
@@ -271,14 +271,19 @@ void QgsPointV2::transform( const QgsCoordinateTransform& ct, QgsCoordinateTrans
   }
 }
 
-QgsCoordinateSequenceV2 QgsPointV2::coordinateSequence() const
+QgsCoordinateSequence QgsPointV2::coordinateSequence() const
 {
-  QgsCoordinateSequenceV2 cs;
+  QgsCoordinateSequence cs;
 
-  cs.append( QgsRingSequenceV2() );
-  cs.back().append( QgsPointSequenceV2() << QgsPointV2( *this ) );
+  cs.append( QgsRingSequence() );
+  cs.back().append( QgsPointSequence() << QgsPointV2( *this ) );
 
   return cs;
+}
+
+QgsAbstractGeometry* QgsPointV2::boundary() const
+{
+  return nullptr;
 }
 
 /***************************************************************************
@@ -306,11 +311,12 @@ bool QgsPointV2::moveVertex( QgsVertexId position, const QgsPointV2& newPos )
 
 double QgsPointV2::closestSegment( const QgsPointV2& pt, QgsPointV2& segmentPt,  QgsVertexId& vertexAfter, bool* leftOf, double epsilon ) const
 {
+  Q_UNUSED( pt );
+  Q_UNUSED( segmentPt );
+  Q_UNUSED( vertexAfter );
   Q_UNUSED( leftOf );
   Q_UNUSED( epsilon );
-  segmentPt = *this;
-  vertexAfter = QgsVertexId( 0, 0, 0 );
-  return QgsGeometryUtils::sqrDistance2D( *this, pt );
+  return -1;  // no segments - return error
 }
 
 bool QgsPointV2::nextVertex( QgsVertexId& id, QgsPointV2& vertex ) const
@@ -343,10 +349,10 @@ bool QgsPointV2::nextVertex( QgsVertexId& id, QgsPointV2& vertex ) const
 
 bool QgsPointV2::addZValue( double zValue )
 {
-  if ( QgsWKBTypes::hasZ( mWkbType ) )
+  if ( QgsWkbTypes::hasZ( mWkbType ) )
     return false;
 
-  mWkbType = QgsWKBTypes::addZ( mWkbType );
+  mWkbType = QgsWkbTypes::addZ( mWkbType );
   mZ = zValue;
   clearCache();
   return true;
@@ -354,10 +360,10 @@ bool QgsPointV2::addZValue( double zValue )
 
 bool QgsPointV2::addMValue( double mValue )
 {
-  if ( QgsWKBTypes::hasM( mWkbType ) )
+  if ( QgsWkbTypes::hasM( mWkbType ) )
     return false;
 
-  mWkbType = QgsWKBTypes::addM( mWkbType );
+  mWkbType = QgsWkbTypes::addM( mWkbType );
   mM = mValue;
   clearCache();
   return true;
@@ -378,7 +384,7 @@ bool QgsPointV2::dropZValue()
   if ( !is3D() )
     return false;
 
-  mWkbType = QgsWKBTypes::dropZ( mWkbType );
+  mWkbType = QgsWkbTypes::dropZ( mWkbType );
   mZ = 0.0;
   clearCache();
   return true;
@@ -389,13 +395,13 @@ bool QgsPointV2::dropMValue()
   if ( !isMeasure() )
     return false;
 
-  mWkbType = QgsWKBTypes::dropM( mWkbType );
+  mWkbType = QgsWkbTypes::dropM( mWkbType );
   mM = 0.0;
   clearCache();
   return true;
 }
 
-bool QgsPointV2::convertTo( QgsWKBTypes::Type type )
+bool QgsPointV2::convertTo( QgsWkbTypes::Type type )
 {
   if ( type == mWkbType )
     return true;
@@ -404,21 +410,21 @@ bool QgsPointV2::convertTo( QgsWKBTypes::Type type )
 
   switch ( type )
   {
-    case QgsWKBTypes::Point:
+    case QgsWkbTypes::Point:
       mZ = 0.0;
       mM = 0.0;
       mWkbType = type;
       return true;
-    case QgsWKBTypes::PointZ:
-    case QgsWKBTypes::Point25D:
+    case QgsWkbTypes::PointZ:
+    case QgsWkbTypes::Point25D:
       mM = 0.0;
       mWkbType = type;
       return true;
-    case QgsWKBTypes::PointM:
+    case QgsWkbTypes::PointM:
       mZ = 0.0;
       mWkbType = type;
       return true;
-    case QgsWKBTypes::PointZM:
+    case QgsWkbTypes::PointZM:
       mWkbType = type;
       return true;
     default:

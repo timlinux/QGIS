@@ -25,7 +25,6 @@
 
 #include "qgstransformsettingsdialog.h"
 #include "qgscoordinatereferencesystem.h"
-#include "qgscrscache.h"
 
 QgsTransformSettingsDialog::QgsTransformSettingsDialog( const QString &raster, const QString &output,
     int countGCPpoints, QWidget *parent )
@@ -56,7 +55,7 @@ QgsTransformSettingsDialog::QgsTransformSettingsDialog( const QString &raster, c
   QStringList listCompressionTr;
   Q_FOREACH ( const QString& item, mListCompression )
   {
-    listCompressionTr.append( tr( item.toAscii().data() ) );
+    listCompressionTr.append( tr( item.toLatin1().data() ) );
   }
   cmbCompressionComboBox->addItems( listCompressionTr );
 
@@ -65,7 +64,7 @@ QgsTransformSettingsDialog::QgsTransformSettingsDialog( const QString &raster, c
   cmbCompressionComboBox->setCurrentIndex( s.value( "/Plugin-GeoReferencer/lastcompression", 0 ).toInt() );
 
   QString targetCRSString = s.value( "/Plugin-GeoReferencer/targetsrs" ).toString();
-  QgsCoordinateReferenceSystem targetCRS = QgsCRSCache::instance()->crsByOgcWmsCrs( targetCRSString );
+  QgsCoordinateReferenceSystem targetCRS = QgsCoordinateReferenceSystem::fromOgcWmsCrs( targetCRSString );
   mCrsSelector->setCrs( targetCRS );
 
   mWorldFileCheckBox->setChecked( s.value( "/Plugin-Georeferencer/word_file_checkbox", false ).toBool() );

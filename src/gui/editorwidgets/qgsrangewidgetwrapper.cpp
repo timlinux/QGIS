@@ -19,6 +19,8 @@
 #include "qgsspinbox.h"
 #include "qgsdoublespinbox.h"
 #include "qgsvectorlayer.h"
+#include "qgsdial.h"
+#include "qgsslider.h"
 
 QgsRangeWidgetWrapper::QgsRangeWidgetWrapper( QgsVectorLayer* vl, int fieldIdx, QWidget* editor, QWidget* parent )
     : QgsEditorWidgetWrapper( vl, fieldIdx, editor, parent )
@@ -45,7 +47,6 @@ QWidget* QgsRangeWidgetWrapper::createWidget( QWidget* parent )
   }
   else
   {
-    QgsDebugMsg( QString( "%1" ).arg(( int )layer()->fields().at( fieldIdx() ).type() ) );
     switch ( layer()->fields().at( fieldIdx() ).type() )
     {
       case QVariant::Double:

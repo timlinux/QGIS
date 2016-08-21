@@ -40,6 +40,17 @@ QgsFeatureRequest::QgsFeatureRequest( QgsFeatureId fid )
 {
 }
 
+QgsFeatureRequest::QgsFeatureRequest( QgsFeatureIds fids )
+    : mFilter( FilterFids )
+    , mFilterFid( -1 )
+    , mFilterFids( fids )
+    , mFilterExpression( nullptr )
+    , mFlags( nullptr )
+    , mLimit( -1 )
+{
+
+}
+
 QgsFeatureRequest::QgsFeatureRequest( const QgsRectangle& rect )
     : mFilter( FilterRect )
     , mFilterRect( rect )
@@ -219,7 +230,7 @@ bool QgsFeatureRequest::acceptFeature( const QgsFeature& feature )
       return true;
 
     case QgsFeatureRequest::FilterRect:
-      if ( feature.constGeometry() && feature.constGeometry()->intersects( mFilterRect ) )
+      if ( feature.hasGeometry() && feature.geometry().intersects( mFilterRect ) )
         return true;
       else
         return false;
