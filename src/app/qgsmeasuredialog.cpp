@@ -18,6 +18,7 @@
 #include "qgsmeasuredialog.h"
 #include "qgsmeasuretool.h"
 
+#include "qgsunittypes.h"
 #include "qgslogger.h"
 #include "qgscontexthelp.h"
 #include "qgsdistancearea.h"
@@ -373,13 +374,7 @@ void QgsMeasureDialog::updateUi()
       {
         if ( mDa.willUseEllipsoid() )
         {
-<<<<<<< HEAD
-          resultUnit = QGis::Meters;
-          toolTip += "<br> * " + tr( "Project coordidnate reference system transformation is turned on and ellipsoidal calculation is selected." ) + ' ';
-=======
           resultUnit = QgsUnitTypes::DistanceMeters;
-          toolTip += "<br> * " + tr( "Project CRS transformation is turned on and ellipsoidal calculation is selected." ) + ' ';
->>>>>>> upstream/master
           toolTip += "<br> * " + tr( "The coordinates are transformed to the chosen ellipsoid (%1), and the distance is calculated in %2." ).arg( mDa.ellipsoid(),
                      QgsUnitTypes::toString( resultUnit ) );
         }
