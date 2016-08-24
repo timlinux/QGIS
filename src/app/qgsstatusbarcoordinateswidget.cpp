@@ -74,29 +74,12 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
 
   QRegExp coordValidator( "[+-]?\\d+\\.?\\d*\\s*,\\s*[+-]?\\d+\\.?\\d*" );
   mCoordsEditValidator = new QRegExpValidator( coordValidator, this );
-<<<<<<< HEAD
-
   mLineEdit->setWhatsThis(
         tr( "Shows the map coordinates at the "
             "current cursor position. The display is continuously updated "
             "as the mouse is moved. It also allows editing to set the canvas "
             "center to a given position. The format is longitude,latitude or east,north" ) );
   mLineEdit->setToolTip( tr( "Current map coordinates (longitude,latitude or east,north)" ) );
-=======
-  mLineEdit->setWhatsThis( tr( "Shows the map coordinates at the "
-                               "current cursor position. The display is continuously updated "
-                               "as the mouse is moved. It also allows editing to set the canvas "
-                               "center to a given position. The format is longitude,latitude or east,north" ) );
-  mLineEdit->setToolTip( tr( "Current map coordinate (longitude,latitude or east,north)" ) );
-
-  //toggle to switch between mouse pos and extents display in status bar widget
-  mToggleExtentsViewButton = new QToolButton( this );
-  mToggleExtentsViewButton->setIcon( QgsApplication::getThemeIcon( "tracking.svg" ) );
-  mToggleExtentsViewButton->setToolTip( tr( "Toggle extents and mouse position display" ) );
-  mToggleExtentsViewButton->setCheckable( true );
-  mToggleExtentsViewButton->setAutoRaise( true );
-  connect( mToggleExtentsViewButton, SIGNAL( toggled( bool ) ), this, SLOT( extentsViewToggled( bool ) ) );
->>>>>>> upstream/master
 
   QHBoxLayout* layout = new QHBoxLayout( this );
   setLayout( layout );
@@ -108,7 +91,8 @@ QgsStatusBarCoordinatesWidget::QgsStatusBarCoordinatesWidget( QWidget *parent )
   layout->setAlignment( Qt::AlignRight );
   layout->setSpacing( 0 );
 
-  // When you feel dizzy
+  // When you feel dizzy - this is an easter egg - type 'dizzy' in the coordinate
+  // widget for some fun. Type dizzy again to disable.
   mDizzyTimer = new QTimer( this );
   connect( mDizzyTimer, SIGNAL( timeout() ), this, SLOT( dizzy() ) );
 

@@ -221,6 +221,7 @@
 #include "qgsstatusbarcoordinateswidget.h"
 #include "qgsstatusbarmagnifierwidget.h"
 #include "qgsstatusbarscalewidget.h"
+#include "qgsstatusbarrotationwidget.h"
 #include "qgsstyle.h"
 #include "qgssvgannotationitem.h"
 #include "qgssymbolselectordialog.h"
@@ -568,10 +569,7 @@ QgisApp::QgisApp( QSplashScreen *splash, bool restorePlugins, bool skipVersionCh
     , mScaleWidget( nullptr )
     , mMagnifierWidget( nullptr )
     , mCoordsEdit( nullptr )
-    , mRotationLabelIcon( nullptr )
-    , mRotationLabel( nullptr )
-    , mRotationEdit( nullptr )
-    , mRotationEditValidator( nullptr )
+    , mRotationWidget( nullptr )
     , mProgressBar( nullptr )
     , mRenderSuppressionCBox( nullptr )
     , mOnTheFlyProjectionStatusLabel( nullptr )
@@ -1116,10 +1114,7 @@ QgisApp::QgisApp()
     , mScaleWidget( nullptr )
     , mMagnifierWidget( nullptr )
     , mCoordsEdit( nullptr )
-    , mRotationLabelIcon( nullptr )
-    , mRotationLabel( nullptr )
-    , mRotationEdit( nullptr )
-    , mRotationEditValidator( nullptr )
+    , mRotationWidget( nullptr )
     , mProgressBar( nullptr )
     , mRenderSuppressionCBox( nullptr )
     , mOnTheFlyProjectionStatusLabel( nullptr )
@@ -2340,6 +2335,7 @@ void QgisApp::createStatusBar()
   mCoordsEdit->setFont( myFont );
   statusBar()->addPermanentWidget( mCoordsEdit, 0 );
 
+  //scale widget
   mScaleWidget = new QgsStatusBarScaleWidget( mMapCanvas, statusBar() );
   mScaleWidget->setObjectName( "mScaleWidget" );
   mScaleWidget->setFont( myFont );
@@ -2355,96 +2351,25 @@ void QgisApp::createStatusBar()
   mMagnifierWidget->updateMagnification( QSettings().value( "/qgis/magnifier_factor_default", 1.0 ).toDouble() );
   statusBar()->addPermanentWidget( mMagnifierWidget, 0 );
 
-<<<<<<< HEAD
-  if ( QgsMapCanvas::rotationEnabled() )
-  {
-    // Little icon shown next to rotation label / edit widget
-    mRotationLabelIcon = new QLabel( this );
-    mRotationLabelIcon->setFixedSize(16,16);
-    QPixmap rotationIcon = QgsApplication::getThemePixmap("mActionStatusRotate.svg" );
-    mRotationLabelIcon->setPixmap( rotationIcon.scaled(
-        mRotationLabelIcon->size(),
-        Qt::KeepAspectRatio, Qt::SmoothTransformation ) );
-    mRotationLabelIcon->setObjectName( "mRotationLabelIcon" );
-    mRotationLabelIcon->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-    statusBar()->addPermanentWidget( mRotationLabelIcon, 0 );
-
-    // add a widget to set current rotation
-    // when it loses focus it will be hidden and
-    // the label shown in its place
-    mRotationEdit = new QgsDoubleSpinBox( statusBar() );
-    mRotationEdit->setObjectName( "mRotationEdit" );
-    mRotationEdit->setClearValue( 0.0 );
-    mRotationEdit->setKeyboardTracking( false );
-    mRotationEdit->setMaximumWidth( 120 );
-    mRotationEdit->setDecimals( 1 );
-    mRotationEdit->setRange( -180.0, 180.0 );
-    mRotationEdit->setWrapping( true );
-    mRotationEdit->setSingleStep( 5.0 );
-    mRotationEdit->setFont( myFont );
-    mRotationEdit->setWhatsThis(
-          tr( "Shows the current map clockwise rotation "
-              "in degrees. It also allows editing to set "
-              "the rotation" ) );
-    mRotationEdit->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-    statusBar()->addPermanentWidget( mRotationEdit, 0 );
-    connect( mRotationEdit, SIGNAL( editingFinished() ), this, SLOT( showRotationLabel() ) );
-
-    // add the widget to show the current rotation
-    // this will be hidden when you click it and the
-    // spin box shown in its place
-    mRotationLabel = new QLabel( this );
-    mRotationLabelIcon->setObjectName( "mRotationLabel" );
-    mRotationLabelIcon->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-    statusBar()->addPermanentWidget( mRotationLabel, 0 );
-
-    connect( mRotationEdit, SIGNAL( valueChanged( double ) ), this, SLOT( userRotation() ) );
-
-    showRotation();
-  }
-=======
-  // add a widget to show/set current rotation
-  mRotationLabel = new QLabel( QString(), statusBar() );
-  mRotationLabel->setObjectName( "mRotationLabel" );
-  mRotationLabel->setFont( myFont );
-  mRotationLabel->setMinimumWidth( 10 );
-  //mRotationLabel->setMaximumHeight( 20 );
-  mRotationLabel->setMargin( 3 );
-  mRotationLabel->setAlignment( Qt::AlignCenter );
-  mRotationLabel->setFrameStyle( QFrame::NoFrame );
-  mRotationLabel->setText( tr( "Rotation" ) );
-  mRotationLabel->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-  statusBar()->addPermanentWidget( mRotationLabel, 0 );
-
-  mRotationEdit = new QgsDoubleSpinBox( statusBar() );
-  mRotationEdit->setObjectName( "mRotationEdit" );
-  mRotationEdit->setClearValue( 0.0 );
-  mRotationEdit->setKeyboardTracking( false );
-  mRotationEdit->setMaximumWidth( 120 );
-  mRotationEdit->setDecimals( 1 );
-  mRotationEdit->setRange( -180.0, 180.0 );
-  mRotationEdit->setWrapping( true );
-  mRotationEdit->setSingleStep( 5.0 );
-  mRotationEdit->setFont( myFont );
-  mRotationEdit->setWhatsThis( tr( "Shows the current map clockwise rotation "
-                                   "in degrees. It also allows editing to set "
-                                   "the rotation" ) );
-  mRotationEdit->setToolTip( tr( "Current clockwise map rotation in degrees" ) );
-  statusBar()->addPermanentWidget( mRotationEdit, 0 );
-  connect( mRotationEdit, SIGNAL( valueChanged( double ) ), this, SLOT( userRotation() ) );
-
-  showRotation();
->>>>>>> upstream/master
+  // rotation widget
+  mRotationWidget = new QgsStatusBarRotationWidget(
+    mMapCanvas, statusBar() );
+  mRotationWidget->setObjectName( "mRotationWidget" );
+  mRotationWidget->setFont( myFont );
+  mRotationWidget->setRotation(
+    QSettings().value( "/qgis/rotation_factor_default", 0 ).toDouble() );
+  statusBar()->addPermanentWidget( mRotationWidget );
 
   // render suppression status bar widget
   mRenderSuppressionCBox = new QCheckBox( tr( "Render" ), statusBar() );
   mRenderSuppressionCBox->setObjectName( "mRenderSuppressionCBox" );
   mRenderSuppressionCBox->setChecked( true );
   mRenderSuppressionCBox->setFont( myFont );
-  mRenderSuppressionCBox->setWhatsThis( tr( "When checked, the map layers "
-                                        "are rendered in response to map navigation commands and other "
-                                        "events. When not checked, no rendering is done. This allows you "
-                                        "to add a large number of layers and symbolize them before rendering." ) );
+  mRenderSuppressionCBox->setWhatsThis( tr(
+    "When checked, the map layers "
+    "are rendered in response to map navigation commands and other "
+    "events. When not checked, no rendering is done. This allows you "
+    "to add a large number of layers and symbolize them before rendering." ) );
   mRenderSuppressionCBox->setToolTip( tr( "Toggle map rendering" ) );
   statusBar()->addPermanentWidget( mRenderSuppressionCBox, 0 );
   // On the fly projection status bar icon
@@ -2712,8 +2637,6 @@ void QgisApp::setupConnections()
            this, SLOT( extentChanged() ) );
   connect( mMapCanvas, SIGNAL( scaleChanged( double ) ),
            this, SLOT( showScale( double ) ) );
-  connect( mMapCanvas, SIGNAL( rotationChanged( double ) ),
-           this, SLOT( showRotation() ) );
   connect( mMapCanvas, SIGNAL( scaleChanged( double ) ),
            this, SLOT( updateMouseCoordinatePrecision() ) );
   connect( mMapCanvas, SIGNAL( mapToolSet( QgsMapTool *, QgsMapTool * ) ),
@@ -10182,15 +10105,6 @@ void QgisApp::layersWereAdded( const QList<QgsMapLayer *>& theLayers )
     }
   }
 }
-
-void QgisApp::showRotation()
-{
-  // update the statusbar with the current rotation.
-  double myrotation = mMapCanvas->rotation();
-  mRotationEdit->setValue( myrotation );
-  mRotationLabel->setText( QString( "%1").arg(mRotationEdit->value()) );
-} // QgisApp::showRotation
-
 
 void QgisApp::updateMouseCoordinatePrecision()
 {

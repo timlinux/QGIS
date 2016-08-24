@@ -48,6 +48,7 @@ class QgsCustomDropHandler;
 class QgsStatusBarCoordinatesWidget;
 class QgsStatusBarMagnifierWidget;
 class QgsStatusBarScaleWidget;
+class QgsStatusBarRotationWidget;
 class QgsContrastEnhancement;
 class QgsCustomLayerOrderWidget;
 class QgsDockWidget;
@@ -1136,7 +1137,6 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     void showProgress( int theProgress, int theTotalSteps );
     void extentChanged();
-    void showRotation();
     void showStatusMessage( const QString& theMessage );
     void displayMapToolMessage( const QString& message, QgsMessageBar::MessageLevel level = QgsMessageBar::INFO );
     void displayMessage( const QString& title, const QString& message, QgsMessageBar::MessageLevel level );
@@ -1626,6 +1626,9 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     //! zoom widget
     QgsStatusBarMagnifierWidget *mMagnifierWidget;
+
+    //! rotation widget
+    QgsStatusBarRotationWidget *mRotationWidget;
 
     //! Widget that will live in the statusbar to display and edit coords
     QgsStatusBarCoordinatesWidget *mCoordsEdit;

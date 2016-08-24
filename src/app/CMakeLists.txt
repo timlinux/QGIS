@@ -51,6 +51,7 @@ SET(QGIS_APP_SRCS
   qgsstatusbarcoordinateswidget.cpp
   qgsstatusbarmagnifierwidget.cpp
   qgsstatusbarscalewidget.cpp
+  qgsstatusbarrotationwidget.cpp
   qgsversioninfo.cpp
   qgswelcomepageitemsmodel.cpp
   qgswelcomepage.cpp
@@ -228,6 +229,7 @@ SET (QGIS_APP_MOC_HDRS
   qgsstatusbarcoordinateswidget.h
   qgsstatusbarmagnifierwidget.h
   qgsstatusbarscalewidget.h
+  qgsstatusbarrotationwidget.h
   qgsversioninfo.h
   qgswelcomepageitemsmodel.h
   qgswelcomepage.h
