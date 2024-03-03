@@ -105,3 +105,4 @@ tests/testdata/test_plugin_path/plugin_started.txt
 tests/testdata/widget_config.qlr
 tests/testdata/zip/testtar.tgz.properties
 venv
+.direnv
