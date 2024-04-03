@@ -161,6 +161,7 @@ class QgsGpsToolBar;
 class QgsAppGpsSettingsMenu;
 class Qgs3DMapScene;
 class Qgs3DMapCanvas;
+class QgsAppCanvasFiltering;
 
 #include <QMainWindow>
 #include <QToolBar>
@@ -892,6 +893,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QgsMapToolIdentifyAction *identifyMapTool() const;
 
     QgsMapLayerActionContext createMapLayerActionContext();
+
+    QgsAppCanvasFiltering *canvasFiltering();
 
     /**
      * Take screenshots for user documentation
@@ -1981,7 +1984,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     //! show Python console
     void showPythonDialog();
 
-    //! add Python cnosole at start up
+    //! add Python console at start up
     void initPythonConsoleOptions();
 
     //! Shows a warning when an older/newer project file is read.
@@ -2509,7 +2512,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QgsMapOverviewCanvas *mOverviewCanvas = nullptr;
     //! Table of contents (legend) for the map
     QgsLayerTreeView *mLayerTreeView = nullptr;
-    //! Keep track of whether ongoing dataset(s) is/are being dropped through the table of contens
+    //! Keep track of whether ongoing dataset(s) is/are being dropped through the table of contents
     bool mLayerTreeDrop = false;
 
     //! Helper class that connects layer tree with map canvas
@@ -2643,6 +2646,7 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
     QToolButton *mFilterLegendToolButton = nullptr;
     QAction *mFilterLegendByMapContentAction = nullptr;
     QAction *mFilterLegendToggleShowPrivateLayersAction = nullptr;
+    QAction *mFilterLegendToggleHideValidLayersAction = nullptr;
     QAction *mActionStyleDock = nullptr;
 
     QgsLegendFilterButton *mLegendExpressionFilterButton = nullptr;
@@ -2729,6 +2733,8 @@ class APP_EXPORT QgisApp : public QMainWindow, private Ui::MainWindow
 
     QMap< QString, QToolButton * > mAnnotationItemGroupToolButtons;
     QAction *mAnnotationsItemInsertBefore = nullptr; // Used to insert annotation items at the appropriate location in the annotations toolbar
+
+    QgsAppCanvasFiltering *mAppCanvasFiltering = nullptr;
 
     QSet<QgsMapCanvasDockWidget *> mOpen2DMapViews;
 

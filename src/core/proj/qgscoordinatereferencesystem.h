@@ -337,6 +337,17 @@ class CORE_EXPORT QgsCoordinateReferenceSystem
     */
     static QgsCoordinateReferenceSystem fromSrsId( long srsId );
 
+    /**
+     * Given a horizontal and vertical CRS, attempts to create a compound CRS
+     * from them.
+     *
+     * Returns an invalid CRS if the inputs are not suitable for a compound CRS,
+     * or the compound CRS could not be created for the combination.
+     *
+     * \since QGIS 3.38
+     */
+    static QgsCoordinateReferenceSystem createCompoundCrs( const QgsCoordinateReferenceSystem &horizontalCrs, const QgsCoordinateReferenceSystem &verticalCrs );
+
     // Misc helper functions -----------------------
 
     // TODO QGIS 4: remove type and always use EPSG code, rename to createFromEpsg
@@ -895,6 +906,14 @@ class CORE_EXPORT QgsCoordinateReferenceSystem
      */
     QString toOgcUri() const;
 
+    /**
+     * Returns the crs as OGC URN (format: urn:ogc:def:crs:OGC:1.3:CRS84)
+     * Returns an empty string on failure.
+     *
+     * \since QGIS 3.38
+     */
+    QString toOgcUrn() const;
+
     // Mutators -----------------------------------
 
     /**
@@ -980,6 +999,30 @@ class CORE_EXPORT QgsCoordinateReferenceSystem
      * \since QGIS 3.24
      */
     QgsCoordinateReferenceSystem toGeographicCrs() const;
+
+    /**
+     * Returns the horizontal CRS associated with this CRS object.
+     *
+     * In the case of a compound CRS, this method will return just the horizontal CRS component.
+     *
+     * An invalid CRS will be returned if the object does not contain a horizontal component.
+     *
+     * \see verticalCrs()
+     * \since QGIS 3.38
+     */
+    QgsCoordinateReferenceSystem horizontalCrs() const;
+
+    /**
+     * Returns the vertical CRS associated with this CRS object.
+     *
+     * In the case of a compound CRS, this method will return just the vertical CRS component.
+     *
+     * An invalid CRS will be returned if the object does not contain a vertical component.
+     *
+     * \see horizontalCrs()
+     * \since QGIS 3.38
+     */
+    QgsCoordinateReferenceSystem verticalCrs() const;
 
     //! Returns auth id of related geographic CRS
     QString geographicCrsAuthId() const;

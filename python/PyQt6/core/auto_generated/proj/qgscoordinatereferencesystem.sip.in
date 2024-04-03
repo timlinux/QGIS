@@ -323,6 +323,17 @@ Creates a CRS from a specified QGIS SRS ID.
 .. seealso:: :py:func:`validSrsIds`
 %End
 
+    static QgsCoordinateReferenceSystem createCompoundCrs( const QgsCoordinateReferenceSystem &horizontalCrs, const QgsCoordinateReferenceSystem &verticalCrs );
+%Docstring
+Given a horizontal and vertical CRS, attempts to create a compound CRS
+from them.
+
+Returns an invalid CRS if the inputs are not suitable for a compound CRS,
+or the compound CRS could not be created for the combination.
+
+.. versionadded:: 3.38
+%End
+
 
 
  bool createFromId( long id, CrsType type = PostgisCrsId ) /Deprecated/;
@@ -975,6 +986,14 @@ Returns an empty string on failure.
 .. versionadded:: 3.30
 %End
 
+    QString toOgcUrn() const;
+%Docstring
+Returns the crs as OGC URN (format: urn:ogc:def:crs:OGC:1.3:CRS84)
+Returns an empty string on failure.
+
+.. versionadded:: 3.38
+%End
+
 
     void updateDefinition();
 %Docstring
@@ -1074,6 +1093,32 @@ May return an invalid CRS if the geographic CRS could not be determined.
    This method will always return a longitude, latitude ordered CRS.
 
 .. versionadded:: 3.24
+%End
+
+    QgsCoordinateReferenceSystem horizontalCrs() const;
+%Docstring
+Returns the horizontal CRS associated with this CRS object.
+
+In the case of a compound CRS, this method will return just the horizontal CRS component.
+
+An invalid CRS will be returned if the object does not contain a horizontal component.
+
+.. seealso:: :py:func:`verticalCrs`
+
+.. versionadded:: 3.38
+%End
+
+    QgsCoordinateReferenceSystem verticalCrs() const;
+%Docstring
+Returns the vertical CRS associated with this CRS object.
+
+In the case of a compound CRS, this method will return just the vertical CRS component.
+
+An invalid CRS will be returned if the object does not contain a vertical component.
+
+.. seealso:: :py:func:`horizontalCrs`
+
+.. versionadded:: 3.38
 %End
 
     QString geographicCrsAuthId() const;

@@ -19,6 +19,7 @@
 #include "qgslogger.h"
 #include "qgsreadwritelocker.h"
 #include "qgsblockingnetworkrequest.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsnetworkaccessmanager.h"
 #include "qgsjsonutils.h"
 
@@ -37,28 +38,43 @@ QgsSensorThingsSharedData::QgsSensorThingsSharedData( const QString &uri )
   mGeometryField = QgsSensorThingsUtils::geometryFieldForEntityType( mEntityType );
   // use initial value of maximum page size as default
   mMaximumPageSize = uriParts.value( QStringLiteral( "pageSize" ), mMaximumPageSize ).toInt();
+  // will default to 0 if not specified, i.e. no limit
+  mFeatureLimit = uriParts.value( QStringLiteral( "featureLimit" ) ).toInt();
+  mFilterExtent = uriParts.value( QStringLiteral( "bounds" ) ).value< QgsRectangle >();
+  mSubsetString = uriParts.value( QStringLiteral( "sql" ) ).toString();
 
   if ( QgsSensorThingsUtils::entityTypeHasGeometry( mEntityType ) )
   {
-    const QString geometryType = uriParts.value( QStringLiteral( "geometryType" ) ).toString();
-    if ( geometryType.compare( QLatin1String( "point" ), Qt::CaseInsensitive ) == 0 )
+    if ( uriParts.contains( QStringLiteral( "geometryType" ) ) )
     {
-      mGeometryType = Qgis::WkbType::PointZ;
+      const QString geometryType = uriParts.value( QStringLiteral( "geometryType" ) ).toString();
+      if ( geometryType.compare( QLatin1String( "point" ), Qt::CaseInsensitive ) == 0 )
+      {
+        mGeometryType = Qgis::WkbType::PointZ;
+      }
+      else if ( geometryType.compare( QLatin1String( "multipoint" ), Qt::CaseInsensitive ) == 0 )
+      {
+        mGeometryType = Qgis::WkbType::MultiPointZ;
+      }
+      else if ( geometryType.compare( QLatin1String( "line" ), Qt::CaseInsensitive ) == 0 )
+      {
+        mGeometryType = Qgis::WkbType::MultiLineStringZ;
+      }
+      else if ( geometryType.compare( QLatin1String( "polygon" ), Qt::CaseInsensitive ) == 0 )
+      {
+        mGeometryType = Qgis::WkbType::MultiPolygonZ;
+      }
+
+      if ( mGeometryType != Qgis::WkbType::NoGeometry )
+      {
+        // geometry is always GeoJSON spec (for now, at least), so CRS will always be WGS84
+        mSourceCRS = QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:4326" ) );
+      }
     }
-    else if ( geometryType.compare( QLatin1String( "multipoint" ), Qt::CaseInsensitive ) == 0 )
+    else
     {
-      mGeometryType = Qgis::WkbType::MultiPointZ;
+      mGeometryType = Qgis::WkbType::NoGeometry;
     }
-    else if ( geometryType.compare( QLatin1String( "line" ), Qt::CaseInsensitive ) == 0 )
-    {
-      mGeometryType = Qgis::WkbType::MultiLineStringZ;
-    }
-    else if ( geometryType.compare( QLatin1String( "polygon" ), Qt::CaseInsensitive ) == 0 )
-    {
-      mGeometryType = Qgis::WkbType::MultiPolygonZ;
-    }
-    // geometry is always GeoJSON spec (for now, at least), so CRS will always be WGS84
-    mSourceCRS = QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:4326" ) );
   }
   else
   {
@@ -130,6 +146,16 @@ QUrl QgsSensorThingsSharedData::parseUrl( const QUrl &url, bool *isTestEndpoint 
   return modifiedUrl;
 }
 
+QgsRectangle QgsSensorThingsSharedData::extent() const
+{
+  QgsReadWriteLocker locker( mReadWriteLock, QgsReadWriteLocker::Read );
+
+  // Since we can't retrieve the actual layer extent via SensorThings API, we use a pessimistic
+  // global extent until we've retrieved all the features from the layer
+  return hasCachedAllFeatures() ? mFetchedFeatureExtent
+         : ( !mFilterExtent.isNull() ? mFilterExtent : QgsRectangle( -180, -90, 180, 90 ) );
+}
+
 long long QgsSensorThingsSharedData::featureCount( QgsFeedback *feedback ) const
 {
   QgsReadWriteLocker locker( mReadWriteLock, QgsReadWriteLocker::Read );
@@ -142,8 +168,12 @@ long long QgsSensorThingsSharedData::featureCount( QgsFeedback *feedback ) const
   // return no features, just the total count
   QString countUri = QStringLiteral( "%1?$top=0&$count=true" ).arg( mEntityBaseUri );
   const QString typeFilter = QgsSensorThingsUtils::filterForWkbType( mEntityType, mGeometryType );
-  if ( !typeFilter.isEmpty() )
-    countUri += QStringLiteral( "&$filter=" ) + typeFilter;
+  const QString extentFilter = QgsSensorThingsUtils::filterForExtent( mGeometryField, mFilterExtent );
+  QString filterString = QgsSensorThingsUtils::combineFilters( { typeFilter, extentFilter, mSubsetString } );
+  if ( !filterString.isEmpty() )
+    filterString = QStringLiteral( "&$filter=" ) + filterString;
+  if ( !filterString.isEmpty() )
+    countUri += filterString;
 
   const QUrl url = parseUrl( QUrl( countUri ) );
 
@@ -177,6 +207,8 @@ long long QgsSensorThingsSharedData::featureCount( QgsFeedback *feedback ) const
       }
 
       mFeatureCount = rootContent["@iot.count"].get<long long>();
+      if ( mFeatureLimit > 0 && mFeatureCount > mFeatureLimit )
+        mFeatureCount = mFeatureLimit;
     }
     catch ( const json::parse_error &ex )
     {
@@ -187,10 +219,17 @@ long long QgsSensorThingsSharedData::featureCount( QgsFeedback *feedback ) const
   return mFeatureCount;
 }
 
+QString QgsSensorThingsSharedData::subsetString() const
+{
+  return mSubsetString;
+}
+
 bool QgsSensorThingsSharedData::hasCachedAllFeatures() const
 {
   QgsReadWriteLocker locker( mReadWriteLock, QgsReadWriteLocker::Read );
-  return mHasCachedAllFeatures || ( mFeatureCount > 0 && mCachedFeatures.size() == mFeatureCount );
+  return mHasCachedAllFeatures
+         || ( mFeatureCount > 0 && mCachedFeatures.size() == mFeatureCount )
+         || ( mFeatureLimit > 0 && mCachedFeatures.size() >= mFeatureLimit );
 }
 
 bool QgsSensorThingsSharedData::getFeature( QgsFeatureId id, QgsFeature &f, QgsFeedback *feedback )
@@ -213,10 +252,17 @@ bool QgsSensorThingsSharedData::getFeature( QgsFeatureId id, QgsFeature &f, QgsF
   if ( mNextPage.isEmpty() )
   {
     locker.changeMode( QgsReadWriteLocker::Write );
-    mNextPage = QStringLiteral( "%1?$top=%2&$count=false" ).arg( mEntityBaseUri ).arg( mMaximumPageSize );
+
+    int thisPageSize = mMaximumPageSize;
+    if ( mFeatureLimit > 0 && ( mCachedFeatures.size() + thisPageSize ) > mFeatureLimit )
+      thisPageSize = mFeatureLimit - mCachedFeatures.size();
+
+    mNextPage = QStringLiteral( "%1?$top=%2&$count=false" ).arg( mEntityBaseUri ).arg( thisPageSize );
     const QString typeFilter = QgsSensorThingsUtils::filterForWkbType( mEntityType, mGeometryType );
-    if ( !typeFilter.isEmpty() )
-      mNextPage += QStringLiteral( "&$filter=" ) + typeFilter;
+    const QString extentFilter = QgsSensorThingsUtils::filterForExtent( mGeometryField, mFilterExtent );
+    const QString filterString = QgsSensorThingsUtils::combineFilters( { typeFilter, extentFilter, mSubsetString } );
+    if ( !filterString.isEmpty() )
+      mNextPage += QStringLiteral( "&$filter=" ) + filterString;
   }
 
   locker.unlock();
@@ -243,18 +289,39 @@ bool QgsSensorThingsSharedData::getFeature( QgsFeatureId id, QgsFeature &f, QgsF
 
 QgsFeatureIds QgsSensorThingsSharedData::getFeatureIdsInExtent( const QgsRectangle &extent, QgsFeedback *feedback, const QString &thisPage, QString &nextPage, const QgsFeatureIds &alreadyFetchedIds )
 {
-  const QgsGeometry extentGeom = QgsGeometry::fromRect( extent );
+  const QgsRectangle requestExtent = mFilterExtent.isNull() ? extent : extent.intersect( mFilterExtent );
+  const QgsGeometry extentGeom = QgsGeometry::fromRect( requestExtent );
   QgsReadWriteLocker locker( mReadWriteLock, QgsReadWriteLocker::Read );
 
   if ( hasCachedAllFeatures() || mCachedExtent.contains( extentGeom ) )
   {
     // all features cached locally, rely on local spatial index
-    return qgis::listToSet( mSpatialIndex.intersects( extent ) );
+    return qgis::listToSet( mSpatialIndex.intersects( requestExtent ) );
   }
 
-  // TODO -- is using 'geography' always correct here?
   const QString typeFilter = QgsSensorThingsUtils::filterForWkbType( mEntityType, mGeometryType );
-  QString queryUrl = !thisPage.isEmpty() ? thisPage : QStringLiteral( "%1?$top=%2&$count=false&$filter=geo.intersects(%3, geography'%4')%5" ).arg( mEntityBaseUri ).arg( mMaximumPageSize ).arg( mGeometryField, extent.asWktPolygon(), typeFilter.isEmpty() ? QString() : ( QStringLiteral( " and " ) + typeFilter ) );
+  const QString extentFilter = QgsSensorThingsUtils::filterForExtent( mGeometryField, requestExtent );
+  QString filterString = QgsSensorThingsUtils::combineFilters( { typeFilter, extentFilter, mSubsetString } );
+  if ( !filterString.isEmpty() )
+    filterString = QStringLiteral( "&$filter=" ) + filterString;
+  int thisPageSize = mMaximumPageSize;
+  QString queryUrl;
+  if ( !thisPage.isEmpty() )
+  {
+    queryUrl = thisPage;
+    const thread_local QRegularExpression topRe( QStringLiteral( "\\$top=\\d+" ) );
+    const QRegularExpressionMatch match = topRe.match( queryUrl );
+    if ( match.hasMatch() )
+    {
+      if ( mFeatureLimit > 0 && ( mCachedFeatures.size() + thisPageSize ) > mFeatureLimit )
+        thisPageSize = mFeatureLimit - mCachedFeatures.size();
+      queryUrl = queryUrl.left( match.capturedStart( 0 ) ) + QStringLiteral( "$top=%1" ).arg( thisPageSize ) + queryUrl.mid( match.capturedEnd( 0 ) );
+    }
+  }
+  else
+  {
+    queryUrl = QStringLiteral( "%1?$top=%2&$count=false%3" ).arg( mEntityBaseUri ).arg( thisPageSize ).arg( filterString );
+  }
 
   if ( thisPage.isEmpty() && mCachedExtent.intersects( extentGeom ) )
   {
@@ -262,7 +329,7 @@ QgsFeatureIds QgsSensorThingsSharedData::getFeatureIdsInExtent( const QgsRectang
     // This is slightly nicer from a rendering point of view, because panning the map won't see features
     // previously visible disappear temporarily while we wait for them to be included in the service's result set...
     nextPage = queryUrl;
-    return qgis::listToSet( mSpatialIndex.intersects( extent ) );
+    return qgis::listToSet( mSpatialIndex.intersects( requestExtent ) );
   }
 
   locker.unlock();
@@ -306,6 +373,7 @@ void QgsSensorThingsSharedData::clearCache()
   mCachedFeatures.clear();
   mIotIdToFeatureId.clear();
   mSpatialIndex = QgsSpatialIndex();
+  mFetchedFeatureExtent = QgsRectangle();
 }
 
 bool QgsSensorThingsSharedData::processFeatureRequest( QString &nextPage, QgsFeedback *feedback, const std::function< void( const QgsFeature & ) > &fetchedFeatureCallback, const std::function<bool ()> &continueFetchingCallback, const std::function<void ()> &onNoMoreFeaturesCallback )
@@ -420,6 +488,14 @@ bool QgsSensorThingsSharedData::processFeatureRequest( QString &nextPage, QgsFee
               };
 
               auto getVariantMap = []( const basic_json<> &json, const char *tag ) -> QVariant
+              {
+                if ( !json.contains( tag ) )
+                  return QVariant();
+
+                return QgsJsonUtils::jsonToVariant( json[tag] );
+              };
+
+              auto getVariantList = []( const basic_json<> &json, const char *tag ) -> QVariant
               {
                 if ( !json.contains( tag ) )
                   return QVariant();
@@ -602,24 +678,57 @@ bool QgsSensorThingsSharedData::processFeatureRequest( QString &nextPage, QgsFee
                     << properties
                   );
                   break;
+
+                case Qgis::SensorThingsEntity::MultiDatastream:
+                {
+                  std::pair< QVariant, QVariant > phenomenonTime = getDateTimeRange( featureData, "phenomenonTime" );
+                  std::pair< QVariant, QVariant > resultTime = getDateTimeRange( featureData, "resultTime" );
+                  feature.setAttributes(
+                    QgsAttributes()
+                    << iotId
+                    << selfLink
+                    << getString( featureData, "name" )
+                    << getString( featureData, "description" )
+                    << getVariantList( featureData, "unitOfMeasurements" )
+                    << getString( featureData, "observationType" )
+                    << getStringList( featureData, "multiObservationDataTypes" )
+                    << properties
+                    << phenomenonTime.first
+                    << phenomenonTime.second
+                    << resultTime.first
+                    << resultTime.second
+                  );
+                  break;
+                }
               }
               // NOLINTEND(bugprone-branch-clone)
 
               // Set geometry
-              if ( mGeometryType != Qgis::WkbType::NoGeometry && featureData.contains( mGeometryField.toLocal8Bit().constData() ) )
+              if ( mGeometryType != Qgis::WkbType::NoGeometry )
               {
-                feature.setGeometry( QgsJsonUtils::geometryFromGeoJson( featureData[mGeometryField.toLocal8Bit().constData()] ) );
+                if ( featureData.contains( mGeometryField.toLocal8Bit().constData() ) )
+                {
+                  const auto &geometryPart = featureData[mGeometryField.toLocal8Bit().constData()];
+                  if ( geometryPart.contains( "geometry" ) )
+                    feature.setGeometry( QgsJsonUtils::geometryFromGeoJson( geometryPart["geometry"] ) );
+                  else
+                    feature.setGeometry( QgsJsonUtils::geometryFromGeoJson( geometryPart ) );
+                }
               }
 
               mCachedFeatures.insert( feature.id(), feature );
               mIotIdToFeatureId.insert( iotId, feature.id() );
               mSpatialIndex.addFeature( feature );
+              mFetchedFeatureExtent.combineExtentWith( feature.geometry().boundingBox() );
 
               fetchedFeatureCallback( feature );
+
+              if ( mFeatureLimit > 0 && mFeatureLimit <= mCachedFeatures.size() )
+                break;
             }
             locker.unlock();
 
-            if ( rootContent.contains( "@iot.nextLink" ) )
+            if ( rootContent.contains( "@iot.nextLink" ) && ( mFeatureLimit == 0 || mFeatureLimit > mCachedFeatures.size() ) )
             {
               nextPage = QString::fromStdString( rootContent["@iot.nextLink"].get<std::string>() );
             }

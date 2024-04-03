@@ -33,9 +33,8 @@ class QgsSensorThingsSourceSelect : public QgsAbstractDataSourceWidget, private 
 
   public:
     QgsSensorThingsSourceSelect( QWidget *parent = nullptr, Qt::WindowFlags fl = QgsGuiUtils::ModalDialogFlags, QgsProviderRegistry::WidgetMode widgetMode = QgsProviderRegistry::WidgetMode::None );
-
-    //! Determines the layers the user selected
     void addButtonClicked() override;
+    void setMapCanvas( QgsMapCanvas *mapCanvas ) override;
 
   private slots:
 
@@ -51,6 +50,7 @@ class QgsSensorThingsSourceSelect : public QgsAbstractDataSourceWidget, private 
     void btnLoad_clicked();
     //! Stores the selected datasource whenerver it is changed
     void cmbConnections_currentTextChanged( const QString &text );
+    void buildFilter();
 
     void validate();
 

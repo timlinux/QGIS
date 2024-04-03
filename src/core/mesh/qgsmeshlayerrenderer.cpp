@@ -42,6 +42,7 @@
 #include "qgsapplication.h"
 #include "qgsruntimeprofiler.h"
 #include "qgsexpressioncontextutils.h"
+#include "qgsmeshlayerelevationproperties.h"
 
 QgsMeshLayerRenderer::QgsMeshLayerRenderer(
   QgsMeshLayer *layer,
@@ -89,9 +90,28 @@ QgsMeshLayerRenderer::QgsMeshLayerRenderer(
 
   if ( layer->elevationProperties() && layer->elevationProperties()->hasElevation() )
   {
+    QgsMeshLayerElevationProperties *elevProp = qobject_cast<QgsMeshLayerElevationProperties *>( layer->elevationProperties() );
+
     mRenderElevationMap = true;
-    mElevationScale = layer->elevationProperties()->zScale();
-    mElevationOffset = layer->elevationProperties()->zOffset();
+    mElevationScale = elevProp->zScale();
+    mElevationOffset = elevProp->zOffset();
+
+    if ( !context.zRange().isInfinite() )
+    {
+      switch ( elevProp->mode() )
+      {
+        case Qgis::MeshElevationMode::FixedElevationRange:
+          // don't need to handle anything here -- the layer renderer will never be created if the
+          // render context range doesn't match the layer's fixed elevation range
+          break;
+
+        case Qgis::MeshElevationMode::FromVertices:
+        {
+          // TODO -- filtering by mesh z values is not currently implemented
+          break;
+        }
+      }
+    }
   }
 
   mPreparationTime = timer.elapsed();
@@ -537,14 +557,14 @@ void QgsMeshLayerRenderer::renderScalarDatasetOnEdges( const QgsMeshRendererScal
   QgsRenderContext &context = *renderContext();
   const QVector<QgsMeshEdge> edges = mTriangularMesh.edges();
   const QVector<QgsMeshVertex> vertices = mTriangularMesh.vertices();
-  const QList<int> egdesInExtent = mTriangularMesh.edgeIndexesForRectangle( context.mapExtent() );
+  const QList<int> edgesInExtent = mTriangularMesh.edgeIndexesForRectangle( context.mapExtent() );
 
   QgsInterpolatedLineRenderer edgePlotter;
   edgePlotter.setInterpolatedColor( QgsInterpolatedLineColor( scalarSettings.colorRampShader() ) );
   edgePlotter.setInterpolatedWidth( QgsInterpolatedLineWidth( scalarSettings.edgeStrokeWidth() ) );
   edgePlotter.setWidthUnit( scalarSettings.edgeStrokeWidthUnit() );
 
-  for ( const int i : egdesInExtent )
+  for ( const int i : edgesInExtent )
   {
     if ( context.renderingStopped() )
       break;

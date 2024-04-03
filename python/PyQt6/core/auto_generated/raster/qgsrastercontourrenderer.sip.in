@@ -50,16 +50,10 @@ Creates an instance of the renderer based on definition from XML (used by render
 
     virtual QList<QgsLayerTreeModelLegendNode *> createLegendNodes( QgsLayerTreeLayer *nodeLayer ) /Factory/;
 
+    virtual int inputBand() const;
 
+    virtual bool setInputBand( int band );
 
-    int inputBand() const;
-%Docstring
-Returns the number of the input raster band
-%End
-    void setInputBand( int band );
-%Docstring
-Sets the number of the input raster band
-%End
 
     double contourInterval() const;
 %Docstring

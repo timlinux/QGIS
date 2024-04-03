@@ -233,6 +233,7 @@ set(QGIS_GUI_SRCS
   editorwidgets/qgsvaluerelationsearchwidgetwrapper.cpp
   editorwidgets/qgsvaluerelationwidgetfactory.cpp
 
+  elevation/qgselevationcontrollerwidget.cpp
   elevation/qgselevationprofilecanvas.cpp
   elevation/qgselevationprofilelayertreeview.cpp
 
@@ -464,6 +465,7 @@ set(QGIS_GUI_SRCS
   providers/sensorthings/qgssensorthingsguiprovider.cpp
   providers/sensorthings/qgssensorthingssourceselect.cpp
   providers/sensorthings/qgssensorthingssourcewidget.cpp
+  providers/sensorthings/qgssensorthingssubseteditor.cpp
 
   providers/vtpkvectortiles/qgsvtpkvectortileguiprovider.cpp
   providers/vtpkvectortiles/qgsvtpkvectortilesourcewidget.cpp
@@ -682,6 +684,7 @@ set(QGIS_GUI_SRCS
   qgsoptionsdialoghighlightwidget.cpp
   qgsoptionsdialoghighlightwidgetsimpl.cpp
   qgsorderbydialog.cpp
+  qgsoverlaywidgetlayout.cpp
   qgsowssourceselect.cpp
   qgsowssourcewidget.cpp
   qgspanelwidget.cpp
@@ -955,6 +958,7 @@ set(QGIS_GUI_HDRS
   qgsoptionsdialoghighlightwidgetsimpl.h
   qgsoptionswidgetfactory.h
   qgsorderbydialog.h
+  qgsoverlaywidgetlayout.h
   qgsowssourceselect.h
   qgsowssourcewidget.h
   qgspanelwidget.h
@@ -1194,6 +1198,7 @@ set(QGIS_GUI_HDRS
   effects/qgspainteffectpropertieswidget.h
   effects/qgspainteffectwidget.h
 
+  elevation/qgselevationcontrollerwidget.h
   elevation/qgselevationprofilecanvas.h
   elevation/qgselevationprofilelayertreeview.h
 
@@ -1426,6 +1431,7 @@ set(QGIS_GUI_HDRS
   providers/sensorthings/qgssensorthingsguiprovider.h
   providers/sensorthings/qgssensorthingssourceselect.h
   providers/sensorthings/qgssensorthingssourcewidget.h
+  providers/sensorthings/qgssensorthingssubseteditor.h
 
   providers/vtpkvectortiles/qgsvtpkvectortileguiprovider.h
   providers/vtpkvectortiles/qgsvtpkvectortilesourcewidget.h
@@ -1792,6 +1798,8 @@ if(ENABLE_MODELTEST)
   target_link_libraries(qgis_gui ${QT_VERSION_BASE}::Test)
 endif()
 
+# We use private headers from core that need this
+target_compile_definitions(qgis_gui PRIVATE "CMAKE_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\"")
 target_compile_definitions(qgis_gui PRIVATE "-DQT_NO_FOREACH")
 
 if(WIN32)

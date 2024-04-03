@@ -387,8 +387,8 @@ class Repositories(QObject):
                         "plugin_id": plugin_id,
                         "name": pluginNodes.item(i).toElement().attribute("name"),
                         "version_available": version,
-                        "version_available_stable": version if not experimental else "",
-                        "version_available_experimental": version if experimental else "",
+                        "version_available_stable": normalizeVersion(version) if not experimental else "",
+                        "version_available_experimental": normalizeVersion(version) if experimental else "",
                         "description": pluginNodes.item(i).firstChildElement("description").text().strip(),
                         "about": pluginNodes.item(i).firstChildElement("about").text().strip(),
                         "author_name": pluginNodes.item(i).firstChildElement("author_name").text().strip(),
@@ -583,7 +583,7 @@ class Plugins(QObject):
 
         qt_version = int(QT_VERSION_STR.split('.')[0])
         supports_qt6 = pluginMetadata("supportsQt6").strip().upper() in ("TRUE", "YES")
-        if qt_version == 6 and not supports_qt6:
+        if qt_version == 6 and not supports_qt6 and "QGIS_DISABLE_SUPPORTS_QT6_CHECK" not in os.environ:
             error = "incompatible"
             errorDetails = QCoreApplication.translate("QgsPluginInstaller", "Plugin does not support Qt6 versions of QGIS")
         elif version:

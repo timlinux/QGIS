@@ -46,7 +46,7 @@
 
 QgsLayoutItemLegend::QgsLayoutItemLegend( QgsLayout *layout )
   : QgsLayoutItem( layout )
-  , mLegendModel( new QgsLegendModel( layout->project()->layerTreeRoot(), this ) )
+  , mLegendModel( new QgsLegendModel( nullptr, this ) )
 {
 #if 0 //no longer required?
   connect( &layout->atlasComposition(), &QgsAtlasComposition::renderEnded, this, &QgsLayoutItemLegend::onAtlasEnded );
@@ -104,6 +104,8 @@ void QgsLayoutItemLegend::paint( QPainter *painter, const QStyleOptionGraphicsIt
 {
   if ( !painter )
     return;
+
+  ensureModelIsInitialized();
 
   if ( mFilterAskedForUpdate )
   {
@@ -309,11 +311,28 @@ bool QgsLayoutItemLegend::resizeToContents() const
 
 void QgsLayoutItemLegend::setCustomLayerTree( QgsLayerTree *rootGroup )
 {
-  mLegendModel->setRootGroup( rootGroup ? rootGroup : ( mLayout ? mLayout->project()->layerTreeRoot() : nullptr ) );
+  if ( !mDeferLegendModelInitialization )
+  {
+    mLegendModel->setRootGroup( rootGroup ? rootGroup : ( mLayout ? mLayout->project()->layerTreeRoot() : nullptr ) );
+  }
 
   mCustomLayerTree.reset( rootGroup );
 }
 
+void QgsLayoutItemLegend::ensureModelIsInitialized()
+{
+  if ( mDeferLegendModelInitialization )
+  {
+    mDeferLegendModelInitialization = false;
+    setCustomLayerTree( mCustomLayerTree.release() );
+  }
+}
+
+QgsLegendModel *QgsLayoutItemLegend::model()
+{
+  ensureModelIsInitialized();
+  return mLegendModel.get();
+}
 
 void QgsLayoutItemLegend::setAutoUpdateModel( bool autoUpdate )
 {
@@ -1020,7 +1039,10 @@ void QgsLayoutItemLegend::clearLegendCachedData()
     }
   };
 
-  clearNodeCache( mLegendModel->rootGroup() );
+  if ( QgsLayerTree *rootGroup = mLegendModel->rootGroup() )
+  {
+    clearNodeCache( rootGroup );
+  }
 }
 
 void QgsLayoutItemLegend::mapLayerStyleOverridesChanged()
@@ -1381,36 +1403,6 @@ QVariant QgsLegendModel::data( const QModelIndex &index, int role ) const
         name += QStringLiteral( " [%1]" ).arg( vlayer->featureCount() );
         node->setCustomProperty( QStringLiteral( "cached_name" ), name );
         return name;
-      }
-    }
-
-    const bool evaluate = ( vlayer && !nodeLayer->labelExpression().isEmpty() ) || name.contains( "[%" );
-    if ( evaluate )
-    {
-      QgsExpressionContext expressionContext;
-      if ( vlayer )
-      {
-        connect( vlayer, &QgsVectorLayer::symbolFeatureCountMapChanged, this, &QgsLegendModel::forceRefresh, Qt::UniqueConnection );
-        // counting is done here to ensure that a valid vector layer needs to be evaluated, count is used to validate previous count or update the count if invalidated
-        vlayer->countSymbolFeatures();
-      }
-
-      if ( mLayoutLegend )
-        expressionContext = mLayoutLegend->createExpressionContext();
-
-      const QList<QgsLayerTreeModelLegendNode *> legendnodes = layerLegendNodes( nodeLayer, false );
-      if ( ! legendnodes.isEmpty() )
-      {
-        if ( legendnodes.count() > 1 ) // evaluate all existing legend nodes but leave the name for the legend evaluator
-        {
-          for ( QgsLayerTreeModelLegendNode *treenode : legendnodes )
-          {
-            if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( treenode ) )
-              symnode->evaluateLabel( expressionContext );
-          }
-        }
-        else if ( QgsSymbolLegendNode *symnode = qobject_cast<QgsSymbolLegendNode *>( legendnodes.first() ) )
-          symnode->evaluateLabel( expressionContext );
       }
     }
     node->setCustomProperty( QStringLiteral( "cached_name" ), name );

@@ -169,8 +169,22 @@ class CORE_EXPORT QgsProjUtils
      * from it.
      *
      * If \a crs does not contain a horizontal CRS (i.e. it is a vertical CRS) NULLPTR will be returned.
+     *
+     * \see crsToVerticalCrs()
      */
     static proj_pj_unique_ptr crsToHorizontalCrs( const PJ *crs );
+
+    /**
+     * Given a PROJ crs (which may be a compound crs, or some other type), extract the vertical crs
+     * from it.
+     *
+     * If \a crs does not contain a vertical CRS (i.e. it is a horizontal CRS) NULLPTR will be returned.
+     *
+     * \see crsToHorizontalCrs()
+     *
+     * \since QGIS 3.38
+     */
+    static proj_pj_unique_ptr crsToVerticalCrs( const PJ *crs );
 
     /**
      * Given a PROJ crs (which may be a compound or bound crs, or some other type), ensure that it is not
@@ -192,6 +206,13 @@ class CORE_EXPORT QgsProjUtils
      * \since QGIS 3.20
      */
     static proj_pj_unique_ptr crsToDatumEnsemble( const PJ *crs );
+
+    /**
+     * Given a PROJ horizontal and vertical CRS, attempt to create a compound CRS from them.
+     *
+     * \since QGIS 3.38
+     */
+    static proj_pj_unique_ptr createCompoundCrs( const PJ *horizontalCrs, const PJ *verticalCrs );
 
     /**
      * Attempts to identify a \a crs, matching it to a known authority and code within

@@ -143,8 +143,13 @@ class CORE_EXPORT QgsPalettedRasterRenderer: public QgsRasterRenderer
 
     /**
      * Returns the raster band used for rendering the raster.
+     *
+     * \deprecated since QGIS 3.38 use inputBand() instead
      */
-    int band() const { return mBand; }
+    Q_DECL_DEPRECATED int band() const SIP_DEPRECATED { return mBand; }
+
+    int inputBand() const override;
+    bool setInputBand( int band ) override;
 
     void writeXml( QDomDocument &doc, QDomElement &parentElem ) const override;
     QList< QPair< QString, QColor > > legendSymbologyItems() const override;

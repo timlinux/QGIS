@@ -97,6 +97,16 @@ bool QgsRasterRenderer::setInput( QgsRasterInterface *input )
   return true;
 }
 
+int QgsRasterRenderer::inputBand() const
+{
+  return -1;
+}
+
+bool QgsRasterRenderer::setInputBand( int )
+{
+  return false;
+}
+
 bool QgsRasterRenderer::usesTransparency() const
 {
   if ( !mInput )

@@ -26,7 +26,7 @@ from .connector import VLayerRegistry, getQueryGeometryName
 from .plugin import LVectorTable
 from ..plugin import DbError, BaseError
 
-from qgis.PyQt.QtCore import QTime, QTemporaryFile
+from qgis.PyQt.QtCore import QElapsedTimer, QTemporaryFile
 from qgis.core import (QgsVectorLayer,
                        QgsWkbTypes,
                        QgsVirtualLayerDefinition,
@@ -119,7 +119,7 @@ class LSqlResultModelAsync(SqlResultModelAsync):
 class LSqlResultModel(BaseTableModel):
 
     def __init__(self, db, sql, parent=None, layer=None, path=None):
-        t = QTime()
+        t = QElapsedTimer()
         t.start()
 
         if not layer:

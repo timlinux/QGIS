@@ -21,7 +21,7 @@ The content of this file is based on
  ***************************************************************************/
 """
 
-from qgis.PyQt.QtCore import QTime
+from qgis.PyQt.QtCore import QElapsedTimer
 from qgis.core import QgsMessageLog
 from ..data_model import (TableDataModel,
                           SqlResultModel,
@@ -151,7 +151,7 @@ class ORSqlResultModel(SqlResultModel):
     def __init__(self, db, sql, parent=None):
         self.db = db.connector
 
-        t = QTime()
+        t = QElapsedTimer()
         t.start()
         c = self.db._execute(None, str(sql))
 

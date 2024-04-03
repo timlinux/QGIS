@@ -22,6 +22,7 @@
 #include "qgsprovidersublayerdetails.h"
 #include "qgsthreadingutils.h"
 #include "qgsnetworkaccessmanager.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsblockingnetworkrequest.h"
 #include "qgscesiumutils.h"
 #include "qgssphere.h"
@@ -912,6 +913,11 @@ QgsCesiumTilesDataProvider::QgsCesiumTilesDataProvider( const QgsCesiumTilesData
 {
   QgsReadWriteLocker locker( other.mShared->mReadWriteLock, QgsReadWriteLocker::Read );
   mShared = other.mShared;
+}
+
+Qgis::DataProviderFlags QgsCesiumTilesDataProvider::flags() const
+{
+  return Qgis::DataProviderFlag::FastExtent2D;
 }
 
 Qgis::TiledSceneProviderCapabilities QgsCesiumTilesDataProvider::capabilities() const

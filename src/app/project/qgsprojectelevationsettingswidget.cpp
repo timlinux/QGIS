@@ -26,6 +26,9 @@ QgsProjectElevationSettingsWidget::QgsProjectElevationSettingsWidget( QWidget *p
 {
   setupUi( this );
 
+  mElevationLowerSpin->setClearValueMode( QgsDoubleSpinBox::ClearValueMode::MinimumValue, tr( "Not set" ) );
+  mElevationUpperSpin->setClearValueMode( QgsDoubleSpinBox::ClearValueMode::MinimumValue, tr( "Not set" ) );
+
   mFlatHeightSpinBox->setClearValue( 0.0 );
 
   mDemOffsetSpinBox->setClearValue( 0.0 );
@@ -39,6 +42,8 @@ QgsProjectElevationSettingsWidget::QgsProjectElevationSettingsWidget( QWidget *p
   mComboTerrainType->addItem( tr( "Flat Terrain" ), QStringLiteral( "flat" ) );
   mComboTerrainType->addItem( tr( "DEM (Raster Layer)" ), QStringLiteral( "raster" ) );
   mComboTerrainType->addItem( tr( "Mesh" ), QStringLiteral( "mesh" ) );
+
+  mStackedWidget->setSizeMode( QgsStackedWidget::SizeMode::CurrentPageOnly );
 
   mStackedWidget->setCurrentWidget( mPageFlat );
   connect( mComboTerrainType, qOverload< int >( &QComboBox::currentIndexChanged ), this, [ = ]
@@ -60,7 +65,8 @@ QgsProjectElevationSettingsWidget::QgsProjectElevationSettingsWidget( QWidget *p
   } );
 
   // setup with current settings
-  const QgsAbstractTerrainProvider *provider = QgsProject::instance()->elevationProperties()->terrainProvider();
+  QgsProjectElevationProperties *elevationProperties = QgsProject::instance()->elevationProperties();
+  const QgsAbstractTerrainProvider *provider = elevationProperties->terrainProvider();
   mComboTerrainType->setCurrentIndex( mComboTerrainType->findData( provider->type() ) );
   if ( provider->type() == QLatin1String( "flat" ) )
   {
@@ -84,6 +90,15 @@ QgsProjectElevationSettingsWidget::QgsProjectElevationSettingsWidget( QWidget *p
 
   connect( mComboDemLayer, &QgsMapLayerComboBox::layerChanged, this, &QgsProjectElevationSettingsWidget::validate );
   connect( mComboMeshLayer, &QgsMapLayerComboBox::layerChanged, this, &QgsProjectElevationSettingsWidget::validate );
+
+  if ( elevationProperties->elevationRange().lower() != std::numeric_limits< double >::lowest() )
+    whileBlocking( mElevationLowerSpin )->setValue( elevationProperties->elevationRange().lower() );
+  else
+    whileBlocking( mElevationLowerSpin )->clear();
+  if ( elevationProperties->elevationRange().upper() != std::numeric_limits< double >::max() )
+    whileBlocking( mElevationUpperSpin )->setValue( elevationProperties->elevationRange().upper() );
+  else
+    whileBlocking( mElevationUpperSpin )->clear();
 
   validate();
 
@@ -109,6 +124,7 @@ void QgsProjectElevationSettingsWidget::apply()
     QgsRasterLayer *demLayer = qobject_cast< QgsRasterLayer * >( mComboDemLayer->currentLayer() );
     // always mark the terrain layer as a "dem" layer -- it seems odd for a user to have to manually set this after picking a terrain raster!
     qobject_cast< QgsRasterLayerElevationProperties * >( demLayer->elevationProperties() )->setEnabled( true );
+    qobject_cast< QgsRasterLayerElevationProperties * >( demLayer->elevationProperties() )->setMode( Qgis::RasterElevationMode::RepresentsElevationSurface );
     qgis::down_cast< QgsRasterDemTerrainProvider * >( provider.get() )->setLayer( demLayer );
   }
   else if ( terrainType == QLatin1String( "mesh" ) )
@@ -120,6 +136,15 @@ void QgsProjectElevationSettingsWidget::apply()
   }
 
   QgsProject::instance()->elevationProperties()->setTerrainProvider( provider.release() );
+
+  double zLower = mElevationLowerSpin->value();
+  if ( zLower == mElevationLowerSpin->clearValue() )
+    zLower = std::numeric_limits< double >::lowest();
+  double zUpper = mElevationUpperSpin->value();
+  if ( zUpper == mElevationUpperSpin->clearValue() )
+    zUpper = std::numeric_limits< double >::max();
+
+  QgsProject::instance()->elevationProperties()->setElevationRange( QgsDoubleRange( zLower, zUpper ) );
 
   mElevationShadingSettingsWidget->apply();
 }
@@ -160,7 +185,7 @@ bool QgsProjectElevationSettingsWidget::isValid()
 //
 
 QgsProjectElevationSettingsWidgetFactory::QgsProjectElevationSettingsWidgetFactory( QObject *parent )
-  : QgsOptionsWidgetFactory( tr( "Terrain" ), QgsApplication::getThemeIcon( QStringLiteral( "mLayoutItem3DMap.svg" ) ), QStringLiteral( "terrain" ) )
+  : QgsOptionsWidgetFactory( tr( "Elevation" ), QgsApplication::getThemeIcon( QStringLiteral( "propertyicons/elevationscale.svg" ) ), QStringLiteral( "terrain" ) )
 {
   setParent( parent );
 }

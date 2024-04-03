@@ -20,7 +20,6 @@
 #include "qgscolorrampshader.h"
 #include "qgsrastershader.h"
 #include "qgsrastertransparency.h"
-#include "qgsrasterviewport.h"
 #include "qgsstyleentityvisitor.h"
 #include "qgscolorramplegendnode.h"
 
@@ -39,16 +38,27 @@ QgsSingleBandPseudoColorRenderer::QgsSingleBandPseudoColorRenderer( QgsRasterInt
 
 void QgsSingleBandPseudoColorRenderer::setBand( int bandNo )
 {
+  setInputBand( bandNo );
+}
+
+int QgsSingleBandPseudoColorRenderer::inputBand() const
+{
+  return mBand;
+}
+
+bool QgsSingleBandPseudoColorRenderer::setInputBand( int band )
+{
   if ( !mInput )
   {
-    mBand = bandNo;
-    return;
+    mBand = band;
+    return true;
   }
-
-  if ( bandNo <= mInput->bandCount() || bandNo > 0 )
+  else if ( band > 0 && band <= mInput->bandCount() )
   {
-    mBand = bandNo;
+    mBand = band;
+    return true;
   }
+  return false;
 }
 
 void QgsSingleBandPseudoColorRenderer::setClassificationMin( double min )
@@ -112,13 +122,13 @@ void QgsSingleBandPseudoColorRenderer::setShader( QgsRasterShader *shader )
 
 void QgsSingleBandPseudoColorRenderer::createShader( QgsColorRamp *colorRamp, QgsColorRampShader::Type colorRampType, QgsColorRampShader::ClassificationMode classificationMode, int classes, bool clip, const QgsRectangle &extent )
 {
-  if ( band() == -1 || classificationMin() >= classificationMax() )
+  if ( mBand == -1 || classificationMin() >= classificationMax() )
   {
     return;
   }
 
   QgsColorRampShader *colorRampShader = new QgsColorRampShader( classificationMin(), classificationMax(), colorRamp,  colorRampType, classificationMode );
-  colorRampShader->classifyColorRamp( classes, band(), extent, input() );
+  colorRampShader->classifyColorRamp( classes, mBand, extent, input() );
   colorRampShader->setClip( clip );
 
   QgsRasterShader *rasterShader = new QgsRasterShader();
@@ -276,7 +286,7 @@ QgsRasterBlock *QgsSingleBandPseudoColorRenderer::block( int bandNo, QgsRectangl
       double currentOpacity = mOpacity;
       if ( mRasterTransparency )
       {
-        currentOpacity = mRasterTransparency->alphaValue( val, mOpacity * 255 ) / 255.0;
+        currentOpacity *= mRasterTransparency->opacityForValue( val );
       }
       if ( mAlphaBand > 0 )
       {
@@ -366,7 +376,7 @@ void QgsSingleBandPseudoColorRenderer::toSld( QDomDocument &doc, QDomElement &el
 
   // set band
   QDomElement sourceChannelNameElem = doc.createElement( QStringLiteral( "sld:SourceChannelName" ) );
-  sourceChannelNameElem.appendChild( doc.createTextNode( QString::number( band() ) ) );
+  sourceChannelNameElem.appendChild( doc.createTextNode( QString::number( mBand ) ) );
   channelElem.appendChild( sourceChannelNameElem );
 
   // add ColorMap tag
@@ -482,3 +492,4 @@ bool QgsSingleBandPseudoColorRenderer::canCreateRasterAttributeTable() const
 {
   return true;
 }
+

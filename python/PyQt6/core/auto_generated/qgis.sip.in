@@ -691,6 +691,14 @@ The development version
 
 
 
+    enum class RasterRendererCapability /BaseType=IntFlag/
+    {
+      UsesMultipleBands,
+    };
+
+    typedef QFlags<Qgis::RasterRendererCapability> RasterRendererCapabilities;
+
+
     enum class RasterAttributeTableFieldUsage /BaseType=IntEnum/
     {
       Generic,
@@ -1068,6 +1076,8 @@ The development version
     enum class DataProviderFlag /BaseType=IntFlag/
     {
       IsBasemapSource,
+      FastExtent2D,
+      FastExtent3D,
     };
     typedef QFlags<Qgis::DataProviderFlag> DataProviderFlags;
 
@@ -1247,6 +1257,7 @@ The development version
       FixedTemporalRange,
       TemporalRangeFromDataProvider,
       RedrawLayerOnly,
+      FixedRangePerBand,
     };
 
     enum class TemporalIntervalMatchMethod /BaseType=IntEnum/
@@ -1831,6 +1842,28 @@ The development version
     {
       Vertex,
       Centroid,
+    };
+
+    enum class RangeLimits /BaseType=IntEnum/
+    {
+      IncludeBoth,
+      IncludeLowerExcludeUpper,
+      ExcludeLowerIncludeUpper,
+      ExcludeBoth,
+    };
+
+    enum class RasterElevationMode /BaseType=IntEnum/
+    {
+      FixedElevationRange,
+      RepresentsElevationSurface,
+      FixedRangePerBand,
+      DynamicRangePerBand,
+    };
+
+    enum class MeshElevationMode /BaseType=IntEnum/
+    {
+      FixedElevationRange,
+      FromVertices
     };
 
     enum class BetweenLineConstraint /BaseType=IntEnum/
@@ -2718,6 +2751,7 @@ The development version
       ObservedProperty,
       Observation,
       FeatureOfInterest,
+      MultiDatastream,
     };
 
     static const double DEFAULT_SEARCH_RADIUS_MM;
@@ -2841,6 +2875,8 @@ QFlags<Qgis::ProjectCapability> operator|(Qgis::ProjectCapability f1, QFlags<Qgi
 QFlags<Qgis::ProjectReadFlag> operator|(Qgis::ProjectReadFlag f1, QFlags<Qgis::ProjectReadFlag> f2);
 
 QFlags<Qgis::RasterRendererFlag> operator|(Qgis::RasterRendererFlag f1, QFlags<Qgis::RasterRendererFlag> f2);
+
+QFlags<Qgis::RasterRendererCapability> operator|(Qgis::RasterRendererCapability f1, QFlags<Qgis::RasterRendererCapability> f2);
 
 QFlags<Qgis::RasterTemporalCapabilityFlag> operator|(Qgis::RasterTemporalCapabilityFlag f1, QFlags<Qgis::RasterTemporalCapabilityFlag> f2);
 

@@ -30,6 +30,7 @@
 #include "qgsvectorlayer.h"
 #include "qgsapplication.h"
 #include "qgsdockablewidgethelper.h"
+#include "canvas/qgsappcanvasfiltering.h"
 
 #include <QMessageBox>
 #include <QMenu>
@@ -109,9 +110,15 @@ QgsMapCanvasDockWidget::QgsMapCanvasDockWidget( const QString &name, QWidget *pa
   settingsMenu->addAction( mActionShowCursor );
   settingsMenu->addAction( mActionShowExtent );
   settingsMenu->addAction( mActionShowLabels );
+  settingsMenu->addAction( mActionElevationController );
   settingsMenu->addSeparator();
   settingsMenu->addAction( mActionSetCrs );
   settingsMenu->addAction( mActionRename );
+
+  if ( QgisApp *app = QgisApp::instance() )
+  {
+    app->canvasFiltering()->setupElevationControllerAction( mActionElevationController, mMapCanvas );
+  }
 
   connect( settingsMenu, &QMenu::aboutToShow, this, &QgsMapCanvasDockWidget::settingsMenuAboutToShow );
 

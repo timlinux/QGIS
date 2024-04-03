@@ -461,7 +461,20 @@ namespace QgsWfs
       {
 
         // For WFS 1.1 we honor requested CRS and axis order
-        const QString srsName {request.serverParameters().value( QStringLiteral( "SRSNAME" ) )};
+        // Axis is not inverted if srsName starts with EPSG
+        // It needs to be an EPSG urn, e.g. urn:ogc:def:crs:EPSG::4326
+        // This follows geoserver convention
+        // See: https://docs.geoserver.org/stable/en/user/services/wfs/axis_order.html
+        // if the crs is defined in the parameters, use it
+        // otherwise:
+        //  - geojson uses 'EPSG:4326' by default
+        //  - other formats use the default CRS (DefaultSRS, which is the layer's CRS)
+        const QString requestSrsName = request.serverParameters().value( QStringLiteral( "SRSNAME" ) );
+        const QString srsName
+        {
+          !requestSrsName.isEmpty() ? requestSrsName :
+          ( aRequest.outputFormat == QgsWfsParameters::Format::GeoJSON ? QStringLiteral( "EPSG:4326" ) : outputCrs.authid() )
+        };
         const bool invertAxis { mWfsParameters.versionAsNumber() >= QgsProjectVersion( 1, 1, 0 ) &&
                                 outputCrs.hasAxisInverted() &&
                                 ! srsName.startsWith( QLatin1String( "EPSG:" ) ) };
@@ -1174,6 +1187,21 @@ namespace QgsWfs
 
         fcString = QStringLiteral( "{\"type\": \"FeatureCollection\",\n" );
         fcString += " \"bbox\": [ " + qgsDoubleToString( rect->xMinimum(), prec ) + ", " + qgsDoubleToString( rect->yMinimum(), prec ) + ", " + qgsDoubleToString( rect->xMaximum(), prec ) + ", " + qgsDoubleToString( rect->yMaximum(), prec ) + "],\n";
+
+        const QString srsName {request.serverParameters().value( QStringLiteral( "SRSNAME" ) )};
+        const QgsCoordinateReferenceSystem destinationCrs { srsName.isEmpty( ) ? QStringLiteral( "EPSG:4326" ) : srsName };
+        if ( ! destinationCrs.isValid() )
+        {
+          throw QgsRequestNotWellFormedException( QStringLiteral( "srsName error: '%1' is not valid." ).arg( srsName ) );
+        }
+
+        json value;
+        QgsJsonUtils::addCrsInfo( value, destinationCrs );
+        for ( const auto &it : value.items() )
+        {
+          fcString += " \"" + QString::fromStdString( it.key() ) + "\": " + QString::fromStdString( it.value().dump() ) + ",\n";
+        }
+
         fcString += QLatin1String( " \"features\": [\n" );
         response.write( fcString.toUtf8() );
       }
@@ -1248,7 +1276,12 @@ namespace QgsWfs
         if ( format == QgsWfsParameters::Format::GML3 )
         {
           // For WFS 1.1 we honor requested CRS and axis order
-          const QString srsName {request.serverParameters().value( QStringLiteral( "SRSNAME" ) )};
+          // Axis is not inverted if srsName starts with EPSG
+          // It needs to be an EPSG urn, e.g. urn:ogc:def:crs:EPSG::4326
+          // This follows geoserver convention
+          // See: https://docs.geoserver.org/stable/en/user/services/wfs/axis_order.html
+          const QString requestSrsName = request.serverParameters().value( QStringLiteral( "SRSNAME" ) );
+          const QString srsName = !requestSrsName.isEmpty() ? requestSrsName : crs.authid();
           const bool invertAxis { mWfsParameters.versionAsNumber() >= QgsProjectVersion( 1, 1, 0 ) &&
                                   crs.hasAxisInverted() &&
                                   ! srsName.startsWith( QLatin1String( "EPSG:" ) ) };

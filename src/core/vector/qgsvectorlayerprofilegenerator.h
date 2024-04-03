@@ -124,6 +124,14 @@ class CORE_EXPORT QgsVectorLayerProfileGenerator : public QgsAbstractProfileSurf
     bool generateProfileForLines();
     bool generateProfileForPolygons();
 
+    void processIntersectionPoint( const QgsPoint *intersectionPoint, const QgsFeature &feature );
+    void processIntersectionCurve( const QgsLineString *intersectionCurve, const QgsFeature &feature );
+
+    QgsPoint interpolatePointOnTriangle( const QgsPolygon *triangle, double x, double y ) const;
+    void processTriangleIntersectForPoint( const QgsPolygon *triangle, const QgsPoint *intersect, QVector< QgsGeometry > &transformedParts, QVector< QgsGeometry > &crossSectionParts );
+    void processTriangleIntersectForLine( const QgsPolygon *triangle, const QgsLineString *intersect, QVector< QgsGeometry > &transformedParts, QVector< QgsGeometry > &crossSectionParts );
+    void processTriangleIntersectForPolygon( const QgsPolygon *triangle, const QgsPolygon *intersectionPolygon, QVector< QgsGeometry > &transformedParts, QVector< QgsGeometry > &crossSectionParts );
+
     double terrainHeight( double x, double y );
     double featureZToHeight( double x, double y, double z, double offset );
 
@@ -135,6 +143,9 @@ class CORE_EXPORT QgsVectorLayerProfileGenerator : public QgsAbstractProfileSurf
 
     std::unique_ptr< QgsCurve > mProfileCurve;
     std::unique_ptr< QgsGeos > mProfileCurveEngine;
+
+    std::unique_ptr<QgsAbstractGeometry> mProfileBufferedCurve;
+    std::unique_ptr< QgsGeos > mProfileBufferedCurveEngine;
 
     std::unique_ptr< QgsAbstractTerrainProvider > mTerrainProvider;
 

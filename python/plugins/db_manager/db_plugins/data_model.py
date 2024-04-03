@@ -19,7 +19,7 @@ email                : brush.tyler@gmail.com
 """
 
 from qgis.PyQt.QtCore import (Qt,
-                              QTime,
+                              QElapsedTimer,
                               QRegularExpression,
                               QAbstractTableModel,
                               pyqtSignal,
@@ -185,7 +185,7 @@ class SqlResultModel(BaseTableModel):
     def __init__(self, db, sql, parent=None):
         self.db = db.connector
 
-        t = QTime()
+        t = QElapsedTimer()
         t.start()
         c = self.db._execute(None, sql)
 

@@ -43,7 +43,10 @@
    <item row="2" column="1">
     <widget class="QPushButton" name="mHideAllButton">
      <property name="text">
-      <string>Deselect All</string>
+      <string>Hide All</string>
+     </property>
+     <property name="toolTip">
+      <string>Hides all the fields and actions in the table</string>
      </property>
     </widget>
    </item>
@@ -60,7 +63,10 @@
    <item row="2" column="0">
     <widget class="QPushButton" name="mShowAllButton">
      <property name="text">
-      <string>Select All</string>
+      <string>Show All</string>
+     </property>
+     <property name="toolTip">
+      <string>Displays all the fields and actions in the table</string>
      </property>
     </widget>
    </item>
@@ -68,6 +74,9 @@
     <widget class="QPushButton" name="mToggleSelectionButton">
      <property name="text">
       <string>Toggle Selection</string>
+     </property>
+     <property name="toolTip">
+      <string>Toggles visibility of the selected fields and actions</string>
      </property>
     </widget>
    </item>

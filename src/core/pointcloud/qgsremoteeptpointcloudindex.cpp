@@ -39,6 +39,7 @@
 #include "qgscachedpointcloudblockrequest.h"
 #include "qgspointcloudexpression.h"
 #include "qgsnetworkaccessmanager.h"
+#include "qgssetrequestinitiator_p.h"
 
 ///@cond PRIVATE
 
@@ -97,6 +98,7 @@ void QgsRemoteEptPointCloudIndex::load( const QString &uri )
   {
     QgsDebugError( QStringLiteral( "Request failed: " ) + uri );
     mIsValid = false;
+    mError = req.errorMessage();
     return;
   }
 

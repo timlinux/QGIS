@@ -49,7 +49,10 @@ class TestQgsCoordinateReferenceSystem: public QObject
     void projectedCrs();
     void geocentricCrs();
     void geographic3d();
+    void toHorizontal();
+    void toVertical();
     void coordinateEpoch();
+    void createCompound();
     void saveAsUserCrs();
     void createFromId();
     void fromEpsgId();
@@ -277,6 +280,14 @@ void TestQgsCoordinateReferenceSystem::compoundCrs()
   crs = QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5500" ) );
   QVERIFY( crs.isValid() );
   QCOMPARE( crs.type(), Qgis::CrsType::Compound );
+  QVERIFY( crs.isGeographic() );
+  QCOMPARE( crs.mapUnits(), Qgis::DistanceUnit::Degrees );
+
+  crs = QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:9388" ) );
+  QVERIFY( crs.isValid() );
+  QCOMPARE( crs.type(), Qgis::CrsType::Compound );
+  QVERIFY( !crs.isGeographic() );
+  QCOMPARE( crs.mapUnits(), Qgis::DistanceUnit::Meters );
 }
 
 void TestQgsCoordinateReferenceSystem::verticalCrs()
@@ -289,6 +300,13 @@ void TestQgsCoordinateReferenceSystem::verticalCrs()
   QVERIFY( crs.isValid() );
 
   QCOMPARE( crs.type(), Qgis::CrsType::Vertical );
+  QCOMPARE( crs.mapUnits(), Qgis::DistanceUnit::Meters );
+
+  crs = QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:6358" ) );
+  QVERIFY( crs.isValid() );
+
+  QCOMPARE( crs.type(), Qgis::CrsType::Vertical );
+  QCOMPARE( crs.mapUnits(), Qgis::DistanceUnit::Feet );
 }
 
 void TestQgsCoordinateReferenceSystem::projectedCrs()
@@ -315,6 +333,34 @@ void TestQgsCoordinateReferenceSystem::geographic3d()
   QCOMPARE( crs.type(), Qgis::CrsType::Geographic3d );
 }
 
+void TestQgsCoordinateReferenceSystem::toHorizontal()
+{
+  // invalid
+  QVERIFY( !QgsCoordinateReferenceSystem().horizontalCrs().isValid() );
+  // vertical only
+  QVERIFY( !QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ).horizontalCrs().isValid() );
+  // compound
+  QCOMPARE( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5500" ) ).horizontalCrs().authid(), QStringLiteral( "EPSG:4759" ) );
+  // already horizontal
+  QCOMPARE( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ).horizontalCrs().authid(), QStringLiteral( "EPSG:3111" ) );
+  // geographic 3d
+  QCOMPARE( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:4979" ) ).horizontalCrs().authid(), QStringLiteral( "EPSG:4979" ) );
+}
+
+void TestQgsCoordinateReferenceSystem::toVertical()
+{
+  // invalid
+  QVERIFY( !QgsCoordinateReferenceSystem().verticalCrs().isValid() );
+  // horizontal only
+  QVERIFY( !QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ).verticalCrs().isValid() );
+  // compound
+  QCOMPARE( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5500" ) ).verticalCrs().authid(), QStringLiteral( "EPSG:5703" ) );
+  // already vertical
+  QCOMPARE( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ).verticalCrs().authid(), QStringLiteral( "EPSG:5703" ) );
+  // geographic 3d
+  QVERIFY( !QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:4979" ) ).verticalCrs().isValid() );
+}
+
 void TestQgsCoordinateReferenceSystem::coordinateEpoch()
 {
   QgsCoordinateReferenceSystem crs( QStringLiteral( "EPSG:4326" ) );
@@ -332,6 +378,27 @@ void TestQgsCoordinateReferenceSystem::coordinateEpoch()
   QCOMPARE( crs2.coordinateEpoch(), 2021.3 );
   QVERIFY( crs.projObject() );
   QVERIFY( crs2.projObject() );
+}
+
+void TestQgsCoordinateReferenceSystem::createCompound()
+{
+  //horizontal invalid / vertical invalid
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem(), QgsCoordinateReferenceSystem() ).isValid() );
+  // horizontal valid / vertical invalid
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ), QgsCoordinateReferenceSystem() ).isValid() );
+  // horizontal invalid / vertical valid
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem(), QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ) ).isValid() );
+  // horizontal valid / vertical valid
+  const QgsCoordinateReferenceSystem compound = QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ), QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ) );
+  QVERIFY( compound.isValid() );
+  QCOMPARE( compound.description(), QStringLiteral( "unnamed" ) );
+  QCOMPARE( compound.type(), Qgis::CrsType::Compound );
+  // horizontal / vertical flipped
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ), QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ) ).isValid() );
+  // horizontal valid / not vertical
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3111" ) ), QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:3113" ) ) ).isValid() );
+  // horizontal already a compound
+  QVERIFY( !QgsCoordinateReferenceSystem::createCompoundCrs( QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5500" ) ), QgsCoordinateReferenceSystem( QStringLiteral( "EPSG:5703" ) ) ).isValid() );
 }
 
 void TestQgsCoordinateReferenceSystem::createFromId()

@@ -21,6 +21,8 @@
 #include "qgsmssqlproviderconnection.h"
 #include "qgsfeedback.h"
 #include "qgsdbquerylog.h"
+#include "qgsdbquerylog_p.h"
+#include "qgsvariantutils.h"
 
 #include <QtGlobal>
 #include <QFileInfo>
@@ -709,7 +711,8 @@ QVariant QgsMssqlProvider::defaultValue( int fieldId ) const
     return QVariant();
   }
 
-  return query.value( 0 );
+  const QVariant res = query.value( 0 );
+  return QgsVariantUtils::isNull( res ) ? QVariant() : res;
 }
 
 QString QgsMssqlProvider::storageType() const

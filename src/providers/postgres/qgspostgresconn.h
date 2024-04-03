@@ -29,6 +29,7 @@
 #include "qgswkbtypes.h"
 #include "qgsconfig.h"
 #include "qgsvectordataprovider.h"
+#include "qgsdbquerylog_p.h"
 
 extern "C"
 {
@@ -318,9 +319,7 @@ class QgsPostgresConn : public QObject
 
     QString uniqueCursorName();
 
-#if 0
     PGconn *pgConnection() { return mConn; }
-#endif
 
     //
     // libpq wrapper

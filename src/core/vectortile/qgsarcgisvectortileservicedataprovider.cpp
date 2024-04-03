@@ -18,6 +18,7 @@
 #include "qgsapplication.h"
 #include "qgsblockingnetworkrequest.h"
 #include "qgsnetworkaccessmanager.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsvectortileutils.h"
 #include "qgsarcgisrestutils.h"
 #include "qgslogger.h"
@@ -70,6 +71,11 @@ QgsArcGisVectorTileServiceDataProvider::QgsArcGisVectorTileServiceDataProvider( 
   mArcgisStyleConfiguration = other.mArcgisStyleConfiguration;
   mCrs = other.mCrs;
   mLayerMetadata = other.mLayerMetadata;
+}
+
+Qgis::DataProviderFlags QgsArcGisVectorTileServiceDataProvider::flags() const
+{
+  return Qgis::DataProviderFlag::FastExtent2D;
 }
 
 Qgis::VectorTileProviderFlags QgsArcGisVectorTileServiceDataProvider::providerFlags() const

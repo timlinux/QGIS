@@ -60,15 +60,24 @@ void QgsNmeaConnection::parseData()
 
   if ( numBytes >= 6 )
   {
+    QgsDebugMsgLevel( QStringLiteral( "Got %1 NMEA bytes" ).arg( numBytes ), 3 );
+    QgsDebugMsgLevel( QStringLiteral( "Current NMEA device status is %1" ).arg( mStatus ), 3 );
     if ( mStatus != GPSDataReceived )
     {
+      QgsDebugMsgLevel( QStringLiteral( "Setting device status to DataReceived" ), 3 );
       mStatus = DataReceived;
     }
 
     //append new data to the remaining results from last parseData() call
     mStringBuffer.append( mSource->read( numBytes ) );
     processStringBuffer();
-    emit stateChanged( mLastGPSInformation );
+    QgsDebugMsgLevel( QStringLiteral( "Processed buffer" ), 3 );
+
+    QgsDebugMsgLevel( QStringLiteral( "New status is %1" ).arg( mStatus ), 3 );
+    if ( mStatus == GPSDataReceived )
+    {
+      emit stateChanged( mLastGPSInformation );
+    }
   }
 }
 

@@ -1164,6 +1164,25 @@ class CORE_EXPORT Qgis
     Q_FLAG( RasterRendererFlags )
 
     /**
+     * Raster renderer capabilities.
+     *
+     * \since QGIS 3.48
+     */
+    enum class RasterRendererCapability : int SIP_ENUM_BASETYPE( IntFlag )
+    {
+      UsesMultipleBands = 1 << 0, //!< The renderer utilizes multiple raster bands for color data (note that alpha bands are not considered for this capability)
+    };
+    Q_ENUM( RasterRendererCapability )
+
+    /**
+     * Raster renderer capabilities.
+     *
+     * \since QGIS 3.38
+     */
+    Q_DECLARE_FLAGS( RasterRendererCapabilities, RasterRendererCapability )
+    Q_FLAG( RasterRendererCapabilities )
+
+    /**
      * \brief The RasterAttributeTableFieldUsage enum represents the usage of a Raster Attribute Table field.
      * \note Directly mapped from GDALRATFieldUsage enum values.
      * \since QGIS 3.30
@@ -1827,6 +1846,8 @@ class CORE_EXPORT Qgis
     enum class DataProviderFlag : int SIP_ENUM_BASETYPE( IntFlag )
     {
       IsBasemapSource = 1 << 1, //!< Associated source should be considered a 'basemap' layer. See Qgis::MapLayerProperty::IsBasemapLayer.
+      FastExtent2D = 1 << 2, //!< Provider's 2D extent retrieval via QgsDataProvider::extent() is always guaranteed to be trivial/fast to calculate. Since QGIS 3.38.
+      FastExtent3D = 1 << 3, //!< Provider's 3D extent retrieval via QgsDataProvider::extent3D() is always guaranteed to be trivial/fast to calculate. Since QGIS 3.38.
     };
     //! Data provider flags
     Q_DECLARE_FLAGS( DataProviderFlags, DataProviderFlag )
@@ -2123,6 +2144,7 @@ class CORE_EXPORT Qgis
       FixedTemporalRange SIP_MONKEYPATCH_COMPAT_NAME( ModeFixedTemporalRange ) = 0, //!< Mode when temporal properties have fixed start and end datetimes.
       TemporalRangeFromDataProvider SIP_MONKEYPATCH_COMPAT_NAME( ModeTemporalRangeFromDataProvider ) = 1, //!< Mode when raster layer delegates temporal range handling to the dataprovider.
       RedrawLayerOnly SIP_MONKEYPATCH_COMPAT_NAME( ModeRedrawLayerOnly ) = 2, //!< Redraw the layer when temporal range changes, but don't apply any filtering. Useful when raster symbology expressions depend on the time range. (since QGIS 3.22)
+      FixedRangePerBand = 3, //!< Layer has a fixed temporal range per band (since QGIS 3.38)
     };
     Q_ENUM( RasterTemporalMode )
 
@@ -3231,6 +3253,46 @@ class CORE_EXPORT Qgis
       Centroid, //!< Clamp just centroid of feature
     };
     Q_ENUM( AltitudeBinding )
+
+    /**
+     * Describes how the limits of a range are handled.
+     *
+     * \since QGIS 3.38
+     */
+    enum class RangeLimits : int
+    {
+      IncludeBoth = 0, //!< Both lower and upper values are included in the range
+      IncludeLowerExcludeUpper, //!< Lower value is included in the range, upper value is excluded
+      ExcludeLowerIncludeUpper, //!< Lower value is excluded from the range, upper value in inccluded
+      ExcludeBoth, //!< Both lower and upper values are excluded from the range
+    };
+    Q_ENUM( RangeLimits )
+
+    /**
+     * Raster layer elevation modes.
+     *
+     * \since QGIS 3.38
+     */
+    enum class RasterElevationMode : int
+    {
+      FixedElevationRange = 0, //!< Layer has a fixed elevation range
+      RepresentsElevationSurface = 1, //!< Pixel values represent an elevation surface
+      FixedRangePerBand = 2, //!< Layer has a fixed (manually specified) elevation range per band
+      DynamicRangePerBand = 3, //!< Layer has a elevation range per band, calculated dynamically from an expression
+    };
+    Q_ENUM( RasterElevationMode )
+
+    /**
+     * Mesh layer elevation modes.
+     *
+     * \since QGIS 3.38
+     */
+    enum class MeshElevationMode : int
+    {
+      FixedElevationRange = 0, //!< Layer has a fixed elevation range
+      FromVertices = 1 //!< Elevation should be taken from mesh vertices
+    };
+    Q_ENUM( MeshElevationMode )
 
     /**
      * Between line constraints which can be enabled
@@ -4810,6 +4872,7 @@ class CORE_EXPORT Qgis
       ObservedProperty, //!< An ObservedProperty specifies the phenomenon of an Observation
       Observation, //!< An Observation is the act of measuring or otherwise determining the value of a property
       FeatureOfInterest, //!< In the context of the Internet of Things, many Observations’ FeatureOfInterest can be the Location of the Thing. For example, the FeatureOfInterest of a wifi-connect thermostat can be the Location of the thermostat (i.e., the living room where the thermostat is located in). In the case of remote sensing, the FeatureOfInterest can be the geographical area or volume that is being sensed
+      MultiDatastream, //!< A MultiDatastream groups a collection of Observations and the Observations in a MultiDatastream have a complex result type. Implemented in the SensorThings version 1.1 "MultiDatastream extension". (Since QGIS 3.38)
     };
     Q_ENUM( SensorThingsEntity )
 
@@ -4948,6 +5011,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::ProfileGeneratorFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::ProjectCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::ProjectReadFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::RasterRendererFlags )
+Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::RasterRendererCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::RasterTemporalCapabilityFlags )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::RelationshipCapabilities )
 Q_DECLARE_OPERATORS_FOR_FLAGS( Qgis::RenderContextFlags )

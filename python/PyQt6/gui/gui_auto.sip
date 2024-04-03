@@ -160,6 +160,7 @@
 %Include auto_generated/qgsoptionsdialoghighlightwidgetsimpl.sip
 %Include auto_generated/qgsoptionswidgetfactory.sip
 %Include auto_generated/qgsorderbydialog.sip
+%Include auto_generated/qgsoverlaywidgetlayout.sip
 %Include auto_generated/qgsowssourceselect.sip
 %Include auto_generated/qgspanelwidget.sip
 %Include auto_generated/qgspanelwidgetstack.sip
@@ -341,6 +342,7 @@
 %Include auto_generated/effects/qgseffectstackpropertieswidget.sip
 %Include auto_generated/effects/qgspainteffectpropertieswidget.sip
 %Include auto_generated/effects/qgspainteffectwidget.sip
+%Include auto_generated/elevation/qgselevationcontrollerwidget.sip
 %Include auto_generated/elevation/qgselevationprofilecanvas.sip
 %Include auto_generated/history/qgshistoryentry.sip
 %Include auto_generated/history/qgshistoryentrymodel.sip

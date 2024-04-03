@@ -18,13 +18,14 @@
 #include "qgssensorthingsprovider.h"
 #include "qgssensorthingsutils.h"
 #include "qgsapplication.h"
-#include "qgsnetworkaccessmanager.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsblockingnetworkrequest.h"
 #include "qgsthreadingutils.h"
 #include "qgsreadwritelocker.h"
 #include "qgssensorthingsfeatureiterator.h"
 #include "qgssensorthingsdataitems.h"
 #include "qgssensorthingsconnection.h"
+#include "qgsmessagelog.h"
 
 #include <QIcon>
 #include <QNetworkRequest>
@@ -98,7 +99,28 @@ QgsSensorThingsProvider::QgsSensorThingsProvider( const QString &uri, const Prov
 
     if ( !foundMatchingEntity )
     {
-      appendError( QgsErrorMessage( tr( "Could not find url for %1" ).arg( qgsEnumValueToKey( mSharedData->mEntityType ) ), QStringLiteral( "SensorThings" ) ) );
+      switch ( mSharedData->mEntityType )
+      {
+
+        case Qgis::SensorThingsEntity::Invalid:
+        case Qgis::SensorThingsEntity::Thing:
+        case Qgis::SensorThingsEntity::Location:
+        case Qgis::SensorThingsEntity::HistoricalLocation:
+        case Qgis::SensorThingsEntity::Datastream:
+        case Qgis::SensorThingsEntity::Sensor:
+        case Qgis::SensorThingsEntity::ObservedProperty:
+        case Qgis::SensorThingsEntity::Observation:
+        case Qgis::SensorThingsEntity::FeatureOfInterest:
+          appendError( QgsErrorMessage( tr( "Could not find url for %1" ).arg( qgsEnumValueToKey( mSharedData->mEntityType ) ), QStringLiteral( "SensorThings" ) ) );
+          QgsMessageLog::logMessage( tr( "Could not find url for %1" ).arg( qgsEnumValueToKey( mSharedData->mEntityType ) ), tr( "SensorThings" ) );
+          break;
+
+        case Qgis::SensorThingsEntity::MultiDatastream:
+          appendError( QgsErrorMessage( tr( "MultiDatastreams are not supported by this connection" ), QStringLiteral( "SensorThings" ) ) );
+          QgsMessageLog::logMessage( tr( "MultiDatastreams are not supported by this connection" ), tr( "SensorThings" ) );
+          break;
+      }
+
       return;
     }
   }
@@ -183,6 +205,13 @@ QString QgsSensorThingsProvider::htmlMetadata() const
   return metadata;
 }
 
+Qgis::DataProviderFlags QgsSensorThingsProvider::flags() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  return Qgis::DataProviderFlag::FastExtent2D;
+}
+
 QgsVectorDataProvider::Capabilities QgsSensorThingsProvider::capabilities() const
 {
   QGIS_PROTECT_QOBJECT_THREAD_ACCESS
@@ -194,8 +223,47 @@ QgsVectorDataProvider::Capabilities QgsSensorThingsProvider::capabilities() cons
   return c;
 }
 
+bool QgsSensorThingsProvider::supportsSubsetString() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+  return true;
+}
+
+QString QgsSensorThingsProvider::subsetString() const
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+  return mSharedData->subsetString();
+}
+
+bool QgsSensorThingsProvider::setSubsetString( const QString &subset, bool )
+{
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
+  const QString trimmedSubset = subset.trimmed();
+  if ( trimmedSubset == mSharedData->subsetString() )
+    return true;
+
+  // store this and restore it after the data source is changed,
+  // to avoid an unwanted network request to retrieve this again
+  const QString baseUri = mSharedData->mEntityBaseUri;
+
+  QgsDataSourceUri uri = dataSourceUri();
+  uri.setSql( trimmedSubset );
+  setDataSourceUri( uri.uri( false ) );
+
+  mSharedData->mEntityBaseUri = baseUri;
+
+  clearMinMaxCache();
+
+  emit dataChanged();
+
+  return true;
+}
+
 void QgsSensorThingsProvider::setDataSourceUri( const QString &uri )
 {
+  QGIS_PROTECT_QOBJECT_THREAD_ACCESS
+
   mSharedData = std::make_shared< QgsSensorThingsSharedData >( uri );
   QgsDataProvider::setDataSourceUri( uri );
 }
@@ -210,12 +278,7 @@ QgsCoordinateReferenceSystem QgsSensorThingsProvider::crs() const
 QgsRectangle QgsSensorThingsProvider::extent() const
 {
   QGIS_PROTECT_QOBJECT_THREAD_ACCESS
-
-#if 0
   return mSharedData->extent();
-#endif
-
-  return QgsRectangle();
 }
 
 QString QgsSensorThingsProvider::name() const
@@ -240,6 +303,12 @@ QString QgsSensorThingsProvider::description() const
   return SENSORTHINGS_PROVIDER_DESCRIPTION;
 }
 
+bool QgsSensorThingsProvider::renderInPreview( const PreviewContext & )
+{
+  // be nice to the endpoint and don't make any requests we don't have to!
+  return false;
+}
+
 void QgsSensorThingsProvider::reloadProviderData()
 {
 #if 0
@@ -258,8 +327,7 @@ QgsSensorThingsProviderMetadata::QgsSensorThingsProviderMetadata():
 
 QIcon QgsSensorThingsProviderMetadata::icon() const
 {
-  // TODO
-  return QgsApplication::getThemeIcon( QStringLiteral( "mIconAfs.svg" ) );
+  return QgsApplication::getThemeIcon( QStringLiteral( "mIconSensorThings.svg" ) );
 }
 
 QList<QgsDataItemProvider *> QgsSensorThingsProviderMetadata::dataItemProviders() const
@@ -316,6 +384,13 @@ QVariantMap QgsSensorThingsProviderMetadata::decodeUri( const QString &uri ) con
     components.insert( QStringLiteral( "pageSize" ), maxPageSizeParam );
   }
 
+  ok = false;
+  const int featureLimitParam = dsUri.param( QStringLiteral( "featureLimit" ) ).toInt( &ok );
+  if ( ok )
+  {
+    components.insert( QStringLiteral( "featureLimit" ), featureLimitParam );
+  }
+
   switch ( QgsWkbTypes::geometryType( dsUri.wkbType() ) )
   {
     case Qgis::GeometryType::Point:
@@ -335,6 +410,25 @@ QVariantMap QgsSensorThingsProviderMetadata::decodeUri( const QString &uri ) con
     case Qgis::GeometryType::Null:
       break;
   }
+
+  const QStringList bbox = dsUri.param( QStringLiteral( "bbox" ) ).split( ',' );
+  if ( bbox.size() == 4 )
+  {
+    QgsRectangle r;
+    bool xminOk = false;
+    bool yminOk = false;
+    bool xmaxOk = false;
+    bool ymaxOk = false;
+    r.setXMinimum( bbox[0].toDouble( &xminOk ) );
+    r.setYMinimum( bbox[1].toDouble( &yminOk ) );
+    r.setXMaximum( bbox[2].toDouble( &xmaxOk ) );
+    r.setYMaximum( bbox[3].toDouble( &ymaxOk ) );
+    if ( xminOk && yminOk && xmaxOk && ymaxOk )
+      components.insert( QStringLiteral( "bounds" ), r );
+  }
+
+  if ( !dsUri.sql().isEmpty() )
+    components.insert( QStringLiteral( "sql" ), dsUri.sql() );
 
   return components;
 }
@@ -379,6 +473,13 @@ QString QgsSensorThingsProviderMetadata::encodeUri( const QVariantMap &parts ) c
     dsUri.setParam( QStringLiteral( "pageSize" ), QString::number( maxPageSizeParam ) );
   }
 
+  ok = false;
+  const int featureLimitParam = parts.value( QStringLiteral( "featureLimit" ) ).toInt( &ok );
+  if ( ok )
+  {
+    dsUri.setParam( QStringLiteral( "featureLimit" ), QString::number( featureLimitParam ) );
+  }
+
   const QString geometryType = parts.value( QStringLiteral( "geometryType" ) ).toString();
   if ( geometryType.compare( QLatin1String( "point" ), Qt::CaseInsensitive ) == 0 )
   {
@@ -396,6 +497,15 @@ QString QgsSensorThingsProviderMetadata::encodeUri( const QVariantMap &parts ) c
   {
     dsUri.setWkbType( Qgis::WkbType::MultiPolygonZ );
   }
+
+  if ( parts.contains( QStringLiteral( "bounds" ) ) && parts.value( QStringLiteral( "bounds" ) ).userType() == QMetaType::type( "QgsRectangle" ) )
+  {
+    const QgsRectangle bBox = parts.value( QStringLiteral( "bounds" ) ).value< QgsRectangle >();
+    dsUri.setParam( QStringLiteral( "bbox" ), QStringLiteral( "%1,%2,%3,%4" ).arg( bBox.xMinimum() ).arg( bBox.yMinimum() ).arg( bBox.xMaximum() ).arg( bBox.yMaximum() ) );
+  }
+
+  if ( !parts.value( QStringLiteral( "sql" ) ).toString().isEmpty() )
+    dsUri.setSql( parts.value( QStringLiteral( "sql" ) ).toString() );
 
   return dsUri.uri( false );
 }

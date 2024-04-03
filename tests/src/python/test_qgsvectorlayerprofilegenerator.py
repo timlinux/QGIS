@@ -10,6 +10,7 @@ __date__ = '18/03/2022'
 __copyright__ = 'Copyright 2022, The QGIS Project'
 
 import os
+import math
 
 from qgis.PyQt.QtCore import QDir
 from qgis.core import (
@@ -37,6 +38,7 @@ from qgis.core import (
     QgsRendererCategory,
     QgsSymbolLayer,
     QgsVectorLayer,
+    QgsWkbTypes,
 )
 import unittest
 from qgis.testing import start_app, QgisTestCase
@@ -54,7 +56,7 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
 
     @staticmethod
     def round_dict(val, places):
-        return {round(k, places): round(val[k], places) for k in sorted(val.keys())}
+        return {round(k, places): round(val[k], places) for k in val.keys() if not math.isnan(val[k])}
 
     def create_transform_context(self):
         context = QgsCoordinateTransformContext()
@@ -172,6 +174,7 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
         results = generator.takeResults()
         self.assertFalse(results.distanceToHeightMap())
 
+        # 15 meters tolerance
         req.setTolerance(15)
         generator = vl.createProfileGenerator(req)
         self.assertTrue(generator.generateProfile())
@@ -180,6 +183,23 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
         if QgsProjUtils.projVersionMajor() >= 8:
             self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
                              {175.6: 69.5, 31.2: 69.5, 1242.5: 55.2})
+            self.assertAlmostEqual(results.zRange().lower(), 55.249, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 69.5, 2)
+        else:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
+                             {31.2: 67.2, 175.6: 65.8, 1242.5: 52.2})
+            self.assertAlmostEqual(results.zRange().lower(), 52.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 67.25, 2)
+
+        # 70 meters tolerance
+        req.setTolerance(70)
+        generator = vl.createProfileGenerator(req)
+        self.assertTrue(generator.generateProfile())
+        results = generator.takeResults()
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
+                             {175.6: 69.5, 31.2: 69.5, 1223.2: 56.8, 1242.5: 55.2})
             self.assertAlmostEqual(results.zRange().lower(), 55.249, 2)
             self.assertAlmostEqual(results.zRange().upper(), 69.5, 2)
         else:
@@ -499,6 +519,106 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
         else:
             self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
                              {675.2: 62.7, 1195.7: 53.0, 1223.1: 56.0, 1272.0: 58.2, 1339.4: 57.5, 1444.4: 52.2})
+            self.assertAlmostEqual(results.zRange().lower(), 52.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 62.7499, 2)
+
+    def testLineGenerationTerrainTolerance(self):
+        vl = QgsVectorLayer('LineStringZ?crs=EPSG:27700', 'lines', 'memory')
+        self.assertTrue(vl.isValid())
+
+        for line in ['LineStringZ(322006 129874 12, 322008 129910 13, 322038 129909 14, 322037 129868 15)',
+                     'LineStringZ(322068 129900 16, 322128 129813 17)',
+                     'LineStringZ(321996 129914 11, 321990 129896 15)',
+                     'LineStringZ(321595 130176 1, 321507 130104 10)',
+                     'LineStringZ(321558 129930 1, 321568 130029 10, 321516 130049 5)',
+                     'LineStringZ(321603 129967 3, 321725 130042 9)']:
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromWkt(line))
+            self.assertTrue(vl.dataProvider().addFeature(f))
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Terrain)
+        vl.elevationProperties().setZScale(2.5)
+        vl.elevationProperties().setZOffset(10)
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (-347692.88994020794052631 6632796.97473032586276531, -346576.99897185183363035 6632367.38372825458645821, -346396.02439485350623727 6632344.35087973903864622, -346374.34608158958144486 6632220.09952207934111357)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        rl = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm.tif'), 'DTM')
+        self.assertTrue(rl.isValid())
+        terrain_provider = QgsRasterDemTerrainProvider()
+        terrain_provider.setLayer(rl)
+        terrain_provider.setScale(0.3)
+        terrain_provider.setOffset(-5)
+        req.setTerrainProvider(terrain_provider)
+
+        req.setCrs(QgsCoordinateReferenceSystem('EPSG:3857'))
+
+        # very small tolerance
+        req.setTolerance(0.1)
+        generator = vl.createProfileGenerator(req)
+        self.assertTrue(generator.generateProfile())
+        results = generator.takeResults()
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {675.09: 66.5, 675.24: 66.5, 1195.73: 49.25, 1195.74: 49.25, 1223.14: 50.0,
+                              1223.15: 50.0, 1271.97: 53.75, 1271.99: 53.75, 1339.33: 58.25, 1339.51: 58.25,
+                              1444.18: 58.25, 1444.59: 58.25})
+            self.assertAlmostEqual(results.zRange().lower(), 49.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 66.5, 2)
+        else:
+            # TODO find a way to test with an older proj version
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {675.09: 66.5, 675.24: 66.5, 1195.73: 49.25, 1195.74: 49.25, 1223.14: 50.0,
+                              1223.15: 50.0, 1271.97: 53.75, 1271.99: 53.75, 1339.33: 58.25, 1339.51: 58.25,
+                              1444.18: 58.25, 1444.59: 58.25})
+            self.assertAlmostEqual(results.zRange().lower(), 52.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 62.7499, 2)
+
+        # 1 meter tolerance
+        req.setTolerance(1)
+        generator = vl.createProfileGenerator(req)
+        self.assertTrue(generator.generateProfile())
+        results = generator.takeResults()
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {674.43: 66.5, 675.91: 66.5, 1195.73: 49.25, 1195.91: 49.25, 1223.06: 50.0,
+                              1223.23: 50.0, 1271.86: 53.75, 1272.1: 53.75, 1338.5: 58.25, 1340.34: 58.25,
+                              1442.29: 56.75, 1446.48: 57.5})
+            self.assertAlmostEqual(results.zRange().lower(), 49.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 66.5, 2)
+        else:
+            # TODO find a way to test with an older proj version
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {675.09: 66.5, 675.24: 66.5, 1195.73: 49.25, 1195.74: 49.25, 1223.14: 50.0,
+                              1223.15: 50.0, 1271.97: 53.75, 1271.99: 53.75, 1339.33: 58.25, 1339.51: 58.25,
+                              1444.18: 58.25, 1444.59: 58.25})
+            self.assertAlmostEqual(results.zRange().lower(), 52.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 62.7499, 2)
+
+        # 15 meters tolerance
+        req.setTolerance(15)
+        generator = vl.createProfileGenerator(req)
+        self.assertTrue(generator.generateProfile())
+        results = generator.takeResults()
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {664.1: 65.75, 686.24: 67.25, 1195.73: 49.25, 1198.44: 49.25, 1221.85: 50.0,
+                              1224.44: 49.25, 1270.21: 54.5, 1273.75: 53.0, 1325.61: 59.0, 1353.23: 57.5,
+                              1412.92: 56.0, 1475.85: 57.5})
+            self.assertAlmostEqual(results.zRange().lower(), 49.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 67.25, 2)
+        else:
+            # TODO find a way to test with an older proj version
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 2),
+                             {675.09: 66.5, 675.24: 66.5, 1195.73: 49.25, 1195.74: 49.25, 1223.14: 50.0,
+                              1223.15: 50.0, 1271.97: 53.75, 1271.99: 53.75, 1339.33: 58.25, 1339.51: 58.25,
+                              1444.18: 58.25, 1444.59: 58.25})
             self.assertAlmostEqual(results.zRange().lower(), 52.25, 2)
             self.assertAlmostEqual(results.zRange().upper(), 62.7499, 2)
 
@@ -847,6 +967,78 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
                                       'MultiPolygonZ (((-346684.3 6632407.6 62, -346679.6 6632406 62, -346679.6 6632406 69, -346684.3 6632407.6 69, -346684.3 6632407.6 62)),((-346679.6 6632406 62, -346672.8 6632403.6 62, -346672.8 6632403.6 69, -346679.6 6632406 69, -346679.6 6632406 62)))',
                                       'MultiPolygonZ (((-346582.6 6632371.7 59.3, -346579.7 6632370.7 59.3, -346579.7 6632370.7 66.3, -346582.6 6632371.7 66.3, -346582.6 6632371.7 59.3)),((-346579.7 6632370.7 59.3, -346577 6632369.7 59.2, -346570.8 6632367.9 59.3, -346570.8 6632367.9 66.3, -346577 6632369.7 66.3, -346579.7 6632370.7 66.3, -346579.7 6632370.7 59.3)))',
                                       'MultiPolygonZ (((-346387.6 6632223.9 65.5, -346384.8 6632219 65.5, -346384.8 6632219 72.5, -346387.6 6632223.9 72.5, -346387.6 6632223.9 65.5)),((-346384.8 6632219 65.5, -346383.5 6632216.9 65.5, -346383.5 6632216.9 72.5, -346384.8 6632219 72.5, -346384.8 6632219 65.5)))'])
+        else:
+            self.assertCountEqual([g.asWkt(1) for g in results.asGeometries()],
+                                  [
+                                      'MultiPolygonZ (((-346684.3 6632407.6 56, -346679.6 6632406 56, -346679.6 6632406 63, -346684.3 6632407.6 63, -346684.3 6632407.6 56)),((-346679.6 6632406 56, -346672.8 6632403.6 56, -346672.8 6632403.6 63, -346679.6 6632406 63, -346679.6 6632406 56)))',
+                                      'MultiPolygonZ (((-346718.7 6632419.8 53.5, -346712 6632417.4 53.5, -346712 6632417.4 60.5, -346718.7 6632419.8 60.5, -346718.7 6632419.8 53.5)),((-346719.3 6632420 53.5, -346718.7 6632419.8 53.5, -346718.7 6632419.8 60.5, -346719.3 6632420 60.5, -346719.3 6632420 53.5)),((-346689.7 6632409.5 53.5, -346688.2 6632409 53.5, -346688.2 6632409 60.5, -346689.7 6632409.5 60.5, -346689.7 6632409.5 53.5)),((-346692.5 6632410.5 53.5, -346689.7 6632409.5 53.5, -346689.7 6632409.5 60.5, -346692.5 6632410.5 60.5, -346692.5 6632410.5 53.5)))',
+                                      'MultiPolygonZ (((-346387.6 6632223.9 67, -346384.8 6632219 67, -346384.8 6632219 74, -346387.6 6632223.9 74, -346387.6 6632223.9 67)),((-346384.8 6632219 67, -346383.5 6632216.9 67, -346383.5 6632216.9 74, -346384.8 6632219 74, -346384.8 6632219 67)))',
+                                      'MultiPolygonZ (((-346582.6 6632371.7 62.3, -346579.7 6632370.7 62.3, -346579.7 6632370.7 69.3, -346582.6 6632371.7 69.3, -346582.6 6632371.7 62.3)),((-346579.7 6632370.7 62.3, -346577 6632369.7 62.3, -346570.8 6632367.9 62.3, -346570.8 6632367.9 69.3, -346577 6632369.7 69.3, -346579.7 6632370.7 69.3, -346579.7 6632370.7 62.3)))'])
+
+    def testPolygonGenerationRelativeExtrusionTolerance(self):
+        vl = QgsVectorLayer('PolygonZ?crs=EPSG:27700', 'lines', 'memory')
+        self.assertTrue(vl.isValid())
+
+        for line in [
+            'PolygonZ ((321829.48893365426920354 129991.38697145861806348 1, 321847.89668515208177269 129996.63588572069420479 1, 321848.97131609614007175 129979.22330882755341008 1, 321830.31725845142500475 129978.07136809575604275 1, 321829.48893365426920354 129991.38697145861806348 1))',
+            'PolygonZ ((321920.00953056826256216 129924.58260190498549491 2, 321924.65299345907988027 129908.43546159457764588 2, 321904.78543491888558492 129903.99811821122420952 2, 321900.80605239619035274 129931.39860145389684476 2, 321904.84799937985371798 129931.71552911199978553 2, 321908.93646715773502365 129912.90030360443051904 2, 321914.20495146053144708 129913.67693978428724222 2, 321911.30165811872575432 129923.01272751353099011 2, 321920.00953056826256216 129924.58260190498549491 2))',
+            'PolygonZ ((321923.10517279652412981 129919.61521573827485554 3, 321922.23537852568551898 129928.3598982143739704 3, 321928.60423935484141111 129934.22530528216157109 3, 321929.39881197665818036 129923.29054521876969375 3, 321930.55804549407912418 129916.53248518184409477 3, 321923.10517279652412981 129919.61521573827485554 3))',
+            'PolygonZ ((321990.47451346553862095 129909.63588680300745182 4, 321995.04325810901354998 129891.84052284323843196 4, 321989.66826330573530868 129890.5092018858413212 4, 321990.78512359503656626 129886.49917887404444627 4, 321987.37291929306229576 129885.64982962771318853 4, 321985.2254804756375961 129893.81317058412241749 4, 321987.63158903241856024 129894.41078495365218259 4, 321984.34022761805681512 129907.57450046355370432 4, 321990.47451346553862095 129909.63588680300745182 4))',
+                'PolygonZ ((322103.03910495212767273 129795.91051736124791205 5, 322108.25568856322206557 129804.76113295342656784 5, 322113.29666162584908307 129803.9285887333098799 5, 322117.78645010641776025 129794.48194090687320568 5, 322103.03910495212767273 129795.91051736124791205 5))']:
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromWkt(line))
+            self.assertTrue(vl.dataProvider().addFeature(f))
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Relative)
+        vl.elevationProperties().setZScale(2.5)
+        vl.elevationProperties().setZOffset(10)
+        vl.elevationProperties().setExtrusionEnabled(True)
+        vl.elevationProperties().setExtrusionHeight(7)
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (-347701.59207547508412972 6632766.96282589063048363, -346577.00878971704514697 6632369.7371364813297987, -346449.93654899462126195 6632331.81857067719101906, -346383.52035177784273401 6632216.85897350125014782)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        rl = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm.tif'), 'DTM')
+        self.assertTrue(rl.isValid())
+        terrain_provider = QgsRasterDemTerrainProvider()
+        terrain_provider.setLayer(rl)
+        terrain_provider.setScale(0.3)
+        terrain_provider.setOffset(-5)
+        req.setTerrainProvider(terrain_provider)
+
+        req.setCrs(QgsCoordinateReferenceSystem('EPSG:3857'))
+        req.setTolerance(2.0)
+
+        generator = vl.createProfileGenerator(req)
+        self.assertTrue(generator.generateProfile())
+        results = generator.takeResults()
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
+                             {1041.0: 60.2, 1042.2: 60.2, 1042.9: 60.2, 1048.2: 60.2, 1050.8: 60.2, 1066.9: 60.2,
+                              1073.4: 60.2, 1076.2: 60.2, 1077.9: 62.0, 1079.9: 62.0, 1089.9: 62.0, 1092.2: 62.0,
+                              1185.4: 59.2, 1188.2: 59.2, 1192.6: 59.2, 1192.7: 59.2, 1197.9: 59.2, 1200.4: 59.2,
+                              1449.3: 65.5, 1450.1: 65.5, 1451.1: 65.5, 1458.1: 65.5})
+            self.assertAlmostEqual(results.zRange().lower(), 59.25, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 65.5, 2)
+        else:
+            self.assertEqual(self.round_dict(results.distanceToHeightMap(), 1),
+                             {1041.8: 53.5, 1042.4: 53.5, 1049.5: 53.5, 1070.2: 53.5, 1073.1: 53.5, 1074.8: 53.5,
+                              1078.9: 56.0, 1083.9: 56.0, 1091.1: 56.0, 1186.8: 62.3, 1189.8: 62.3, 1192.7: 62.3,
+                              1199.2: 62.2, 1450.0: 67.0, 1455.6: 67.0, 1458.1: 67.0})
+            self.assertAlmostEqual(results.zRange().lower(), 53.5, 2)
+            self.assertAlmostEqual(results.zRange().upper(), 74.00000, 2)
+
+        if QgsProjUtils.projVersionMajor() >= 8:
+            self.assertCountEqual([g.asWkt(1) for g in results.asGeometries()],
+                                  [
+                                      'MultiLineStringZ ((-346696.3 6632409.8 60.2, -346688.9 6632411.2 60.2, -346687.5 6632406.6 60.2),(-346718.9 6632417.7 60.2, -346719.5 6632421.6 60.2, -346718.2 6632421.7 60.2, -346712.5 6632419.7 60.2, -346711.5 6632415.1 60.2))',
+                                      'LineStringZ (-346684.1 6632405.4 62, -346684.6 6632409.8 62, -346673.3 6632405.9 62, -346672.4 6632401.3 62)',
+                                      'LineStringZ (-346571.4 6632370.2 59.3, -346570.2 6632365.6 59.3, -346577.6 6632367.8 59.3, -346577.7 6632367.9 59.3, -346581.9 6632369.4 59.3, -346583.2 6632374 59.3, -346576.4 6632371.6 59.3)',
+                                      'LineStringZ (-346381.8 6632217.9 65.5, -346385.3 6632215.9 65.5, -346388.7 6632221.9 65.5, -346387 6632224.9 65.5, -346385.8 6632224.7 65.5)'])
         else:
             self.assertCountEqual([g.asWkt(1) for g in results.asGeometries()],
                                   [
@@ -1592,6 +1784,54 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
         res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
         self.assertTrue(self.image_check('vector_lines_as_surface_with_markers', 'vector_lines_as_surface_with_markers', res))
 
+    def testRenderProfileAsLineWithHoledDtm(self):
+        rl = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm_with_holes.tif'), 'DTM')
+        self.assertTrue(rl.isValid())
+
+        rl.elevationProperties().setEnabled(True)
+        rl.elevationProperties().setProfileSymbology(Qgis.ProfileSurfaceSymbology.Line)
+        line_symbol = QgsLineSymbol.createSimple({'color': '#ff00ff', 'width': '0.8'})
+        rl.elevationProperties().setProfileLineSymbol(line_symbol)
+
+        curve = QgsLineString()
+        curve.fromWkt('LineString (320900 129000, 322900 129000)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        req.setCrs(QgsCoordinateReferenceSystem())
+
+        plot_renderer = QgsProfilePlotRenderer([rl], req)
+        plot_renderer.startGeneration()
+        plot_renderer.waitForFinished()
+
+        res = plot_renderer.renderToImage(1600, 800, 0, curve.length(), 0, 90)
+        self.assertTrue(self.image_check('vector_lines_as_line_with_holed_dtm', 'vector_lines_as_line_with_holed_dtm', res))
+
+    def testRenderProfileAsSurfaceFillBelowWithHoledDtm(self):
+        rl = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm_with_holes.tif'), 'DTM')
+        self.assertTrue(rl.isValid())
+
+        rl.elevationProperties().setEnabled(True)
+        rl.elevationProperties().setProfileSymbology(Qgis.ProfileSurfaceSymbology.FillBelow)
+        fill_symbol = QgsFillSymbol.createSimple({'color': '#ff00ff', 'outline_style': 'no'})
+        rl.elevationProperties().setProfileFillSymbol(fill_symbol)
+        line_symbol = QgsLineSymbol.createSimple({'color': '#ff00ff', 'width': '0.8'})
+        rl.elevationProperties().setProfileLineSymbol(line_symbol)
+
+        curve = QgsLineString()
+        curve.fromWkt('LineString (320900 129000, 322900 129000)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        req.setCrs(QgsCoordinateReferenceSystem())
+
+        plot_renderer = QgsProfilePlotRenderer([rl], req)
+        plot_renderer.startGeneration()
+        plot_renderer.waitForFinished()
+
+        res = plot_renderer.renderToImage(1600, 800, 0, curve.length(), 0, 90)
+        self.assertTrue(self.image_check('vector_lines_as_fill_below_surface_with_holed_dtm', 'vector_lines_as_fill_below_surface_with_holed_dtm', res))
+
     def testRenderProfileAsSurfaceFillBelow(self):
         vl = QgsVectorLayer('LineStringZ?crs=EPSG:27700', 'lines', 'memory')
         vl.setCrs(QgsCoordinateReferenceSystem())
@@ -1752,6 +1992,48 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
         res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
         self.assertTrue(self.image_check('vector_lines_as_fill_above_surface_limit', 'vector_lines_as_fill_above_surface_limit', res))
 
+    def testRenderProfileAsSurfaceFillAboveLimitTolerance(self):
+        vl = QgsVectorLayer('LineStringZ?crs=EPSG:27700', 'lines', 'memory')
+        vl.setCrs(QgsCoordinateReferenceSystem())
+        self.assertTrue(vl.isValid())
+
+        for line in [
+            'LineStringZ (321829.48893365426920354 129991.38697145861806348 1, 321847.89668515208177269 129996.63588572069420479 1, 321848.97131609614007175 129979.22330882755341008 1, 321830.31725845142500475 129978.07136809575604275 1, 321829.48893365426920354 129991.38697145861806348 1)',
+            'LineStringZ (321920.00953056826256216 129924.58260190498549491 2, 321924.65299345907988027 129908.43546159457764588 2, 321904.78543491888558492 129903.99811821122420952 2, 321900.80605239619035274 129931.39860145389684476 2, 321904.84799937985371798 129931.71552911199978553 2, 321908.93646715773502365 129912.90030360443051904 2, 321914.20495146053144708 129913.67693978428724222 2, 321911.30165811872575432 129923.01272751353099011 2, 321920.00953056826256216 129924.58260190498549491 2)',
+            'LineStringZ (321923.10517279652412981 129919.61521573827485554 3, 321922.23537852568551898 129928.3598982143739704 3, 321928.60423935484141111 129934.22530528216157109 3, 321929.39881197665818036 129923.29054521876969375 3, 321930.55804549407912418 129916.53248518184409477 3, 321923.10517279652412981 129919.61521573827485554 3)',
+            'LineStringZ (321990.47451346553862095 129909.63588680300745182 4, 321995.04325810901354998 129891.84052284323843196 4, 321989.66826330573530868 129890.5092018858413212 4, 321990.78512359503656626 129886.49917887404444627 4, 321987.37291929306229576 129885.64982962771318853 4, 321985.2254804756375961 129893.81317058412241749 4, 321987.63158903241856024 129894.41078495365218259 4, 321984.34022761805681512 129907.57450046355370432 4, 321990.47451346553862095 129909.63588680300745182 4)',
+                'LineStringZ (322103.03910495212767273 129795.91051736124791205 5, 322108.25568856322206557 129804.76113295342656784 5, 322113.29666162584908307 129803.9285887333098799 5, 322117.78645010641776025 129794.48194090687320568 5, 322103.03910495212767273 129795.91051736124791205 5)']:
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromWkt(line))
+            self.assertTrue(vl.dataProvider().addFeature(f))
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Absolute)
+        vl.elevationProperties().setType(Qgis.VectorProfileType.ContinuousSurface)
+        vl.elevationProperties().setProfileSymbology(Qgis.ProfileSurfaceSymbology.FillAbove)
+        vl.elevationProperties().setElevationLimit(
+            10)
+        fill_symbol = QgsFillSymbol.createSimple({'color': '#ff00ff', 'outline_style': 'no'})
+        vl.elevationProperties().setRespectLayerSymbology(False)
+        vl.elevationProperties().setProfileFillSymbol(fill_symbol)
+        line_symbol = QgsLineSymbol.createSimple({'color': '#ff00ff', 'width': '0.8'})
+        vl.elevationProperties().setProfileLineSymbol(line_symbol)
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (321897.18831187387695536 129916.86947759155009408, 321942.11597351566888392 129924.94403429214435164)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        req.setCrs(QgsCoordinateReferenceSystem())
+        req.setTolerance(20)
+
+        plot_renderer = QgsProfilePlotRenderer([vl], req)
+        plot_renderer.startGeneration()
+        plot_renderer.waitForFinished()
+
+        res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
+        self.assertTrue(self.image_check('vector_lines_as_fill_above_surface_limit_tolerance', 'vector_lines_as_fill_above_surface_limit_tolerance', res))
+
     def testRenderProfileSymbolWithMapUnits(self):
         vl = QgsVectorLayer('LineStringZ?crs=EPSG:27700', 'lines', 'memory')
         vl.setCrs(QgsCoordinateReferenceSystem())
@@ -1787,6 +2069,43 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
 
         res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
         self.assertTrue(self.image_check('vector_profile_map_units', 'vector_profile_map_units', res))
+
+    def testRenderProfileSymbolWithMapUnitsTolerance(self):
+        vl = QgsVectorLayer('LineStringZ?crs=EPSG:27700', 'lines', 'memory')
+        vl.setCrs(QgsCoordinateReferenceSystem())
+        self.assertTrue(vl.isValid())
+
+        for line in [
+            'LineStringZ (321829.48893365426920354 129991.38697145861806348 1, 321847.89668515208177269 129996.63588572069420479 1, 321848.97131609614007175 129979.22330882755341008 1, 321830.31725845142500475 129978.07136809575604275 1, 321829.48893365426920354 129991.38697145861806348 1)',
+            'LineStringZ (321920.00953056826256216 129924.58260190498549491 2, 321924.65299345907988027 129908.43546159457764588 2, 321904.78543491888558492 129903.99811821122420952 2, 321900.80605239619035274 129931.39860145389684476 2, 321904.84799937985371798 129931.71552911199978553 2, 321908.93646715773502365 129912.90030360443051904 2, 321914.20495146053144708 129913.67693978428724222 2, 321911.30165811872575432 129923.01272751353099011 2, 321920.00953056826256216 129924.58260190498549491 2)',
+            'LineStringZ (321923.10517279652412981 129919.61521573827485554 3, 321922.23537852568551898 129928.3598982143739704 3, 321928.60423935484141111 129934.22530528216157109 3, 321929.39881197665818036 129923.29054521876969375 3, 321930.55804549407912418 129916.53248518184409477 3, 321923.10517279652412981 129919.61521573827485554 3)',
+            'LineStringZ (321990.47451346553862095 129909.63588680300745182 4, 321995.04325810901354998 129891.84052284323843196 4, 321989.66826330573530868 129890.5092018858413212 4, 321990.78512359503656626 129886.49917887404444627 4, 321987.37291929306229576 129885.64982962771318853 4, 321985.2254804756375961 129893.81317058412241749 4, 321987.63158903241856024 129894.41078495365218259 4, 321984.34022761805681512 129907.57450046355370432 4, 321990.47451346553862095 129909.63588680300745182 4)',
+                'LineStringZ (322103.03910495212767273 129795.91051736124791205 5, 322108.25568856322206557 129804.76113295342656784 5, 322113.29666162584908307 129803.9285887333098799 5, 322117.78645010641776025 129794.48194090687320568 5, 322103.03910495212767273 129795.91051736124791205 5)']:
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromWkt(line))
+            self.assertTrue(vl.dataProvider().addFeature(f))
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Absolute)
+        vl.elevationProperties().setRespectLayerSymbology(False)
+        line_symbol = QgsLineSymbol.createSimple({'color': '#ff00ff', 'width': '0.8'})
+        line_symbol.setWidthUnit(Qgis.RenderUnit.MapUnits)
+        vl.elevationProperties().setProfileLineSymbol(line_symbol)
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (321897.18831187387695536 129916.86947759155009408, 321942.11597351566888392 129924.94403429214435164)')
+        req = QgsProfileRequest(curve)
+        req.setTransformContext(self.create_transform_context())
+
+        req.setCrs(QgsCoordinateReferenceSystem())
+        req.setTolerance(10)
+
+        plot_renderer = QgsProfilePlotRenderer([vl], req)
+        plot_renderer.startGeneration()
+        plot_renderer.waitForFinished()
+
+        res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
+        self.assertTrue(self.image_check('vector_profile_map_units_tolerance', 'vector_profile_map_units_tolerance', res))
 
     def testRenderLayerSymbology(self):
         vl = QgsVectorLayer('PolygonZ?crs=EPSG:27700', 'lines', 'memory')
@@ -1832,6 +2151,163 @@ class TestQgsVectorLayerProfileGenerator(QgisTestCase):
 
         res = plot_renderer.renderToImage(400, 400, 0, curve.length(), 0, 14)
         self.assertTrue(self.image_check('vector_polygon_layer_symbology', 'vector_polygon_layer_symbology', res))
+
+    def doCheckPoint(self, request: QgsProfileRequest, tolerance: float, layer: QgsVectorLayer, expectedFeatures):
+        request.setTolerance(tolerance)
+
+        profGen = layer.createProfileGenerator(request)
+        self.assertIsNotNone(profGen)
+        self.assertTrue(profGen.generateProfile())
+        results = profGen.takeResults()
+        features = results.asFeatures(Qgis.ProfileExportType.Features3D)
+        self.assertFalse(len(features) == 0)
+
+        expected = sorted(expectedFeatures.copy())
+        actual = [f.attributes['id'] for _, f in enumerate(features)]
+        actualUniqSorted = sorted(list(set(actual)))
+
+        self.assertEqual(actualUniqSorted, expected)
+
+        for k, feat in enumerate(features):
+            hasValidZ = False
+            if QgsWkbTypes.hasZ(feat.geometry.wkbType()):
+                for v in feat.geometry.vertices():
+                    if not math.isnan(v.z()):
+                        hasValidZ = True
+                        break
+                self.assertTrue(hasValidZ, "All vertice are on the ground!")
+            else:
+                self.assertTrue(hasValidZ, "Geometry should have z coordinates!")
+
+        return results
+
+    def doCheckLine(self, request: QgsProfileRequest, tolerance: float, layer: QgsVectorLayer, expectedFeatures, nbSubGeomPerFeature, geomType):
+        results = self.doCheckPoint(request, tolerance, layer, expectedFeatures)
+        features = results.asFeatures(Qgis.ProfileExportType.Features3D)
+
+        actual = [f.attributes['id'] for _, f in enumerate(features)]
+        actualUniqSorted = sorted(list(set(actual)))
+        for idx, fid in enumerate(actualUniqSorted):
+            actual = [1 for _, f in enumerate(features) if f.attributes['id'] == fid]
+            self.assertEqual(len(actual), nbSubGeomPerFeature[idx])
+
+        for k, feat in enumerate(features):
+            self.assertEqual(feat.geometry.type(), geomType)
+
+        for _, height in enumerate(results.distanceToHeightMap()):
+            self.assertTrue(math.isnan(height) or height > 0.0)
+
+        return results
+
+    def testPointGenerationFeature(self):
+        vl = QgsVectorLayer(os.path.join(unitTestDataPath(), '3d', 'points_with_z.shp'))
+        self.assertTrue(vl.isValid())
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Terrain)
+        vl.elevationProperties().setBinding(Qgis.AltitudeBinding.Vertex)
+
+        dtmLayer = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm.tif'))
+        self.assertTrue(dtmLayer.isValid())
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (-346120 6631840, -346550 6632030, -346440 6632140, -347830 6632930)')
+        req = QgsProfileRequest(curve)
+
+        terrain_provider = QgsRasterDemTerrainProvider()
+        terrain_provider.setLayer(dtmLayer)
+
+        req.setTerrainProvider(terrain_provider)
+        req.setCrs(QgsCoordinateReferenceSystem('EPSG:3857'))
+
+        if Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() <= 10:
+            self.doCheckPoint(req, 15, vl, [5, 11, 12, 13, 14, 15, 18, 45, 46])
+        elif Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() == 11:
+            self.doCheckPoint(req, 16, vl, [5, 11, 12, 13, 14, 15, 18, 45, 46])
+        elif Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() >= 12:
+            self.doCheckPoint(req, 15, vl, [5, 11, 12, 13, 14, 15, 18, 45])
+
+        self.doCheckPoint(req, 70, vl, [0, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18, 38, 45, 46, 48])
+
+    def testLineGenerationFeature(self):
+        vl = QgsVectorLayer(os.path.join(unitTestDataPath(), '3d', 'lines.shp'))
+        self.assertTrue(vl.isValid())
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Terrain)
+        vl.elevationProperties().setBinding(Qgis.AltitudeBinding.Vertex)
+        vl.elevationProperties().setExtrusionEnabled(False)
+
+        dtmLayer = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm.tif'))
+        self.assertTrue(dtmLayer.isValid())
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (-346120 6631840, -346550 6632030, -346440 6632140, -347830 6632930)')
+        req = QgsProfileRequest(curve)
+
+        terrain_provider = QgsRasterDemTerrainProvider()
+        terrain_provider.setLayer(dtmLayer)
+
+        req.setTerrainProvider(terrain_provider)
+        req.setCrs(QgsCoordinateReferenceSystem('EPSG:3857'))
+
+        # check no tolerance
+        self.doCheckLine(req, 0, vl, [0, 2], [1, 5], Qgis.GeometryType.Point)
+
+        # check increased tolerance, terrain, no extrusion
+        self.doCheckLine(req, 1, vl, [0, 2], [1, 5], Qgis.GeometryType.Line)
+
+        # check increased tolerance, terrain, no extrusion
+        self.doCheckLine(req, 20, vl, [0, 2], [1, 3], Qgis.GeometryType.Line)
+
+        # check increased tolerance, terrain, no extrusion
+        self.doCheckLine(req, 50, vl, [1, 0, 2], [1, 1, 1], Qgis.GeometryType.Line)
+
+        # check terrain + extrusion
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Terrain)
+        vl.elevationProperties().setExtrusionEnabled(True)
+        vl.elevationProperties().setExtrusionHeight(17)
+        self.doCheckLine(req, 50, vl, [1, 0, 2], [1, 1, 1], Qgis.GeometryType.Polygon)
+
+        # check no terrain + no extrusion
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Absolute)
+        vl.elevationProperties().setExtrusionEnabled(False)
+        vl.elevationProperties().setZOffset(5.0)
+        self.doCheckLine(req, 50, vl, [1, 0, 2], [1, 1, 1], Qgis.GeometryType.Line)
+
+    def testPolygonGenerationFeature(self):
+        vl = QgsVectorLayer(os.path.join(unitTestDataPath(), '3d', 'buildings.shp'))
+        self.assertTrue(vl.isValid())
+
+        vl.elevationProperties().setClamping(Qgis.AltitudeClamping.Terrain)
+        vl.elevationProperties().setBinding(Qgis.AltitudeBinding.Vertex)
+        vl.elevationProperties().setExtrusionEnabled(False)
+
+        dtmLayer = QgsRasterLayer(os.path.join(unitTestDataPath(), '3d', 'dtm.tif'))
+        self.assertTrue(dtmLayer.isValid())
+
+        curve = QgsLineString()
+        curve.fromWkt(
+            'LineString (-346120 6631840, -346550 6632030, -346440 6632140, -347830 6632930)')
+        req = QgsProfileRequest(curve)
+
+        terrain_provider = QgsRasterDemTerrainProvider()
+        terrain_provider.setLayer(dtmLayer)
+
+        req.setTerrainProvider(terrain_provider)
+        req.setCrs(QgsCoordinateReferenceSystem('EPSG:3857'))
+
+        self.doCheckLine(req, 1, vl, [168, 206, 210, 284, 306, 321], [1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+
+        if Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() <= 10:
+            self.doCheckLine(req, 10, vl, [168, 172, 206, 210, 231, 267, 275, 282, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+            self.doCheckLine(req, 11, vl, [168, 172, 206, 210, 231, 255, 267, 275, 282, 283, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+        elif Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() == 11:
+            self.doCheckLine(req, 9, vl, [168, 172, 206, 210, 231, 267, 275, 282, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+            self.doCheckLine(req, 10, vl, [168, 172, 206, 210, 231, 267, 275, 282, 283, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+        elif Qgis.geosVersionMajor() == 3 and Qgis.geosVersionMinor() >= 12:
+            self.doCheckLine(req, 10, vl, [168, 172, 206, 210, 231, 267, 275, 282, 283, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
+            self.doCheckLine(req, 11, vl, [168, 172, 206, 210, 231, 237, 255, 267, 275, 282, 283, 284, 306, 307, 319, 321], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], Qgis.GeometryType.Line)
 
 
 if __name__ == '__main__':

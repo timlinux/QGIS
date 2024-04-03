@@ -1360,7 +1360,7 @@ namespace QgsWms
 
   QStringList QgsWmsParameters::highlightLabelString() const
   {
-    return mWmsParameters.value( QgsWmsParameter::HIGHLIGHT_LABELSTRING ).toStringList( ';' );
+    return mWmsParameters.value( QgsWmsParameter::HIGHLIGHT_LABELSTRING ).toStringList( ';', false );
   }
 
   QStringList QgsWmsParameters::highlightLabelSize() const
@@ -2116,7 +2116,7 @@ namespace QgsWms
     if ( mStr.startsWith( QLatin1String( "true" ), Qt::CaseInsensitive ) ||
          mStr.startsWith( QLatin1String( "on" ), Qt::CaseInsensitive ) ||
          mStr.startsWith( QLatin1String( "yes" ), Qt::CaseInsensitive ) ||
-         mStr.startsWith( QLatin1String( "1" ) ) )
+         mStr.startsWith( QLatin1Char( '1' ) ) )
       return true;
     else
       return false;

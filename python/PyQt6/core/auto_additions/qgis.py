@@ -1279,6 +1279,14 @@ Qgis.RasterRendererFlag.baseClass = Qgis
 Qgis.RasterRendererFlags.baseClass = Qgis
 RasterRendererFlags = Qgis  # dirty hack since SIP seems to introduce the flags in module
 # monkey patching scoped based enum
+Qgis.RasterRendererCapability.UsesMultipleBands.__doc__ = "The renderer utilizes multiple raster bands for color data (note that alpha bands are not considered for this capability)"
+Qgis.RasterRendererCapability.__doc__ = "Raster renderer capabilities.\n\n.. versionadded:: 3.48\n\n" + '* ``UsesMultipleBands``: ' + Qgis.RasterRendererCapability.UsesMultipleBands.__doc__
+# --
+Qgis.RasterRendererCapability.baseClass = Qgis
+Qgis.RasterRendererCapabilities = lambda flags=0: Qgis.RasterRendererCapability(flags)
+Qgis.RasterRendererCapabilities.baseClass = Qgis
+RasterRendererCapabilities = Qgis  # dirty hack since SIP seems to introduce the flags in module
+# monkey patching scoped based enum
 Qgis.RasterAttributeTableFieldUsage.Generic.__doc__ = "Field usage Generic"
 Qgis.RasterAttributeTableFieldUsage.PixelCount.__doc__ = "Field usage PixelCount"
 Qgis.RasterAttributeTableFieldUsage.Name.__doc__ = "Field usage Name"
@@ -1830,7 +1838,9 @@ Qgis.AutoRefreshMode.__doc__ = "Map layer automatic refresh modes.\n\n.. version
 Qgis.AutoRefreshMode.baseClass = Qgis
 # monkey patching scoped based enum
 Qgis.DataProviderFlag.IsBasemapSource.__doc__ = "Associated source should be considered a 'basemap' layer. See Qgis.MapLayerProperty.IsBasemapLayer."
-Qgis.DataProviderFlag.__doc__ = "Generic data provider flags.\n\n.. versionadded:: 3.26\n\n" + '* ``IsBasemapSource``: ' + Qgis.DataProviderFlag.IsBasemapSource.__doc__
+Qgis.DataProviderFlag.FastExtent2D.__doc__ = "Provider's 2D extent retrieval via QgsDataProvider.extent() is always guaranteed to be trivial/fast to calculate. Since QGIS 3.38."
+Qgis.DataProviderFlag.FastExtent3D.__doc__ = "Provider's 3D extent retrieval via QgsDataProvider.extent3D() is always guaranteed to be trivial/fast to calculate. Since QGIS 3.38."
+Qgis.DataProviderFlag.__doc__ = "Generic data provider flags.\n\n.. versionadded:: 3.26\n\n" + '* ``IsBasemapSource``: ' + Qgis.DataProviderFlag.IsBasemapSource.__doc__ + '\n' + '* ``FastExtent2D``: ' + Qgis.DataProviderFlag.FastExtent2D.__doc__ + '\n' + '* ``FastExtent3D``: ' + Qgis.DataProviderFlag.FastExtent3D.__doc__
 # --
 Qgis.DataProviderFlags = lambda flags=0: Qgis.DataProviderFlag(flags)
 Qgis.DataProviderFlag.baseClass = Qgis
@@ -2103,7 +2113,10 @@ QgsRasterLayerTemporalProperties.ModeRedrawLayerOnly = Qgis.RasterTemporalMode.R
 QgsRasterLayerTemporalProperties.TemporalMode.ModeRedrawLayerOnly = Qgis.RasterTemporalMode.RedrawLayerOnly
 QgsRasterLayerTemporalProperties.ModeRedrawLayerOnly.is_monkey_patched = True
 QgsRasterLayerTemporalProperties.ModeRedrawLayerOnly.__doc__ = "Redraw the layer when temporal range changes, but don't apply any filtering. Useful when raster symbology expressions depend on the time range. (since QGIS 3.22)"
-Qgis.RasterTemporalMode.__doc__ = "Raster layer temporal modes\n\n.. versionadded:: 3.22\n\n" + '* ``ModeFixedTemporalRange``: ' + Qgis.RasterTemporalMode.FixedTemporalRange.__doc__ + '\n' + '* ``ModeTemporalRangeFromDataProvider``: ' + Qgis.RasterTemporalMode.TemporalRangeFromDataProvider.__doc__ + '\n' + '* ``ModeRedrawLayerOnly``: ' + Qgis.RasterTemporalMode.RedrawLayerOnly.__doc__
+QgsRasterLayerTemporalProperties.FixedRangePerBand = Qgis.RasterTemporalMode.FixedRangePerBand
+QgsRasterLayerTemporalProperties.FixedRangePerBand.is_monkey_patched = True
+QgsRasterLayerTemporalProperties.FixedRangePerBand.__doc__ = "Layer has a fixed temporal range per band (since QGIS 3.38)"
+Qgis.RasterTemporalMode.__doc__ = "Raster layer temporal modes\n\n.. versionadded:: 3.22\n\n" + '* ``ModeFixedTemporalRange``: ' + Qgis.RasterTemporalMode.FixedTemporalRange.__doc__ + '\n' + '* ``ModeTemporalRangeFromDataProvider``: ' + Qgis.RasterTemporalMode.TemporalRangeFromDataProvider.__doc__ + '\n' + '* ``ModeRedrawLayerOnly``: ' + Qgis.RasterTemporalMode.RedrawLayerOnly.__doc__ + '\n' + '* ``FixedRangePerBand``: ' + Qgis.RasterTemporalMode.FixedRangePerBand.__doc__
 # --
 Qgis.RasterTemporalMode.baseClass = Qgis
 QgsRasterDataProviderTemporalCapabilities.IntervalHandlingMethod = Qgis.TemporalIntervalMatchMethod
@@ -3217,6 +3230,28 @@ Qgis.AltitudeBinding.Centroid.__doc__ = "Clamp just centroid of feature"
 Qgis.AltitudeBinding.__doc__ = "Altitude binding.\n\n.. versionadded:: 3.26\n\n" + '* ``Vertex``: ' + Qgis.AltitudeBinding.Vertex.__doc__ + '\n' + '* ``Centroid``: ' + Qgis.AltitudeBinding.Centroid.__doc__
 # --
 Qgis.AltitudeBinding.baseClass = Qgis
+# monkey patching scoped based enum
+Qgis.RangeLimits.IncludeBoth.__doc__ = "Both lower and upper values are included in the range"
+Qgis.RangeLimits.IncludeLowerExcludeUpper.__doc__ = "Lower value is included in the range, upper value is excluded"
+Qgis.RangeLimits.ExcludeLowerIncludeUpper.__doc__ = "Lower value is excluded from the range, upper value in inccluded"
+Qgis.RangeLimits.ExcludeBoth.__doc__ = "Both lower and upper values are excluded from the range"
+Qgis.RangeLimits.__doc__ = "Describes how the limits of a range are handled.\n\n.. versionadded:: 3.38\n\n" + '* ``IncludeBoth``: ' + Qgis.RangeLimits.IncludeBoth.__doc__ + '\n' + '* ``IncludeLowerExcludeUpper``: ' + Qgis.RangeLimits.IncludeLowerExcludeUpper.__doc__ + '\n' + '* ``ExcludeLowerIncludeUpper``: ' + Qgis.RangeLimits.ExcludeLowerIncludeUpper.__doc__ + '\n' + '* ``ExcludeBoth``: ' + Qgis.RangeLimits.ExcludeBoth.__doc__
+# --
+Qgis.RangeLimits.baseClass = Qgis
+# monkey patching scoped based enum
+Qgis.RasterElevationMode.FixedElevationRange.__doc__ = "Layer has a fixed elevation range"
+Qgis.RasterElevationMode.RepresentsElevationSurface.__doc__ = "Pixel values represent an elevation surface"
+Qgis.RasterElevationMode.FixedRangePerBand.__doc__ = "Layer has a fixed (manually specified) elevation range per band"
+Qgis.RasterElevationMode.DynamicRangePerBand.__doc__ = "Layer has a elevation range per band, calculated dynamically from an expression"
+Qgis.RasterElevationMode.__doc__ = "Raster layer elevation modes.\n\n.. versionadded:: 3.38\n\n" + '* ``FixedElevationRange``: ' + Qgis.RasterElevationMode.FixedElevationRange.__doc__ + '\n' + '* ``RepresentsElevationSurface``: ' + Qgis.RasterElevationMode.RepresentsElevationSurface.__doc__ + '\n' + '* ``FixedRangePerBand``: ' + Qgis.RasterElevationMode.FixedRangePerBand.__doc__ + '\n' + '* ``DynamicRangePerBand``: ' + Qgis.RasterElevationMode.DynamicRangePerBand.__doc__
+# --
+Qgis.RasterElevationMode.baseClass = Qgis
+# monkey patching scoped based enum
+Qgis.MeshElevationMode.FixedElevationRange.__doc__ = "Layer has a fixed elevation range"
+Qgis.MeshElevationMode.FromVertices.__doc__ = "Elevation should be taken from mesh vertices"
+Qgis.MeshElevationMode.__doc__ = "Mesh layer elevation modes.\n\n.. versionadded:: 3.38\n\n" + '* ``FixedElevationRange``: ' + Qgis.MeshElevationMode.FixedElevationRange.__doc__ + '\n' + '* ``FromVertices``: ' + Qgis.MeshElevationMode.FromVertices.__doc__
+# --
+Qgis.MeshElevationMode.baseClass = Qgis
 # monkey patching scoped based enum
 Qgis.NoConstraint = Qgis.BetweenLineConstraint.NoConstraint
 Qgis.NoConstraint.is_monkey_patched = True
@@ -4869,6 +4904,7 @@ Qgis.SensorThingsEntity.Sensor.__doc__ = "A Sensor is an instrument that observe
 Qgis.SensorThingsEntity.ObservedProperty.__doc__ = "An ObservedProperty specifies the phenomenon of an Observation"
 Qgis.SensorThingsEntity.Observation.__doc__ = "An Observation is the act of measuring or otherwise determining the value of a property"
 Qgis.SensorThingsEntity.FeatureOfInterest.__doc__ = "In the context of the Internet of Things, many Observations’ FeatureOfInterest can be the Location of the Thing. For example, the FeatureOfInterest of a wifi-connect thermostat can be the Location of the thermostat (i.e., the living room where the thermostat is located in). In the case of remote sensing, the FeatureOfInterest can be the geographical area or volume that is being sensed"
-Qgis.SensorThingsEntity.__doc__ = "OGC SensorThings API entity types.\n\n.. versionadded:: 3.36\n\n" + '* ``Invalid``: ' + Qgis.SensorThingsEntity.Invalid.__doc__ + '\n' + '* ``Thing``: ' + Qgis.SensorThingsEntity.Thing.__doc__ + '\n' + '* ``Location``: ' + Qgis.SensorThingsEntity.Location.__doc__ + '\n' + '* ``HistoricalLocation``: ' + Qgis.SensorThingsEntity.HistoricalLocation.__doc__ + '\n' + '* ``Datastream``: ' + Qgis.SensorThingsEntity.Datastream.__doc__ + '\n' + '* ``Sensor``: ' + Qgis.SensorThingsEntity.Sensor.__doc__ + '\n' + '* ``ObservedProperty``: ' + Qgis.SensorThingsEntity.ObservedProperty.__doc__ + '\n' + '* ``Observation``: ' + Qgis.SensorThingsEntity.Observation.__doc__ + '\n' + '* ``FeatureOfInterest``: ' + Qgis.SensorThingsEntity.FeatureOfInterest.__doc__
+Qgis.SensorThingsEntity.MultiDatastream.__doc__ = "A MultiDatastream groups a collection of Observations and the Observations in a MultiDatastream have a complex result type. Implemented in the SensorThings version 1.1 \"MultiDatastream extension\". (Since QGIS 3.38)"
+Qgis.SensorThingsEntity.__doc__ = "OGC SensorThings API entity types.\n\n.. versionadded:: 3.36\n\n" + '* ``Invalid``: ' + Qgis.SensorThingsEntity.Invalid.__doc__ + '\n' + '* ``Thing``: ' + Qgis.SensorThingsEntity.Thing.__doc__ + '\n' + '* ``Location``: ' + Qgis.SensorThingsEntity.Location.__doc__ + '\n' + '* ``HistoricalLocation``: ' + Qgis.SensorThingsEntity.HistoricalLocation.__doc__ + '\n' + '* ``Datastream``: ' + Qgis.SensorThingsEntity.Datastream.__doc__ + '\n' + '* ``Sensor``: ' + Qgis.SensorThingsEntity.Sensor.__doc__ + '\n' + '* ``ObservedProperty``: ' + Qgis.SensorThingsEntity.ObservedProperty.__doc__ + '\n' + '* ``Observation``: ' + Qgis.SensorThingsEntity.Observation.__doc__ + '\n' + '* ``FeatureOfInterest``: ' + Qgis.SensorThingsEntity.FeatureOfInterest.__doc__ + '\n' + '* ``MultiDatastream``: ' + Qgis.SensorThingsEntity.MultiDatastream.__doc__
 # --
 Qgis.SensorThingsEntity.baseClass = Qgis

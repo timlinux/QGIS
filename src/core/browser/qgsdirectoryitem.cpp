@@ -58,6 +58,10 @@ void QgsDirectoryItem::init( const QString &dirName )
 
   QgsSettings settings;
 
+  const QFileInfo fi { mDirPath };
+  mIsDir = fi.isDir();
+  mIsSymLink = fi.isSymLink();
+
   mMonitoring = monitoringForPath( mDirPath );
   switch ( mMonitoring )
   {
@@ -164,8 +168,7 @@ QIcon QgsDirectoryItem::icon()
     return QgsDataItem::icon();
 
   // symbolic link? use link icon
-  const QFileInfo fi( mDirPath );
-  if ( fi.isDir() && fi.isSymLink() )
+  if ( mIsDir && mIsSymLink )
   {
     return mIconColor.isValid()
            ? QgsApplication::getThemeIcon( QStringLiteral( "/mIconFolderLinkParams.svg" ), mIconColor, mIconColor.darker() )
@@ -451,7 +454,9 @@ bool QgsDirectoryItem::pathShouldByMonitoredByDefault( const QString &path )
 
   // else if we know that the path is on a slow device, we don't monitor by default
   // as this can be very expensive and slow down QGIS
-  if ( QgsFileUtils::pathIsSlowDevice( path ) )
+  // Add trailing slash or windows API functions like GetDriveTypeW won't identify
+  // UNC network drives correctly
+  if ( QgsFileUtils::pathIsSlowDevice( path.endsWith( '/' ) ? path : path + '/' ) )
     return false;
 
   // paths are monitored by default if no explicit setting is in place, and the user hasn't
@@ -465,7 +470,7 @@ void QgsDirectoryItem::childrenCreated()
 
   if ( mRefreshLater )
   {
-    QgsDebugMsgLevel( QStringLiteral( "directory changed during createChidren() -> refresh() again" ), 3 );
+    QgsDebugMsgLevel( QStringLiteral( "directory changed during createChildren() -> refresh() again" ), 3 );
     mRefreshLater = false;
     setState( Qgis::BrowserItemState::Populated );
     refresh();

@@ -17,9 +17,11 @@
 #include "qgsfield.h"
 #include "qgsfields.h"
 #include "qgswkbtypes.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsnetworkaccessmanager.h"
 #include "qgsblockingnetworkrequest.h"
 #include "qgslogger.h"
+#include "qgsrectangle.h"
 #include <QUrl>
 #include <QNetworkRequest>
 #include <nlohmann/json.hpp>
@@ -43,6 +45,8 @@ Qgis::SensorThingsEntity QgsSensorThingsUtils::stringToEntity( const QString &ty
     return Qgis::SensorThingsEntity::Observation;
   if ( trimmed.compare( QLatin1String( "FeatureOfInterest" ), Qt::CaseInsensitive ) == 0 )
     return Qgis::SensorThingsEntity::FeatureOfInterest;
+  if ( trimmed.compare( QLatin1String( "MultiDatastream" ), Qt::CaseInsensitive ) == 0 )
+    return Qgis::SensorThingsEntity::MultiDatastream;
 
   return Qgis::SensorThingsEntity::Invalid;
 }
@@ -69,6 +73,8 @@ QString QgsSensorThingsUtils::displayString( Qgis::SensorThingsEntity type, bool
       return plural ? QObject::tr( "Observations" ) : QObject::tr( "Observation" );
     case Qgis::SensorThingsEntity::FeatureOfInterest:
       return plural ? QObject::tr( "Features of Interest" ) : QObject::tr( "Feature of Interest" );
+    case Qgis::SensorThingsEntity::MultiDatastream:
+      return plural ? QObject::tr( "MultiDatastreams" ) : QObject::tr( "MultiDatastream" );
   }
   BUILTIN_UNREACHABLE
 }
@@ -92,6 +98,8 @@ Qgis::SensorThingsEntity QgsSensorThingsUtils::entitySetStringToEntity( const QS
     return Qgis::SensorThingsEntity::Observation;
   if ( trimmed.compare( QLatin1String( "FeaturesOfInterest" ), Qt::CaseInsensitive ) == 0 )
     return Qgis::SensorThingsEntity::FeatureOfInterest;
+  if ( trimmed.compare( QLatin1String( "MultiDatastreams" ), Qt::CaseInsensitive ) == 0 )
+    return Qgis::SensorThingsEntity::MultiDatastream;
 
   return Qgis::SensorThingsEntity::Invalid;
 }
@@ -178,6 +186,20 @@ QgsFields QgsSensorThingsUtils::fieldsForEntityType( Qgis::SensorThingsEntity ty
       fields.append( QgsField( QStringLiteral( "description" ), QVariant::String ) );
       fields.append( QgsField( QStringLiteral( "properties" ), QVariant::Map, QStringLiteral( "json" ), 0, 0, QString(), QVariant::String ) );
       break;
+
+    case Qgis::SensorThingsEntity::MultiDatastream:
+      // https://docs.ogc.org/is/18-088/18-088.html#multidatastream-extension
+      fields.append( QgsField( QStringLiteral( "name" ), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "description" ), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "unitOfMeasurements" ), QVariant::Map, QStringLiteral( "json" ), 0, 0, QString(), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "observationType" ), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "multiObservationDataTypes" ), QVariant::StringList, QString(), 0, 0, QString(), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "properties" ), QVariant::Map, QStringLiteral( "json" ), 0, 0, QString(), QVariant::String ) );
+      fields.append( QgsField( QStringLiteral( "phenomenonTimeStart" ), QVariant::DateTime ) );
+      fields.append( QgsField( QStringLiteral( "phenomenonTimeEnd" ), QVariant::DateTime ) );
+      fields.append( QgsField( QStringLiteral( "resultTimeStart" ), QVariant::DateTime ) );
+      fields.append( QgsField( QStringLiteral( "resultTimeEnd" ), QVariant::DateTime ) );
+      break;
   }
 
   return fields;
@@ -201,6 +223,9 @@ QString QgsSensorThingsUtils::geometryFieldForEntityType( Qgis::SensorThingsEnti
 
     case Qgis::SensorThingsEntity::FeatureOfInterest:
       return QStringLiteral( "feature" );
+
+    case Qgis::SensorThingsEntity::MultiDatastream:
+      return QStringLiteral( "observedArea" );
   }
   BUILTIN_UNREACHABLE
 }
@@ -220,48 +245,84 @@ bool QgsSensorThingsUtils::entityTypeHasGeometry( Qgis::SensorThingsEntity type 
 
     case Qgis::SensorThingsEntity::Location:
     case Qgis::SensorThingsEntity::FeatureOfInterest:
+    case Qgis::SensorThingsEntity::MultiDatastream:
       return true;
+  }
+  BUILTIN_UNREACHABLE
+}
+
+Qgis::GeometryType QgsSensorThingsUtils::geometryTypeForEntity( Qgis::SensorThingsEntity type )
+{
+  switch ( type )
+  {
+    case Qgis::SensorThingsEntity::Invalid:
+    case Qgis::SensorThingsEntity::Thing:
+    case Qgis::SensorThingsEntity::HistoricalLocation:
+    case Qgis::SensorThingsEntity::Datastream:
+    case Qgis::SensorThingsEntity::Sensor:
+    case Qgis::SensorThingsEntity::Observation:
+    case Qgis::SensorThingsEntity::ObservedProperty:
+      return Qgis::GeometryType::Null;
+
+    case Qgis::SensorThingsEntity::Location:
+    case Qgis::SensorThingsEntity::FeatureOfInterest:
+      return Qgis::GeometryType::Unknown;
+
+    case Qgis::SensorThingsEntity::MultiDatastream:
+      return Qgis::GeometryType::Polygon;
   }
   BUILTIN_UNREACHABLE
 }
 
 QString QgsSensorThingsUtils::filterForWkbType( Qgis::SensorThingsEntity entityType, Qgis::WkbType wkbType )
 {
-  QString filterTarget;
-  switch ( entityType )
-  {
-    case Qgis::SensorThingsEntity::Location:
-      filterTarget = QStringLiteral( "location/type" );
-      break;
-
-    case Qgis::SensorThingsEntity::FeatureOfInterest:
-      filterTarget = QStringLiteral( "feature/type" );
-      break;
-
-    case Qgis::SensorThingsEntity::Invalid:
-    case Qgis::SensorThingsEntity::Thing:
-    case Qgis::SensorThingsEntity::HistoricalLocation:
-    case Qgis::SensorThingsEntity::Datastream:
-    case Qgis::SensorThingsEntity::Sensor:
-    case Qgis::SensorThingsEntity::ObservedProperty:
-    case Qgis::SensorThingsEntity::Observation:
-      break;
-  }
-
+  QString geometryTypeString;
   switch ( QgsWkbTypes::geometryType( wkbType ) )
   {
     case Qgis::GeometryType::Point:
-      return QStringLiteral( "%1 eq 'Point'" ).arg( filterTarget );
+      geometryTypeString = QStringLiteral( "Point" );
+      break;
     case Qgis::GeometryType::Polygon:
-      return QStringLiteral( "%1 eq 'Polygon'" ).arg( filterTarget );
+      geometryTypeString = QStringLiteral( "Polygon" );
+      break;
     case Qgis::GeometryType::Line:
-      // TODO -- confirm
-      return QStringLiteral( "%1 eq 'LineString'" ).arg( filterTarget );
+      geometryTypeString = QStringLiteral( "LineString" );
+      break;
+
     case Qgis::GeometryType::Unknown:
     case Qgis::GeometryType::Null:
-      break;
+      return QString();
   }
-  return QString();
+
+  const QString filterTarget = geometryFieldForEntityType( entityType );
+  if ( filterTarget.isEmpty() )
+    return QString();
+
+  return QStringLiteral( "%1/type eq '%2' or %1/geometry/type eq '%2'" ).arg( filterTarget, geometryTypeString );
+}
+
+QString QgsSensorThingsUtils::filterForExtent( const QString &geometryField, const QgsRectangle &extent )
+{
+  // TODO -- confirm using 'geography' is always correct here
+  return ( extent.isNull() || geometryField.isEmpty() )
+         ? QString()
+         : QStringLiteral( "geo.intersects(%1, geography'%2')" ).arg( geometryField, extent.asWktPolygon() );
+}
+
+QString QgsSensorThingsUtils::combineFilters( const QStringList &filters )
+{
+  QStringList nonEmptyFilters;
+  for ( const QString &filter : filters )
+  {
+    if ( !filter.isEmpty() )
+      nonEmptyFilters.append( filter );
+  }
+  if ( nonEmptyFilters.empty() )
+    return QString();
+  if ( nonEmptyFilters.size() == 1 )
+    return nonEmptyFilters.at( 0 );
+
+  return QStringLiteral( "(" ) + nonEmptyFilters.join( QLatin1String( ") and (" ) ) + QStringLiteral( ")" );
 }
 
 QList<Qgis::GeometryType> QgsSensorThingsUtils::availableGeometryTypes( const QString &uri, Qgis::SensorThingsEntity type, QgsFeedback *feedback, const QString &authCfg )

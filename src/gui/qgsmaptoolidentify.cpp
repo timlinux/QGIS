@@ -51,6 +51,7 @@
 #include "qgspointcloudlayer.h"
 #include "qgspointcloudrenderer.h"
 #include "qgspointcloudlayerelevationproperties.h"
+#include "qgsrasterlayerelevationproperties.h"
 #include "qgssymbol.h"
 #include "qgsguiutils.h"
 
@@ -213,30 +214,51 @@ bool QgsMapToolIdentify::identifyLayer( QList<IdentifyResult> *results, QgsMapLa
 
 bool QgsMapToolIdentify::identifyLayer( QList<IdentifyResult> *results, QgsMapLayer *layer, const QgsGeometry &geometry, const QgsRectangle &viewExtent, double mapUnitsPerPixel, QgsMapToolIdentify::LayerType layerType, const QgsIdentifyContext &identifyContext )
 {
-  if ( layer->type() == Qgis::LayerType::Raster && layerType.testFlag( RasterLayer ) )
+  switch ( layer->type() )
   {
-    return identifyRasterLayer( results, qobject_cast<QgsRasterLayer *>( layer ), geometry, viewExtent, mapUnitsPerPixel, identifyContext );
+    case Qgis::LayerType::Vector:
+      if ( layerType.testFlag( VectorLayer ) )
+      {
+        return identifyVectorLayer( results, qobject_cast<QgsVectorLayer *>( layer ), geometry, identifyContext );
+      }
+      break;
+
+    case Qgis::LayerType::Raster:
+      if ( layerType.testFlag( RasterLayer ) )
+      {
+        return identifyRasterLayer( results, qobject_cast<QgsRasterLayer *>( layer ), geometry, viewExtent, mapUnitsPerPixel, identifyContext );
+      }
+      break;
+
+    case Qgis::LayerType::Mesh:
+      if ( layerType.testFlag( MeshLayer ) )
+      {
+        return identifyMeshLayer( results, qobject_cast<QgsMeshLayer *>( layer ), geometry, identifyContext );
+      }
+      break;
+
+    case Qgis::LayerType::VectorTile:
+      if ( layerType.testFlag( VectorTileLayer ) )
+      {
+        return identifyVectorTileLayer( results, qobject_cast<QgsVectorTileLayer *>( layer ), geometry, identifyContext );
+      }
+      break;
+
+    case Qgis::LayerType::PointCloud:
+      if ( layerType.testFlag( PointCloudLayer ) )
+      {
+        return identifyPointCloudLayer( results, qobject_cast<QgsPointCloudLayer *>( layer ), geometry, identifyContext );
+      }
+      break;
+
+    // not supported
+    case Qgis::LayerType::Plugin:
+    case Qgis::LayerType::Annotation:
+    case Qgis::LayerType::Group:
+    case Qgis::LayerType::TiledScene:
+      break;
   }
-  else if ( layer->type() == Qgis::LayerType::Vector && layerType.testFlag( VectorLayer ) )
-  {
-    return identifyVectorLayer( results, qobject_cast<QgsVectorLayer *>( layer ), geometry, identifyContext );
-  }
-  else if ( layer->type() == Qgis::LayerType::Mesh && layerType.testFlag( MeshLayer ) )
-  {
-    return identifyMeshLayer( results, qobject_cast<QgsMeshLayer *>( layer ), geometry, identifyContext );
-  }
-  else if ( layer->type() == Qgis::LayerType::VectorTile && layerType.testFlag( VectorTileLayer ) )
-  {
-    return identifyVectorTileLayer( results, qobject_cast<QgsVectorTileLayer *>( layer ), geometry, identifyContext );
-  }
-  else if ( layer->type() == Qgis::LayerType::PointCloud && layerType.testFlag( PointCloudLayer ) )
-  {
-    return identifyPointCloudLayer( results, qobject_cast<QgsPointCloudLayer *>( layer ), geometry, identifyContext );
-  }
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 bool QgsMapToolIdentify::identifyVectorLayer( QList<QgsMapToolIdentify::IdentifyResult> *results, QgsVectorLayer *layer, const QgsPointXY &point, const QgsIdentifyContext &identifyContext )
@@ -256,6 +278,12 @@ bool QgsMapToolIdentify::identifyMeshLayer( QList<QgsMapToolIdentify::IdentifyRe
   if ( !layer )
     return false;
 
+  if ( !identifyContext.zRange().isInfinite() )
+  {
+    if ( !layer->elevationProperties()->isVisibleInZRange( identifyContext.zRange() ) )
+      return false;
+  }
+
   double searchRadius = mOverrideCanvasSearchRadius < 0 ? searchRadiusMU( mCanvas ) : mOverrideCanvasSearchRadius;
   bool isTemporal = identifyContext.isTemporal() && layer->temporalProperties()->isActive();
 
@@ -264,7 +292,7 @@ bool QgsMapToolIdentify::identifyMeshLayer( QList<QgsMapToolIdentify::IdentifyRe
   int activeVectorGroup = layer->rendererSettings().activeVectorDatasetGroup();
 
   const QList<int> allGroup = layer->enabledDatasetGroupsIndexes();
-  if ( isTemporal ) //non active dataset group value are only accesible if temporal is active
+  if ( isTemporal ) //non active dataset group value are only accessible if temporal is active
   {
     const QgsDateTimeRange &time = identifyContext.temporalRange();
     if ( activeScalarGroup >= 0 )
@@ -510,11 +538,18 @@ bool QgsMapToolIdentify::identifyVectorTileLayer( QList<QgsMapToolIdentify::Iden
 
 bool QgsMapToolIdentify::identifyPointCloudLayer( QList<QgsMapToolIdentify::IdentifyResult> *results, QgsPointCloudLayer *layer, const QgsGeometry &geometry, const QgsIdentifyContext &identifyContext )
 {
-  Q_UNUSED( identifyContext )
+  if ( !identifyContext.zRange().isInfinite() )
+  {
+    if ( !layer->elevationProperties()->isVisibleInZRange( identifyContext.zRange(), layer ) )
+      return false;
+  }
+
   QgsPointCloudRenderer *renderer = layer->renderer();
 
   QgsRenderContext context = QgsRenderContext::fromMapSettings( mCanvas->mapSettings() );
   context.setCoordinateTransform( QgsCoordinateTransform( layer->crs(), mCanvas->mapSettings().destinationCrs(), mCanvas->mapSettings().transformContext() ) );
+  if ( !identifyContext.zRange().isInfinite() )
+    context.setZRange( identifyContext.zRange() );
 
   const double searchRadiusMapUnits = mOverrideCanvasSearchRadius < 0 ? searchRadiusMU( mCanvas ) : mOverrideCanvasSearchRadius;
 
@@ -971,6 +1006,12 @@ bool QgsMapToolIdentify::identifyRasterLayer( QList<IdentifyResult> *results, Qg
     dprovider->temporalCapabilities()->setRequestedTemporalRange( identifyContext.temporalRange() );
   }
 
+  if ( !identifyContext.zRange().isInfinite() )
+  {
+    if ( !layer->elevationProperties()->isVisibleInZRange( identifyContext.zRange(), layer ) )
+      return false;
+  }
+
   QgsPointXY pointInCanvasCrs = point;
   try
   {
@@ -1047,6 +1088,49 @@ bool QgsMapToolIdentify::identifyRasterLayer( QList<IdentifyResult> *results, Qg
     QgsDebugMsgLevel( QStringLiteral( "xRes = %1 yRes = %2 mapUnitsPerPixel = %3" ).arg( viewExtent.width() / width ).arg( viewExtent.height() / height ).arg( mapUnitsPerPixel ), 2 );
 
     identifyResult = dprovider->identify( point, format, viewExtent, width, height );
+  }
+
+  QgsRasterLayerElevationProperties *elevationProperties = qobject_cast< QgsRasterLayerElevationProperties *>( layer->elevationProperties() );
+  if ( identifyResult.isValid() && !identifyContext.zRange().isInfinite() && elevationProperties && elevationProperties->isEnabled() )
+  {
+    // filter results by z range
+    switch ( format )
+    {
+      case Qgis::RasterIdentifyFormat::Value:
+      {
+        bool foundMatch = false;
+        QMap<int, QVariant> values = identifyResult.results();
+        QMap<int, QVariant> filteredValues;
+        for ( auto it = values.constBegin(); it != values.constEnd(); ++it )
+        {
+          if ( QgsVariantUtils::isNull( it.value() ) )
+          {
+            continue;
+          }
+          const double value = it.value().toDouble();
+          const QgsDoubleRange elevationRange = elevationProperties->elevationRangeForPixelValue( layer, it.key(), value );
+          if ( !elevationRange.isInfinite() && identifyContext.zRange().overlaps( elevationRange ) )
+          {
+            filteredValues.insert( it.key(), it.value() );
+            foundMatch = true;
+          }
+        }
+
+        if ( !foundMatch )
+          return false;
+
+        identifyResult = QgsRasterIdentifyResult( Qgis::RasterIdentifyFormat::Value, filteredValues );
+
+        break;
+      }
+
+      // can't filter by z for these formats
+      case Qgis::RasterIdentifyFormat::Undefined:
+      case Qgis::RasterIdentifyFormat::Text:
+      case Qgis::RasterIdentifyFormat::Html:
+      case Qgis::RasterIdentifyFormat::Feature:
+        break;
+    }
   }
 
   derivedAttributes.insert( derivedAttributesForPoint( QgsPoint( pointInCanvasCrs ) ) );

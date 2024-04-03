@@ -155,7 +155,7 @@ namespace QgsWms
     }
     image.reset( createImage( size ) );
 
-    // configure painter and addapt to the context
+    // configure painter and adapt to the context
     QPainter painter( image.get() );
 
     context.setPainter( &painter );
@@ -1316,7 +1316,7 @@ namespace QgsWms
     else if ( infoFormat == QgsWmsParameters::Format::HTML )
       ba = convertFeatureInfoToHtml( result );
     else if ( infoFormat == QgsWmsParameters::Format::JSON )
-      ba = convertFeatureInfoToJson( layers, result );
+      ba = convertFeatureInfoToJson( layers, result, mapSettings.destinationCrs() );
     else
       ba = result.toByteArray();
 
@@ -2670,7 +2670,7 @@ namespace QgsWms
 
               featureInfoString.append( featureInfoAttributeString );
             }
-            else if ( name == QStringLiteral( "maptip" ) )
+            else if ( name == QLatin1String( "maptip" ) )
             {
               featureInfoString.append( QStringLiteral( R"HTML(
       %1)HTML" ).arg( value ) );
@@ -2726,7 +2726,7 @@ namespace QgsWms
 
               featureInfoString.append( featureInfoAttributeString );
             }
-            else if ( name == QStringLiteral( "maptip" ) )
+            else if ( name == QLatin1String( "maptip" ) )
             {
               featureInfoString.append( QStringLiteral( R"HTML(
       %1)HTML" ).arg( value ) );
@@ -2813,7 +2813,7 @@ namespace QgsWms
     return featureInfoString.toUtf8();
   }
 
-  QByteArray QgsRenderer::convertFeatureInfoToJson( const QList<QgsMapLayer *> &layers, const QDomDocument &doc ) const
+  QByteArray QgsRenderer::convertFeatureInfoToJson( const QList<QgsMapLayer *> &layers, const QDomDocument &doc, const QgsCoordinateReferenceSystem &destCRS ) const
   {
     json json
     {
@@ -2914,6 +2914,8 @@ namespace QgsWms
         exporter.setAttributes( attributes );
         exporter.setIncludeGeometry( withGeometry );
         exporter.setTransformGeometries( false );
+
+        QgsJsonUtils::addCrsInfo( json, destCRS );
 
         for ( const auto &feature : std::as_const( features ) )
         {

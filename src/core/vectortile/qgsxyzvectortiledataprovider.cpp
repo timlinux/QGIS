@@ -19,6 +19,7 @@
 #include "qgsvectortileloader.h"
 #include "qgsvectortileutils.h"
 #include "qgsnetworkaccessmanager.h"
+#include "qgssetrequestinitiator_p.h"
 #include "qgsapplication.h"
 #include "qgsauthmanager.h"
 #include "qgsmessagelog.h"
@@ -330,6 +331,11 @@ QgsXyzVectorTileDataProvider::QgsXyzVectorTileDataProvider( const QgsXyzVectorTi
   mIsValid = other.mIsValid;
   mExtent = other.mExtent;
   mMatrixSet = other.mMatrixSet;
+}
+
+Qgis::DataProviderFlags QgsXyzVectorTileDataProvider::flags() const
+{
+  return Qgis::DataProviderFlag::FastExtent2D;
 }
 
 QString QgsXyzVectorTileDataProvider::name() const

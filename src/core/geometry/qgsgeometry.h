@@ -789,6 +789,15 @@ class CORE_EXPORT QgsGeometry
     bool insertVertex( const QgsPoint &point, int beforeVertex );
 
     /**
+     * Adds a vertex to the segment which intersect \a point but don't
+     * already have a vertex there. Closest segment is identified using \a segmentSearchEpsilon.
+     * If a vertex already exists within \a snappingTolearnceDistance, no additional vertex is inserted.
+     * \returns TRUE if point was added, FALSE otherwise
+     * \since QGIS 3.38
+     */
+    bool addTopologicalPoint( const QgsPoint &point, double snappingTolerance = 1e-8, double segmentSearchEpsilon = 1e-12 );
+
+    /**
      * Moves the vertex at the given position number
      * and item (first number is index 0)
      * to the given coordinates.
@@ -991,7 +1000,6 @@ class CORE_EXPORT QgsGeometry
      * \param topological TRUE if topological editing is enabled
      * \param[out] topologyTestPoints points that need to be tested for topological completeness in the dataset
      * \param splitFeature Set to TRUE if you want to split a feature, otherwise set to FALSE to split parts
-     * fix this bug?
      * \param skipIntersectionTest set to TRUE to skip the potentially expensive initial intersection check. Only set this flag if an intersection
      * test has already been performed by the caller! Not available in Python bindings.
      * \returns Qgis::GeometryOperationResult a result code: success or reason of failure

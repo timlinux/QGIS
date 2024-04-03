@@ -22,7 +22,7 @@ set(CMAKE_LINK_DEPENDS_NO_SHARED ON)
 #############################################################
 # Project and version
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
-set(CPACK_PACKAGE_VERSION_MINOR "36")
+set(CPACK_PACKAGE_VERSION_MINOR "37")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(COMPLETE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 set(RELEASE_NAME "Maidenhead")
@@ -375,9 +375,6 @@ if(WITH_CORE)
 
   find_package(Protobuf CONFIG)
   find_package(Protobuf REQUIRED)
-  if(Protobuf_VERSION GREATER_EQUAL 4.23)
-    set(Protobuf_LITE_LIBRARY protobuf::libprotobuf-lite)
-  endif()
 
   message(STATUS "Found Protobuf: ${Protobuf_LIBRARIES}")
   if (NOT Protobuf_PROTOC_EXECUTABLE)
@@ -1105,7 +1102,7 @@ if (WITH_CORE AND WITH_BINDINGS)
   include(SIPMacros)
 
   set(SIP_INCLUDES ${PYQT_SIP_DIR} ${CMAKE_SOURCE_DIR}/python)
-  set(SIP_CONCAT_PARTS 26)
+  set(SIP_CONCAT_PARTS 25)
 
   if (NOT BINDINGS_GLOBAL_INSTALL)
     set(Python_SITEARCH ${QGIS_DATA_DIR}/python)

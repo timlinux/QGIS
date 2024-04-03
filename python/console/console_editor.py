@@ -26,6 +26,7 @@ import pyclbr
 import re
 import sys
 import tempfile
+from typing import Optional
 from functools import partial
 from operator import itemgetter
 from pathlib import Path
@@ -61,10 +62,9 @@ class Editor(QgsCodeEditorPython):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.path = None
+        self.path: Optional[str] = None
         #  recent modification time
         self.lastModified = 0
-        self.settings = QgsSettings()
 
         self.setMinimumHeight(120)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -237,7 +237,7 @@ class Editor(QgsCodeEditorPython):
             redoAction.setEnabled(True)
         if QApplication.clipboard().text():
             pasteAction.setEnabled(True)
-        if self.settings.value("pythonConsole/enableObjectInsp",
+        if QgsSettings().value("pythonConsole/enableObjectInsp",
                                False, type=bool):
             showCodeInspection.setEnabled(True)
         menu.exec(self.mapToGlobal(e.pos()))
@@ -290,7 +290,7 @@ class Editor(QgsCodeEditorPython):
             self.pythonconsole.objectListButton.setChecked(True)
 
     def shareOnGist(self, is_public):
-        ACCESS_TOKEN = self.settings.value("pythonConsole/accessTokenGithub", '', type=QByteArray)
+        ACCESS_TOKEN = QgsSettings().value("pythonConsole/accessTokenGithub", '', type=QByteArray)
         if not ACCESS_TOKEN:
             msg_text = QCoreApplication.translate(
                 'PythonConsole', 'GitHub personal access token must be generated (see Console Options)')
@@ -358,7 +358,7 @@ class Editor(QgsCodeEditorPython):
         return name
 
     def runScriptCode(self):
-        autoSave = self.settings.value("pythonConsole/autoSaveScript", False, type=bool)
+        autoSave = QgsSettings().value("pythonConsole/autoSaveScript", False, type=bool)
         tabWidget = self.tabwidget.currentWidget()
         filename = tabWidget.path
         msgEditorBlank = QCoreApplication.translate('PythonConsole',
@@ -455,24 +455,23 @@ class Editor(QgsCodeEditorPython):
         self.setModified(False)
         self.recolor()
 
-    def save(self, filename=None):
+    def save(self, filename: Optional[str] = None):
         if self.isReadOnly():
             return
 
-        if self.pythonconsole.settings.value("pythonConsole/formatOnSave", False, type=bool):
+        if QgsSettings().value("pythonConsole/formatOnSave", False, type=bool):
             self.reformatCode()
 
-        tabwidget = self.tabwidget
-        index = tabwidget.indexOf(self.parent)
+        index = self.tabwidget.indexOf(self.parent)
         if filename:
             self.path = filename
-        if self.path is None:
+        if not self.path:
             saveTr = QCoreApplication.translate('PythonConsole',
                                                 'Python Console: Save file')
-            folder = self.pythonconsole.settings.value("pythonConsole/lastDirPath", QDir.homePath())
+            folder = QgsSettings().value("pythonConsole/lastDirPath", QDir.homePath())
             self.path, filter = QFileDialog().getSaveFileName(self,
                                                               saveTr,
-                                                              os.path.join(folder, tabwidget.tabText(index).replace('*', '') + '.py'),
+                                                              os.path.join(folder, self.tabwidget.tabText(index).replace('*', '') + '.py'),
                                                               "Script file (*.py)")
             # If the user didn't select a file, abort the save operation
             if not self.path:
@@ -487,15 +486,15 @@ class Editor(QgsCodeEditorPython):
         # Need to use newline='' to avoid adding extra \r characters on Windows
         with open(self.path, 'w', encoding='utf-8', newline='') as f:
             f.write(self.text())
-        tabwidget.setTabTitle(index, Path(self.path).name)
-        tabwidget.setTabToolTip(index, self.path)
+        self.tabwidget.setTabTitle(index, Path(self.path).name)
+        self.tabwidget.setTabToolTip(index, self.path)
         self.setModified(False)
         self.pythonconsole.saveFileButton.setEnabled(False)
         self.lastModified = QFileInfo(self.path).lastModified()
         self.pythonconsole.updateTabListScript(self.path, action='append')
-        tabwidget.listObject(self.parent)
-        lastDirPath = str(Path(self.path).parent)
-        self.pythonconsole.settings.setValue("pythonConsole/lastDirPath", lastDirPath)
+        self.tabwidget.listObject(self.parent)
+        QgsSettings().setValue("pythonConsole/lastDirPath",
+                               Path(self.path).parent.as_posix())
 
     def event(self, e):
         """ Used to override the Application shortcuts when the editor has focus """
@@ -604,8 +603,6 @@ class EditorTabWidget(QTabWidget):
         super().__init__(parent=None)
         self.parent = parent
 
-        self.settings = QgsSettings()
-
         self.idx = -1
         # Layout for top frame (restore tabs)
         self.layoutTopFrame = QGridLayout(self)
@@ -692,7 +689,7 @@ class EditorTabWidget(QTabWidget):
         self.newTabButton.clicked.connect(self.newTabEditor)
 
     def _currentWidgetChanged(self, tab):
-        if self.settings.value("pythonConsole/enableObjectInsp",
+        if QgsSettings().value("pythonConsole/enableObjectInsp",
                                False, type=bool):
             self.listObject(tab)
         self.changeLastDirPath(tab)
@@ -839,7 +836,7 @@ class EditorTabWidget(QTabWidget):
         Restore tabs if they are found in the settings. If none are found it will add a new empty tab.
         """
         # Restore scripts from the previous session
-        tabScripts = self.settings.value("pythonConsole/tabScripts", [])
+        tabScripts = QgsSettings().value("pythonConsole/tabScripts", [])
         self.restoreTabList = tabScripts
 
         if self.restoreTabList:
@@ -962,7 +959,7 @@ class EditorTabWidget(QTabWidget):
                     self.parent.listClassMethod.addTopLevelItem(msgItem)
 
     def refreshSettingsEditor(self):
-        objInspectorEnabled = self.settings.value("pythonConsole/enableObjectInsp",
+        objInspectorEnabled = QgsSettings().value("pythonConsole/enableObjectInsp",
                                                   False, type=bool)
         listObj = self.parent.objectListButton
         if self.parent.listClassMethod.isVisible():
@@ -977,7 +974,8 @@ class EditorTabWidget(QTabWidget):
     def changeLastDirPath(self, tab):
         tabWidget = self.widget(tab)
         if tabWidget and tabWidget.path:
-            self.settings.setValue("pythonConsole/lastDirPath", tabWidget.path)
+            QgsSettings().setValue("pythonConsole/lastDirPath",
+                                   Path(tabWidget.path).parent.as_posix())
 
     def showMessage(self, text, level=Qgis.MessageLevel.Info, timeout=-1, title=""):
         currWidget = self.currentWidget()
